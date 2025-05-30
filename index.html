@@ -1095,12 +1095,30 @@
                 const processedData = {}; // Object to group runs by runner name
 
                 activities.forEach(activity => {
-                    // Basic validation for critical fields
-                    if (!activity.athlete || !activity.athlete.firstname || !activity.athlete.lastname ||
-                        !activity.start_date_local || typeof activity.distance === 'undefined' ||
-                        typeof activity.moving_time === 'undefined' || !activity.type) {
-                        console.warn('Skipping activity due to missing/invalid data:', activity);
-                        return; // Skip this activity if critical data is missing
+                    // Detailed validation for critical fields
+                    if (!activity.athlete) {
+                        console.warn('Skipping activity: Missing athlete object.', activity);
+                        return;
+                    }
+                    if (!activity.athlete.firstname || !activity.athlete.lastname) {
+                        console.warn('Skipping activity: Missing athlete name (firstname or lastname).', activity);
+                        return;
+                    }
+                    if (!activity.start_date_local) {
+                        console.warn('Skipping activity: Missing start_date_local.', activity);
+                        return;
+                    }
+                    if (typeof activity.distance === 'undefined' || activity.distance === null) {
+                        console.warn('Skipping activity: Missing or null distance.', activity);
+                        return;
+                    }
+                    if (typeof activity.moving_time === 'undefined' || activity.moving_time === null) {
+                        console.warn('Skipping activity: Missing or null moving_time.', activity);
+                        return;
+                    }
+                    if (!activity.type) {
+                        console.warn('Skipping activity: Missing activity type.', activity);
+                        return;
                     }
 
                     const runnerName = `${activity.athlete.firstname} ${activity.athlete.lastname}`;
@@ -1110,8 +1128,12 @@
                     const distanceMeters = parseFloat(activity.distance);
                     const movingTimeSeconds = parseFloat(activity.moving_time);
 
-                    if (isNaN(distanceMeters) || isNaN(movingTimeSeconds)) {
-                        console.warn('Skipping activity due to non-numeric distance or time:', activity);
+                    if (isNaN(distanceMeters)) {
+                        console.warn('Skipping activity: Non-numeric distance.', activity);
+                        return;
+                    }
+                    if (isNaN(movingTimeSeconds)) {
+                        console.warn('Skipping activity: Non-numeric moving time.', activity);
                         return;
                     }
 
@@ -1120,7 +1142,7 @@
 
                     const date = new Date(activity.start_date_local);
                     if (isNaN(date.getTime())) { // Check if date parsing resulted in an invalid date
-                        console.warn('Skipping activity due to invalid date string:', activity.start_date_local, activity);
+                        console.warn('Skipping activity: Invalid date string for start_date_local.', activity);
                         return;
                     }
                     const formattedDate = date.toISOString().split('T')[0]; //YYYY-MM-DD
@@ -1142,6 +1164,7 @@
 
                 // Convert processedData object back to array format
                 const finalClubData = Object.values(processedData);
+                console.log("Final processed club data:", finalClubData); // Log final data
 
                 stravaStatus.textContent = 'Đã tải dữ liệu thành công từ Strava!';
                 return finalClubData;
