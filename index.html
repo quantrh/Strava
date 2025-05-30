@@ -928,13 +928,7 @@
             const stravaStatus = document.getElementById('strava-status');
             stravaStatus.textContent = 'Đang tải dữ liệu từ Strava...';
 
-            // IMPORTANT: In a real application, you'd fetch real data here.
-            // For this local learning example, we'll return a mock dataset
-            // to simulate a successful API call without needing real Strava data.
-            // Replace this with actual fetch logic for production.
             try {
-                // Example of a real fetch call (commented out for safety/mocking):
-                /*
                 const response = await fetch(`https://www.strava.com/api/v3/clubs/${clubId}/activities?per_page=200`, {
                     headers: {
                         'Authorization': `Bearer ${accessToken}`
@@ -947,69 +941,40 @@
                 }
 
                 const activities = await response.json();
+                console.log("Fetched Strava Activities:", activities);
+
                 // Process these activities into the format expected by loadRunsFromLocalStorage
-                // This step is complex and depends on how you want to map Strava activity data
-                // (e.g., activity.distance, activity.moving_time, activity.type, activity.athlete.firstname/lastname)
-                // to your 'runnerName', 'runs', 'distance', 'time', 'type' structure.
-                // For learning, we'll return fixed mock data.
-                */
+                const processedData = {}; // Object to group runs by runner name
 
-                // Mock data to simulate API response for learning purposes
-                const mockClubActivities = [
-                    { runnerName: 'Nguyễn Văn A', runs: [
-                        { date: '2025-05-20', distance: 10.5, time: 50, type: 'Chạy bộ' }, // Pace: 4.76
-                        { date: '2025-05-22', distance: 8.0, time: 40, type: 'Chạy bộ' }, // Pace: 5.0
-                        { date: '2025-05-24', distance: 7.0, time: 35, type: 'Chạy bộ' }  // Pace: 5.0
-                    ]},
-                    { runnerName: 'Trần Thị B', runs: [
-                        { date: '2025-05-21', distance: 12.0, time: 60, type: 'Chạy bộ' }, // Pace: 5.0
-                        { date: '2025-05-23', distance: 10.0, time: 50, type: 'Chạy bộ' }, // Pace: 5.0
-                        { date: '2025-05-25', distance: 5.0, time: 25, type: 'Đi bộ' }  // Pace: 5.0
-                    ]},
-                    { runnerName: 'Lê Văn C', runs: [
-                        { date: '2025-05-20', distance: 15.0, time: 70, type: 'Chạy bộ' }, // Pace: 4.67
-                        { date: '2025-05-22', distance: 10.0, time: 45, type: 'Chạy bộ' }, // Pace: 4.5
-                        { date: '2025-05-24', distance: 12.0, time: 55, type: 'Đạp xe' }, // Pace: 4.58 (not subject to pace rule)
-                        { date: '2025-05-26', distance: 8.0, time: 40, type: 'Chạy bộ' }  // Pace: 5.0
-                    ]},
-                    { runnerName: 'Phạm Thị D', runs: [
-                        { date: '2025-05-21', distance: 6.0, time: 30, type: 'Đi bộ' }, // Pace: 5.0
-                        { date: '2025-05-23', distance: 7.5, time: 38, type: 'Đi bộ' }, // Pace: 5.07
-                        { date: '2025-05-24', distance: 1.0, time: 15, type: 'Đi bộ' }  // Pace: 15.0 (Invalid)
-                    ]},
-                    { runnerName: 'Vũ Minh E', runs: [
-                        { date: '2025-05-20', distance: 2.0, time: 15, type: 'Chạy bộ' }, // Pace: 7.5
-                        { date: '2025-05-25', distance: 3.0, time: 20, type: 'Đi bộ' }, // Pace: 6.67
-                        { date: '2025-05-26', distance: 5.0, time: 10, type: 'Bơi lội' }  // Pace: 2.0 (not subject to pace rule)
-                    ]},
-                    { runnerName: 'Đặng Thị F', runs: [
-                        { date: '2025-05-27', distance: 20.0, time: 40, type: 'Đạp xe' }, // Pace: 2.0 (not subject to pace rule)
-                        { date: '2025-05-28', distance: 1.0, time: 20, type: 'Đi bộ' } // Pace: 20.0 (Invalid)
-                    ]},
-                    { runnerName: 'Nguyễn Thanh G', runs: [
-                        { date: '2025-05-20', distance: 1.0, time: 5, type: 'Bơi lội' },
-                        { date: '2025-05-22', distance: 10.0, time: 25, type: 'Đạp xe' },
-                        { date: '2025-05-24', distance: 0.5, time: 30, type: 'Yoga' }
-                    ]},
-                    { runnerName: 'Hoàng Văn H', runs: [
-                        { date: '2025-05-21', distance: 8.0, time: 40, type: 'Chạy bộ' },
-                        { date: '2025-05-23', distance: 3.0, time: 45, type: 'Đi bộ' }, // Pace: 15.0 (Invalid)
-                        { date: '2025-05-25', distance: 15.0, time: 30, type: 'Đạp xe' }
-                    ]},
-                    { runnerName: 'Võ Trọng I', runs: [
-                        { date: '2025-05-28', distance: 5.0, time: 20, type: 'Chạy bộ' },
-                        { date: '2025-05-29', distance: 2.0, time: 10, type: 'Đi bộ' },
-                        { date: '2025-05-30', distance: 1.0, time: 60, type: 'Leo núi' } // New activity type
-                    ]}
-                ];
+                activities.forEach(activity => {
+                    const runnerName = `${activity.athlete.firstname} ${activity.athlete.lastname}`;
+                    const activityType = activity.type; // e.g., 'Run', 'Ride', 'Swim'
+                    const distanceKm = (activity.distance / 1000).toFixed(1); // Convert meters to KM
+                    const timeMinutes = (activity.moving_time / 60).toFixed(0); // Convert seconds to minutes
+                    const date = new Date(activity.start_date_local).toISOString().split('T')[0]; // YYYY-MM-DD
 
-                stravaStatus.textContent = 'Đã tải dữ liệu thành công (dữ liệu mô phỏng)!';
-                return mockClubActivities;
+                    if (!processedData[runnerName]) {
+                        processedData[runnerName] = { runnerName: runnerName, runs: [] };
+                    }
+
+                    processedData[runnerName].runs.push({
+                        date: date,
+                        distance: parseFloat(distanceKm),
+                        time: parseFloat(timeMinutes),
+                        type: activityType // Use original Strava type, or map to your custom types if needed
+                    });
+                });
+
+                // Convert processedData object back to array format
+                const finalClubData = Object.values(processedData);
+
+                stravaStatus.textContent = 'Đã tải dữ liệu thành công từ Strava!';
+                return finalClubData;
 
             } catch (error) {
                 console.error("Lỗi khi tải dữ liệu Strava:", error);
                 stravaStatus.textContent = `Lỗi: ${error.message}. Kiểm tra ACCESS_TOKEN hoặc CLUB_ID.`;
-                displayMessageModal('Lỗi tải dữ liệu Strava', `Không thể tải dữ liệu: ${error.message}.`);
+                displayMessageModal('Lỗi tải dữ liệu Strava', `Không thể tải dữ liệu: ${error.message}. Vui lòng kiểm tra Access Token và Club ID.`);
                 return null; // Return null on error
             }
         }
@@ -1018,9 +983,10 @@
         // Event Listeners
         document.addEventListener('DOMContentLoaded', async () => {
             await authenticateFirebase();
-            const allClubData = loadRunsFromLocalStorage(); // Load data once on DOMContentLoaded
-            generateActivityTypeFilters(allClubData); // Generate filters based on loaded data
-            loadAndClassifyData(); // Initial load of data and classification
+            // Initial load from local storage (will be mock data if no real data fetched yet)
+            const initialClubData = loadRunsFromLocalStorage();
+            generateActivityTypeFilters(initialClubData);
+            loadAndClassifyData();
 
             const classifyBtn = document.getElementById('classifyBtn');
             const classifyCustomKm = document.getElementById('classifyCustomKm');
