@@ -291,7 +291,18 @@
         import { STRAVA_CLIENT_ID, STRAVA_CLUB_ID, STRAVA_ACCESS_TOKEN } from './config.js';
 
         // Firebase configuration (provided globally by Canvas environment)
-        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+        // Nếu chạy cục bộ, __firebase_config sẽ undefined, nên cần cung cấp cấu hình mặc định.
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ?
+            JSON.parse(__firebase_config) :
+            {
+                apiKey: "YOUR_FIREBASE_API_KEY", // Có thể để trống nếu chỉ dùng projectId
+                authDomain: "YOUR_FIREBASE_PROJECT_ID.firebaseapp.com",
+                projectId: "YOUR_FIREBASE_PROJECT_ID", // THAY THẾ BẰNG PROJECT ID CỦA BẠN NẾU CÓ
+                storageBucket: "YOUR_FIREBASE_PROJECT_ID.appspot.com",
+                messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+                appId: "YOUR_FIREBASE_APP_ID"
+            };
+
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
         const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
 
@@ -761,7 +772,7 @@
             llmAnalysisContent.innerHTML = `
                 <div class="flex flex-col justify-center items-center h-full">
                     <div class="spinner"></div>
-                    <p class="ml-3 text-lg font-medium text-gray-700 mt-4">Đang tạo phân tích...</p>
+                    <p class="ml-3 text-lg font-medium">Đang tạo phân tích...</p>
                 </div>
             `;
 
@@ -951,7 +962,7 @@
                     const activityType = activity.type; // e.g., 'Run', 'Ride', 'Swim'
                     const distanceKm = (activity.distance / 1000).toFixed(1); // Convert meters to KM
                     const timeMinutes = (activity.moving_time / 60).toFixed(0); // Convert seconds to minutes
-                    const date = new Date(activity.start_date_local).toISOString().split('T')[0]; // YYYY-MM-DD
+                    const date = new Date(activity.start_date_local).toISOString().split('T')[0]; //YYYY-MM-DD
 
                     if (!processedData[runnerName]) {
                         processedData[runnerName] = { runnerName: runnerName, runs: [] };
