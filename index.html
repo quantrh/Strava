@@ -1043,27 +1043,23 @@
                     try {
                         // Detailed validation for critical fields
                         if (!activity.athlete) {
-                            console.warn('Skipping activity (Missing athlete object):', activity);
+                            console.warn(`Skipping activity (ID: ${activity.id || 'N/A'}): Missing athlete object.`, activity);
                             return;
                         }
                         if (!activity.athlete.firstname || !activity.athlete.lastname) {
-                            console.warn('Skipping activity (Missing athlete name):', activity);
-                            return;
-                        }
-                        if (!activity.start_date_local) {
-                            console.warn('Skipping activity (Missing start_date_local):', activity);
+                            console.warn(`Skipping activity (ID: ${activity.id || 'N/A'}): Missing athlete name.`, activity);
                             return;
                         }
                         if (typeof activity.distance === 'undefined' || activity.distance === null) {
-                            console.warn('Skipping activity (Missing or null distance):', activity);
+                            console.warn(`Skipping activity (ID: ${activity.id || 'N/A'}): Missing or null distance.`, activity);
                             return;
                         }
                         if (typeof activity.moving_time === 'undefined' || activity.moving_time === null) {
-                            console.warn('Skipping activity (Missing or null moving_time):', activity);
+                            console.warn(`Skipping activity (ID: ${activity.id || 'N/A'}): Missing or null moving_time.`, activity);
                             return;
                         }
                         if (!activity.type) {
-                            console.warn('Skipping activity (Missing activity type):', activity);
+                            console.warn(`Skipping activity (ID: ${activity.id || 'N/A'}): Missing activity type.`, activity);
                             return;
                         }
 
@@ -1075,23 +1071,32 @@
                         const movingTimeSeconds = parseFloat(activity.moving_time);
 
                         if (isNaN(distanceMeters)) {
-                            console.warn('Skipping activity (Non-numeric distance):', activity);
+                            console.warn(`Skipping activity (ID: ${activity.id || 'N/A'}): Non-numeric distance.`, activity);
                             return;
                         }
                         if (isNaN(movingTimeSeconds)) {
-                            console.warn('Skipping activity (Non-numeric moving time):', activity);
+                            console.warn(`Skipping activity (ID: ${activity.id || 'N/A'}): Non-numeric moving time.`, activity);
                             return;
                         }
 
                         const distanceKm = (distanceMeters / 1000).toFixed(1); // Convert meters to KM
                         const timeMinutes = (movingTimeSeconds / 60).toFixed(0); // Convert seconds to minutes
 
-                        const date = new Date(activity.start_date_local);
-                        if (isNaN(date.getTime())) { // Check if date parsing resulted in an invalid date
-                            console.warn('Skipping activity (Invalid date string for start_date_local):', activity);
-                            return;
+                        let formattedDate;
+                        if (!activity.start_date_local) {
+                            console.warn(`Skipping activity (ID: ${activity.id || 'N/A'}): start_date_local is missing or empty.`);
+                            return; // Skip if date string is missing
                         }
-                        const formattedDate = date.toISOString().split('T')[0]; //YYYY-MM-DD
+                        try {
+                            const date = new Date(activity.start_date_local);
+                            if (isNaN(date.getTime())) {
+                                throw new Error('Invalid date format');
+                            }
+                            formattedDate = date.toISOString().split('T')[0]; //YYYY-MM-DD
+                        } catch (dateError) {
+                            console.warn(`Skipping activity (ID: ${activity.id || 'N/A'}): Invalid date string for start_date_local: '${activity.start_date_local}'. Error: ${dateError.message}`, activity);
+                            return; // Skip if date parsing fails
+                        }
 
                         if (!processedData[runnerName]) {
                             processedData[runnerName] = { runnerName: runnerName, runs: [] };
@@ -1107,7 +1112,7 @@
                             type: mappedActivityType // Use the mapped type
                         });
                     } catch (activityError) {
-                        console.error('Error processing single activity:', activityError, activity);
+                        console.error(`Error processing single activity (ID: ${activity.id || 'N/A'}):`, activityError, activity);
                     }
                 });
 
