@@ -958,18 +958,42 @@
                 const processedData = {}; // Object to group runs by runner name
 
                 activities.forEach(activity => {
+                    // Basic validation for critical fields
+                    if (!activity.athlete || !activity.athlete.firstname || !activity.athlete.lastname ||
+                        !activity.start_date_local || typeof activity.distance === 'undefined' ||
+                        typeof activity.moving_time === 'undefined' || !activity.type) {
+                        console.warn('Skipping activity due to missing/invalid data:', activity);
+                        return; // Skip this activity if critical data is missing
+                    }
+
                     const runnerName = `${activity.athlete.firstname} ${activity.athlete.lastname}`;
                     const activityType = activity.type; // e.g., 'Run', 'Ride', 'Swim'
-                    const distanceKm = (activity.distance / 1000).toFixed(1); // Convert meters to KM
-                    const timeMinutes = (activity.moving_time / 60).toFixed(0); // Convert seconds to minutes
-                    const date = new Date(activity.start_date_local).toISOString().split('T')[0]; //YYYY-MM-DD
+
+                    // Ensure distance and time are valid numbers before processing
+                    const distanceMeters = parseFloat(activity.distance);
+                    const movingTimeSeconds = parseFloat(activity.moving_time);
+
+                    if (isNaN(distanceMeters) || isNaN(movingTimeSeconds)) {
+                        console.warn('Skipping activity due to non-numeric distance or time:', activity);
+                        return;
+                    }
+
+                    const distanceKm = (distanceMeters / 1000).toFixed(1); // Convert meters to KM
+                    const timeMinutes = (movingTimeSeconds / 60).toFixed(0); // Convert seconds to minutes
+
+                    const date = new Date(activity.start_date_local);
+                    if (isNaN(date.getTime())) { // Check if date parsing resulted in an invalid date
+                        console.warn('Skipping activity due to invalid date string:', activity.start_date_local, activity);
+                        return;
+                    }
+                    const formattedDate = date.toISOString().split('T')[0]; //YYYY-MM-DD
 
                     if (!processedData[runnerName]) {
                         processedData[runnerName] = { runnerName: runnerName, runs: [] };
                     }
 
                     processedData[runnerName].runs.push({
-                        date: date,
+                        date: formattedDate,
                         distance: parseFloat(distanceKm),
                         time: parseFloat(timeMinutes),
                         type: activityType // Use original Strava type, or map to your custom types if needed
