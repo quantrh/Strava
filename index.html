@@ -78,6 +78,9 @@
                 Để lấy dữ liệu thành tích của câu lạc bộ, bạn cần kết nối tài khoản Strava.
                 <br><strong class="text-red-600">CẢNH BÁO: Đây là phiên bản học tập cục bộ không bảo mật. Không triển khai công khai!</strong>
             </p>
+            <div class="flex flex-col sm:flex-row gap-4 mb-4">
+                <input type="text" id="strava-club-id-input" placeholder="Nhập ID Câu lạc bộ Strava" class="flex-grow p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-bidv-green focus:border-bidv-green transition duration-150 ease-in-out">
+            </div>
             <button id="connect-strava-btn" class="w-full bg-bidv-green hover:bg-bidv-green-darker text-white font-bold py-3 px-6 rounded-lg transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-bidv-green focus:ring-opacity-50">
                 Tải Dữ liệu Strava
             </button>
@@ -277,13 +280,17 @@
     </div>
 
     <script type="module">
-        // Import configuration from config.js
-        // CẢNH BÁO: STRAVA_ACCESS_TOKEN được import trực tiếp, KHÔNG AN TOÀN CHO MÔI TRƯỜNG CÔNG CỘNG.
-        import { STRAVA_CLIENT_ID, STRAVA_CLUB_ID, STRAVA_ACCESS_TOKEN } from './config.js';
+        // Import configuration from config.js (Removed for security, now using Supabase Edge Function)
+        // import { STRAVA_CLIENT_ID, STRAVA_CLUB_ID, STRAVA_ACCESS_TOKEN } from './config.js';
 
-        let currentUserId = null; // To store the authenticated user ID (no longer used for auth, but kept for potential future expansion)
+        // ** Thay thế bằng URL Edge Function của bạn sau khi triển khai lên Supabase **
+        const SUPABASE_EDGE_FUNCTION_URL = 'https://rmbsxccrwrktbjlnezpu.supabase.co/functions/v1/rapid-api'; 
+        // Ví dụ: const SUPABASE_EDGE_FUNCTION_URL = 'https://YOUR_PROJECT_REF.supabase.co/functions/v1/strava-proxy';
 
-        // Authenticate user (Removed as Firebase is no longer used for auth)
+
+        let currentUserId = null; // No longer used for Firebase auth, but kept for potential future expansion
+
+        // Firebase authentication (Removed as it's not strictly necessary for this app's core functionality)
         async function authenticateFirebase() {
             // This function is now a no-op, but retained to avoid breaking calls in DOMContentLoaded
         }
@@ -928,7 +935,7 @@
         // Hide modal if clicked outside
         document.getElementById('llm-analysis-modal').addEventListener('click', (e) => {
             if (e.target === document.getElementById('llm-analysis-modal')) {
-                document.getElementById('llm-analysis-modal').classList.add('hidden');
+                document.getElementById('llm-analysis-modal').remove();
             }
         });
 
@@ -1015,26 +1022,34 @@
             }
         }
 
-        // --- NEW STRAVA API CALL LOGIC ---
-        // Function to fetch club activities from Strava API
-        async function fetchStravaClubActivities(accessToken, clubId) {
+        // --- NEW STRAVA API CALL LOGIC (via Supabase Edge Function) ---
+        async function fetchStravaClubActivities(clubId) {
             const stravaStatus = document.getElementById('strava-status');
-            stravaStatus.textContent = 'Đang tải dữ liệu từ Strava...';
+            stravaStatus.textContent = 'Đang tải dữ liệu từ Strava qua Supabase Edge Function...';
+
+            if (SUPABASE_EDGE_FUNCTION_URL === 'YOUR_SUPABASE_EDGE_FUNCTION_URL') {
+                displayMessageModal('Lỗi cấu hình', 'Vui lòng thay thế YOUR_SUPABASE_EDGE_FUNCTION_URL bằng URL Edge Function thực tế của bạn.');
+                stravaStatus.textContent = 'Lỗi cấu hình Edge Function URL.';
+                return null;
+            }
 
             try {
-                const response = await fetch(`https://www.strava.com/api/v3/clubs/${clubId}/activities?per_page=200`, {
+                const response = await fetch(SUPABASE_EDGE_FUNCTION_URL, {
+                    method: 'POST',
                     headers: {
-                        'Authorization': `Bearer ${accessToken}`
-                    }
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ clubId: clubId }),
                 });
 
                 if (!response.ok) {
                     const errorDetails = await response.json();
-                    throw new Error(`Lỗi tải dữ liệu Strava: ${response.status} - ${errorDetails.message || 'Unknown error'}`);
+                    throw new Error(`Lỗi từ Edge Function: ${response.status} - ${errorDetails.error || 'Unknown error'}`);
                 }
 
-                const activities = await response.json();
-                console.log("Fetched Strava Activities:", activities);
+                const data = await response.json();
+                const activities = data.activities; // Edge Function trả về đối tượng { activities: [...] }
+                console.log("Fetched Strava Activities via Edge Function:", activities);
 
                 // Process these activities into the format expected by loadRunsFromLocalStorage
                 const processedData = {}; // Object to group runs by runner name
@@ -1124,9 +1139,9 @@
                 return finalClubData;
 
             } catch (error) {
-                console.error("Lỗi khi tải dữ liệu Strava:", error);
-                stravaStatus.textContent = `Lỗi: ${error.message}. Kiểm tra ACCESS_TOKEN hoặc CLUB_ID.`;
-                displayMessageModal('Lỗi tải dữ liệu Strava', `Không thể tải dữ liệu: ${error.message}. Vui lòng kiểm tra Access Token và Club ID.`);
+                console.error("Lỗi khi tải dữ liệu Strava qua Edge Function:", error);
+                stravaStatus.textContent = `Lỗi: ${error.message}. Vui lòng kiểm tra Edge Function và cấu hình Strava.`;
+                displayMessageModal('Lỗi tải dữ liệu Strava', `Không thể tải dữ liệu: ${error.message}. Vui lòng kiểm tra Edge Function và cấu hình Strava.`);
                 return null; // Return null on error
             }
         }
@@ -1147,6 +1162,7 @@
             const weekSelect = document.getElementById('week-select');
             const connectStravaBtn = document.getElementById('connect-strava-btn'); // Get the Strava connect button
             const stravaStatus = document.getElementById('strava-status');
+            const stravaClubIdInput = document.getElementById('strava-club-id-input');
 
 
             const exportGoalMetBtn = document.getElementById('export-goal-met-btn');
@@ -1155,17 +1171,14 @@
 
             // Handle Strava connection button click
             connectStravaBtn.addEventListener('click', async () => {
-                if (!STRAVA_ACCESS_TOKEN || STRAVA_ACCESS_TOKEN === 'YOUR_STRAVA_PERSONAL_ACCESS_TOKEN') {
-                    displayMessageModal('Lỗi cấu hình', 'Vui lòng thay thế YOUR_STRAVA_PERSONAL_ACCESS_TOKEN trong config.js bằng Access Token thật của bạn.');
-                    return;
-                }
-                if (!STRAVA_CLUB_ID || STRAVA_CLUB_ID === 'YOUR_STRAVA_CLUB_ID') {
-                    displayMessageModal('Lỗi cấu hình', 'Vui lòng thay thế YOUR_STRAVA_CLUB_ID trong config.js bằng ID câu lạc bộ Strava của bạn.');
+                const clubId = stravaClubIdInput.value.trim();
+                if (!clubId) {
+                    displayMessageModal('Thiếu ID Câu lạc bộ', 'Vui lòng nhập ID Câu lạc bộ Strava của bạn.');
                     return;
                 }
 
                 // Call the function to fetch data directly
-                const fetchedData = await fetchStravaClubActivities(STRAVA_ACCESS_TOKEN, STRAVA_CLUB_ID);
+                const fetchedData = await fetchStravaClubActivities(clubId);
 
                 if (fetchedData) {
                     saveRunsToLocalStorage(fetchedData); // Save fetched data to local storage
