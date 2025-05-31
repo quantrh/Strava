@@ -23,4 +23,4 @@ export const STRAVA_CLUB_ID = '479705';
 // 2. Tại đó sẽ có một Access Token được tạo sẵn cho ứng dụng của bạn.
 // Hoặc bạn có thể dùng Postman/cURL để thực hiện quy trình OAuth2 và lấy token.
 // TOKEN NÀY CHỈ CÓ HIỆU LỰC TRONG VÀI GIỜ VÀ KHÔNG ĐƯỢC LÀM MỚI TỰ ĐỘNG BẰNG CÁCH NÀY.
-export const STRAVA_ACCESS_TOKEN = 'b2800220b4445cc2f8497ecee4c180be831d9cce'; // THAY THẾ BẰNG TOKEN CỦA BẠN!
+export const STRAVA_ACCESS_TOKEN = '96a709267cbd9fd6f2f6ad1366caf75f2a60f010'; // THAY THẾ BẰNG TOKEN CỦA BẠN!
