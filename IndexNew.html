@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Strava Dashboard - BIDV Style</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        /* Custom BIDV Colors */
+        .bg-bidv-blue { background-color: #006B68; } /* Updated BIDV Blue */
+        .text-bidv-blue { color: #006B68; } /* Updated BIDV Blue */
+        .bg-bidv-yellow { background-color: #ffc62f; } /* Updated BIDV Yellow */
+        .text-bidv-yellow { color: #ffc62f; } /* Updated BIDV Yellow */
+        .border-bidv-blue { border-color: #006B68; } /* Updated BIDV Blue */
+        .border-bidv-yellow { border-color: #ffc62f; } /* Updated BIDV Yellow */
+
+        /* Inter font for better readability */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f2f5; /* Light grey background */
+        }
+        /* Custom scrollbar for better aesthetics */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+    <header class="bg-bidv-blue text-white p-4 shadow-md">
+        <div class="container mx-auto flex justify-between items-center">
+            <h1 class="text-2xl font-bold">
+                <i class="fas fa-running text-bidv-yellow mr-2"></i>Strava Dashboard
+            </h1>
+            <nav>
+                <button id="logoutBtn" class="bg-bidv-yellow text-bidv-blue px-4 py-2 rounded-lg font-semibold hover:bg-yellow-400 transition duration-300 ease-in-out shadow-md">
+                    <i class="fas fa-sign-out-alt mr-1"></i> Đăng xuất
+                </button>
+            </nav>
+        </div>
+    </header>
+
+    <main class="flex-grow container mx-auto p-4 flex flex-col md:flex-row gap-6">
+        <div id="authSection" class="w-full md:w-1/3 bg-white p-6 rounded-lg shadow-lg flex flex-col items-center justify-center space-y-6">
+            <h2 class="text-3xl font-bold text-bidv-blue mb-4">Chào mừng!</h2>
+            <p class="text-gray-700 text-center mb-6">Đăng nhập hoặc đăng ký để bắt đầu xem hoạt động Strava của bạn.</p>
+
+            <div class="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 w-full max-w-sm rounded-lg" role="alert">
+                <p class="font-bold">Để kiểm tra nhanh:</p>
+                <p>Email: <code>test@example.com</code></p>
+                <p>Mật khẩu: <code>test</code></p>
+                <p class="text-xs mt-1">Vui lòng tạo tài khoản này trong bảng điều khiển Supabase của bạn trước.</p>
+            </div>
+
+            <form id="loginForm" class="w-full max-w-sm space-y-4">
+                <input type="email" id="loginEmail" placeholder="Email" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-bidv-blue transition duration-200">
+                <input type="password" id="loginPassword" placeholder="Mật khẩu" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-bidv-blue transition duration-200">
+                <button type="submit" class="w-full bg-bidv-blue text-white p-3 rounded-lg font-semibold hover:bg-blue-700 transition duration-300 ease-in-out shadow-md">
+                    <i class="fas fa-sign-in-alt mr-2"></i> Đăng nhập
+                </button>
+            </form>
+
+            <p class="text-gray-600">Hoặc</p>
+
+            <form id="registerForm" class="w-full max-w-sm space-y-4">
+                <input type="email" id="registerEmail" placeholder="Email" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-bidv-blue transition duration-200">
+                <input type="password" id="registerPassword" placeholder="Mật khẩu" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-bidv-blue transition duration-200">
+                <button type="submit" class="w-full bg-bidv-yellow text-bidv-blue p-3 rounded-lg font-semibold hover:bg-yellow-400 transition duration-300 ease-in-out shadow-md">
+                    <i class="fas fa-user-plus mr-2"></i> Đăng ký
+                </button>
+            </form>
+        </div>
+
+        <div id="dashboardSection" class="w-full md:w-2/3 bg-white p-6 rounded-lg shadow-lg hidden flex flex-col">
+            <h2 class="text-3xl font-bold text-bidv-blue mb-6 border-b-2 border-bidv-blue pb-2">
+                <i class="fas fa-tachometer-alt mr-2 text-bidv-yellow"></i>Bảng điều khiển Strava
+            </h2>
+
+            <div class="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                <h3 class="text-xl font-semibold text-gray-800 mb-3">
+                    <i class="fas fa-user-circle mr-2 text-bidv-blue"></i>Tài khoản của bạn
+                </h3>
+                <p class="text-gray-700 mb-2">Email: <span id="userEmail" class="font-medium"></span></p>
+                <p class="text-gray-700 mb-2">User ID: <span id="userIdDisplay" class="font-medium text-sm text-gray-500"></span></p>
+
+                <div id="stravaConnectSection" class="mt-4">
+                    <h4 class="text-lg font-semibold text-gray-800 mb-2">
+                        <i class="fab fa-strava mr-2 text-orange-500"></i>Kết nối Strava
+                    </h4>
+                    <p class="text-gray-600 mb-3">Để xem hoạt động, bạn cần kết nối tài khoản Strava của mình.</p>
+                    <input type="text" id="stravaClientId" placeholder="Nhập Strava Client ID của bạn" class="w-full p-3 border border-gray-300 rounded-lg mb-3 focus:outline-none focus:ring-2 focus:ring-bidv-blue transition duration-200">
+                    <button id="connectStravaBtn" class="bg-orange-500 text-white px-5 py-3 rounded-lg font-semibold hover:bg-orange-600 transition duration-300 ease-in-out shadow-md">
+                        <i class="fab fa-strava mr-2"></i> Kết nối với Strava
+                    </button>
+                    <p id="stravaStatus" class="mt-2 text-sm text-gray-500"></p>
+                </div>
+
+                <div id="stravaConnectedSection" class="mt-4 hidden">
+                    <h4 class="text-lg font-semibold text-gray-800 mb-2">
+                        <i class="fas fa-check-circle mr-2 text-green-500"></i>Đã kết nối Strava!
+                    </h4>
+                    <p class="text-gray-700 mb-2">Athlete ID: <span id="stravaAthleteIdDisplay" class="font-medium"></span></p>
+                    <p class="text-gray-700 text-sm">
+                        <span id="stravaTokenExpires" class="text-gray-500"></span>
+                    </p>
+                    <button id="disconnectStravaBtn" class="mt-3 bg-red-500 text-white px-4 py-2 rounded-lg font-semibold hover:bg-red-600 transition duration-300 ease-in-out shadow-md">
+                        <i class="fas fa-unlink mr-2"></i> Ngắt kết nối Strava
+                    </button>
+                </div>
+            </div>
+
+            <div class="flex-grow">
+                <h3 class="text-xl font-semibold text-gray-800 mb-3">
+                    <i class="fas fa-list-alt mr-2 text-bidv-blue"></i>Hoạt động gần đây
+                </h3>
+                <button id="fetchActivitiesBtn" class="bg-bidv-blue text-white px-4 py-2 rounded-lg font-semibold hover:bg-blue-700 transition duration-300 ease-in-out shadow-md mb-4">
+                    <i class="fas fa-sync-alt mr-2"></i> Tải hoạt động
+                </button>
+                <div id="activitiesLoading" class="text-center text-gray-500 hidden">
+                    <i class="fas fa-spinner fa-spin text-2xl text-bidv-blue"></i> Đang tải hoạt động...
+                </div>
+                <div id="activitiesList" class="space-y-4 max-h-96 overflow-y-auto pr-2">
+                    <p class="text-gray-500 text-center" id="noActivitiesMessage">Chưa có hoạt động nào được tải. Hãy kết nối Strava và tải hoạt động.</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="bg-gray-800 text-white p-4 text-center text-sm">
+        <div class="container mx-auto">
+            &copy; 2025 Strava Dashboard. Powered by BIDV Style.
+        </div>
+    </footer>
+
+    <script type="module">
+        // Import createClient from Supabase library
+        import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
+
+        // Global variables provided by the Canvas environment
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+        // Initialize Supabase Client
+        // Replace with your actual Supabase project URL and Anon Key
+        const SUPABASE_URL = 'https://rmbsxccrwrktbjlnezpu.supabase.co'; // e.g., 'https://abcde12345.supabase.co'
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJtYnN4Y2Nyd3JrdGJqbG5lenB1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg2MjczNjQsImV4cCI6MjA2NDIwMzM2NH0.ydCqificftdtn1niRciFCifeuo8aX6SDGti-hCY5Z_Y'; // e.g., 'eyJhbGciOiJIUzI1Ni...'
+
+
+
+
+
+
+        // IMPORTANT: Replace with the actual URL of your deployed Supabase Edge Function
+        const STRAVA_OAUTH_FUNCTION_URL = 'https://rmbsxccrwrktbjlnezpu.supabase.co/functions/v1/bright-worker'; 
+	// e.g., 'https://<your-project-ref>.supabase.co/functions/v1/strava-oauth'
+
+        // Use the imported createClient function
+        const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // DOM Elements
+        const authSection = document.getElementById('authSection');
+        const dashboardSection = document.getElementById('dashboardSection');
+        const loginForm = document.getElementById('loginForm');
+        const registerForm = document.getElementById('registerForm');
+        const logoutBtn = document.getElementById('logoutBtn');
+        const userEmailSpan = document.getElementById('userEmail');
+        const userIdDisplay = document.getElementById('userIdDisplay');
+        const stravaConnectSection = document.getElementById('stravaConnectSection');
+        const stravaConnectedSection = document.getElementById('stravaConnectedSection');
+        const stravaClientIdInput = document.getElementById('stravaClientId');
+        const connectStravaBtn = document.getElementById('connectStravaBtn');
+        const disconnectStravaBtn = document.getElementById('disconnectStravaBtn');
+        const stravaStatus = document.getElementById('stravaStatus');
+        const stravaAthleteIdDisplay = document.getElementById('stravaAthleteIdDisplay');
+        const stravaTokenExpires = document.getElementById('stravaTokenExpires');
+        const fetchActivitiesBtn = document.getElementById('fetchActivitiesBtn');
+        const activitiesLoading = document.getElementById('activitiesLoading');
+        const activitiesList = document.getElementById('activitiesList');
+        const noActivitiesMessage = document.getElementById('noActivitiesMessage');
+
+        let currentUserId = null;
+        let currentUserEmail = null;
+
+        // --- Supabase Authentication ---
+        async function handleAuthChange(session) {
+            if (session) {
+                currentUserId = session.user.id;
+                currentUserEmail = session.user.email;
+                userEmailSpan.textContent = currentUserEmail;
+                userIdDisplay.textContent = currentUserId;
+                authSection.classList.add('hidden');
+                dashboardSection.classList.remove('hidden');
+                await loadUserProfile();
+            } else {
+                currentUserId = null;
+                currentUserEmail = null;
+                authSection.classList.remove('hidden');
+                dashboardSection.classList.add('hidden');
+            }
+        }
+
+        // Listen for auth state changes
+        supabase.auth.onAuthStateChange((event, session) => {
+            handleAuthChange(session);
+        });
+
+        // Initial check for session
+        supabase.auth.getSession().then(({ data: { session } }) => {
+            handleAuthChange(session);
+        });
+
+        // Login
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = loginEmail.value;
+            const password = loginPassword.value;
+            try {
+                const { error } = await supabase.auth.signInWithPassword({ email, password });
+                if (error) throw error;
+                alertMessage('Đăng nhập thành công!', 'success');
+            } catch (error) {
+                alertMessage(`Lỗi đăng nhập: ${error.message}`, 'error');
+            }
+        });
+
+        // Register
+        registerForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = registerEmail.value;
+            const password = registerPassword.value;
+            try {
+                const { error } = await supabase.auth.signUp({ email, password });
+                if (error) throw error;
+                alertMessage('Đăng ký thành công! Vui lòng kiểm tra email để xác nhận.', 'success');
+            } catch (error) {
+                alertMessage(`Lỗi đăng ký: ${error.message}`, 'error');
+            }
+        });
+
+        // Logout
+        logoutBtn.addEventListener('click', async () => {
+            try {
+                const { error } = await supabase.auth.signOut();
+                if (error) throw error;
+                alertMessage('Đã đăng xuất.', 'info');
+                // Clear activities and Strava status on logout
+                activitiesList.innerHTML = '<p class="text-gray-500 text-center" id="noActivitiesMessage">Chưa có hoạt động nào được tải. Hãy kết nối Strava và tải hoạt động.</p>';
+                stravaConnectSection.classList.remove('hidden');
+                stravaConnectedSection.classList.add('hidden');
+                stravaStatus.textContent = '';
+            } catch (error) {
+                alertMessage(`Lỗi đăng xuất: ${error.message}`, 'error');
+            }
+        });
+
+        // --- User Profile Management in Supabase ---
+        async function loadUserProfile() {
+            if (!currentUserId) return;
+
+            try {
+                const { data, error } = await supabase
+                    .from('users')
+                    .select('*')
+                    .eq('id', currentUserId)
+                    .single();
+
+                if (error && error.code !== 'PGRST116') { // PGRST116 means no rows found
+                    throw error;
+                }
+
+                if (data) {
+                    stravaClientIdInput.value = data.strava_client_id || '';
+                    if (data.strava_access_token && data.strava_refresh_token && data.strava_athlete_id) {
+                        stravaConnectSection.classList.add('hidden');
+                        stravaConnectedSection.classList.remove('hidden');
+                        stravaAthleteIdDisplay.textContent = data.strava_athlete_id;
+                        const expiresDate = new Date(data.strava_token_expires_at);
+                        stravaTokenExpires.textContent = `Token hết hạn vào: ${expiresDate.toLocaleString()}`;
+                    } else {
+                        stravaConnectSection.classList.remove('hidden');
+                        stravaConnectedSection.classList.add('hidden');
+                    }
+                } else {
+                    // Create a new user profile if not exists
+                    await supabase.from('users').insert({
+                        id: currentUserId,
+                        email: currentUserEmail,
+                        created_at: new Date().toISOString()
+                    });
+                }
+            } catch (error) {
+                alertMessage(`Lỗi tải hồ sơ người dùng: ${error.message}`, 'error');
+            }
+        }
+
+        async function saveUserProfile(profileData) {
+            if (!currentUserId) return;
+            try {
+                const { error } = await supabase
+                    .from('users')
+                    .update(profileData)
+                    .eq('id', currentUserId);
+                if (error) throw error;
+                alertMessage('Đã lưu thông tin hồ sơ.', 'success');
+            } catch (error) {
+                alertMessage(`Lỗi lưu hồ sơ người dùng: ${error.message}`, 'error');
+            }
+        }
+
+        // --- Strava OAuth Flow (Client-side initiation) ---
+        connectStravaBtn.addEventListener('click', async () => {
+            const clientId = stravaClientIdInput.value.trim();
+            if (!clientId) {
+                alertMessage('Vui lòng nhập Strava Client ID của bạn.', 'warning');
+                return;
+            }
+
+            // Save the client ID to user profile
+            await saveUserProfile({ strava_client_id: clientId });
+
+            // The redirect_uri must match the URL of your deployed Supabase Edge Function
+            // and also be registered in your Strava app settings.
+            const redirectUri = STRAVA_OAUTH_FUNCTION_URL; // This is the URL Strava will redirect to
+            const stravaAuthUrl = `https://www.strava.com/oauth/authorize?client_id=${clientId}&response_type=code&redirect_uri=${redirectUri}&approval_prompt=force&scope=activity:read_all`;
+
+            window.location.href = stravaAuthUrl;
+        });
+
+        disconnectStravaBtn.addEventListener('click', async () => {
+            // Clear Strava tokens and athlete ID from Supabase
+            await saveUserProfile({
+                strava_access_token: null,
+                strava_refresh_token: null,
+                strava_token_expires_at: null,
+                strava_athlete_id: null
+            });
+            stravaConnectSection.classList.remove('hidden');
+            stravaConnectedSection.classList.add('hidden');
+            stravaAthleteIdDisplay.textContent = '';
+            stravaTokenExpires.textContent = '';
+            activitiesList.innerHTML = '<p class="text-gray-500 text-center" id="noActivitiesMessage">Chưa có hoạt động nào được tải. Hãy kết nối Strava và tải hoạt động.</p>';
+            alertMessage('Đã ngắt kết nối Strava.', 'info');
+        });
+
+        // Handle Strava OAuth Redirect
+        async function handleStravaRedirect() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const code = urlParams.get('code');
+            const error = urlParams.get('error');
+
+            // Clear URL parameters immediately to prevent re-processing on refresh
+            window.history.replaceState({}, document.title, window.location.pathname);
+
+            if (error) {
+                alertMessage(`Lỗi kết nối Strava: ${error}`, 'error');
+                return;
+            }
+
+            if (code) {
+                stravaStatus.textContent = 'Đang trao đổi mã ủy quyền với Strava...';
+                try {
+                    // Fetch the client_id from the user's profile in Supabase
+                    const { data: userProfile, error: profileError } = await supabase
+                        .from('users')
+                        .select('strava_client_id')
+                        .eq('id', currentUserId)
+                        .single();
+
+                    if (profileError || !userProfile || !userProfile.strava_client_id) {
+                        throw new Error('Không tìm thấy Strava Client ID trong hồ sơ người dùng.');
+                    }
+
+                    const clientId = userProfile.strava_client_id;
+                    const redirectUri = STRAVA_OAUTH_FUNCTION_URL; // Must match the one sent to Strava
+
+                    const response = await fetch(STRAVA_OAUTH_FUNCTION_URL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            type: 'exchange_code',
+                            code: code,
+                            redirect_uri: redirectUri,
+                            client_id: clientId // Send client_id to Edge Function for logging/validation if needed
+                        })
+                    });
+                    const data = await response.json();
+
+                    if (!response.ok) {
+                        throw new Error(data.error || 'Failed to exchange code for tokens.');
+                    }
+
+                    // Save the received tokens and athlete ID to user profile
+                    await saveUserProfile({
+                        strava_access_token: data.access_token,
+                        strava_refresh_token: data.refresh_token,
+                        // Strava's expires_at is a Unix timestamp (seconds), convert to milliseconds for Date object
+                        strava_token_expires_at: new Date(data.expires_at * 1000).toISOString(),
+                        strava_athlete_id: data.athlete.id.toString() // Ensure it's a string
+                    });
+
+                    alertMessage('Kết nối Strava thành công!', 'success');
+                    stravaStatus.textContent = '';
+                    await loadUserProfile(); // Reload profile to update UI
+                } catch (e) {
+                    alertMessage(`Lỗi trao đổi token Strava: ${e.message}`, 'error');
+                    stravaStatus.textContent = `Lỗi: ${e.message}`;
+                }
+            }
+        }
+
+        // Call handleStravaRedirect on page load to check for OAuth code
+        // Ensure currentUserId is available before calling handleStravaRedirect
+        supabase.auth.getSession().then(({ data: { session } }) => {
+            if (session) {
+                currentUserId = session.user.id; // Ensure currentUserId is set
+                handleStravaRedirect();
+            } else {
+                // If not logged in, handleStravaRedirect won't have a user ID
+                // but we still want to clear the code from the URL
+                window.history.replaceState({}, document.title, window.location.pathname);
+            }
+        });
+
+
+        // --- Fetch Strava Activities ---
+        fetchActivitiesBtn.addEventListener('click', fetchStravaActivities);
+
+        async function fetchStravaActivities() {
+            if (!currentUserId) {
+                alertMessage('Vui lòng đăng nhập để xem hoạt động.', 'warning');
+                return;
+            }
+
+            activitiesLoading.classList.remove('hidden');
+            activitiesList.innerHTML = ''; // Clear previous activities
+            noActivitiesMessage.classList.add('hidden');
+
+            try {
+                const { data: userProfile, error: profileError } = await supabase
+                    .from('users')
+                    .select('strava_access_token, strava_athlete_id, strava_refresh_token, strava_token_expires_at')
+                    .eq('id', currentUserId)
+                    .single();
+
+                if (profileError) throw profileError;
+                if (!userProfile || !userProfile.strava_access_token || !userProfile.strava_athlete_id) {
+                    alertMessage('Vui lòng kết nối tài khoản Strava của bạn trước.', 'warning');
+                    activitiesLoading.classList.add('hidden');
+                    noActivitiesMessage.classList.remove('hidden');
+                    return;
+                }
+
+                let accessToken = userProfile.strava_access_token;
+                const tokenExpiresAt = new Date(userProfile.strava_token_expires_at);
+
+                // Check if token is expired or about to expire (e.g., within 5 minutes)
+                if (tokenExpiresAt < new Date(Date.now() + 5 * 60 * 1000)) {
+                    alertMessage('Token Strava đã hết hạn hoặc sắp hết hạn. Đang làm mới...', 'info');
+                    const newTokens = await refreshStravaTokenBackend(userProfile.strava_refresh_token);
+                    if (newTokens && newTokens.access_token) {
+                        accessToken = newTokens.access_token;
+                        await saveUserProfile({
+                            strava_access_token: newTokens.access_token,
+                            strava_refresh_token: newTokens.refresh_token,
+                            strava_token_expires_at: new Date(newTokens.expires_at * 1000).toISOString()
+                        });
+                        alertMessage('Token Strava đã được làm mới thành công.', 'success');
+                    } else {
+                        throw new Error('Không thể làm mới token Strava. Vui lòng kết nối lại.');
+                    }
+                }
+
+                // Fetch activities from Strava API
+                const stravaApiUrl = `https://www.strava.com/api/v3/athlete/activities?per_page=30`; // Fetch last 30 activities
+                const response = await fetch(stravaApiUrl, {
+                    headers: {
+                        'Authorization': `Bearer ${accessToken}`
+                    }
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    if (response.status === 401) {
+                         // Token invalid/expired, prompt to reconnect
+                        alertMessage('Token Strava không hợp lệ hoặc đã hết hạn. Vui lòng ngắt kết nối và kết nối lại Strava.', 'error');
+                        // Optionally, clear tokens from DB here
+                        await saveUserProfile({
+                            strava_access_token: null,
+                            strava_refresh_token: null,
+                            strava_token_expires_at: null,
+                            strava_athlete_id: null
+                        });
+                        stravaConnectSection.classList.remove('hidden');
+                        stravaConnectedSection.classList.add('hidden');
+                        return;
+                    }
+                    throw new Error(`Lỗi từ Strava API: ${errorData.message || response.statusText}`);
+                }
+
+                const activities = await response.json();
+                displayActivities(activities);
+
+            } catch (error) {
+                alertMessage(`Lỗi khi tải hoạt động Strava: ${error.message}`, 'error');
+                noActivitiesMessage.classList.remove('hidden');
+            } finally {
+                activitiesLoading.classList.add('hidden');
+            }
+        }
+
+        // Function to call Supabase Edge Function for token refresh
+        async function refreshStravaTokenBackend(refreshToken) {
+            try {
+                const response = await fetch(STRAVA_OAUTH_FUNCTION_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        type: 'refresh_token',
+                        refresh_token: refreshToken
+                    })
+                });
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || 'Failed to refresh token from Edge Function.');
+                }
+                return data; // Should contain new access_token, refresh_token, expires_at
+            } catch (error) {
+                console.error("Error refreshing token via Edge Function:", error);
+                throw error;
+            }
+        }
+
+
+        function displayActivities(activities) {
+            if (activities.length === 0) {
+                noActivitiesMessage.classList.remove('hidden');
+                return;
+            }
+            noActivitiesMessage.classList.add('hidden');
+            activities.forEach(activity => {
+                const activityCard = document.createElement('div');
+                activityCard.className = 'bg-gray-100 p-4 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition duration-200 ease-in-out';
+                const activityDate = new Date(activity.start_date_local).toLocaleDateString('vi-VN', {
+                    year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit'
+                });
+                const distanceKm = (activity.distance / 1000).toFixed(2);
+                const movingTimeMinutes = Math.floor(activity.moving_time / 60);
+                const movingTimeSeconds = activity.moving_time % 60;
+                const averagePace = activity.average_speed ? (1000 / (activity.average_speed * 60)).toFixed(2) : 'N/A'; // min/km
+
+                activityCard.innerHTML = `
+                    <h4 class="text-lg font-semibold text-bidv-blue mb-1">${activity.name}</h4>
+                    <p class="text-sm text-gray-600 mb-2"><i class="far fa-calendar-alt mr-1"></i> ${activityDate}</p>
+                    <div class="grid grid-cols-2 gap-2 text-gray-700 text-sm">
+                        <p><i class="fas fa-ruler-horizontal mr-1 text-bidv-yellow"></i> Quãng đường: <span class="font-medium">${distanceKm} km</span></p>
+                        <p><i class="far fa-clock mr-1 text-bidv-yellow"></i> Thời gian di chuyển: <span class="font-medium">${movingTimeMinutes} phút ${movingTimeSeconds} giây</span></p>
+                        <p><i class="fas fa-tachometer-alt mr-1 text-bidv-yellow"></i> Tốc độ trung bình: <span class="font-medium">${averagePace} phút/km</span></p>
+                        <p><i class="fas fa-mountain mr-1 text-bidv-yellow"></i> Độ cao: <span class="font-medium">${activity.total_elevation_gain} m</span></p>
+                    </div>
+                    ${activity.map.summary_polyline ? `
+                        <div class="mt-3">
+                            <img src="https://maps.googleapis.com/maps/api/staticmap?size=400x200&path=enc:${activity.map.summary_polyline}&key=YOUR_GOOGLE_MAPS_API_KEY_IF_NEEDED&sensor=false"
+                                 alt="Map of activity" class="w-full h-auto rounded-md border border-gray-300" onerror="this.onerror=null;this.src='https://placehold.co/400x200/e0e0e0/555555?text=Bản+đồ+không+khả+dụng';">
+                        </div>
+                    ` : ''}
+                    <a href="https://www.strava.com/activities/${activity.id}" target="_blank" class="text-bidv-blue hover:underline mt-3 inline-block text-sm">
+                        Xem trên Strava <i class="fas fa-external-link-alt ml-1 text-xs"></i>
+                    </a>
+                `;
+                activitiesList.appendChild(activityCard);
+            });
+        }
+
+        // --- Custom Alert Message (instead of alert()) ---
+        function alertMessage(message, type = 'info') {
+            const existingAlert = document.getElementById('customAlert');
+            if (existingAlert) {
+                existingAlert.remove();
+            }
+
+            const alertDiv = document.createElement('div');
+            alertDiv.id = 'customAlert';
+            alertDiv.className = `fixed top-4 right-4 p-4 rounded-lg shadow-xl flex items-center space-x-3 z-50 transition-all duration-300 ease-out transform translate-x-0 opacity-100`;
+
+            let bgColor = 'bg-blue-500';
+            let icon = 'fas fa-info-circle';
+            if (type === 'success') {
+                bgColor = 'bg-green-500';
+                icon = 'fas fa-check-circle';
+            } else if (type === 'error') {
+                bgColor = 'bg-red-500';
+                icon = 'fas fa-exclamation-circle';
+            } else if (type === 'warning') {
+                bgColor = 'bg-yellow-500';
+                icon = 'fas fa-exclamation-triangle';
+            }
+
+            alertDiv.classList.add(bgColor, 'text-white');
+            alertDiv.innerHTML = `
+                <i class="${icon} text-xl"></i>
+                <span class="font-medium">${message}</span>
+                <button class="ml-auto text-white opacity-75 hover:opacity-100" onclick="this.parentElement.remove()">
+                    <i class="fas fa-times"></i>
+                </button>
+            `;
+            document.body.appendChild(alertDiv);
+
+            setTimeout(() => {
+                alertDiv.classList.add('translate-x-full', 'opacity-0');
+                alertDiv.addEventListener('transitionend', () => alertDiv.remove());
+            }, 5000); // Remove after 5 seconds
+        }
+
+        // --- Supabase Database Security Rules (Conceptual) ---
+        // For 'users' table:
+        // - Allow read/write if request.auth.uid == id (for private user data)
+        // - Allow read/write if request.auth != null (for public data, if any)
+        // For 'activities' table (if you decide to cache activities):
+        // - Allow read/write if request.auth.uid == user_id
+
+        // Example Supabase Security Rule for 'users' table (in Supabase Dashboard -> Authentication -> Policies)
+        /*
+        -- Enable Row Level Security (RLS) for the 'users' table
+        ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
+
+        -- Policy for users to view their own profile
+        CREATE POLICY "Users can view their own profile."
+        ON public.users FOR SELECT
+        USING (auth.uid() = id);
+
+        -- Policy for users to update their own profile
+        CREATE POLICY "Users can update their own profile."
+        ON public.users FOR UPDATE
+        USING (auth.uid() = id);
+
+        -- Policy for new users to insert their initial profile
+        CREATE POLICY "New users can insert their own profile."
+        ON public.users FOR INSERT
+        WITH CHECK (auth.uid() = id);
+        */
+    </script>
+</body>
+</html>
