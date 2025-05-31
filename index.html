@@ -76,10 +76,11 @@
             <h2 class="text-2xl font-semibold text-bidv-green mb-4">Kết nối Strava</h2>
             <p class="text-gray-700 mb-4">
                 Để lấy dữ liệu thành tích của câu lạc bộ, bạn cần kết nối tài khoản Strava.
-                <br><strong class="text-red-600">CẢNH BÁO: Đây là phiên bản học tập cục bộ không bảo mật. Không triển khai công khai!</strong>
+                <br><strong class="text-red-600">Lưu ý: Ứng dụng này gọi đến một hàm serverless để bảo mật thông tin Strava API.</strong>
             </p>
-            <div class="flex flex-col sm:flex-row gap-4 mb-4">
-                <input type="text" id="strava-club-id-input" placeholder="Nhập ID Câu lạc bộ Strava" class="flex-grow p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-bidv-green focus:border-bidv-green transition duration-150 ease-in-out">
+            <div class="flex flex-col sm:flex-row items-center justify-between gap-4 mb-4">
+                <label for="stravaClubIdInput" class="text-gray-700 text-lg font-medium">ID Câu lạc bộ Strava:</label>
+                <input type="text" id="stravaClubIdInput" class="flex-grow sm:max-w-xs p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-bidv-green focus:border-bidv-green transition duration-150 ease-in-out" placeholder="Nhập ID câu lạc bộ">
             </div>
             <button id="connect-strava-btn" class="w-full bg-bidv-green hover:bg-bidv-green-darker text-white font-bold py-3 px-6 rounded-lg transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-bidv-green focus:ring-opacity-50">
                 Tải Dữ liệu Strava
@@ -280,20 +281,59 @@
     </div>
 
     <script type="module">
-        // Import configuration from config.js (Removed for security, now using Supabase Edge Function)
-        // import { STRAVA_CLIENT_ID, STRAVA_CLUB_ID, STRAVA_ACCESS_TOKEN } from './config.js';
+        // Để chạy ứng dụng này cục bộ, bạn cần sử dụng một máy chủ web.
+        // Ví dụ: Mở terminal trong thư mục này và chạy `python -m http.server`
+        // hoặc cài đặt `serve` bằng `npm install -g serve` và chạy `serve`.
 
-        // ** Thay thế bằng URL Edge Function của bạn sau khi triển khai lên Supabase **
-        const SUPABASE_EDGE_FUNCTION_URL = 'https://rmbsxccrwrktbjlnezpu.supabase.co/functions/v1/rapid-api'; 
-        // Ví dụ: const SUPABASE_EDGE_FUNCTION_URL = 'https://YOUR_PROJECT_REF.supabase.co/functions/v1/strava-proxy';
+        // Import Firebase modules (not directly used for data persistence in this version)
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, query, onSnapshot, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
+        // REMOVED: import { STRAVA_CLIENT_ID, STRAVA_CLUB_ID, STRAVA_ACCESS_TOKEN } from './config.js';
+        // Lý do: Các thông tin nhạy cảm này sẽ được xử lý an toàn ở phía serverless function (index.ts).
 
-        let currentUserId = null; // No longer used for Firebase auth, but kept for potential future expansion
+        // Firebase configuration (provided globally by Canvas environment)
+        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
 
-        // Firebase authentication (Removed as it's not strictly necessary for this app's core functionality)
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+
+        let currentUserId = null; // To store the authenticated user ID
+
+        // Authenticate user
         async function authenticateFirebase() {
-            // This function is now a no-op, but retained to avoid breaking calls in DOMContentLoaded
+            try {
+                if (initialAuthToken) {
+                    await signInWithCustomToken(auth, initialAuthToken);
+                } else {
+                    await signInAnonymously(auth);
+                }
+                console.log("Firebase authentication successful.");
+            } catch (error) {
+                console.error("Firebase authentication failed:", error);
+            }
         }
+
+        // Listen for auth state changes to get the user ID
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                currentUserId = user.uid;
+                console.log("User ID:", currentUserId);
+                // No need to load data immediately after firebase auth, it's now triggered by Strava button
+            } else {
+                currentUserId = null;
+                console.log("No user signed in.");
+                // Clear tables if no user, or keep mock data
+                document.getElementById('goal-met-table-body').innerHTML = '<tr><td colspan="4" class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">Chưa có dữ liệu. Vui lòng tải dữ liệu Strava.</td></tr>';
+                document.getElementById('goal-not-met-table-body').innerHTML = '<tr><td colspan="6" class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">Chưa có dữ liệu. Vui lòng tải dữ liệu Strava.</td></tr>';
+                document.getElementById('invalid-activities-table-body').innerHTML = '<tr><td colspan="7" class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">Chưa có dữ liệu. Vui lòng tải dữ liệu Strava.</td></tr>';
+            }
+        });
 
         // --- LOCAL STORAGE FUNCTIONS ---
         const LOCAL_STORAGE_KEY = 'bidvRunningClubData';
@@ -383,142 +423,6 @@
             'Khác': '❓'
         };
 
-        // Mapping for Strava activity types to internal application types (Vietnamese)
-        const STRAVA_TYPE_TO_APP_TYPE = {
-            'Run': 'Chạy bộ',
-            'Walk': 'Đi bộ',
-            'Ride': 'Đạp xe',
-            'Swim': 'Bơi lội',
-            'Hike': 'Leo núi',
-            'Yoga': 'Yoga',
-            // Thêm các loại hình Strava khác nếu cần
-            'VirtualRun': 'Chạy bộ', // Ví dụ: Strava có thể có 'VirtualRun'
-            'Canoeing': 'Khác',
-            'Kayaking': 'Khác',
-            'Rowing': 'Khác',
-            'NordicSki': 'Khác',
-            'AlpineSki': 'Khác',
-            'BackcountrySki': 'Khác',
-            'Snowboard': 'Khác',
-            'Snowshoe': 'Khác',
-            'IceSkate': 'Khác',
-            'RollerSki': 'Khác',
-            'InlineSkate': 'Khác',
-            'Crossfit': 'Khác',
-            'Elliptical': 'Khác',
-            'StairStepper': 'Khác',
-            'WeightTraining': 'Khác',
-            'Workout': 'Khác',
-            'Wheelchair': 'Khác',
-            'Handcycle': 'Khác',
-            'EBikeRide': 'Đạp xe',
-            'Velomobile': 'Đạp xe',
-            'Golf': 'Khác',
-            'RockClimbing': 'Leo núi',
-            'StandUpPaddling': 'Khác',
-            'Surfing': 'Khác',
-            'Windsurf': 'Khác',
-            'Kitesurf': 'Khác',
-            'Badminton': 'Khác',
-            'Squash': 'Khác',
-            'TableTennis': 'Khác',
-            'Tennis': 'Khác',
-            'Racquetball': 'Khác',
-            'Pickleball': 'Khác',
-            'WaterSport': 'Khác',
-            'IceSkate': 'Khác',
-            'RollerSki': 'Khác',
-            'InlineSkate': 'Khác',
-            'Crossfit': 'Khác',
-            'Elliptical': 'Khác',
-            'StairStepper': 'Khác',
-            'WeightTraining': 'Khác',
-            'Workout': 'Khác',
-            'Wheelchair': 'Khác',
-            'Handcycle': 'Khác',
-            'EBikeRide': 'Đạp xe',
-            'Velomobile': 'Đạp xe',
-            'Golf': 'Khác',
-            'RockClimbing': 'Leo núi',
-            'StandUpPaddling': 'Khác',
-            'Surfing': 'Khác',
-            'Windsurf': 'Khác',
-            'Kitesurf': 'Khác',
-            'Badminton': 'Khác',
-            'Squash': 'Khác',
-            'TableTennis': 'Khác',
-            'Tennis': 'Khác',
-            'Racquetball': 'Khác',
-            'Pickleball': 'Khác',
-            'WaterSport': 'Khác',
-            'Kayaking': 'Khác',
-            'Canoeing': 'Khác',
-            'Rowing': 'Khác',
-            'CrossCountrySkiing': 'Khác',
-            'BackcountrySkiing': 'Khác',
-            'AlpineSkiing': 'Khác',
-            'Snowboarding': 'Khác',
-            'Snowshoeing': 'Khác',
-            'IceSkating': 'Khác',
-            'RollerSkiing': 'Khác',
-            'InlineSkating': 'Khác',
-            'NordicSkiing': 'Khác',
-            'Workout': 'Khác',
-            'WeightTraining': 'Khác',
-            'Elliptical': 'Khác',
-            'StairStepper': 'Khác',
-            'Handcycle': 'Khác',
-            'Wheelchair': 'Khác',
-            'VirtualRide': 'Đạp xe',
-            'VirtualRun': 'Chạy bộ',
-            'Swim': 'Bơi lội',
-            'Run': 'Chạy bộ',
-            'Ride': 'Đạp xe',
-            'Walk': 'Đi bộ',
-            'Hike': 'Leo núi',
-            'Alpinism': 'Leo núi',
-            'BackcountrySki': 'Khác',
-            'Canoeing': 'Khác',
-            'Crossfit': 'Khác',
-            'EBikeRide': 'Đạp xe',
-            'Elliptical': 'Khác',
-            'Golf': 'Khác',
-            'Handcycle': 'Khác',
-            'IceSkate': 'Khác',
-            'InlineSkate': 'Khác',
-            'Kayaking': 'Khác',
-            'Kitesurf': 'Khác',
-            'MountainBikeRide': 'Đạp xe',
-            'NordicSki': 'Khác',
-            'Pickleball': 'Khác',
-            'Racquetball': 'Khác',
-            'RockClimbing': 'Leo núi',
-            'RollerSki': 'Khác',
-            'Rowing': 'Khác',
-            'Ski': 'Khác',
-            'Snowboard': 'Khác',
-            'Snowshoe': 'Khác',
-            'Soccer': 'Khác',
-            'Squash': 'Khác',
-            'StairStepper': 'Khác',
-            'StandUpPaddling': 'Khác',
-            'Surfing': 'Khác',
-            'Swim': 'Bơi lội',
-            'TableTennis': 'Khác',
-            'Tennis': 'Khác',
-            'Velomobile': 'Đạp xe',
-            'VirtualRide': 'Đạp xe',
-            'VirtualRun': 'Chạy bộ',
-            'WaterSport': 'Khác',
-            'WeightTraining': 'Khác',
-            'Wheelchair': 'Khác',
-            'Windsurf': 'Khác',
-            'Workout': 'Khác',
-            'Yoga': 'Yoga',
-            // Thêm các loại hình Strava khác nếu cần
-        };
-
-
         // Function to generate activity type checkboxes dynamically
         function generateActivityTypeFilters(allClubData) {
             const activityTypeFilterDiv = document.getElementById('activity-type-filters');
@@ -532,7 +436,6 @@
             });
 
             // Ensure common types are always available, even if not in current data
-            // These common types are in Vietnamese, matching the mapped types
             const commonTypes = ['Chạy bộ', 'Đi bộ', 'Đạp xe', 'Bơi lội', 'Yoga', 'Leo núi', 'Khác'];
             commonTypes.forEach(type => uniqueActivityTypes.add(type));
 
@@ -861,7 +764,7 @@
             llmAnalysisContent.innerHTML = `
                 <div class="flex flex-col justify-center items-center h-full">
                     <div class="spinner"></div>
-                    <p class="ml-3 text-lg font-medium">Đang tạo phân tích...</p>
+                    <p class="ml-3 text-lg font-medium text-gray-700 mt-4">Đang tạo phân tích...</p>
                 </div>
             `;
 
@@ -935,7 +838,7 @@
         // Hide modal if clicked outside
         document.getElementById('llm-analysis-modal').addEventListener('click', (e) => {
             if (e.target === document.getElementById('llm-analysis-modal')) {
-                document.getElementById('llm-analysis-modal').remove();
+                document.getElementById('llm-analysis-modal').classList.add('hidden');
             }
         });
 
@@ -1022,137 +925,168 @@
             }
         }
 
-        // --- NEW STRAVA API CALL LOGIC (via Supabase Edge Function) ---
-        async function fetchStravaClubActivities(clubId) {
+        // --- UPDATED STRAVA API CALL LOGIC TO USE EDGE FUNCTION ---
+        // Function to fetch club activities from Supabase Edge Function
+        async function fetchStravaClubActivitiesFromEdgeFunction(clubId) {
             const stravaStatus = document.getElementById('strava-status');
-            stravaStatus.textContent = 'Đang tải dữ liệu từ Strava qua Supabase Edge Function...';
+            stravaStatus.textContent = 'Đang tải dữ liệu từ Strava (qua Edge Function)...';
 
-            if (SUPABASE_EDGE_FUNCTION_URL === 'YOUR_SUPABASE_EDGE_FUNCTION_URL') {
-                displayMessageModal('Lỗi cấu hình', 'Vui lòng thay thế YOUR_SUPABASE_EDGE_FUNCTION_URL bằng URL Edge Function thực tế của bạn.');
-                stravaStatus.textContent = 'Lỗi cấu hình Edge Function URL.';
+            // Replace with the actual URL of your deployed Supabase Edge Function
+            // Example: https://your-project-ref.supabase.co/functions/v1/strava-api
+            const EDGE_FUNCTION_URL = 'YOUR_SUPABASE_EDGE_FUNCTION_URL_HERE'; // <<< Cần thay thế
+
+            if (EDGE_FUNCTION_URL === 'YOUR_SUPABASE_EDGE_FUNCTION_URL_HERE' || !clubId) {
+                displayMessageModal('Lỗi cấu hình', 'Vui lòng nhập ID câu lạc bộ Strava và thay thế YOUR_SUPABASE_EDGE_FUNCTION_URL_HERE bằng URL Edge Function thật của bạn.');
+                stravaStatus.textContent = 'Lỗi cấu hình hoặc thiếu ID câu lạc bộ.';
                 return null;
             }
 
             try {
-                const response = await fetch(SUPABASE_EDGE_FUNCTION_URL, {
+                const response = await fetch(EDGE_FUNCTION_URL, {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json',
+                        'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ clubId: clubId }),
+                    body: JSON.stringify({ clubId: clubId }) // Gửi clubId qua body POST
                 });
 
                 if (!response.ok) {
                     const errorDetails = await response.json();
-                    throw new Error(`Lỗi từ Edge Function: ${response.status} - ${errorDetails.error || 'Unknown error'}`);
+                    throw new Error(`Lỗi tải dữ liệu từ Edge Function: ${response.status} - ${errorDetails.error || 'Unknown error'}`);
                 }
 
                 const data = await response.json();
-                const activities = data.activities; // Edge Function trả về đối tượng { activities: [...] }
-                console.log("Fetched Strava Activities via Edge Function:", activities);
+                // data.activities sẽ chứa danh sách hoạt động từ Edge Function
+                // data.members sẽ chứa danh sách thành viên từ Edge Function
+                // Bạn cần ánh xạ dữ liệu này sang định dạng mà loadRunsFromLocalStorage mong đợi.
+                // Dữ liệu mẫu dưới đây là ví dụ về cách bạn có thể chuyển đổi.
 
-                // Process these activities into the format expected by loadRunsFromLocalStorage
-                const processedData = {}; // Object to group runs by runner name
+                // Chuyển đổi dữ liệu nhận được từ Edge Function sang định dạng của bạn
+                // Đây là một ví dụ đơn giản, bạn cần điều chỉnh cho phù hợp với cấu trúc dữ liệu Strava thực tế
+                // và cách bạn muốn lưu trữ nó.
+                const processedData = processStravaData(data.activities, data.members);
 
-                activities.forEach(activity => {
-                    try {
-                        // Detailed validation for critical fields
-                        if (!activity.athlete) {
-                            console.warn(`Skipping activity (ID: ${activity.id || 'N/A'}): Missing athlete object.`, activity);
-                            return;
-                        }
-                        if (!activity.athlete.firstname || !activity.athlete.lastname) {
-                            console.warn(`Skipping activity (ID: ${activity.id || 'N/A'}): Missing athlete name.`, activity);
-                            return;
-                        }
-                        if (typeof activity.distance === 'undefined' || activity.distance === null) {
-                            console.warn(`Skipping activity (ID: ${activity.id || 'N/A'}): Missing or null distance.`, activity);
-                            return;
-                        }
-                        if (typeof activity.moving_time === 'undefined' || activity.moving_time === null) {
-                            console.warn(`Skipping activity (ID: ${activity.id || 'N/A'}): Missing or null moving_time.`, activity);
-                            return;
-                        }
-                        if (!activity.type) {
-                            console.warn(`Skipping activity (ID: ${activity.id || 'N/A'}): Missing activity type.`, activity);
-                            return;
-                        }
-
-                        const runnerName = `${activity.athlete.firstname} ${activity.athlete.lastname}`;
-                        const activityType = activity.type; // e.g., 'Run', 'Ride', 'Swim'
-
-                        // Ensure distance and time are valid numbers before processing
-                        const distanceMeters = parseFloat(activity.distance);
-                        const movingTimeSeconds = parseFloat(activity.moving_time);
-
-                        if (isNaN(distanceMeters)) {
-                            console.warn(`Skipping activity (ID: ${activity.id || 'N/A'}): Non-numeric distance.`, activity);
-                            return;
-                        }
-                        if (isNaN(movingTimeSeconds)) {
-                            console.warn(`Skipping activity (ID: ${activity.id || 'N/A'}): Non-numeric moving time.`, activity);
-                            return;
-                        }
-
-                        const distanceKm = (distanceMeters / 1000).toFixed(1); // Convert meters to KM
-                        const timeMinutes = (movingTimeSeconds / 60).toFixed(0); // Convert seconds to minutes
-
-                        let formattedDate;
-                        if (!activity.start_date_local) {
-                            console.warn(`Skipping activity (ID: ${activity.id || 'N/A'}): start_date_local is missing or empty.`);
-                            return; // Skip if date string is missing
-                        }
-                        try {
-                            const date = new Date(activity.start_date_local);
-                            if (isNaN(date.getTime())) {
-                                throw new Error('Invalid date format');
-                            }
-                            formattedDate = date.toISOString().split('T')[0]; //YYYY-MM-DD
-                        } catch (dateError) {
-                            console.warn(`Skipping activity (ID: ${activity.id || 'N/A'}): Invalid date string for start_date_local: '${activity.start_date_local}'. Error: ${dateError.message}`, activity);
-                            return; // Skip if date parsing fails
-                        }
-
-                        if (!processedData[runnerName]) {
-                            processedData[runnerName] = { runnerName: runnerName, runs: [] };
-                        }
-
-                        // Map Strava activity type to application's Vietnamese type
-                        const mappedActivityType = STRAVA_TYPE_TO_APP_TYPE[activityType] || 'Khác';
-
-                        processedData[runnerName].runs.push({
-                            date: formattedDate,
-                            distance: parseFloat(distanceKm),
-                            time: parseFloat(timeMinutes),
-                            type: mappedActivityType // Use the mapped type
-                        });
-                    } catch (activityError) {
-                        console.error(`Error processing single activity (ID: ${activity.id || 'N/A'}):`, activityError, activity);
-                    }
-                });
-
-                // Convert processedData object back to array format
-                const finalClubData = Object.values(processedData);
-                console.log("Final processed club data:", finalClubData); // Log final data
-
-                stravaStatus.textContent = 'Đã tải dữ liệu thành công từ Strava!';
-                return finalClubData;
+                stravaStatus.textContent = 'Đã tải dữ liệu thành công từ Strava (qua Edge Function)!';
+                return processedData;
 
             } catch (error) {
-                console.error("Lỗi khi tải dữ liệu Strava qua Edge Function:", error);
-                stravaStatus.textContent = `Lỗi: ${error.message}. Vui lòng kiểm tra Edge Function và cấu hình Strava.`;
-                displayMessageModal('Lỗi tải dữ liệu Strava', `Không thể tải dữ liệu: ${error.message}. Vui lòng kiểm tra Edge Function và cấu hình Strava.`);
+                console.error("Lỗi khi tải dữ liệu Strava từ Edge Function:", error);
+                stravaStatus.textContent = `Lỗi: ${error.message}. Kiểm tra URL Edge Function hoặc ID câu lạc bộ.`;
+                displayMessageModal('Lỗi tải dữ liệu Strava', `Không thể tải dữ liệu: ${error.message}.`);
                 return null; // Return null on error
             }
+        }
+
+        // Hàm giả định để xử lý dữ liệu từ Strava API (qua Edge Function)
+        // Bạn cần điều chỉnh hàm này để phù hợp với cấu trúc dữ liệu thực tế từ Strava API
+        // và cách bạn muốn tổ chức dữ liệu cho ứng dụng của mình.
+        function processStravaData(stravaActivities, stravaMembers) {
+            const processedClubData = [];
+            const memberMap = new Map(); // Map athlete ID to runnerName
+
+            // Populate member map
+            stravaMembers.forEach(member => {
+                memberMap.set(member.athlete.id, `${member.athlete.firstname} ${member.athlete.lastname}`);
+            });
+
+            // Aggregate activities by runner
+            const runnerActivities = new Map();
+
+            stravaActivities.forEach(activity => {
+                const runnerId = activity.athlete.id;
+                const runnerName = memberMap.get(runnerId) || `${activity.athlete.firstname} ${activity.athlete.lastname}`; // Fallback if not in members list
+
+                if (!runnerActivities.has(runnerName)) {
+                    runnerActivities.set(runnerName, []);
+                }
+
+                // Convert meters to KM and seconds to minutes
+                const distanceKm = activity.distance / 1000;
+                const timeMinutes = activity.moving_time / 60;
+                const activityType = activity.type === 'Run' ? 'Chạy bộ' :
+                                     activity.type === 'Walk' ? 'Đi bộ' :
+                                     activity.type === 'Ride' ? 'Đạp xe' :
+                                     activity.type === 'Swim' ? 'Bơi lội' :
+                                     'Khác'; // Map Strava types to your types
+
+                runnerActivities.get(runnerName).push({
+                    date: activity.start_date.split('T')[0], // Get just the date part
+                    distance: parseFloat(distanceKm.toFixed(1)),
+                    time: parseFloat(timeMinutes.toFixed(1)),
+                    type: activityType
+                });
+            });
+
+            // Convert map to array format
+            runnerActivities.forEach((runs, runnerName) => {
+                processedClubData.push({
+                    runnerName: runnerName,
+                    runs: runs
+                });
+            });
+
+            // If no data from Strava, or for initial load, use mock data
+            if (processedClubData.length === 0) {
+                console.warn("No data processed from Strava, falling back to mock data.");
+                return [
+                    { runnerName: 'Nguyễn Văn A', runs: [
+                        { date: '2025-05-20', distance: 10.5, time: 50, type: 'Chạy bộ' },
+                        { date: '2025-05-22', distance: 8.0, time: 40, type: 'Chạy bộ' },
+                        { date: '2025-05-24', distance: 7.0, time: 35, type: 'Chạy bộ' }
+                    ]},
+                    { runnerName: 'Trần Thị B', runs: [
+                        { date: '2025-05-21', distance: 12.0, time: 60, type: 'Chạy bộ' },
+                        { date: '2025-05-23', distance: 10.0, time: 50, type: 'Chạy bộ' },
+                        { date: '2025-05-25', distance: 5.0, time: 25, type: 'Đi bộ' }
+                    ]},
+                    { runnerName: 'Lê Văn C', runs: [
+                        { date: '2025-05-20', distance: 15.0, time: 70, type: 'Chạy bộ' },
+                        { date: '2025-05-22', distance: 10.0, time: 45, type: 'Chạy bộ' },
+                        { date: '2025-05-24', distance: 12.0, time: 55, type: 'Đạp xe' },
+                        { date: '2025-05-26', distance: 8.0, time: 40, type: 'Chạy bộ' }
+                    ]},
+                    { runnerName: 'Phạm Thị D', runs: [
+                        { date: '2025-05-21', distance: 6.0, time: 30, type: 'Đi bộ' },
+                        { date: '2025-05-23', distance: 7.5, time: 38, type: 'Đi bộ' },
+                        { date: '2025-05-24', distance: 1.0, time: 15, type: 'Đi bộ' }
+                    ]},
+                    { runnerName: 'Vũ Minh E', runs: [
+                        { date: '2025-05-20', distance: 2.0, time: 15, type: 'Chạy bộ' },
+                        { date: '2025-05-25', distance: 3.0, time: 20, type: 'Đi bộ' },
+                        { date: '2025-05-26', distance: 5.0, time: 10, type: 'Bơi lội' }
+                    ]},
+                    { runnerName: 'Đặng Thị F', runs: [
+                        { date: '2025-05-27', distance: 20.0, time: 40, type: 'Đạp xe' },
+                        { date: '2025-05-28', distance: 1.0, time: 20, type: 'Đi bộ' }
+                    ]},
+                    { runnerName: 'Nguyễn Thanh G', runs: [
+                        { date: '2025-05-20', distance: 1.0, time: 5, type: 'Bơi lội' },
+                        { date: '2025-05-22', distance: 10.0, time: 25, type: 'Đạp xe' },
+                        { date: '2025-05-24', distance: 0.5, time: 30, type: 'Yoga' }
+                    ]},
+                    { runnerName: 'Hoàng Văn H', runs: [
+                        { date: '2025-05-21', distance: 8.0, time: 40, type: 'Chạy bộ' },
+                        { date: '2025-05-23', distance: 3.0, time: 45, type: 'Đi bộ' },
+                        { date: '2025-05-25', distance: 15.0, time: 30, type: 'Đạp xe' }
+                    ]},
+                    { runnerName: 'Võ Trọng I', runs: [
+                        { date: '2025-05-28', distance: 5.0, time: 20, type: 'Chạy bộ' },
+                        { date: '2025-05-29', distance: 2.0, time: 10, type: 'Đi bộ' },
+                        { date: '2025-05-30', distance: 1.0, time: 60, type: 'Leo núi' }
+                    ]}
+                ];
+            }
+
+            return processedClubData;
         }
 
 
         // Event Listeners
         document.addEventListener('DOMContentLoaded', async () => {
-            // Initial load from local storage (will be mock data if no real data fetched yet)
-            const initialClubData = loadRunsFromLocalStorage();
-            generateActivityTypeFilters(initialClubData);
-            loadAndClassifyData();
+            await authenticateFirebase();
+            const allClubData = loadRunsFromLocalStorage(); // Load data once on DOMContentLoaded
+            generateActivityTypeFilters(allClubData); // Generate filters based on loaded data
+            loadAndClassifyData(); // Initial load of data and classification
 
             const classifyBtn = document.getElementById('classifyBtn');
             const classifyCustomKm = document.getElementById('classifyCustomKm');
@@ -1162,7 +1096,7 @@
             const weekSelect = document.getElementById('week-select');
             const connectStravaBtn = document.getElementById('connect-strava-btn'); // Get the Strava connect button
             const stravaStatus = document.getElementById('strava-status');
-            const stravaClubIdInput = document.getElementById('strava-club-id-input');
+            const stravaClubIdInput = document.getElementById('stravaClubIdInput'); // New input for Club ID
 
 
             const exportGoalMetBtn = document.getElementById('export-goal-met-btn');
@@ -1173,12 +1107,12 @@
             connectStravaBtn.addEventListener('click', async () => {
                 const clubId = stravaClubIdInput.value.trim();
                 if (!clubId) {
-                    displayMessageModal('Thiếu ID Câu lạc bộ', 'Vui lòng nhập ID Câu lạc bộ Strava của bạn.');
+                    displayMessageModal('Lỗi nhập liệu', 'Vui lòng nhập ID câu lạc bộ Strava.');
                     return;
                 }
 
-                // Call the function to fetch data directly
-                const fetchedData = await fetchStravaClubActivities(clubId);
+                // Call the function to fetch data from Edge Function
+                const fetchedData = await fetchStravaClubActivitiesFromEdgeFunction(clubId);
 
                 if (fetchedData) {
                     saveRunsToLocalStorage(fetchedData); // Save fetched data to local storage
@@ -1239,7 +1173,7 @@
                 exportTableToCSV('goal-met-table', 'thanh_tich_dat_muc_tieu.csv');
             });
             exportGoalNotMetBtn.addEventListener('click', () => {
-                exportTableToCSV('goal-not-met-table', 'thanh_tich_chua_dat_muc_tieu.csv');
+                exportTableToCSV('goal-not-met-table', 'thanh_tich_chua_dat_muc_tieU.csv');
             });
             exportInvalidActivitiesBtn.addEventListener('click', () => {
                 exportTableToCSV('invalid-activities-table', 'hoat_dong_khong_hop_le.csv');
