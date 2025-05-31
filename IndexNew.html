@@ -36,7 +36,6 @@
             background: #555;
         }
     </style>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body class="min-h-screen flex flex-col">
     <header class="bg-bidv-blue text-white p-4 shadow-md">
@@ -144,504 +143,508 @@
         </div>
     </footer>
 
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
-        // Global variables provided by the Canvas environment
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
-        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+        // Wrap the entire script in a DOMContentLoaded listener
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Global variables provided by the Canvas environment
+            const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+            const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+            const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
 
-        // Initialize Supabase Client using the global Supabase object
-        const SUPABASE_URL = 'YOUR_SUPABASE_URL'; // e.g., 'https://abcde12345.supabase.co'
-        const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY'; // e.g., 'eyJhbGciOiJIUzI1Ni...'
+            // Initialize Supabase Client using the global Supabase object
+            const SUPABASE_URL = 'YOUR_SUPABASE_URL'; // e.g., 'https://abcde12345.supabase.co'
+            const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY'; // e.g., 'eyJhbGciOiJIUzI1Ni...'
 
-        // IMPORTANT: Replace with the actual URL of your deployed Supabase Edge Function
-        const STRAVA_OAUTH_FUNCTION_URL = 'YOUR_SUPABASE_EDGE_FUNCTION_URL'; // e.g., 'https://<your-project-ref>.supabase.co/functions/v1/strava-oauth'
+            // IMPORTANT: Replace with the actual URL of your deployed Supabase Edge Function
+            const STRAVA_OAUTH_FUNCTION_URL = 'YOUR_SUPABASE_EDGE_FUNCTION_URL'; // e.g., 'https://<your-project-ref>.supabase.co/functions/v1/strava-oauth'
 
-        // Use the global Supabase object to create the client
-        const supabase = Supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            // Use the global Supabase object to create the client
+            const supabase = Supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        // DOM Elements
-        const authSection = document.getElementById('authSection');
-        const dashboardSection = document.getElementById('dashboardSection');
-        const loginForm = document.getElementById('loginForm');
-        const registerForm = document.getElementById('registerForm');
-        const logoutBtn = document.getElementById('logoutBtn');
-        const userEmailSpan = document.getElementById('userEmail');
-        const userIdDisplay = document.getElementById('userIdDisplay');
-        const stravaConnectSection = document.getElementById('stravaConnectSection');
-        const stravaConnectedSection = document.getElementById('stravaConnectedSection');
-        const stravaClientIdInput = document.getElementById('stravaClientId');
-        const connectStravaBtn = document.getElementById('connectStravaBtn');
-        const disconnectStravaBtn = document.getElementById('disconnectStravaBtn');
-        const stravaStatus = document.getElementById('stravaStatus');
-        const stravaAthleteIdDisplay = document.getElementById('stravaAthleteIdDisplay');
-        const stravaTokenExpires = document.getElementById('stravaTokenExpires');
-        const fetchActivitiesBtn = document.getElementById('fetchActivitiesBtn');
-        const activitiesLoading = document.getElementById('activitiesLoading');
-        const activitiesList = document.getElementById('activitiesList');
-        const noActivitiesMessage = document.getElementById('noActivitiesMessage');
+            // DOM Elements
+            const authSection = document.getElementById('authSection');
+            const dashboardSection = document.getElementById('dashboardSection');
+            const loginForm = document.getElementById('loginForm');
+            const registerForm = document.getElementById('registerForm');
+            const logoutBtn = document.getElementById('logoutBtn');
+            const userEmailSpan = document.getElementById('userEmail');
+            const userIdDisplay = document.getElementById('userIdDisplay');
+            const stravaConnectSection = document.getElementById('stravaConnectSection');
+            const stravaConnectedSection = document.getElementById('stravaConnectedSection');
+            const stravaClientIdInput = document.getElementById('stravaClientId');
+            const connectStravaBtn = document.getElementById('connectStravaBtn');
+            const disconnectStravaBtn = document.getElementById('disconnectStravaBtn');
+            const stravaStatus = document.getElementById('stravaStatus');
+            const stravaAthleteIdDisplay = document.getElementById('stravaAthleteIdDisplay');
+            const stravaTokenExpires = document.getElementById('stravaTokenExpires');
+            const fetchActivitiesBtn = document.getElementById('fetchActivitiesBtn');
+            const activitiesLoading = document.getElementById('activitiesLoading');
+            const activitiesList = document.getElementById('activitiesList');
+            const noActivitiesMessage = document.getElementById('noActivitiesMessage');
 
-        let currentUserId = null;
-        let currentUserEmail = null;
+            let currentUserId = null;
+            let currentUserEmail = null;
 
-        // --- Supabase Authentication ---
-        async function handleAuthChange(session) {
-            if (session) {
-                currentUserId = session.user.id;
-                currentUserEmail = session.user.email;
-                userEmailSpan.textContent = currentUserEmail;
-                userIdDisplay.textContent = currentUserId;
-                authSection.classList.add('hidden');
-                dashboardSection.classList.remove('hidden');
-                await loadUserProfile();
-            } else {
-                currentUserId = null;
-                currentUserEmail = null;
-                authSection.classList.remove('hidden');
-                dashboardSection.classList.add('hidden');
-            }
-        }
-
-        // Listen for auth state changes
-        supabase.auth.onAuthStateChange((event, session) => {
-            handleAuthChange(session);
-        });
-
-        // Initial check for session
-        supabase.auth.getSession().then(({ data: { session } }) => {
-            handleAuthChange(session);
-        });
-
-        // Login
-        loginForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const email = loginEmail.value;
-            const password = loginPassword.value;
-            try {
-                const { error } = await supabase.auth.signInWithPassword({ email, password });
-                if (error) throw error;
-                alertMessage('Đăng nhập thành công!', 'success');
-            } catch (error) {
-                alertMessage(`Lỗi đăng nhập: ${error.message}`, 'error');
-            }
-        });
-
-        // Register
-        registerForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const email = registerEmail.value;
-            const password = registerPassword.value;
-            try {
-                const { error } = await supabase.auth.signUp({ email, password });
-                if (error) throw error;
-                alertMessage('Đăng ký thành công! Vui lòng kiểm tra email để xác nhận.', 'success');
-            } catch (error) {
-                alertMessage(`Lỗi đăng ký: ${error.message}`, 'error');
-            }
-        });
-
-        // Logout
-        logoutBtn.addEventListener('click', async () => {
-            try {
-                const { error } = await supabase.auth.signOut();
-                if (error) throw error;
-                alertMessage('Đã đăng xuất.', 'info');
-                // Clear activities and Strava status on logout
-                activitiesList.innerHTML = '<p class="text-gray-500 text-center" id="noActivitiesMessage">Chưa có hoạt động nào được tải. Hãy kết nối Strava và tải hoạt động.</p>';
-                stravaConnectSection.classList.remove('hidden');
-                stravaConnectedSection.classList.add('hidden');
-                stravaStatus.textContent = '';
-            } catch (error) {
-                alertMessage(`Lỗi đăng xuất: ${error.message}`, 'error');
-            }
-        });
-
-        // --- User Profile Management in Supabase ---
-        async function loadUserProfile() {
-            if (!currentUserId) return;
-
-            try {
-                const { data, error } = await supabase
-                    .from('users')
-                    .select('*')
-                    .eq('id', currentUserId)
-                    .single();
-
-                if (error && error.code !== 'PGRST116') { // PGRST116 means no rows found
-                    throw error;
-                }
-
-                if (data) {
-                    stravaClientIdInput.value = data.strava_client_id || '';
-                    if (data.strava_access_token && data.strava_refresh_token && data.strava_athlete_id) {
-                        stravaConnectSection.classList.add('hidden');
-                        stravaConnectedSection.classList.remove('hidden');
-                        stravaAthleteIdDisplay.textContent = data.strava_athlete_id;
-                        const expiresDate = new Date(data.strava_token_expires_at);
-                        stravaTokenExpires.textContent = `Token hết hạn vào: ${expiresDate.toLocaleString()}`;
-                    } else {
-                        stravaConnectSection.classList.remove('hidden');
-                        stravaConnectedSection.classList.add('hidden');
-                    }
+            // --- Supabase Authentication ---
+            async function handleAuthChange(session) {
+                if (session) {
+                    currentUserId = session.user.id;
+                    currentUserEmail = session.user.email;
+                    userEmailSpan.textContent = currentUserEmail;
+                    userIdDisplay.textContent = currentUserId;
+                    authSection.classList.add('hidden');
+                    dashboardSection.classList.remove('hidden');
+                    await loadUserProfile();
                 } else {
-                    // Create a new user profile if not exists
-                    await supabase.from('users').insert({
-                        id: currentUserId,
-                        email: currentUserEmail,
-                        created_at: new Date().toISOString()
-                    });
+                    currentUserId = null;
+                    currentUserEmail = null;
+                    authSection.classList.remove('hidden');
+                    dashboardSection.classList.add('hidden');
                 }
-            } catch (error) {
-                alertMessage(`Lỗi tải hồ sơ người dùng: ${error.message}`, 'error');
-            }
-        }
-
-        async function saveUserProfile(profileData) {
-            if (!currentUserId) return;
-            try {
-                const { error } = await supabase
-                    .from('users')
-                    .update(profileData)
-                    .eq('id', currentUserId);
-                if (error) throw error;
-                alertMessage('Đã lưu thông tin hồ sơ.', 'success');
-            } catch (error) {
-                alertMessage(`Lỗi lưu hồ sơ người dùng: ${error.message}`, 'error');
-            }
-        }
-
-        // --- Strava OAuth Flow (Client-side initiation) ---
-        connectStravaBtn.addEventListener('click', async () => {
-            const clientId = stravaClientIdInput.value.trim();
-            if (!clientId) {
-                alertMessage('Vui lòng nhập Strava Client ID của bạn.', 'warning');
-                return;
             }
 
-            // Save the client ID to user profile
-            await saveUserProfile({ strava_client_id: clientId });
-
-            // The redirect_uri must match the URL of your deployed Supabase Edge Function
-            // and also be registered in your Strava app settings.
-            const redirectUri = STRAVA_OAUTH_FUNCTION_URL; // This is the URL Strava will redirect to
-            const stravaAuthUrl = `https://www.strava.com/oauth/authorize?client_id=${clientId}&response_type=code&redirect_uri=${redirectUri}&approval_prompt=force&scope=activity:read_all`;
-
-            window.location.href = stravaAuthUrl;
-        });
-
-        disconnectStravaBtn.addEventListener('click', async () => {
-            // Clear Strava tokens and athlete ID from Supabase
-            await saveUserProfile({
-                strava_access_token: null,
-                strava_refresh_token: null,
-                strava_token_expires_at: null,
-                strava_athlete_id: null
+            // Listen for auth state changes
+            supabase.auth.onAuthStateChange((event, session) => {
+                handleAuthChange(session);
             });
-            stravaConnectSection.classList.remove('hidden');
-            stravaConnectedSection.classList.add('hidden');
-            stravaAthleteIdDisplay.textContent = '';
-            stravaTokenExpires.textContent = '';
-            activitiesList.innerHTML = '<p class="text-gray-500 text-center" id="noActivitiesMessage">Chưa có hoạt động nào được tải. Hãy kết nối Strava và tải hoạt động.</p>';
-            alertMessage('Đã ngắt kết nối Strava.', 'info');
-        });
 
-        // Handle Strava OAuth Redirect
-        async function handleStravaRedirect() {
-            const urlParams = new URLSearchParams(window.location.search);
-            const code = urlParams.get('code');
-            const error = urlParams.get('error');
+            // Initial check for session
+            supabase.auth.getSession().then(({ data: { session } }) => {
+                handleAuthChange(session);
+            });
 
-            // Clear URL parameters immediately to prevent re-processing on refresh
-            window.history.replaceState({}, document.title, window.location.pathname);
-
-            if (error) {
-                alertMessage(`Lỗi kết nối Strava: ${error}`, 'error');
-                return;
-            }
-
-            if (code) {
-                stravaStatus.textContent = 'Đang trao đổi mã ủy quyền với Strava...';
+            // Login
+            loginForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const email = loginEmail.value;
+                const password = loginPassword.value;
                 try {
-                    // Fetch the client_id from the user's profile in Supabase
-                    const { data: userProfile, error: profileError } = await supabase
+                    const { error } = await supabase.auth.signInWithPassword({ email, password });
+                    if (error) throw error;
+                    alertMessage('Đăng nhập thành công!', 'success');
+                } catch (error) {
+                    alertMessage(`Lỗi đăng nhập: ${error.message}`, 'error');
+                }
+            });
+
+            // Register
+            registerForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const email = registerEmail.value;
+                const password = registerPassword.value;
+                try {
+                    const { error } = await supabase.auth.signUp({ email, password });
+                    if (error) throw error;
+                    alertMessage('Đăng ký thành công! Vui lòng kiểm tra email để xác nhận.', 'success');
+                } catch (error) {
+                    alertMessage(`Lỗi đăng ký: ${error.message}`, 'error');
+                }
+            });
+
+            // Logout
+            logoutBtn.addEventListener('click', async () => {
+                try {
+                    const { error } = await supabase.auth.signOut();
+                    if (error) throw error;
+                    alertMessage('Đã đăng xuất.', 'info');
+                    // Clear activities and Strava status on logout
+                    activitiesList.innerHTML = '<p class="text-gray-500 text-center" id="noActivitiesMessage">Chưa có hoạt động nào được tải. Hãy kết nối Strava và tải hoạt động.</p>';
+                    stravaConnectSection.classList.remove('hidden');
+                    stravaConnectedSection.classList.add('hidden');
+                    stravaStatus.textContent = '';
+                } catch (error) {
+                    alertMessage(`Lỗi đăng xuất: ${error.message}`, 'error');
+                }
+            });
+
+            // --- User Profile Management in Supabase ---
+            async function loadUserProfile() {
+                if (!currentUserId) return;
+
+                try {
+                    const { data, error } = await supabase
                         .from('users')
-                        .select('strava_client_id')
+                        .select('*')
                         .eq('id', currentUserId)
                         .single();
 
-                    if (profileError || !userProfile || !userProfile.strava_client_id) {
-                        throw new Error('Không tìm thấy Strava Client ID trong hồ sơ người dùng.');
+                    if (error && error.code !== 'PGRST116') { // PGRST116 means no rows found
+                        throw error;
                     }
 
-                    const clientId = userProfile.strava_client_id;
-                    const redirectUri = STRAVA_OAUTH_FUNCTION_URL; // Must match the one sent to Strava
+                    if (data) {
+                        stravaClientIdInput.value = data.strava_client_id || '';
+                        if (data.strava_access_token && data.strava_refresh_token && data.strava_athlete_id) {
+                            stravaConnectSection.classList.add('hidden');
+                            stravaConnectedSection.classList.remove('hidden');
+                            stravaAthleteIdDisplay.textContent = data.strava_athlete_id;
+                            const expiresDate = new Date(data.strava_token_expires_at);
+                            stravaTokenExpires.textContent = `Token hết hạn vào: ${expiresDate.toLocaleString()}`;
+                        } else {
+                            stravaConnectSection.classList.remove('hidden');
+                            stravaConnectedSection.classList.add('hidden');
+                        }
+                    } else {
+                        // Create a new user profile if not exists
+                        await supabase.from('users').insert({
+                            id: currentUserId,
+                            email: currentUserEmail,
+                            created_at: new Date().toISOString()
+                        });
+                    }
+                } catch (error) {
+                    alertMessage(`Lỗi tải hồ sơ người dùng: ${error.message}`, 'error');
+                }
+            }
 
+            async function saveUserProfile(profileData) {
+                if (!currentUserId) return;
+                try {
+                    const { error } = await supabase
+                        .from('users')
+                        .update(profileData)
+                        .eq('id', currentUserId);
+                    if (error) throw error;
+                    alertMessage('Đã lưu thông tin hồ sơ.', 'success');
+                } catch (error) {
+                    alertMessage(`Lỗi lưu hồ sơ người dùng: ${error.message}`, 'error');
+                }
+            }
+
+            // --- Strava OAuth Flow (Client-side initiation) ---
+            connectStravaBtn.addEventListener('click', async () => {
+                const clientId = stravaClientIdInput.value.trim();
+                if (!clientId) {
+                    alertMessage('Vui lòng nhập Strava Client ID của bạn.', 'warning');
+                    return;
+                }
+
+                // Save the client ID to user profile
+                await saveUserProfile({ strava_client_id: clientId });
+
+                // The redirect_uri must match the URL of your deployed Supabase Edge Function
+                // and also be registered in your Strava app settings.
+                const redirectUri = STRAVA_OAUTH_FUNCTION_URL; // This is the URL Strava will redirect to
+                const stravaAuthUrl = `https://www.strava.com/oauth/authorize?client_id=${clientId}&response_type=code&redirect_uri=${redirectUri}&approval_prompt=force&scope=activity:read_all`;
+
+                window.location.href = stravaAuthUrl;
+            });
+
+            disconnectStravaBtn.addEventListener('click', async () => {
+                // Clear Strava tokens and athlete ID from Supabase
+                await saveUserProfile({
+                    strava_access_token: null,
+                    strava_refresh_token: null,
+                    strava_token_expires_at: null,
+                    strava_athlete_id: null
+                });
+                stravaConnectSection.classList.remove('hidden');
+                stravaConnectedSection.classList.add('hidden');
+                stravaAthleteIdDisplay.textContent = '';
+                stravaTokenExpires.textContent = '';
+                activitiesList.innerHTML = '<p class="text-gray-500 text-center" id="noActivitiesMessage">Chưa có hoạt động nào được tải. Hãy kết nối Strava và tải hoạt động.</p>';
+                alertMessage('Đã ngắt kết nối Strava.', 'info');
+            });
+
+            // Handle Strava OAuth Redirect
+            async function handleStravaRedirect() {
+                const urlParams = new URLSearchParams(window.location.search);
+                const code = urlParams.get('code');
+                const error = urlParams.get('error');
+
+                // Clear URL parameters immediately to prevent re-processing on refresh
+                window.history.replaceState({}, document.title, window.location.pathname);
+
+                if (error) {
+                    alertMessage(`Lỗi kết nối Strava: ${error}`, 'error');
+                    return;
+                }
+
+                if (code) {
+                    stravaStatus.textContent = 'Đang trao đổi mã ủy quyền với Strava...';
+                    try {
+                        // Fetch the client_id from the user's profile in Supabase
+                        const { data: userProfile, error: profileError } = await supabase
+                            .from('users')
+                            .select('strava_client_id')
+                            .eq('id', currentUserId)
+                            .single();
+
+                        if (profileError || !userProfile || !userProfile.strava_client_id) {
+                            throw new Error('Không tìm thấy Strava Client ID trong hồ sơ người dùng.');
+                        }
+
+                        const clientId = userProfile.strava_client_id;
+                        const redirectUri = STRAVA_OAUTH_FUNCTION_URL; // Must match the one sent to Strava
+
+                        const response = await fetch(STRAVA_OAUTH_FUNCTION_URL, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                type: 'exchange_code',
+                                code: code,
+                                redirect_uri: redirectUri,
+                                client_id: clientId // Send client_id to Edge Function for logging/validation if needed
+                            })
+                        });
+                        const data = await response.json();
+
+                        if (!response.ok) {
+                            throw new Error(data.error || 'Failed to exchange code for tokens.');
+                        }
+
+                        // Save the received tokens and athlete ID to user profile
+                        await saveUserProfile({
+                            strava_access_token: data.access_token,
+                            strava_refresh_token: data.refresh_token,
+                            // Strava's expires_at is a Unix timestamp (seconds), convert to milliseconds for Date object
+                            strava_token_expires_at: new Date(data.expires_at * 1000).toISOString(),
+                            strava_athlete_id: data.athlete.id.toString() // Ensure it's a string
+                        });
+
+                        alertMessage('Kết nối Strava thành công!', 'success');
+                        stravaStatus.textContent = '';
+                        await loadUserProfile(); // Reload profile to update UI
+                    } catch (e) {
+                        alertMessage(`Lỗi trao đổi token Strava: ${e.message}`, 'error');
+                        stravaStatus.textContent = `Lỗi: ${e.message}`;
+                    }
+                }
+            }
+
+            // Call handleStravaRedirect on page load to check for OAuth code
+            // Ensure currentUserId is available before calling handleStravaRedirect
+            supabase.auth.getSession().then(({ data: { session } }) => {
+                if (session) {
+                    currentUserId = session.user.id; // Ensure currentUserId is set
+                    handleStravaRedirect();
+                } else {
+                    // If not logged in, handleStravaRedirect won't have a user ID
+                    // but we still want to clear the code from the URL
+                    window.history.replaceState({}, document.title, window.location.pathname);
+                }
+            });
+
+
+            // --- Fetch Strava Activities ---
+            fetchActivitiesBtn.addEventListener('click', fetchStravaActivities);
+
+            async function fetchStravaActivities() {
+                if (!currentUserId) {
+                    alertMessage('Vui lòng đăng nhập để xem hoạt động.', 'warning');
+                    return;
+                }
+
+                activitiesLoading.classList.remove('hidden');
+                activitiesList.innerHTML = ''; // Clear previous activities
+                noActivitiesMessage.classList.add('hidden');
+
+                try {
+                    const { data: userProfile, error: profileError } = await supabase
+                        .from('users')
+                        .select('strava_access_token, strava_athlete_id, strava_refresh_token, strava_token_expires_at')
+                        .eq('id', currentUserId)
+                        .single();
+
+                    if (profileError) throw profileError;
+                    if (!userProfile || !userProfile.strava_access_token || !userProfile.strava_athlete_id) {
+                        alertMessage('Vui lòng kết nối tài khoản Strava của bạn trước.', 'warning');
+                        activitiesLoading.classList.add('hidden');
+                        noActivitiesMessage.classList.remove('hidden');
+                        return;
+                    }
+
+                    let accessToken = userProfile.strava_access_token;
+                    const tokenExpiresAt = new Date(userProfile.strava_token_expires_at);
+
+                    // Check if token is expired or about to expire (e.g., within 5 minutes)
+                    if (tokenExpiresAt < new Date(Date.now() + 5 * 60 * 1000)) {
+                        alertMessage('Token Strava đã hết hạn hoặc sắp hết hạn. Đang làm mới...', 'info');
+                        const newTokens = await refreshStravaTokenBackend(userProfile.strava_refresh_token);
+                        if (newTokens && newTokens.access_token) {
+                            accessToken = newTokens.access_token;
+                            await saveUserProfile({
+                                strava_access_token: newTokens.access_token,
+                                strava_refresh_token: newTokens.refresh_token,
+                                strava_token_expires_at: new Date(newTokens.expires_at * 1000).toISOString()
+                            });
+                            alertMessage('Token Strava đã được làm mới thành công.', 'success');
+                        } else {
+                            throw new Error('Không thể làm mới token Strava. Vui lòng kết nối lại.');
+                        }
+                    }
+
+                    // Fetch activities from Strava API
+                    const stravaApiUrl = `https://www.strava.com/api/v3/athlete/activities?per_page=30`; // Fetch last 30 activities
+                    const response = await fetch(stravaApiUrl, {
+                        headers: {
+                            'Authorization': `Bearer ${accessToken}`
+                        }
+                    });
+
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        if (response.status === 401) {
+                            // Token invalid/expired, prompt to reconnect
+                            alertMessage('Token Strava không hợp lệ hoặc đã hết hạn. Vui lòng ngắt kết nối và kết nối lại Strava.', 'error');
+                            // Optionally, clear tokens from DB here
+                            await saveUserProfile({
+                                strava_access_token: null,
+                                strava_refresh_token: null,
+                                strava_token_expires_at: null,
+                                strava_athlete_id: null
+                            });
+                            stravaConnectSection.classList.remove('hidden');
+                            stravaConnectedSection.classList.add('hidden');
+                            return;
+                        }
+                        throw new Error(`Lỗi từ Strava API: ${errorData.message || response.statusText}`);
+                    }
+
+                    const activities = await response.json();
+                    displayActivities(activities);
+
+                } catch (error) {
+                    alertMessage(`Lỗi khi tải hoạt động Strava: ${error.message}`, 'error');
+                    noActivitiesMessage.classList.remove('hidden');
+                } finally {
+                    activitiesLoading.classList.add('hidden');
+                }
+            }
+
+            // Function to call Supabase Edge Function for token refresh
+            async function refreshStravaTokenBackend(refreshToken) {
+                try {
                     const response = await fetch(STRAVA_OAUTH_FUNCTION_URL, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
-                            type: 'exchange_code',
-                            code: code,
-                            redirect_uri: redirectUri,
-                            client_id: clientId // Send client_id to Edge Function for logging/validation if needed
+                            type: 'refresh_token',
+                            refresh_token: refreshToken
                         })
                     });
                     const data = await response.json();
 
                     if (!response.ok) {
-                        throw new Error(data.error || 'Failed to exchange code for tokens.');
+                        throw new Error(data.error || 'Failed to refresh token from Edge Function.');
                     }
-
-                    // Save the received tokens and athlete ID to user profile
-                    await saveUserProfile({
-                        strava_access_token: data.access_token,
-                        strava_refresh_token: data.refresh_token,
-                        // Strava's expires_at is a Unix timestamp (seconds), convert to milliseconds for Date object
-                        strava_token_expires_at: new Date(data.expires_at * 1000).toISOString(),
-                        strava_athlete_id: data.athlete.id.toString() // Ensure it's a string
-                    });
-
-                    alertMessage('Kết nối Strava thành công!', 'success');
-                    stravaStatus.textContent = '';
-                    await loadUserProfile(); // Reload profile to update UI
-                } catch (e) {
-                    alertMessage(`Lỗi trao đổi token Strava: ${e.message}`, 'error');
-                    stravaStatus.textContent = `Lỗi: ${e.message}`;
+                    return data; // Should contain new access_token, refresh_token, expires_at
+                } catch (error) {
+                    console.error("Error refreshing token via Edge Function:", error);
+                    throw error;
                 }
             }
-        }
-
-        // Call handleStravaRedirect on page load to check for OAuth code
-        // Ensure currentUserId is available before calling handleStravaRedirect
-        supabase.auth.getSession().then(({ data: { session } }) => {
-            if (session) {
-                currentUserId = session.user.id; // Ensure currentUserId is set
-                handleStravaRedirect();
-            } else {
-                // If not logged in, handleStravaRedirect won't have a user ID
-                // but we still want to clear the code from the URL
-                window.history.replaceState({}, document.title, window.location.pathname);
-            }
-        });
 
 
-        // --- Fetch Strava Activities ---
-        fetchActivitiesBtn.addEventListener('click', fetchStravaActivities);
-
-        async function fetchStravaActivities() {
-            if (!currentUserId) {
-                alertMessage('Vui lòng đăng nhập để xem hoạt động.', 'warning');
-                return;
-            }
-
-            activitiesLoading.classList.remove('hidden');
-            activitiesList.innerHTML = ''; // Clear previous activities
-            noActivitiesMessage.classList.add('hidden');
-
-            try {
-                const { data: userProfile, error: profileError } = await supabase
-                    .from('users')
-                    .select('strava_access_token, strava_athlete_id, strava_refresh_token, strava_token_expires_at')
-                    .eq('id', currentUserId)
-                    .single();
-
-                if (profileError) throw profileError;
-                if (!userProfile || !userProfile.strava_access_token || !userProfile.strava_athlete_id) {
-                    alertMessage('Vui lòng kết nối tài khoản Strava của bạn trước.', 'warning');
-                    activitiesLoading.classList.add('hidden');
+            function displayActivities(activities) {
+                if (activities.length === 0) {
                     noActivitiesMessage.classList.remove('hidden');
                     return;
                 }
+                noActivitiesMessage.classList.add('hidden');
+                activities.forEach(activity => {
+                    const activityCard = document.createElement('div');
+                    activityCard.className = 'bg-gray-100 p-4 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition duration-200 ease-in-out';
+                    const activityDate = new Date(activity.start_date_local).toLocaleDateString('vi-VN', {
+                        year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit'
+                    });
+                    const distanceKm = (activity.distance / 1000).toFixed(2);
+                    const movingTimeMinutes = Math.floor(activity.moving_time / 60);
+                    const movingTimeSeconds = activity.moving_time % 60;
+                    const averagePace = activity.average_speed ? (1000 / (activity.average_speed * 60)).toFixed(2) : 'N/A'; // min/km
 
-                let accessToken = userProfile.strava_access_token;
-                const tokenExpiresAt = new Date(userProfile.strava_token_expires_at);
-
-                // Check if token is expired or about to expire (e.g., within 5 minutes)
-                if (tokenExpiresAt < new Date(Date.now() + 5 * 60 * 1000)) {
-                    alertMessage('Token Strava đã hết hạn hoặc sắp hết hạn. Đang làm mới...', 'info');
-                    const newTokens = await refreshStravaTokenBackend(userProfile.strava_refresh_token);
-                    if (newTokens && newTokens.access_token) {
-                        accessToken = newTokens.access_token;
-                        await saveUserProfile({
-                            strava_access_token: newTokens.access_token,
-                            strava_refresh_token: newTokens.refresh_token,
-                            strava_token_expires_at: new Date(newTokens.expires_at * 1000).toISOString()
-                        });
-                        alertMessage('Token Strava đã được làm mới thành công.', 'success');
-                    } else {
-                        throw new Error('Không thể làm mới token Strava. Vui lòng kết nối lại.');
-                    }
-                }
-
-                // Fetch activities from Strava API
-                const stravaApiUrl = `https://www.strava.com/api/v3/athlete/activities?per_page=30`; // Fetch last 30 activities
-                const response = await fetch(stravaApiUrl, {
-                    headers: {
-                        'Authorization': `Bearer ${accessToken}`
-                    }
-                });
-
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    if (response.status === 401) {
-                         // Token invalid/expired, prompt to reconnect
-                        alertMessage('Token Strava không hợp lệ hoặc đã hết hạn. Vui lòng ngắt kết nối và kết nối lại Strava.', 'error');
-                        // Optionally, clear tokens from DB here
-                        await saveUserProfile({
-                            strava_access_token: null,
-                            strava_refresh_token: null,
-                            strava_token_expires_at: null,
-                            strava_athlete_id: null
-                        });
-                        stravaConnectSection.classList.remove('hidden');
-                        stravaConnectedSection.classList.add('hidden');
-                        return;
-                    }
-                    throw new Error(`Lỗi từ Strava API: ${errorData.message || response.statusText}`);
-                }
-
-                const activities = await response.json();
-                displayActivities(activities);
-
-            } catch (error) {
-                alertMessage(`Lỗi khi tải hoạt động Strava: ${error.message}`, 'error');
-                noActivitiesMessage.classList.remove('hidden');
-            } finally {
-                activitiesLoading.classList.add('hidden');
-            }
-        }
-
-        // Function to call Supabase Edge Function for token refresh
-        async function refreshStravaTokenBackend(refreshToken) {
-            try {
-                const response = await fetch(STRAVA_OAUTH_FUNCTION_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        type: 'refresh_token',
-                        refresh_token: refreshToken
-                    })
-                });
-                const data = await response.json();
-
-                if (!response.ok) {
-                    throw new Error(data.error || 'Failed to refresh token from Edge Function.');
-                }
-                return data; // Should contain new access_token, refresh_token, expires_at
-            } catch (error) {
-                console.error("Error refreshing token via Edge Function:", error);
-                throw error;
-            }
-        }
-
-
-        function displayActivities(activities) {
-            if (activities.length === 0) {
-                noActivitiesMessage.classList.remove('hidden');
-                return;
-            }
-            noActivitiesMessage.classList.add('hidden');
-            activities.forEach(activity => {
-                const activityCard = document.createElement('div');
-                activityCard.className = 'bg-gray-100 p-4 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition duration-200 ease-in-out';
-                const activityDate = new Date(activity.start_date_local).toLocaleDateString('vi-VN', {
-                    year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit'
-                });
-                const distanceKm = (activity.distance / 1000).toFixed(2);
-                const movingTimeMinutes = Math.floor(activity.moving_time / 60);
-                const movingTimeSeconds = activity.moving_time % 60;
-                const averagePace = activity.average_speed ? (1000 / (activity.average_speed * 60)).toFixed(2) : 'N/A'; // min/km
-
-                activityCard.innerHTML = `
-                    <h4 class="text-lg font-semibold text-bidv-blue mb-1">${activity.name}</h4>
-                    <p class="text-sm text-gray-600 mb-2"><i class="far fa-calendar-alt mr-1"></i> ${activityDate}</p>
-                    <div class="grid grid-cols-2 gap-2 text-gray-700 text-sm">
-                        <p><i class="fas fa-ruler-horizontal mr-1 text-bidv-yellow"></i> Quãng đường: <span class="font-medium">${distanceKm} km</span></p>
-                        <p><i class="far fa-clock mr-1 text-bidv-yellow"></i> Thời gian di chuyển: <span class="font-medium">${movingTimeMinutes} phút ${movingTimeSeconds} giây</span></p>
-                        <p><i class="fas fa-tachometer-alt mr-1 text-bidv-yellow"></i> Tốc độ trung bình: <span class="font-medium">${averagePace} phút/km</span></p>
-                        <p><i class="fas fa-mountain mr-1 text-bidv-yellow"></i> Độ cao: <span class="font-medium">${activity.total_elevation_gain} m</span></p>
-                    </div>
-                    ${activity.map.summary_polyline ? `
-                        <div class="mt-3">
-                            <img src="https://maps.googleapis.com/maps/api/staticmap?size=400x200&path=enc:${activity.map.summary_polyline}&key=YOUR_GOOGLE_MAPS_API_KEY_IF_NEEDED&sensor=false"
-                                 alt="Map of activity" class="w-full h-auto rounded-md border border-gray-300" onerror="this.onerror=null;this.src='https://placehold.co/400x200/e0e0e0/555555?text=Bản+đồ+không+khả+dụng';">
+                    activityCard.innerHTML = `
+                        <h4 class="text-lg font-semibold text-bidv-blue mb-1">${activity.name}</h4>
+                        <p class="text-sm text-gray-600 mb-2"><i class="far fa-calendar-alt mr-1"></i> ${activityDate}</p>
+                        <div class="grid grid-cols-2 gap-2 text-gray-700 text-sm">
+                            <p><i class="fas fa-ruler-horizontal mr-1 text-bidv-yellow"></i> Quãng đường: <span class="font-medium">${distanceKm} km</span></p>
+                            <p><i class="far fa-clock mr-1 text-bidv-yellow"></i> Thời gian di chuyển: <span class="font-medium">${movingTimeMinutes} phút ${movingTimeSeconds} giây</span></p>
+                            <p><i class="fas fa-tachometer-alt mr-1 text-bidv-yellow"></i> Tốc độ trung bình: <span class="font-medium">${averagePace} phút/km</span></p>
+                            <p><i class="fas fa-mountain mr-1 text-bidv-yellow"></i> Độ cao: <span class="font-medium">${activity.total_elevation_gain} m</span></p>
                         </div>
-                    ` : ''}
-                    <a href="https://www.strava.com/activities/${activity.id}" target="_blank" class="text-bidv-blue hover:underline mt-3 inline-block text-sm">
-                        Xem trên Strava <i class="fas fa-external-link-alt ml-1 text-xs"></i>
-                    </a>
+                        ${activity.map.summary_polyline ? `
+                            <div class="mt-3">
+                                <img src="https://maps.googleapis.com/maps/api/staticmap?size=400x200&path=enc:${activity.map.summary_polyline}&key=YOUR_GOOGLE_MAPS_API_KEY_IF_NEEDED&sensor=false"
+                                     alt="Map of activity" class="w-full h-auto rounded-md border border-gray-300" onerror="this.onerror=null;this.src='https://placehold.co/400x200/e0e0e0/555555?text=Bản+đồ+không+khả+dụng';">
+                            </div>
+                        ` : ''}
+                        <a href="https://www.strava.com/activities/${activity.id}" target="_blank" class="text-bidv-blue hover:underline mt-3 inline-block text-sm">
+                            Xem trên Strava <i class="fas fa-external-link-alt ml-1 text-xs"></i>
+                        </a>
+                    `;
+                    activitiesList.appendChild(activityCard);
+                });
+            }
+
+            // --- Custom Alert Message (instead of alert()) ---
+            function alertMessage(message, type = 'info') {
+                const existingAlert = document.getElementById('customAlert');
+                if (existingAlert) {
+                    existingAlert.remove();
+                }
+
+                const alertDiv = document.createElement('div');
+                alertDiv.id = 'customAlert';
+                alertDiv.className = `fixed top-4 right-4 p-4 rounded-lg shadow-xl flex items-center space-x-3 z-50 transition-all duration-300 ease-out transform translate-x-0 opacity-100`;
+
+                let bgColor = 'bg-blue-500';
+                let icon = 'fas fa-info-circle';
+                if (type === 'success') {
+                    bgColor = 'bg-green-500';
+                    icon = 'fas fa-check-circle';
+                } else if (type === 'error') {
+                    bgColor = 'bg-red-500';
+                    icon = 'fas fa-exclamation-circle';
+                } else if (type === 'warning') {
+                    bgColor = 'bg-yellow-500';
+                    icon = 'fas fa-exclamation-triangle';
+                }
+
+                alertDiv.classList.add(bgColor, 'text-white');
+                alertDiv.innerHTML = `
+                    <i class="${icon} text-xl"></i>
+                    <span class="font-medium">${message}</span>
+                    <button class="ml-auto text-white opacity-75 hover:opacity-100" onclick="this.parentElement.remove()">
+                        <i class="fas fa-times"></i>
+                    </button>
                 `;
-                activitiesList.appendChild(activityCard);
-            });
-        }
+                document.body.appendChild(alertDiv);
 
-        // --- Custom Alert Message (instead of alert()) ---
-        function alertMessage(message, type = 'info') {
-            const existingAlert = document.getElementById('customAlert');
-            if (existingAlert) {
-                existingAlert.remove();
+                setTimeout(() => {
+                    alertDiv.classList.add('translate-x-full', 'opacity-0');
+                    alertDiv.addEventListener('transitionend', () => alertDiv.remove());
+                }, 5000); // Remove after 5 seconds
             }
 
-            const alertDiv = document.createElement('div');
-            alertDiv.id = 'customAlert';
-            alertDiv.className = `fixed top-4 right-4 p-4 rounded-lg shadow-xl flex items-center space-x-3 z-50 transition-all duration-300 ease-out transform translate-x-0 opacity-100`;
+            // --- Supabase Database Security Rules (Conceptual) ---
+            // For 'users' table:
+            // - Allow read/write if request.auth.uid == id (for private user data)
+            // - Allow read/write if request.auth != null (for public data, if any)
+            // For 'activities' table (if you decide to cache activities):
+            // - Allow read/write if request.auth.uid == user_id
 
-            let bgColor = 'bg-blue-500';
-            let icon = 'fas fa-info-circle';
-            if (type === 'success') {
-                bgColor = 'bg-green-500';
-                icon = 'fas fa-check-circle';
-            } else if (type === 'error') {
-                bgColor = 'bg-red-500';
-                icon = 'fas fa-exclamation-circle';
-            } else if (type === 'warning') {
-                bgColor = 'bg-yellow-500';
-                icon = 'fas fa-exclamation-triangle';
-            }
+            // Example Supabase Security Rule for 'users' table (in Supabase Dashboard -> Authentication -> Policies)
+            /*
+            -- Enable Row Level Security (RLS) for the 'users' table
+            ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
 
-            alertDiv.classList.add(bgColor, 'text-white');
-            alertDiv.innerHTML = `
-                <i class="${icon} text-xl"></i>
-                <span class="font-medium">${message}</span>
-                <button class="ml-auto text-white opacity-75 hover:opacity-100" onclick="this.parentElement.remove()">
-                    <i class="fas fa-times"></i>
-                </button>
-            `;
-            document.body.appendChild(alertDiv);
+            -- Policy for users to view their own profile
+            CREATE POLICY "Users can view their own profile."
+            ON public.users FOR SELECT
+            USING (auth.uid() = id);
 
-            setTimeout(() => {
-                alertDiv.classList.add('translate-x-full', 'opacity-0');
-                alertDiv.addEventListener('transitionend', () => alertDiv.remove());
-            }, 5000); // Remove after 5 seconds
-        }
+            -- Policy for users to update their own profile
+            CREATE POLICY "Users can update their own profile."
+            ON public.users FOR UPDATE
+            USING (auth.uid() = id);
 
-        // --- Supabase Database Security Rules (Conceptual) ---
-        // For 'users' table:
-        // - Allow read/write if request.auth.uid == id (for private user data)
-        // - Allow read/write if request.auth != null (for public data, if any)
-        // For 'activities' table (if you decide to cache activities):
-        // - Allow read/write if request.auth.uid == user_id
-
-        // Example Supabase Security Rule for 'users' table (in Supabase Dashboard -> Authentication -> Policies)
-        /*
-        -- Enable Row Level Security (RLS) for the 'users' table
-        ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
-
-        -- Policy for users to view their own profile
-        CREATE POLICY "Users can view their own profile."
-        ON public.users FOR SELECT
-        USING (auth.uid() = id);
-
-        -- Policy for users to update their own profile
-        CREATE POLICY "Users can update their own profile."
-        ON public.users FOR UPDATE
-        USING (auth.uid() = id);
-
-        -- Policy for new users to insert their initial profile
-        CREATE POLICY "New users can insert their own profile."
-        ON public.users FOR INSERT
-        WITH CHECK (auth.uid() = id);
-        */
+            -- Policy for new users to insert their initial profile
+            CREATE POLICY "New users can insert their own profile."
+            ON public.users FOR INSERT
+            WITH CHECK (auth.uid() = id);
+            */
+        }); // End of DOMContentLoaded
     </script>
 </body>
 </html>
