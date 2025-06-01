@@ -164,6 +164,9 @@
                 <button id="analyze-activities-btn" class="btn-primary">
                     ✨ Phân tích hoạt động
                 </button>
+                <button id="suggest-training-plan-btn" class="btn-secondary">
+                    ✨ Gợi ý kế hoạch tập luyện
+                </button>
             </div>
             <div id="data-status" class="mt-4 text-sm text-gray-600"></div>
 
@@ -179,6 +182,14 @@
                     <p class="text-gray-500">Nhấn "✨ Phân tích hoạt động" để nhận phân tích từ AI.</p>
                 </div>
                 <div id="llm-analysis-status" class="mt-2 text-sm text-gray-600"></div>
+            </div>
+
+            <div id="llm-training-plan-section" class="mt-6 border-t pt-4 hidden">
+                <h3 class="text-lg font-semibold mb-3">Kế hoạch tập luyện gợi ý:</h3>
+                <div id="llm-training-plan-content" class="bg-gray-100 p-4 rounded-md text-sm">
+                    <p class="text-gray-500">Nhấn "✨ Gợi ý kế hoạch tập luyện" để nhận kế hoạch từ AI.</p>
+                </div>
+                <div id="llm-training-plan-status" class="mt-2 text-sm text-gray-600"></div>
             </div>
         </section>
 
@@ -582,6 +593,70 @@
                 console.error('Error calling Gemini API:', error);
                 llmAnalysisContent.innerHTML = '<p class="text-red-500">Đã xảy ra lỗi khi gọi API phân tích. Vui lòng kiểm tra kết nối mạng hoặc thử lại sau.</p>';
                 llmAnalysisStatus.textContent = 'Lỗi kết nối.';
+            }
+        });
+
+        // --- Tính năng gợi ý kế hoạch tập luyện bằng LLM ---
+        document.getElementById('suggest-training-plan-btn').addEventListener('click', async () => {
+            if (!isAuthenticated || !currentUserId) {
+                showAlert('Vui lòng kết nối tài khoản Strava trước.');
+                return;
+            }
+
+            const llmTrainingPlanSection = document.getElementById('llm-training-plan-section');
+            const llmTrainingPlanContent = document.getElementById('llm-training-plan-content');
+            const llmTrainingPlanStatus = document.getElementById('llm-training-plan-status');
+
+            llmTrainingPlanSection.classList.remove('hidden'); // Hiển thị phần kế hoạch tập luyện
+            llmTrainingPlanContent.innerHTML = '<p class="text-gray-500">Đang tạo kế hoạch tập luyện... <span class="loader"></span></p>';
+            llmTrainingPlanStatus.textContent = '';
+
+            if (userActivities.length === 0) {
+                llmTrainingPlanContent.innerHTML = '<p class="text-gray-500">Không có dữ liệu hoạt động để tạo kế hoạch. Vui lòng tải dữ liệu từ Strava trước.</p>';
+                return;
+            }
+
+            try {
+                // Chuẩn bị dữ liệu hoạt động để gửi đến LLM
+                const activitiesForLLM = userActivities.map(activity => ({
+                    name: activity.name,
+                    distance_km: (activity.distance / 1000).toFixed(2),
+                    moving_time_seconds: activity.moving_time,
+                    start_date: new Date(activity.start_date).toLocaleDateString('vi-VN'),
+                    average_speed_kmh: activity.average_speed ? (activity.average_speed * 3.6).toFixed(2) : 'N/A',
+                    total_elevation_gain_m: activity.total_elevation_gain ? activity.total_elevation_gain.toFixed(0) : 'N/A'
+                }));
+
+                const prompt = `Dựa trên dữ liệu hoạt động chạy bộ gần đây của người dùng, hãy tạo một kế hoạch tập luyện gợi ý cho 7 ngày tới. Kế hoạch nên cân bằng giữa các buổi chạy (ví dụ: chạy nhẹ, chạy tempo, chạy dài, interval) và ngày nghỉ/cross-training. Hãy cung cấp quãng đường và thời gian gợi ý cho mỗi buổi chạy. Viết bằng tiếng Việt, sử dụng ngôn ngữ thân thiện và dễ hiểu. Dữ liệu hoạt động gần đây: ${JSON.stringify(activitiesForLLM)}.`;
+
+                const apiKey = typeof __api_key !== 'undefined' ? __api_key : '';
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+                const payload = { contents: [{ role: "user", parts: [{ text: prompt }] }] };
+
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await response.json();
+
+                if (result.candidates && result.candidates.length > 0 &&
+                    result.candidates[0].content && result.candidates[0].content.parts &&
+                    result.candidates[0].content.parts.length > 0) {
+                    const trainingPlanText = result.candidates[0].content.parts[0].text;
+                    llmTrainingPlanContent.innerHTML = `<p>${trainingPlanText.replace(/\n/g, '<br>')}</p>`;
+                    llmTrainingPlanStatus.textContent = 'Kế hoạch tập luyện đã sẵn sàng!';
+                } else {
+                    llmTrainingPlanContent.innerHTML = '<p class="text-red-500">Không thể tạo kế hoạch tập luyện từ AI. Vui lòng thử lại.</p>';
+                    llmTrainingPlanStatus.textContent = 'Lỗi tạo kế hoạch.';
+                    console.error('Unexpected LLM response structure for training plan:', result);
+                }
+            } catch (error) {
+                console.error('Error calling Gemini API for training plan:', error);
+                llmTrainingPlanContent.innerHTML = '<p class="text-red-500">Đã xảy ra lỗi khi gọi API để tạo kế hoạch. Vui lòng kiểm tra kết nối mạng hoặc thử lại sau.</p>';
+                llmTrainingPlanStatus.textContent = 'Lỗi kết nối.';
             }
         });
     </script>
