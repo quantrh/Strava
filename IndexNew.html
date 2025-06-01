@@ -164,7 +164,10 @@
                 <button id="analyze-activities-btn" class="btn-primary">
                     ✨ Phân tích hoạt động
                 </button>
-                </div>
+                <button id="disconnect-strava-btn" class="btn-secondary">
+                    Ngắt kết nối
+                </button>
+            </div>
             <div id="data-status" class="mt-4 text-sm text-gray-600"></div>
 
             <div id="activities-list" class="mt-6 border-t pt-4">
@@ -239,12 +242,25 @@
 
         // Hàm kiểm tra trạng thái đăng nhập và cập nhật UI
         async function checkAuthState() {
-            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+            // 1. Thử tải từ localStorage trước
+            const storedUserId = localStorage.getItem('strava_user_id');
+            const storedAuthStatus = localStorage.getItem('strava_authenticated');
+
+            if (storedUserId && storedAuthStatus === 'true') {
+                currentUserId = storedUserId;
+                isAuthenticated = true;
+                console.log('Phiên đăng nhập được khôi phục từ localStorage.');
+            } else if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                // 2. Nếu không có trong localStorage, kiểm tra từ __initial_auth_token (môi trường Canvas)
                 const params = new URLSearchParams(window.location.search);
                 const userIdFromUrl = params.get('userId');
                 if (userIdFromUrl) {
                     currentUserId = userIdFromUrl;
                     isAuthenticated = true;
+                    // Nếu xác thực qua URL, lưu vào localStorage để duy trì phiên
+                    localStorage.setItem('strava_user_id', currentUserId);
+                    localStorage.setItem('strava_authenticated', 'true');
+                    console.log('Xác thực thành công qua URL, phiên được lưu vào localStorage.');
                 }
             }
             updateUI();
@@ -302,6 +318,9 @@
                     if (response.ok && result.success) {
                         isAuthenticated = true;
                         currentUserId = result.userId;
+                        // Lưu thông tin phiên vào localStorage khi xác thực thành công
+                        localStorage.setItem('strava_user_id', currentUserId);
+                        localStorage.setItem('strava_authenticated', 'true');
                         authStatus.textContent = 'Kết nối Strava thành công!';
                         showAlert('Kết nối Strava thành công!');
                         window.history.replaceState({}, document.title, window.location.pathname);
@@ -521,6 +540,18 @@
             checkAuthState(); // Kiểm tra trạng thái xác thực ban đầu
         };
 
+        // Hàm chuyển đổi Markdown cơ bản sang HTML
+        function markdownToHtml(markdownText) {
+            let htmlText = markdownText;
+            // Chuyển đổi **text** thành <strong>text</strong>
+            htmlText = htmlText.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+            // Chuyển đổi *text* thành <em>text</em>
+            htmlText = htmlText.replace(/\*(.*?)\*/g, '<em>$1</em>');
+            // Chuyển đổi xuống dòng thành <br>
+            htmlText = htmlText.replace(/\n/g, '<br>');
+            return htmlText;
+        }
+
         // --- Tính năng phân tích hoạt động bằng LLM ---
         document.getElementById('analyze-activities-btn').addEventListener('click', async () => {
             if (!isAuthenticated || !currentUserId) {
@@ -554,8 +585,8 @@
 
                 const prompt = `Dựa trên dữ liệu hoạt động chạy bộ sau đây của người dùng, hãy cung cấp một bản tóm tắt chi tiết, những thông tin chi tiết đáng chú ý (ví dụ: quãng đường trung bình, thời gian trung bình, tốc độ trung bình, hoạt động dài nhất/ngắn nhất, xu hướng tăng/giảm hiệu suất), và một vài lời khuyên hoặc gợi ý cụ thể để cải thiện hoặc duy trì phong độ. Hãy viết bằng tiếng Việt và sử dụng ngôn ngữ thân thiện, dễ hiểu. Dữ liệu: ${JSON.stringify(activitiesForLLM)}.`;
 
-                // Sử dụng __api_key được cung cấp bởi môi trường Canvas
-                const apiKey = typeof __api_key !== 'undefined' ? __api_key : '';
+                // Sử dụng API key do người dùng cung cấp
+                const apiKey = 'AIzaSyBaLi7TzZJ9SwmHilU24SRcV2i7lU6gqdQ';
                 const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
 
                 const payload = { contents: [{ role: "user", parts: [{ text: prompt }] }] };
@@ -572,7 +603,8 @@
                     result.candidates[0].content && result.candidates[0].content.parts &&
                     result.candidates[0].content.parts.length > 0) {
                     const analysisText = result.candidates[0].content.parts[0].text;
-                    llmAnalysisContent.innerHTML = `<p>${analysisText.replace(/\n/g, '<br>')}</p>`; // Hiển thị kết quả, giữ định dạng xuống dòng
+                    // Chuyển đổi Markdown sang HTML trước khi hiển thị
+                    llmAnalysisContent.innerHTML = `<p>${markdownToHtml(analysisText)}</p>`;
                     llmAnalysisStatus.textContent = 'Phân tích hoàn tất!';
                 } else {
                     llmAnalysisContent.innerHTML = '<p class="text-red-500">Không thể nhận được phân tích từ AI. Vui lòng thử lại.</p>';
@@ -584,6 +616,25 @@
                 llmAnalysisContent.innerHTML = '<p class="text-red-500">Đã xảy ra lỗi khi gọi API phân tích. Vui lòng kiểm tra kết nối mạng hoặc thử lại sau.</p>';
                 llmAnalysisStatus.textContent = 'Lỗi kết nối.';
             }
+        });
+
+        // --- Xử lý ngắt kết nối Strava ---
+        document.getElementById('disconnect-strava-btn').addEventListener('click', () => {
+            // Xóa thông tin phiên khỏi localStorage
+            localStorage.removeItem('strava_user_id');
+            localStorage.removeItem('strava_authenticated');
+            currentUserId = null;
+            isAuthenticated = false;
+            userActivities = []; // Xóa dữ liệu hoạt động
+
+            showAlert('Đã ngắt kết nối với Strava. Vui lòng kết nối lại để sử dụng ứng dụng.');
+            updateUI(); // Cập nhật giao diện người dùng
+            // Xóa nội dung các phần dữ liệu và phân tích
+            document.getElementById('recent-activities').innerHTML = '';
+            document.getElementById('llm-analysis-content').innerHTML = '<p class="text-gray-500">Nhấn "✨ Phân tích hoạt động" để nhận phân tích từ AI.</p>';
+            document.getElementById('llm-analysis-section').classList.add('hidden');
+            document.getElementById('bubble-chart-container').innerHTML = '';
+            document.getElementById('chart-status').textContent = '';
         });
     </script>
 </body>
