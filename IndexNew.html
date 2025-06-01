@@ -439,98 +439,160 @@
             }
         });
 
+        // Helper function to convert ISO week string (YYYY-WW) to a Date object
+        function getDateFromISOWeek(yearWeek) {
+            const [yearStr, weekStr] = yearWeek.split('-W');
+            const year = parseInt(yearStr);
+            const week = parseInt(weekStr);
+
+            // Get the first day of the year
+            const jan1 = new Date(year, 0, 1);
+            // Find the day of the week for Jan 1 (0 = Sunday, 1 = Monday, ..., 6 = Saturday)
+            const dayOfWeekJan1 = jan1.getDay();
+            // Calculate the offset to the first Thursday of the year (ISO week 1 always contains the first Thursday)
+            // This ensures consistent week numbering as per ISO 8601
+            const firstThursday = new Date(year, 0, 1 + (4 - dayOfWeekJan1 + 7) % 7);
+            // Calculate the date for the desired week (mid-week to be safe, e.g., Thursday of that week)
+            const date = new Date(firstThursday.getTime() + (week - 1) * 7 * 24 * 60 * 60 * 1000);
+            return date;
+        }
+
         // Hàm vẽ biểu đồ bong bóng
         function renderBubbleChart(data) {
+            // data is weeklyStats: [{ week: 'YYYY-WW', totalDistance: ..., totalTime: ... }]
+
+            // 1. Data Transformation: Group by month
+            const monthlyDataMap = new Map();
+
+            data.forEach(d => {
+                const dateInWeek = getDateFromISOWeek(d.week);
+                const monthKey = dateInWeek.getFullYear() + '-' + String(dateInWeek.getMonth() + 1).padStart(2, '0'); // YYYY-MM
+
+                if (!monthlyDataMap.has(monthKey)) {
+                    monthlyDataMap.set(monthKey, { month: monthKey, weeks: [] });
+                }
+                monthlyDataMap.get(monthKey).weeks.push(d);
+            });
+
+            // Convert map to array and sort months (newest first)
+            const monthlyData = Array.from(monthlyDataMap.values()).sort((a, b) => b.month.localeCompare(a.month));
+
+            // 2. SVG Setup
             const container = document.getElementById('bubble-chart-container');
             container.innerHTML = ''; // Clear previous chart
 
-            if (!data || data.length === 0) {
+            if (!monthlyData || monthlyData.length === 0) {
                 container.innerHTML = '<p class="text-gray-500">Không có dữ liệu thống kê để hiển thị biểu đồ.</p>';
                 return;
             }
 
             const width = container.clientWidth;
-            const height = container.clientHeight;
+            const defaultHeight = container.clientHeight; // Initial height from CSS
 
             const svg = d3.select(container)
                 .append("svg")
                 .attr("width", width)
-                .attr("height", height)
-                .attr("viewBox", `0 0 ${width} ${height}`)
+                .attr("viewBox", `0 0 ${width} ${defaultHeight}`) // Use default height for viewBox initially
                 .attr("preserveAspectRatio", "xMidYMid meet");
 
-            // Tạo một nhóm để chứa các bong bóng và di chuyển nó vào giữa
-            const g = svg.append("g")
-                .attr("transform", `translate(${width / 2},${height / 2})`);
+            // Define scales
+            const maxDistance = d3.max(data, d => d.totalDistance);
+            const minDistance = d3.min(data, d => d.totalDistance);
 
-            // Tạo layout pack cho biểu đồ bong bóng
-            const pack = d3.pack()
-                .size([width, height])
-                .padding(2);
+            const radiusScale = d3.scaleSqrt()
+                .domain([0, maxDistance])
+                .range([15, 60]); // Min and max radius for bubbles
 
-            // Chuyển đổi dữ liệu thành định dạng phân cấp mà d3.pack yêu cầu
-            // Dữ liệu mẫu: [{ week: '2025-W20', totalDistance: 50000, totalTime: 18000 }]
-            const root = d3.hierarchy({ children: data })
-                .sum(d => d.totalDistance); // Kích thước bong bóng dựa trên tổng quãng đường
+            // Color scale: larger distance -> darker color (using Viridis, reversed)
+            // Viridis goes from purple (low) to yellow (high). Reversing domain makes high values purple/darker.
+            const colorScale = d3.scaleSequential(d3.interpolateViridis)
+                .domain([maxDistance, minDistance]); // Reversed domain for darker color on larger values
 
-            const nodes = pack(root).leaves();
+            // Layout parameters
+            const monthBandHeight = 150; // Height allocated for each month
+            const bubbleHorizontalPadding = 20; // Padding between bubbles horizontally
+            const bubbleVerticalOffset = monthBandHeight / 2; // Center bubbles vertically in their band
 
-            const colorScale = d3.scaleLinear()
-                .domain([d3.min(data, d => d.totalDistance), d3.max(data, d => d.totalDistance)])
-                .range([0, 1]); // Sử dụng để tạo màu sắc dựa trên khoảng cách
+            // Calculate total height needed for SVG based on number of months
+            const totalSvgContentHeight = monthlyData.length * monthBandHeight;
+            // Adjust SVG height to fit all content, but don't shrink below defaultHeight
+            svg.attr("height", Math.max(defaultHeight, totalSvgContentHeight));
+            // Also update viewBox if total content height exceeds default height
+            svg.attr("viewBox", `0 0 ${width} ${Math.max(defaultHeight, totalSvgContentHeight)}`);
 
-            const tooltip = d3.select("body").append("div")
-                .attr("class", "tooltip");
 
-            // Lấy giá trị của biến CSS
-            const style = getComputedStyle(document.documentElement);
-            const bidvYellow = style.getPropertyValue('--bidv-yellow').trim();
-            const bidvGreen = style.getPropertyValue('--bidv-green').trim();
+            let currentYOffset = 0;
 
-            // Vẽ các bong bóng
-            g.selectAll(".bubble")
-                .data(nodes)
-                .enter().append("circle")
-                .attr("class", "bubble")
-                .attr("cx", d => d.x - width / 2) // Điều chỉnh vị trí do translate của g
-                .attr("cy", d => d.y - height / 2) // Điều chỉnh vị trí do translate của g
-                .attr("r", d => d.r)
-                .attr("fill", d => {
-                    // Sử dụng màu xanh BIDV, có thể điều chỉnh độ sáng/tối dựa trên giá trị
-                    const t = colorScale(d.data.totalDistance);
-                    return d3.interpolateRgb(bidvGreen, "#003331")(t); // Biến thể màu xanh
-                })
-                .on("mouseover", function(event, d) {
-                    d3.select(this).attr("stroke", bidvYellow).attr("stroke-width", 3);
-                    tooltip.style("opacity", 1)
-                        .html(`Tuần: ${d.data.week}<br>
-                               Quãng đường: ${(d.data.totalDistance / 1000).toFixed(2)} km<br>
-                               Thời gian: ${formatDuration(d.data.totalTime)}`)
-                        .style("left", (event.pageX + 10) + "px")
-                        .style("top", (event.pageY - 28) + "px");
-                })
-                .on("mouseout", function() {
-                    d3.select(this).attr("stroke", bidvGreen).attr("stroke-width", 2);
-                    tooltip.style("opacity", 0);
+            // Draw each month's band
+            monthlyData.forEach((monthObj, monthIndex) => {
+                const monthGroup = svg.append("g")
+                    .attr("transform", `translate(0, ${currentYOffset})`);
+
+                // Add month label
+                monthGroup.append("text")
+                    .attr("x", 20) // Left padding
+                    .attr("y", 30) // Top padding within the band
+                    .attr("font-size", "1.2rem")
+                    .attr("font-weight", "bold")
+                    .attr("fill", "#555")
+                    .text(`Tháng ${monthObj.month.substring(5)}/${monthObj.month.substring(0, 4)}`);
+
+                // Sort weeks within the month (oldest first for left-to-right flow)
+                monthObj.weeks.sort((a, b) => a.week.localeCompare(b.week));
+
+                let currentX = 20; // Start X for the first bubble in the month band
+
+                // Calculate positions and radii for all bubbles in this month first
+                const positionedWeeks = monthObj.weeks.map(d => {
+                    const r = radiusScale(d.totalDistance);
+                    const cx = currentX + r;
+                    currentX += (r * 2) + bubbleHorizontalPadding;
+                    return { ...d, r, cx, cy: bubbleVerticalOffset };
                 });
 
-            // Thêm văn bản vào bong bóng
-            g.selectAll(".bubble-text")
-                .data(nodes)
-                .enter().append("text")
-                .attr("class", "bubble-text")
-                .attr("x", d => d.x - width / 2)
-                .attr("y", d => d.y - height / 2)
-                .text(d => {
-                    // Hiển thị tuần nếu bong bóng đủ lớn
-                    return d.r > 30 ? d.data.week : '';
-                })
-                .attr("dy", "0.35em"); // Căn giữa theo chiều dọc
+                // Draw circles
+                monthGroup.selectAll(".bubble")
+                    .data(positionedWeeks)
+                    .enter().append("circle")
+                    .attr("class", "bubble")
+                    .attr("cx", d => d.cx)
+                    .attr("cy", d => d.cy)
+                    .attr("r", d => d.r)
+                    .attr("fill", d => colorScale(d.totalDistance)) // Apply color based on distance
+                    .attr("stroke", "#fff") // White stroke for contrast
+                    .attr("stroke-width", 2)
+                    .on("mouseover", function(event, d) {
+                        d3.select(this).attr("stroke", "orange").attr("stroke-width", 3); // Highlight on hover
+                        tooltip.style("opacity", 1)
+                            .html(`Tuần: ${d.week}<br>
+                                   Quãng đường: ${(d.totalDistance / 1000).toFixed(2)} km<br>
+                                   Thời gian: ${formatDuration(d.totalTime)}`)
+                            .style("left", (event.pageX + 10) + "px")
+                            .style("top", (event.pageY - 28) + "px");
+                    })
+                    .on("mouseout", function(event, d) {
+                        d3.select(this).attr("stroke", "#fff").attr("stroke-width", 2); // Revert stroke
+                        tooltip.style("opacity", 0);
+                    });
 
-            // Xử lý thay đổi kích thước cửa sổ
-            window.addEventListener('resize', () => {
-                renderBubbleChart(data); // Vẽ lại biểu đồ khi thay đổi kích thước
+                // Add text labels to bubbles
+                monthGroup.selectAll(".bubble-text")
+                    .data(positionedWeeks)
+                    .enter().append("text")
+                    .attr("class", "bubble-text")
+                    .attr("x", d => d.cx)
+                    .attr("y", d => d.cy)
+                    .text(d => d.r > 25 ? d.week.split('-W')[1] : '') // Show only week number if bubble is large enough
+                    .attr("dy", "0.35em")
+                    .attr("fill", "white") // Text color
+                    .attr("pointer-events", "none");
+
+                currentYOffset += monthBandHeight; // Move to the next month's starting Y
             });
+
+            // Tooltip setup (already exists, ensure it's appended to body)
+            const tooltip = d3.select("body").append("div")
+                .attr("class", "tooltip");
         }
 
 
