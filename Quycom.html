@@ -1470,6 +1470,44 @@
 
         // --- Gemini API Integration ---
 
+        // Simple Markdown to HTML converter
+        function markdownToHtml(markdown) {
+            let html = markdown;
+
+            // Convert headings (e.g., ## Heading) to <h2>
+            html = html.replace(/^### (.*$)/gim, '<h3>$1</h3>');
+            html = html.replace(/^## (.*$)/gim, '<h2>$1</h2>');
+            html = html.replace(/^# (.*$)/gim, '<h1>$1</h1>');
+
+            // Convert bold (e.g., **text**) to <strong>
+            html = html.replace(/\*\*(.*?)\*\*/gim, '<strong>$1</strong>');
+            // Convert italics (e.g., *text*) to <em>
+            html = html.replace(/\*(.*?)\*/gim, '<em>$1</em>');
+
+            // Convert unordered lists (e.g., - item) to <ul> and <li>
+            html = html.replace(/^\s*\-\s(.*)$/gim, '<li>$1</li>');
+            html = html.replace(/^(<li>.*<\/li>(\n<li>.*<\/li>)*)/gim, '<ul>$1</ul>');
+
+            // Convert ordered lists (e.g., 1. item) to <ol> and <li>
+            html = html.replace(/^\s*\d+\.\s(.*)$/gim, '<li>$1</li>');
+            html = html.replace(/^(<li>.*<\/li>(\n<li>.*<\/li>)*)/gim, '<ol>$1</ol>');
+
+
+            // Convert newlines to paragraphs, but only if not already part of a block element
+            html = html.split('\n').map(line => {
+                if (line.trim() === '' || line.startsWith('<h') || line.startsWith('<ul') || line.startsWith('<ol') || line.startsWith('<li>')) {
+                    return line;
+                }
+                return `<p class="mb-2 text-gray-700">${line}</p>`;
+            }).join('');
+
+            // Clean up empty paragraphs that might be created by the above logic
+            html = html.replace(/<p class="mb-2 text-gray-700"><\/p>/g, '');
+
+            return html;
+        }
+
+
         async function generateFundInsights() {
             isGeneratingInsights = true;
             fundInsightsContent.innerHTML = `
@@ -1481,7 +1519,7 @@
             hideErrorMessage(); // Clear previous errors for insights
 
             // Construct prompt for LLM
-            let prompt = `Given the following fund transactions and current fund balance for a group's meal fund, provide a concise summary of the fund's financial health and suggest 3-5 actionable tips for better fund management. The response should be in Vietnamese.
+            let prompt = `Given the following fund transactions and current fund balance for a group's meal fund, provide a concise summary of the fund's financial health and suggest 3-5 actionable tips for better fund management. The response should be in Vietnamese and formatted using Markdown (e.g., use ## for headings, - for list items, ** for bold).
 
 Current Fund Balance: ${formatNumberForDisplay(fundBalance)} VNĐ
 
@@ -1506,7 +1544,7 @@ Recent Transactions:\n`;
                 let chatHistory = [];
                 chatHistory.push({ role: "user", parts: [{ text: prompt }] });
                 const payload = { contents: chatHistory };
-                const apiKey = "AIzaSyBaLi7TzZJ9SwmHilU24SRcV2i7lU6gqdQ"; // Leave as empty string for Canvas to provide
+                const apiKey = ""; // Leave as empty string for Canvas to provide
                 const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
 
                 const response = await fetch(apiUrl, {
@@ -1521,8 +1559,9 @@ Recent Transactions:\n`;
                 if (result.candidates && result.candidates.length > 0 &&
                     result.candidates[0].content && result.candidates[0].content.parts &&
                     result.candidates[0].content.parts.length > 0) {
-                    const text = result.candidates[0].content.parts[0].text;
-                    fundInsightsContent.innerHTML = text.split('\n').map(line => `<p class="mb-2 text-gray-700">${line}</p>`).join('');
+                    const markdownText = result.candidates[0].content.parts[0].text;
+                    // Convert Markdown to HTML before setting innerHTML
+                    fundInsightsContent.innerHTML = markdownToHtml(markdownText);
                 } else {
                     fundInsightsContent.innerHTML = '<p class="text-center text-gray-500">Không thể tạo thông tin chi tiết. Vui lòng thử lại.</p>';
                     console.error("Unexpected Gemini API response structure:", result);
