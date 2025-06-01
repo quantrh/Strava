@@ -65,7 +65,8 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            overflow: hidden; /* Hide overflow if bubbles go outside */
+            overflow-x: hidden; /* Hide horizontal overflow */
+            overflow-y: auto; /* Allow vertical scrolling */
         }
 
         .bubble {
@@ -194,8 +195,7 @@
         </section>
     </main>
 
-    <footer class="bg-gray-800 text-white p-4 text-center text-sm">
-        <div class="container">
+    <footer class="bg-bidv-green text-white p-4 text-center text-sm"> <div class="container">
             &copy; 2025 BIDV Running Club. All rights reserved.
         </div>
     </footer>
@@ -489,10 +489,18 @@
             const width = container.clientWidth;
             const defaultHeight = container.clientHeight; // Initial height from CSS
 
+            // Calculate total height needed for SVG based on number of months
+            const totalSvgContentHeight = monthlyData.length * 150; // 150px per month band
+            // Adjust SVG height to fit all content. We set a minimum height for the container in CSS,
+            // but the SVG itself should expand to fit its content for proper scaling within the scrollable div.
+            const svgHeight = Math.max(defaultHeight, totalSvgContentHeight);
+
+
             const svg = d3.select(container)
                 .append("svg")
                 .attr("width", width)
-                .attr("viewBox", `0 0 ${width} ${defaultHeight}`) // Use default height for viewBox initially
+                .attr("height", svgHeight) // Set SVG height to accommodate all content
+                .attr("viewBox", `0 0 ${width} ${svgHeight}`) // Adjust viewBox as well
                 .attr("preserveAspectRatio", "xMidYMid meet");
 
             // Define scales
@@ -512,13 +520,6 @@
             const monthBandHeight = 150; // Height allocated for each month
             const bubbleHorizontalPadding = 20; // Padding between bubbles horizontally
             const bubbleVerticalOffset = monthBandHeight / 2; // Center bubbles vertically in their band
-
-            // Calculate total height needed for SVG based on number of months
-            const totalSvgContentHeight = monthlyData.length * monthBandHeight;
-            // Adjust SVG height to fit all content, but don't shrink below defaultHeight
-            svg.attr("height", Math.max(defaultHeight, totalSvgContentHeight));
-            // Also update viewBox if total content height exceeds default height
-            svg.attr("viewBox", `0 0 ${width} ${Math.max(defaultHeight, totalSvgContentHeight)}`);
 
 
             let currentYOffset = 0;
