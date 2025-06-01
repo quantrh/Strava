@@ -112,13 +112,29 @@
                 height: 400px; /* Adjust height for smaller screens */
             }
         }
+
+        /* Loading spinner for LLM analysis */
+        .loader {
+            border: 4px solid #f3f3f3; /* Light grey */
+            border-top: 4px solid var(--bidv-green); /* BIDV Green */
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+            vertical-align: middle;
+            margin-left: 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body class="min-h-screen flex flex-col">
-    <header class="bg-bidv-green text-white p-4 shadow-md">
-        <div class="container flex justify-between items-center">
-            <h1 class="text-2xl font-bold">BIDV Running Club</h1>
-            <nav>
+    <header class="bg-bidv-green p-4 shadow-md"> <div class="container flex justify-between items-center">
+            <h1 class="text-2xl font-bold text-bidv-yellow">BIDV Running Club</h1> <nav>
                 </nav>
         </div>
     </header>
@@ -143,8 +159,8 @@
                 <button id="view-stats-btn" class="btn-secondary">
                     Xem thống kê
                 </button>
-                <button id="get-insights-btn" class="btn-primary">
-                    ✨ Nhận Phân tích Chạy bộ ✨
+                <button id="analyze-activities-btn" class="btn-primary">
+                    ✨ Phân tích hoạt động
                 </button>
             </div>
             <div id="data-status" class="mt-4 text-sm text-gray-600"></div>
@@ -155,25 +171,12 @@
                     </ul>
             </div>
 
-            <div id="gemini-insights-section" class="mt-6 border-t pt-4 hidden">
-                <h3 class="text-xl font-semibold mb-3">✨ Phân tích Thành tích Chạy bộ ✨</h3>
-                <div id="gemini-insights-content" class="bg-gray-50 p-4 rounded-lg text-gray-700">
-                    <p class="text-center text-gray-500" id="gemini-insights-status">Nhấp vào nút để nhận phân tích.</p>
+            <div id="llm-analysis-section" class="mt-6 border-t pt-4 hidden">
+                <h3 class="text-lg font-semibold mb-3">Phân tích hoạt động của bạn:</h3>
+                <div id="llm-analysis-content" class="bg-gray-100 p-4 rounded-md text-sm">
+                    <p class="text-gray-500">Nhấn "✨ Phân tích hoạt động" để nhận phân tích từ AI.</p>
                 </div>
-            </div>
-
-            <div id="training-plan-section" class="mt-6 border-t pt-4 hidden">
-                <h3 class="text-xl font-semibold mb-3">✨ Gợi ý Kế hoạch Tập luyện ✨</h3>
-                <div class="mb-4">
-                    <label for="training-goal-input" class="block text-sm font-medium text-gray-700 mb-2">Mục tiêu tập luyện của bạn là gì?</label>
-                    <input type="text" id="training-goal-input" placeholder="Ví dụ: Cải thiện thời gian chạy 5km" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-bidv-green focus:ring focus:ring-bidv-green focus:ring-opacity-50 p-2">
-                </div>
-                <button id="generate-plan-btn" class="btn-primary mb-4">
-                    Tạo Kế hoạch Tập luyện
-                </button>
-                <div id="training-plan-content" class="bg-gray-50 p-4 rounded-lg text-gray-700">
-                    <p class="text-center text-gray-500" id="training-plan-status">Nhập mục tiêu và nhấp vào nút để tạo kế hoạch.</p>
-                </div>
+                <div id="llm-analysis-status" class="mt-2 text-sm text-gray-600"></div>
             </div>
         </section>
 
@@ -199,516 +202,384 @@
     </div>
 
     <script>
-        // Tải động thư viện Supabase JS SDK
-        const supabaseScript = document.createElement('script');
-        supabaseScript.src = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2";
-        supabaseScript.onload = () => {
-            // Đảm bảo DOM đã tải hoàn toàn trước khi chạy script chính của ứng dụng
-            document.addEventListener('DOMContentLoaded', async () => {
-                // Hàm hiển thị thông báo tùy chỉnh thay cho alert()
-                function showAlert(message) {
-                    const customAlert = document.getElementById('custom-alert');
-                    const alertMessage = document.getElementById('alert-message');
-                    const alertOkBtn = document.getElementById('alert-ok-btn');
+        // Hàm hiển thị thông báo tùy chỉnh thay cho alert()
+        function showAlert(message) {
+            const customAlert = document.getElementById('custom-alert');
+            const alertMessage = document.getElementById('alert-message');
+            const alertOkBtn = document.getElementById('alert-ok-btn');
 
-                    alertMessage.textContent = message;
-                    customAlert.classList.remove('hidden');
+            alertMessage.textContent = message;
+            customAlert.classList.remove('hidden');
 
-                    alertOkBtn.onclick = () => {
-                        customAlert.classList.add('hidden');
-                    };
+            alertOkBtn.onclick = () => {
+                customAlert.classList.add('hidden');
+            };
+        }
+
+        // Cấu hình Strava và Supabase của bạn
+        // THAY THẾ CÁC GIÁ TRỊ NÀY BẰNG THÔNG TIN THỰC TẾ CỦA BẠN
+        const STRAVA_CLIENT_ID = '55949'; // Lấy từ Strava API application
+        const SUPABASE_URL = 'https://rmbsxccrwrktbjlnezpu.supabase.co'; // URL dự án Supabase của bạn
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJtYnN4Y2Nyd3JrdGJqbG5lenB1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg2MjczNjQsImV4cCI6MjA2NDIwMzM2NH0.ydCqificftdtn1niRciFCifeuo8aX6SDGti-hCY5Z_Y'; // Khóa anon public của Supabase
+        // URL của Edge Function để xử lý OAuth callback
+        const STRAVA_OAUTH_CALLBACK_URL = 'https://rmbsxccrwrktbjlnezpu.supabase.co/functions/v1/strava-oauth-callback';
+        // URL của Edge Function để tải dữ liệu hoạt động
+        const FETCH_ACTIVITIES_API_URL = 'https://rmbsxccrwrktbjlnezpu.supabase.co/functions/v1/fetch-strava-activities';
+        // URL của Edge Function để lấy dữ liệu thống kê
+        const GET_STATS_API_URL = 'https://rmbsxccrwrktbjlnezpu.supabase.co/functions/v1/get-user-activities';
+
+
+        // Biến toàn cục để lưu trữ trạng thái người dùng và dữ liệu hoạt động
+        let currentUserId = null;
+        let isAuthenticated = false;
+        let userActivities = []; // Biến mới để lưu trữ tất cả hoạt động đã tải
+
+        // Hàm kiểm tra trạng thái đăng nhập và cập nhật UI
+        async function checkAuthState() {
+            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                const params = new URLSearchParams(window.location.search);
+                const userIdFromUrl = params.get('userId');
+                if (userIdFromUrl) {
+                    currentUserId = userIdFromUrl;
+                    isAuthenticated = true;
                 }
+            }
+            updateUI();
+        }
 
-                // Cấu hình Strava và Supabase của bạn
-                // THAY THẾ CÁC GIÁ TRỊ NÀY BẰNG THÔNG TIN THỰC TẾ CỦA BẠN
-                const STRAVA_CLIENT_ID = '55949'; // Lấy từ Strava API application
-                const SUPABASE_URL = 'https://rmbsxccrwrktbjlnezpu.supabase.co'; // URL dự án Supabase của bạn
-                const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJtYnN4Y2Nyd3JrdGJqbG5lenB1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg2MjczNjQsImV4cCI6MjA2NDIwMzM2NH0.ydCqificftdtn1niRciFCifeuo8aX6SDGti-hCY5Z_Y'; // Khóa anon public của Supabase
-                // URL của Edge Function để xử lý OAuth callback
-                const STRAVA_OAUTH_CALLBACK_URL = 'https://rmbsxccrwrktbjlnezpu.supabase.co/functions/v1/strava-oauth-callback';
-                // URL của Edge Function để tải dữ liệu hoạt động
-                const FETCH_ACTIVITIES_API_URL = 'https://rmbsxccrwrktbjlnezpu.supabase.co/functions/v1/fetch-strava-activities';
-                // URL của Edge Function để lấy dữ liệu thống kê
-                const GET_STATS_API_URL = 'https://rmbsxccrwrktbjlnezpu.supabase.co/functions/v1/get-user-activities';
+        // Hàm cập nhật giao diện người dùng dựa trên trạng thái xác thực
+        function updateUI() {
+            const authSection = document.getElementById('auth-section');
+            const dataSection = document.getElementById('data-section');
+            const statsSection = document.getElementById('stats-section');
+            const userInfo = document.getElementById('user-info');
+            const authStatus = document.getElementById('auth-status');
 
-                // Khởi tạo Supabase Client
-                const supabase = Supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            if (isAuthenticated && currentUserId) {
+                authSection.classList.add('hidden');
+                dataSection.classList.remove('hidden');
+                statsSection.classList.remove('hidden');
+                userInfo.textContent = `Chào mừng, Người dùng ID: ${currentUserId}`;
+                authStatus.textContent = 'Đã kết nối với ứng dụng.';
+            } else {
+                authSection.classList.remove('hidden');
+                dataSection.classList.add('hidden');
+                statsSection.classList.add('hidden');
+                authStatus.textContent = 'Vui lòng kết nối tài khoản Strava của bạn.';
+            }
+        }
 
-                // Biến toàn cục để lưu trữ trạng thái người dùng và các hoạt động
-                let currentUserId = null;
-                let isAuthenticated = false;
-                let userActivities = []; // Biến mới để lưu trữ tất cả các hoạt động đã tải
+        // --- Xử lý OAuth 2.0 với Strava ---
+        document.getElementById('connect-strava-btn').addEventListener('click', () => {
+            const redirectUri = window.location.origin + '/Strava/IndexNew.html';
+            const scope = 'activity:read_all';
+            const authUrl = `https://www.strava.com/oauth/authorize?client_id=${STRAVA_CLIENT_ID}&response_type=code&redirect_uri=${redirectUri}&approval_prompt=auto&scope=${scope}`;
+            window.location.href = authUrl;
+        });
 
-                // Hàm kiểm tra trạng thái đăng nhập và cập nhật UI
-                async function checkAuthState() {
-                    // Sử dụng Supabase SDK để kiểm tra phiên hiện có
-                    const { data: { session }, error } = await supabase.auth.getSession();
+        // Xử lý callback từ Strava OAuth
+        async function handleStravaCallback() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const code = urlParams.get('code');
+            const authStatus = document.getElementById('auth-status');
 
-                    if (session) {
-                        currentUserId = session.user.id;
-                        isAuthenticated = true;
-                        console.log('User is authenticated via Supabase session:', currentUserId);
-                    } else {
-                        currentUserId = null;
-                        isAuthenticated = false;
-                        console.log('No active Supabase session found.');
-                    }
-
-                    updateUI();
-                }
-
-                // Hàm cập nhật giao diện người dùng dựa trên trạng thái xác thực
-                function updateUI() {
-                    const authSection = document.getElementById('auth-section');
-                    const dataSection = document.getElementById('data-section');
-                    const statsSection = document.getElementById('stats-section');
-                    const userInfo = document.getElementById('user-info');
-                    const authStatus = document.getElementById('auth-status');
-                    const trainingPlanSection = document.getElementById('training-plan-section'); // New
-
-                    if (isAuthenticated && currentUserId) {
-                        authSection.classList.add('hidden');
-                        dataSection.classList.remove('hidden');
-                        statsSection.classList.remove('hidden');
-                        trainingPlanSection.classList.remove('hidden'); // Show new section
-                        userInfo.textContent = `Chào mừng, Người dùng ID: ${currentUserId}`;
-                        authStatus.textContent = 'Đã kết nối với ứng dụng.';
-                    } else {
-                        authSection.classList.remove('hidden');
-                        dataSection.classList.add('hidden');
-                        statsSection.classList.add('hidden');
-                        trainingPlanSection.classList.add('hidden'); // Hide new section
-                        authStatus.textContent = 'Vui lòng kết nối tài khoản Strava của bạn.';
-                    }
-                }
-
-                // --- Xử lý OAuth 2.0 với Strava ---
-                document.getElementById('connect-strava-btn').addEventListener('click', () => {
-                    const redirectUri = window.location.origin + '/Strava/IndexNew.html'; // Hoặc một URL cụ thể nếu bạn muốn
-                    const scope = 'activity:read_all'; // Quyền truy cập hoạt động chạy bộ
-                    const authUrl = `https://www.strava.com/oauth/authorize?client_id=${STRAVA_CLIENT_ID}&response_type=code&redirect_uri=${redirectUri}&approval_prompt=auto&scope=${scope}`;
-                    window.location.href = authUrl;
-                });
-
-                // Xử lý callback từ Strava OAuth
-                async function handleStravaCallback() {
-                    const urlParams = new URLSearchParams(window.location.search);
-                    const code = urlParams.get('code');
-                    const authStatus = document.getElementById('auth-status');
-
-                    if (code) {
-                        authStatus.textContent = 'Đang xử lý kết nối Strava...';
-                        try {
-                            // Gửi mã ủy quyền (code) đến Edge Function của Supabase để trao đổi token
-                            const response = await fetch(STRAVA_OAUTH_CALLBACK_URL, {
-                                method: 'POST',
-                                headers: {
-                                    'Content-Type': 'application/json',
-                                },
-                                body: JSON.stringify({ code: code, redirect_uri: window.location.origin + '/Strava/IndexNew.html' }),
-                            });
-
-                            const result = await response.json();
-
-                            if (response.ok && result.success) {
-                                // Sử dụng token từ Edge Function để đăng nhập vào Supabase Auth
-                                const { data: { session }, error: signInError } = await supabase.auth.signInWithCustomToken(result.token);
-
-                                if (signInError) {
-                                    console.error('Error signing in with custom token:', signInError);
-                                    authStatus.textContent = `Lỗi đăng nhập Supabase: ${signInError.message}`;
-                                    showAlert(`Lỗi đăng nhập Supabase: ${signInError.message}`);
-                                    isAuthenticated = false;
-                                    currentUserId = null;
-                                } else if (session) {
-                                    isAuthenticated = true;
-                                    currentUserId = session.user.id;
-                                    authStatus.textContent = 'Kết nối Strava thành công!';
-                                    showAlert('Kết nối Strava thành công!');
-                                    // Xóa các tham số OAuth khỏi URL
-                                    window.history.replaceState({}, document.title, window.location.pathname);
-                                    updateUI();
-                                } else {
-                                    // Should not happen if result.success is true and no signInError
-                                    authStatus.textContent = `Lỗi kết nối Strava: Không thể lấy session Supabase.`;
-                                    showAlert(`Lỗi kết nối Strava: Không thể lấy session Supabase.`);
-                                    isAuthenticated = false;
-                                    currentUserId = null;
-                                }
-                            } else {
-                                authStatus.textContent = `Lỗi kết nối Strava: ${result.error || 'Không xác định'}`;
-                                showAlert(`Lỗi kết nối Strava: ${result.error || 'Không xác định'}`);
-                                isAuthenticated = false;
-                                currentUserId = null;
-                            }
-                        } catch (error) {
-                            console.error('Lỗi khi xử lý Strava callback:', error);
-                            authStatus.textContent = 'Lỗi mạng hoặc server khi xử lý Strava callback.';
-                            showAlert('Lỗi mạng hoặc server khi xử lý Strava callback.');
-                            isAuthenticated = false;
-                            currentUserId = null;
-                        }
-                    }
-                }
-
-                // --- Tải xuống và lưu trữ dữ liệu chạy bộ ---
-                document.getElementById('fetch-activities-btn').addEventListener('click', async () => {
-                    if (!isAuthenticated || !currentUserId) {
-                        showAlert('Vui lòng kết nối tài khoản Strava trước.');
-                        return;
-                    }
-
-                    const dataStatus = document.getElementById('data-status');
-                    dataStatus.textContent = 'Đang tải dữ liệu hoạt động từ Strava...';
-
-                    try {
-                        // Gửi yêu cầu đến Edge Function của Supabase để tải dữ liệu
-                        const response = await fetch(FETCH_ACTIVITIES_API_URL, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                            },
-                            body: JSON.stringify({ userId: currentUserId }),
-                        });
-
-                        const result = await response.json();
-
-                        if (response.ok && result.success) {
-                            dataStatus.textContent = `Đã tải ${result.count} hoạt động thành công!`;
-                            showAlert(`Đã tải ${result.count} hoạt động thành công!`);
-                            userActivities = result.activities; // Lưu trữ tất cả các hoạt động đã tải
-                            displayRecentActivities(result.activities); // Hiển thị một phần
-                        } else {
-                            dataStatus.textContent = `Lỗi khi tải hoạt động: ${result.error || 'Không xác định'}`;
-                            showAlert(`Lỗi khi tải hoạt động: ${result.error || 'Không xác định'}`);
-                        }
-                    } catch (error) {
-                        console.error('Lỗi khi tải hoạt động:', error);
-                        dataStatus.textContent = 'Lỗi mạng hoặc server khi tải hoạt động.';
-                        showAlert('Lỗi mạng hoặc server khi tải hoạt động.');
-                    }
-                });
-
-                // Hàm hiển thị các hoạt động gần đây
-                function displayRecentActivities(activities) {
-                    const recentActivitiesList = document.getElementById('recent-activities');
-                    recentActivitiesList.innerHTML = ''; // Clear previous list
-
-                    if (activities && activities.length > 0) {
-                        activities.slice(0, 5).forEach(activity => { // Show up to 5 recent activities
-                            const li = document.createElement('li');
-                            li.className = 'border-b last:border-b-0 py-2';
-                            li.innerHTML = `
-                                <p class="font-semibold">${activity.name}</p>
-                                <p>Ngày: ${new Date(activity.start_date).toLocaleDateString()}</p>
-                                <p>Quãng đường: ${(activity.distance / 1000).toFixed(2)} km</p>
-                                <p>Thời gian: ${formatDuration(activity.moving_time)}</p>
-                            `;
-                            recentActivitiesList.appendChild(li);
-                        });
-                    } else {
-                        recentActivitiesList.innerHTML = '<li class="text-gray-500">Chưa có hoạt động nào được tải.</li>';
-                    }
-                }
-
-                // Hàm định dạng thời gian (giây thành HH:MM:SS)
-                function formatDuration(seconds) {
-                    const h = Math.floor(seconds / 3600);
-                    const m = Math.floor((seconds % 3600) / 60);
-                    const s = seconds % 60;
-                    return [h, m, s].map(v => v < 10 ? "0" + v : v).filter((v, i) => v !== "00" || i > 0).join(":");
-                }
-
-                // --- Thống kê và trực quan hóa kết quả ---
-                document.getElementById('view-stats-btn').addEventListener('click', async () => {
-                    if (!isAuthenticated || !currentUserId) {
-                        showAlert('Vui lòng kết nối tài khoản Strava trước.');
-                        return;
-                    }
-
-                    const chartStatus = document.getElementById('chart-status');
-                    chartStatus.textContent = 'Đang tải dữ liệu thống kê...';
-
-                    try {
-                        // Gửi yêu cầu đến Edge Function của Supabase để lấy dữ liệu thống kê
-                        const response = await fetch(GET_STATS_API_URL, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                            },
-                            body: JSON.stringify({ userId: currentUserId }),
-                        });
-
-                        const result = await response.json();
-
-                        if (response.ok && result.success) {
-                            chartStatus.textContent = 'Đã tải dữ liệu thống kê thành công.';
-                            renderBubbleChart(result.weeklyStats); // Vẽ biểu đồ
-                        } else {
-                            chartStatus.textContent = `Lỗi khi tải thống kê: ${result.error || 'Không xác định'}`;
-                            showAlert(`Lỗi khi tải thống kê: ${result.error || 'Không xác định'}`);
-                        }
-                    } catch (error) {
-                        console.error('Lỗi khi tải thống kê:', error);
-                        chartStatus.textContent = 'Lỗi mạng hoặc server khi tải thống kê.';
-                        showAlert('Lỗi mạng hoặc server khi tải thống kê.');
-                    }
-                });
-
-                // Hàm vẽ biểu đồ bong bóng
-                function renderBubbleChart(data) {
-                    const container = document.getElementById('bubble-chart-container');
-                    container.innerHTML = ''; // Clear previous chart
-
-                    if (!data || data.length === 0) {
-                        container.innerHTML = '<p class="text-gray-500">Không có dữ liệu thống kê để hiển thị biểu đồ.</p>';
-                        return;
-                    }
-
-                    const width = container.clientWidth;
-                    const height = container.clientHeight;
-
-                    const svg = d3.select(container)
-                        .append("svg")
-                        .attr("width", width)
-                        .attr("height", height)
-                        .attr("viewBox", `0 0 ${width} ${height}`)
-                        .attr("preserveAspectRatio", "xMidYMid meet");
-
-                    // Tạo một nhóm để chứa các bong bóng và di chuyển nó vào giữa
-                    const g = svg.append("g")
-                        .attr("transform", `translate(${width / 2},${height / 2})`);
-
-                    // Tạo layout pack cho biểu đồ bong bóng
-                    const pack = d3.pack()
-                        .size([width, height])
-                        .padding(2);
-
-                    // Chuyển đổi dữ liệu thành định dạng phân cấp mà d3.pack yêu cầu
-                    // Dữ liệu mẫu: [{ week: '2025-W20', totalDistance: 50000, totalTime: 18000 }]
-                    const root = d3.hierarchy({ children: data })
-                        .sum(d => d.totalDistance); // Kích thước bong bóng dựa trên tổng quãng đường
-
-                    const nodes = pack(root).leaves();
-
-                    const colorScale = d3.scaleLinear()
-                        .domain([d3.min(data, d => d.totalDistance), d3.max(data, d => d.totalDistance)])
-                        .range([0, 1]); // Sử dụng để tạo màu sắc dựa trên khoảng cách
-
-                    const tooltip = d3.select("body").append("div")
-                        .attr("class", "tooltip");
-
-                    // Lấy giá trị của biến CSS
-                    const style = getComputedStyle(document.documentElement);
-                    const bidvYellow = style.getPropertyValue('--bidv-yellow').trim();
-                    const bidvGreen = style.getPropertyValue('--bidv-green').trim();
-
-                    // Vẽ các bong bóng
-                    g.selectAll(".bubble")
-                        .data(nodes)
-                        .enter().append("circle")
-                        .attr("class", "bubble")
-                        .attr("cx", d => d.x - width / 2) // Điều chỉnh vị trí do translate của g
-                        .attr("cy", d => d.y - height / 2) // Điều chỉnh vị trí do translate của g
-                        .attr("r", d => d.r)
-                        .attr("fill", d => {
-                            // Sử dụng màu xanh BIDV, có thể điều chỉnh độ sáng/tối dựa trên giá trị
-                            const t = colorScale(d.data.totalDistance);
-                            return d3.interpolateRgb(bidvGreen, "#003331")(t); // Biến thể màu xanh
-                        })
-                        .on("mouseover", function(event, d) {
-                            d3.select(this).attr("stroke", bidvYellow).attr("stroke-width", 3);
-                            tooltip.style("opacity", 1)
-                                .html(`Tuần: ${d.data.week}<br>
-                                       Quãng đường: ${(d.data.totalDistance / 1000).toFixed(2)} km<br>
-                                       Thời gian: ${formatDuration(d.data.totalTime)}`)
-                                .style("left", (event.pageX + 10) + "px")
-                                .style("top", (event.pageY - 28) + "px");
-                        })
-                        .on("mouseout", function() {
-                            d3.select(this).attr("stroke", bidvGreen).attr("stroke-width", 2);
-                            tooltip.style("opacity", 0);
-                        });
-
-                    // Thêm văn bản vào bong bóng
-                    g.selectAll(".bubble-text")
-                        .data(nodes)
-                        .enter().append("text")
-                        .attr("class", "bubble-text")
-                        .attr("x", d => d.x - width / 2)
-                        .attr("y", d => d.y - height / 2)
-                        .text(d => {
-                            // Hiển thị tuần nếu bong bóng đủ lớn
-                            return d.r > 30 ? d.data.week : '';
-                        })
-                        .attr("dy", "0.35em"); // Căn giữa theo chiều dọc
-
-                    // Xử lý thay đổi kích thước cửa sổ
-                    window.addEventListener('resize', () => {
-                        renderBubbleChart(data); // Vẽ lại biểu đồ khi thay đổi kích thước
+            if (code) {
+                authStatus.textContent = 'Đang xử lý kết nối Strava...';
+                try {
+                    const response = await fetch(STRAVA_OAUTH_CALLBACK_URL, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ code: code, redirect_uri: window.location.origin + '/Strava/IndexNew.html' }),
                     });
+
+                    const result = await response.json();
+
+                    if (response.ok && result.success) {
+                        isAuthenticated = true;
+                        currentUserId = result.userId;
+                        authStatus.textContent = 'Kết nối Strava thành công!';
+                        showAlert('Kết nối Strava thành công!');
+                        window.history.replaceState({}, document.title, window.location.pathname);
+                        updateUI();
+                    } else {
+                        authStatus.textContent = `Lỗi kết nối Strava: ${result.error || 'Không xác định'}`;
+                        showAlert(`Lỗi kết nối Strava: ${result.error || 'Không xác định'}`);
+                    }
+                } catch (error) {
+                    console.error('Lỗi khi xử lý Strava callback:', error);
+                    authStatus.textContent = 'Lỗi mạng hoặc server khi xử lý Strava callback.';
+                    showAlert('Lỗi mạng hoặc server khi xử lý Strava callback.');
                 }
+            }
+        }
 
-                // Hàm để tạo phân tích chạy bộ bằng Gemini API
-                async function generateRunningInsights() {
-                    const insightsSection = document.getElementById('gemini-insights-section');
-                    const insightsContent = document.getElementById('gemini-insights-content');
-                    const insightsStatus = document.getElementById('gemini-insights-status');
+        // --- Tải xuống và lưu trữ dữ liệu chạy bộ ---
+        document.getElementById('fetch-activities-btn').addEventListener('click', async () => {
+            if (!isAuthenticated || !currentUserId) {
+                showAlert('Vui lòng kết nối tài khoản Strava trước.');
+                return;
+            }
 
-                    if (!isAuthenticated || !currentUserId) {
-                        showAlert('Vui lòng kết nối tài khoản Strava trước.');
-                        return;
-                    }
+            const dataStatus = document.getElementById('data-status');
+            dataStatus.textContent = 'Đang tải dữ liệu hoạt động từ Strava...';
 
-                    if (!userActivities || userActivities.length === 0) {
-                        showAlert('Vui lòng tải dữ liệu hoạt động từ Strava trước.');
-                        return;
-                    }
+            try {
+                const response = await fetch(FETCH_ACTIVITIES_API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ userId: currentUserId }),
+                });
 
-                    insightsSection.classList.remove('hidden');
-                    insightsStatus.textContent = 'Đang tạo phân tích...';
-                    insightsContent.innerHTML = '<p class="text-center text-gray-500">Đang tạo phân tích...</p>'; // Clear previous content
+                const result = await response.json();
 
-                    try {
-                        const prompt = `Phân tích các hoạt động chạy bộ sau đây của người dùng và đưa ra những hiểu biết sâu sắc, xu hướng, và lời khuyên cá nhân hóa. Tập trung vào tổng quan, quãng đường, thời gian, tốc độ, và các loại hoạt động. Dữ liệu hoạt động: \n\n` +
-                                       userActivities.map(activity => {
-                                           return `Tên: ${activity.name}, Quãng đường: ${(activity.distance / 1000).toFixed(2)} km, Thời gian: ${formatDuration(activity.moving_time)}, Ngày: ${new Date(activity.start_date).toLocaleDateString()}, Loại: ${activity.type}`;
-                                       }).join('\n');
-
-                        const chatHistory = [];
-                        chatHistory.push({ role: "user", parts: [{ text: prompt }] });
-
-                        const payload = { contents: chatHistory };
-                        const apiKey = ""; // Canvas sẽ cung cấp khóa API này trong thời gian chạy
-                        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
-
-                        const response = await fetch(apiUrl, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify(payload)
-                        });
-
-                        const result = await response.json();
-
-                        if (result.candidates && result.candidates.length > 0 &&
-                            result.candidates[0].content && result.candidates[0].content.parts &&
-                            result.candidates[0].content.parts.length > 0) {
-                            const text = result.candidates[0].content.parts[0].text;
-                            insightsContent.innerHTML = `<p>${text.replace(/\n/g, '<br>')}</p>`; // Hiển thị phản hồi
-                            insightsStatus.textContent = 'Phân tích đã sẵn sàng.';
-                        } else {
-                            insightsContent.innerHTML = '<p class="text-center text-red-500">Không thể tạo phân tích. Vui lòng thử lại.</p>';
-                            insightsStatus.textContent = 'Lỗi tạo phân tích.';
-                            console.error('Gemini API response structure unexpected:', result);
-                        }
-                    } catch (error) {
-                        console.error('Error calling Gemini API:', error);
-                        insightsContent.innerHTML = '<p class="text-center text-red-500">Lỗi mạng hoặc server khi gọi Gemini API.</p>';
-                        insightsStatus.textContent = 'Lỗi kết nối API.';
-                    }
+                if (response.ok && result.success) {
+                    dataStatus.textContent = `Đã tải ${result.count} hoạt động thành công!`;
+                    showAlert(`Đã tải ${result.count} hoạt động thành công!`);
+                    userActivities = result.activities; // Lưu toàn bộ hoạt động
+                    displayRecentActivities(userActivities); // Hiển thị các hoạt động mới tải
+                } else {
+                    dataStatus.textContent = `Lỗi khi tải hoạt động: ${result.error || 'Không xác định'}`;
+                    showAlert(`Lỗi khi tải hoạt động: ${result.error || 'Không xác định'}`);
                 }
+            } catch (error) {
+                console.error('Lỗi khi tải hoạt động:', error);
+                dataStatus.textContent = 'Lỗi mạng hoặc server khi tải hoạt động.';
+                showAlert('Lỗi mạng hoặc server khi tải hoạt động.');
+            }
+        });
 
-                // Hàm để tạo kế hoạch tập luyện bằng Gemini API
-                async function generateTrainingPlan() {
-                    const trainingGoalInput = document.getElementById('training-goal-input');
-                    const trainingPlanContent = document.getElementById('training-plan-content');
-                    const trainingPlanStatus = document.getElementById('training-plan-status');
+        // Hàm hiển thị các hoạt động gần đây
+        function displayRecentActivities(activities) {
+            const recentActivitiesList = document.getElementById('recent-activities');
+            recentActivitiesList.innerHTML = ''; // Clear previous list
 
-                    const trainingGoal = trainingGoalInput.value.trim();
+            if (activities && activities.length > 0) {
+                activities.slice(0, 5).forEach(activity => { // Show up to 5 recent activities
+                    const li = document.createElement('li');
+                    li.className = 'border-b last:border-b-0 py-2';
+                    li.innerHTML = `
+                        <p class="font-semibold">${activity.name}</p>
+                        <p>Ngày: ${new Date(activity.start_date).toLocaleDateString()}</p>
+                        <p>Quãng đường: ${(activity.distance / 1000).toFixed(2)} km</p>
+                        <p>Thời gian: ${formatDuration(activity.moving_time)}</p>
+                    `;
+                    recentActivitiesList.appendChild(li);
+                });
+            } else {
+                recentActivitiesList.innerHTML = '<li class="text-gray-500">Chưa có hoạt động nào được tải.</li>';
+            }
+        }
 
-                    if (!isAuthenticated || !currentUserId) {
-                        showAlert('Vui lòng kết nối tài khoản Strava trước.');
-                        return;
-                    }
+        // Hàm định dạng thời gian (giây thành HH:MM:SS)
+        function formatDuration(seconds) {
+            const h = Math.floor(seconds / 3600);
+            const m = Math.floor((seconds % 3600) / 60);
+            const s = seconds % 60;
+            return [h, m, s].map(v => v < 10 ? "0" + v : v).filter((v, i) => v !== "00" || i > 0).join(":");
+        }
 
-                    if (!userActivities || userActivities.length === 0) {
-                        showAlert('Vui lòng tải dữ liệu hoạt động từ Strava trước.');
-                        return;
-                    }
+        // --- Thống kê và trực quan hóa kết quả ---
+        document.getElementById('view-stats-btn').addEventListener('click', async () => {
+            if (!isAuthenticated || !currentUserId) {
+                showAlert('Vui lòng kết nối tài khoản Strava trước.');
+                return;
+            }
 
-                    if (!trainingGoal) {
-                        showAlert('Vui lòng nhập mục tiêu tập luyện của bạn.');
-                        return;
-                    }
+            const chartStatus = document.getElementById('chart-status');
+            chartStatus.textContent = 'Đang tải dữ liệu thống kê...';
 
-                    trainingPlanContent.innerHTML = '<p class="text-center text-gray-500">Đang tạo kế hoạch tập luyện...</p>';
-                    trainingPlanStatus.textContent = 'Đang tạo kế hoạch...';
+            try {
+                const response = await fetch(GET_STATS_API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ userId: currentUserId }),
+                });
 
-                    try {
-                        // Tóm tắt dữ liệu hoạt động của người dùng
-                        let activitySummary = "Người dùng chưa có hoạt động nào.";
-                        if (userActivities.length > 0) {
-                            const totalDistanceKm = userActivities.reduce((sum, activity) => sum + (activity.distance || 0), 0) / 1000;
-                            const totalMovingTimeHours = userActivities.reduce((sum, activity) => sum + (activity.moving_time || 0), 0) / 3600;
-                            const numActivities = userActivities.length;
+                const result = await response.json();
 
-                            const longestRun = d3.max(userActivities, d => d.distance || 0) / 1000;
-                            const averagePaceSecondsPerKm = userActivities.reduce((sum, activity) => {
-                                if (activity.distance > 0) return sum + (activity.moving_time / (activity.distance / 1000));
-                                return sum;
-                            }, 0) / numActivities;
-
-                            activitySummary = `Người dùng đã hoàn thành ${numActivities} hoạt động, tổng quãng đường ${totalDistanceKm.toFixed(2)} km, tổng thời gian di chuyển ${totalMovingTimeHours.toFixed(2)} giờ.
-                                Chạy dài nhất: ${longestRun.toFixed(2)} km.
-                                Tốc độ trung bình (ước tính): ${formatDuration(averagePaceSecondsPerKm)}/km.`;
-                        }
-
-                        const prompt = `Dựa trên dữ liệu hoạt động chạy bộ của người dùng và mục tiêu tập luyện của họ, hãy tạo một kế hoạch tập luyện cá nhân hóa. Kế hoạch nên bao gồm các bài tập, cường độ, và tần suất gợi ý.
-                                       Dữ liệu hoạt động của người dùng: ${activitySummary}
-                                       Mục tiêu tập luyện của người dùng: "${trainingGoal}"
-                                       Hãy tạo một kế hoạch chi tiết, có thể kéo dài 4-8 tuần, bao gồm các loại bài tập (chạy dễ, chạy tempo, chạy interval, chạy dài), ngày nghỉ, và gợi ý dinh dưỡng/phục hồi ngắn gọn.`;
-
-                        const chatHistory = [];
-                        chatHistory.push({ role: "user", parts: [{ text: prompt }] });
-
-                        const payload = { contents: chatHistory };
-                        const apiKey = ""; // Canvas sẽ cung cấp khóa API này trong thời gian chạy
-                        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
-
-                        const response = await fetch(apiUrl, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify(payload)
-                        });
-
-                        const result = await response.json();
-
-                        if (result.candidates && result.candidates.length > 0 &&
-                            result.candidates[0].content && result.candidates[0].content.parts &&
-                            result.candidates[0].content.parts.length > 0) {
-                            const text = result.candidates[0].content.parts[0].text;
-                            trainingPlanContent.innerHTML = `<p>${text.replace(/\n/g, '<br>')}</p>`; // Hiển thị phản hồi
-                            trainingPlanStatus.textContent = 'Kế hoạch đã sẵn sàng.';
-                        } else {
-                            trainingPlanContent.innerHTML = '<p class="text-center text-red-500">Không thể tạo kế hoạch tập luyện. Vui lòng thử lại.</p>';
-                            trainingPlanStatus.textContent = 'Lỗi tạo kế hoạch.';
-                            console.error('Gemini API response structure unexpected:', result);
-                        }
-                    } catch (error) {
-                        console.error('Error calling Gemini API for training plan:', error);
-                        trainingPlanContent.innerHTML = '<p class="text-center text-red-500">Lỗi mạng hoặc server khi gọi Gemini API.</p>';
-                        trainingPlanStatus.textContent = 'Lỗi kết nối API.';
-                    }
+                if (response.ok && result.success) {
+                    chartStatus.textContent = 'Đã tải dữ liệu thống kê thành công.';
+                    renderBubbleChart(result.weeklyStats); // Vẽ biểu đồ
+                } else {
+                    chartStatus.textContent = `Lỗi khi tải thống kê: ${result.error || 'Không xác định'}`;
+                    showAlert(`Lỗi khi tải thống kê: ${result.error || 'Không xác định'}`);
                 }
+            } catch (error) {
+                console.error('Lỗi khi tải thống kê:', error);
+                chartStatus.textContent = 'Lỗi mạng hoặc server khi tải thống kê.';
+                showAlert('Lỗi mạng hoặc server khi tải thống kê.');
+            }
+        });
 
+        // Hàm vẽ biểu đồ bong bóng
+        function renderBubbleChart(data) {
+            const container = document.getElementById('bubble-chart-container');
+            container.innerHTML = ''; // Clear previous chart
 
-                // Khi trang tải xong và Supabase SDK đã sẵn sàng
-                const urlParams = new URLSearchParams(window.location.search);
-                const code = urlParams.get('code');
-                if (code) {
-                    await handleStravaCallback(); // Đợi xử lý callback hoàn tất
-                }
-                
-                // Sau đó kiểm tra trạng thái xác thực Supabase
-                await checkAuthState(); 
+            if (!data || data.length === 0) {
+                container.innerHTML = '<p class="text-gray-500">Không có dữ liệu thống kê để hiển thị biểu đồ.</p>';
+                return;
+            }
 
-                // Gắn sự kiện cho nút "Nhận Phân tích Chạy bộ"
-                document.getElementById('get-insights-btn').addEventListener('click', generateRunningInsights);
-                // Gắn sự kiện cho nút "Tạo Kế hoạch Tập luyện"
-                document.getElementById('generate-plan-btn').addEventListener('click', generateTrainingPlan);
+            const width = container.clientWidth;
+            const height = container.clientHeight;
+
+            const svg = d3.select(container)
+                .append("svg")
+                .attr("width", width)
+                .attr("height", height)
+                .attr("viewBox", `0 0 ${width} ${height}`)
+                .attr("preserveAspectRatio", "xMidYMid meet");
+
+            // Tạo một nhóm để chứa các bong bóng và di chuyển nó vào giữa
+            const g = svg.append("g")
+                .attr("transform", `translate(${width / 2},${height / 2})`);
+
+            // Tạo layout pack cho biểu đồ bong bóng
+            const pack = d3.pack()
+                .size([width, height])
+                .padding(2);
+
+            // Chuyển đổi dữ liệu thành định dạng phân cấp mà d3.pack yêu cầu
+            // Dữ liệu mẫu: [{ week: '2025-W20', totalDistance: 50000, totalTime: 18000 }]
+            const root = d3.hierarchy({ children: data })
+                .sum(d => d.totalDistance); // Kích thước bong bóng dựa trên tổng quãng đường
+
+            const nodes = pack(root).leaves();
+
+            const colorScale = d3.scaleLinear()
+                .domain([d3.min(data, d => d.totalDistance), d3.max(data, d => d.totalDistance)])
+                .range([0, 1]); // Sử dụng để tạo màu sắc dựa trên khoảng cách
+
+            const tooltip = d3.select("body").append("div")
+                .attr("class", "tooltip");
+
+            // Lấy giá trị của biến CSS
+            const style = getComputedStyle(document.documentElement);
+            const bidvYellow = style.getPropertyValue('--bidv-yellow').trim();
+            const bidvGreen = style.getPropertyValue('--bidv-green').trim();
+
+            // Vẽ các bong bóng
+            g.selectAll(".bubble")
+                .data(nodes)
+                .enter().append("circle")
+                .attr("class", "bubble")
+                .attr("cx", d => d.x - width / 2) // Điều chỉnh vị trí do translate của g
+                .attr("cy", d => d.y - height / 2) // Điều chỉnh vị trí do translate của g
+                .attr("r", d => d.r)
+                .attr("fill", d => {
+                    // Sử dụng màu xanh BIDV, có thể điều chỉnh độ sáng/tối dựa trên giá trị
+                    const t = colorScale(d.data.totalDistance);
+                    return d3.interpolateRgb(bidvGreen, "#003331")(t); // Biến thể màu xanh
+                })
+                .on("mouseover", function(event, d) {
+                    d3.select(this).attr("stroke", bidvYellow).attr("stroke-width", 3);
+                    tooltip.style("opacity", 1)
+                        .html(`Tuần: ${d.data.week}<br>
+                               Quãng đường: ${(d.data.totalDistance / 1000).toFixed(2)} km<br>
+                               Thời gian: ${formatDuration(d.data.totalTime)}`)
+                        .style("left", (event.pageX + 10) + "px")
+                        .style("top", (event.pageY - 28) + "px");
+                })
+                .on("mouseout", function() {
+                    d3.select(this).attr("stroke", bidvGreen).attr("stroke-width", 2);
+                    tooltip.style("opacity", 0);
+                });
+
+            // Thêm văn bản vào bong bóng
+            g.selectAll(".bubble-text")
+                .data(nodes)
+                .enter().append("text")
+                .attr("class", "bubble-text")
+                .attr("x", d => d.x - width / 2)
+                .attr("y", d => d.y - height / 2)
+                .text(d => {
+                    // Hiển thị tuần nếu bong bóng đủ lớn
+                    return d.r > 30 ? d.data.week : '';
+                })
+                .attr("dy", "0.35em"); // Căn giữa theo chiều dọc
+
+            // Xử lý thay đổi kích thước cửa sổ
+            window.addEventListener('resize', () => {
+                renderBubbleChart(data); // Vẽ lại biểu đồ khi thay đổi kích thước
             });
+        }
+
+
+        // Khi trang tải xong
+        window.onload = () => {
+            handleStravaCallback(); // Kiểm tra và xử lý callback từ Strava
+            checkAuthState(); // Kiểm tra trạng thái xác thực ban đầu
         };
-        document.body.appendChild(supabaseScript); // Bắt đầu tải script Supabase
+
+        // --- Tính năng phân tích hoạt động bằng LLM ---
+        document.getElementById('analyze-activities-btn').addEventListener('click', async () => {
+            if (!isAuthenticated || !currentUserId) {
+                showAlert('Vui lòng kết nối tài khoản Strava trước.');
+                return;
+            }
+
+            const llmAnalysisSection = document.getElementById('llm-analysis-section');
+            const llmAnalysisContent = document.getElementById('llm-analysis-content');
+            const llmAnalysisStatus = document.getElementById('llm-analysis-status');
+
+            llmAnalysisSection.classList.remove('hidden'); // Hiển thị phần phân tích
+            llmAnalysisContent.innerHTML = '<p class="text-gray-500">Đang phân tích hoạt động của bạn... <span class="loader"></span></p>';
+            llmAnalysisStatus.textContent = '';
+
+            if (userActivities.length === 0) {
+                llmAnalysisContent.innerHTML = '<p class="text-gray-500">Không có hoạt động nào để phân tích. Vui lòng tải dữ liệu từ Strava trước.</p>';
+                return;
+            }
+
+            try {
+                // Chuẩn bị dữ liệu hoạt động để gửi đến LLM
+                const activitiesForLLM = userActivities.map(activity => ({
+                    name: activity.name,
+                    distance_km: (activity.distance / 1000).toFixed(2),
+                    moving_time_seconds: activity.moving_time,
+                    start_date: new Date(activity.start_date).toLocaleDateString('vi-VN'), // Định dạng ngày tháng tiếng Việt
+                    average_speed_kmh: activity.average_speed ? (activity.average_speed * 3.6).toFixed(2) : 'N/A', // Chuyển m/s sang km/h
+                    total_elevation_gain_m: activity.total_elevation_gain ? activity.total_elevation_gain.toFixed(0) : 'N/A'
+                }));
+
+                const prompt = `Dựa trên dữ liệu hoạt động chạy bộ sau đây của người dùng, hãy cung cấp một bản tóm tắt chi tiết, những thông tin chi tiết đáng chú ý (ví dụ: quãng đường trung bình, thời gian trung bình, tốc độ trung bình, hoạt động dài nhất/ngắn nhất, xu hướng tăng/giảm hiệu suất), và một vài lời khuyên hoặc gợi ý cụ thể để cải thiện hoặc duy trì phong độ. Hãy viết bằng tiếng Việt và sử dụng ngôn ngữ thân thiện, dễ hiểu. Dữ liệu: ${JSON.stringify(activitiesForLLM)}.`;
+
+                const payload = { contents: [{ role: "user", parts: [{ text: prompt }] }] };
+                const apiKey = ""; // Canvas sẽ cung cấp API key này
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await response.json();
+
+                if (result.candidates && result.candidates.length > 0 &&
+                    result.candidates[0].content && result.candidates[0].content.parts &&
+                    result.candidates[0].content.parts.length > 0) {
+                    const analysisText = result.candidates[0].content.parts[0].text;
+                    llmAnalysisContent.innerHTML = `<p>${analysisText.replace(/\n/g, '<br>')}</p>`; // Hiển thị kết quả, giữ định dạng xuống dòng
+                    llmAnalysisStatus.textContent = 'Phân tích hoàn tất!';
+                } else {
+                    llmAnalysisContent.innerHTML = '<p class="text-red-500">Không thể nhận được phân tích từ AI. Vui lòng thử lại.</p>';
+                    llmAnalysisStatus.textContent = 'Lỗi phân tích.';
+                    console.error('Unexpected LLM response structure:', result);
+                }
+            } catch (error) {
+                console.error('Error calling Gemini API:', error);
+                llmAnalysisContent.innerHTML = '<p class="text-red-500">Đã xảy ra lỗi khi gọi API phân tích. Vui lòng kiểm tra kết nối mạng hoặc thử lại sau.</p>';
+                llmAnalysisStatus.textContent = 'Lỗi kết nối.';
+            }
+        });
     </script>
 </body>
 </html>
