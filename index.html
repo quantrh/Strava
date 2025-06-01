@@ -61,7 +61,8 @@
         /* Styling for the bubble chart container */
         #bubble-chart-container {
             width: 100%;
-            height: 500px; /* Fixed height for the chart */
+            /* Height will be managed by JS for responsiveness */
+            /* min-height: 400px; */ /* Optional: Set a minimum height */
             display: flex;
             justify-content: center;
             align-items: center;
@@ -109,9 +110,7 @@
             .grid-cols-2 {
                 grid-template-columns: 1fr;
             }
-            #bubble-chart-container {
-                height: 400px; /* Adjust height for smaller screens */
-            }
+            /* #bubble-chart-container height can be adjusted here if a fixed min-height is desired */
         }
 
         /* Loading spinner for LLM analysis */
@@ -208,7 +207,7 @@
     </div>
 
     <script>
-        // Hàm hiển thị thông báo tùy chỉnh thay cho alert()
+        // Function to display custom alert instead of alert()
         function showAlert(message) {
             const customAlert = document.getElementById('custom-alert');
             const alertMessage = document.getElementById('alert-message');
@@ -222,51 +221,52 @@
             };
         }
 
-        // Cấu hình Strava và Supabase của bạn
-        // THAY THẾ CÁC GIÁ TRỊ NÀY BẰNG THÔNG TIN THỰC TẾ CỦA BẠN
-        const STRAVA_CLIENT_ID = '55949'; // Lấy từ Strava API application
-        const SUPABASE_URL = 'https://rmbsxccrwrktbjlnezpu.supabase.co'; // URL dự án Supabase của bạn
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJtYnN4Y2Nyd3JrdGJqbG5lenB1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg2MjczNjQsImV4cCI6MjA2NDIwMzM2NH0.ydCqificftdtn1niRciFCifeuo8aX6SDGti-hCY5Z_Y'; // Khóa anon public của Supabase
-        // URL của Edge Function để xử lý OAuth callback
+        // Your Strava and Supabase configuration
+        // REPLACE THESE VALUES WITH YOUR ACTUAL INFORMATION
+        const STRAVA_CLIENT_ID = '55949'; // Get from Strava API application
+        const SUPABASE_URL = 'https://rmbsxccrwrktbjlnezpu.supabase.co'; // Your Supabase project URL
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJtYnN4Y2Nyd3JrdGJqbG5lenB1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg2MjczNjQsImV4cCI6MjA2NDIwMzM2NH0.ydCqificftdtn1niRciFCifeuo8aX6SDGti-hCY5Z_Y'; // Your public anon key for Supabase
+        // URL of the Edge Function to handle OAuth callback
         const STRAVA_OAUTH_CALLBACK_URL = 'https://rmbsxccrwrktbjlnezpu.supabase.co/functions/v1/strava-oauth-callback';
-        // URL của Edge Function để tải dữ liệu hoạt động
+        // URL of the Edge Function to fetch activity data
         const FETCH_ACTIVITIES_API_URL = 'https://rmbsxccrwrktbjlnezpu.supabase.co/functions/v1/fetch-strava-activities';
-        // URL của Edge Function để lấy dữ liệu thống kê
+        // URL of the Edge Function to get statistics data
         const GET_STATS_API_URL = 'https://rmbsxccrwrktbjlnezpu.supabase.co/functions/v1/get-user-activities';
 
 
-        // Biến toàn cục để lưu trữ trạng thái người dùng và dữ liệu hoạt động
+        // Global variables to store user status and activity data
         let currentUserId = null;
         let isAuthenticated = false;
-        let userActivities = []; // Biến mới để lưu trữ tất cả hoạt động đã tải
+        let userActivities = []; // New variable to store all loaded activities
+        let weeklyStatsData = []; // Store weekly stats data globally
 
-        // Hàm kiểm tra trạng thái đăng nhập và cập nhật UI
+        // Function to check login status and update UI
         async function checkAuthState() {
-            // 1. Thử tải từ localStorage trước
+            // 1. Try to load from localStorage first
             const storedUserId = localStorage.getItem('strava_user_id');
             const storedAuthStatus = localStorage.getItem('strava_authenticated');
 
             if (storedUserId && storedAuthStatus === 'true') {
                 currentUserId = storedUserId;
                 isAuthenticated = true;
-                console.log('Phiên đăng nhập được khôi phục từ localStorage.');
+                console.log('Session restored from localStorage.');
             } else if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                // 2. Nếu không có trong localStorage, kiểm tra từ __initial_auth_token (môi trường Canvas)
+                // 2. If not in localStorage, check from __initial_auth_token (Canvas environment)
                 const params = new URLSearchParams(window.location.search);
                 const userIdFromUrl = params.get('userId');
                 if (userIdFromUrl) {
                     currentUserId = userIdFromUrl;
                     isAuthenticated = true;
-                    // Nếu xác thực qua URL, lưu vào localStorage để duy trì phiên
+                    // If authenticated via URL, save to localStorage to maintain session
                     localStorage.setItem('strava_user_id', currentUserId);
                     localStorage.setItem('strava_authenticated', 'true');
-                    console.log('Xác thực thành công qua URL, phiên được lưu vào localStorage.');
+                    console.log('Authentication successful via URL, session saved to localStorage.');
                 }
             }
             updateUI();
         }
 
-        // Hàm cập nhật giao diện người dùng dựa trên trạng thái xác thực
+        // Function to update user interface based on authentication status
         function updateUI() {
             const authSection = document.getElementById('auth-section');
             const dataSection = document.getElementById('data-section');
@@ -288,7 +288,7 @@
             }
         }
 
-        // --- Xử lý OAuth 2.0 với Strava ---
+        // --- Handle OAuth 2.0 with Strava ---
         document.getElementById('connect-strava-btn').addEventListener('click', () => {
             const redirectUri = window.location.origin + '/Strava/';
             const scope = 'activity:read_all';
@@ -296,7 +296,7 @@
             window.location.href = authUrl;
         });
 
-        // Xử lý callback từ Strava OAuth
+        // Handle callback from Strava OAuth
         async function handleStravaCallback() {
             const urlParams = new URLSearchParams(window.location.search);
             const code = urlParams.get('code');
@@ -318,7 +318,7 @@
                     if (response.ok && result.success) {
                         isAuthenticated = true;
                         currentUserId = result.userId;
-                        // Lưu thông tin phiên vào localStorage khi xác thực thành công
+                        // Save session information to localStorage upon successful authentication
                         localStorage.setItem('strava_user_id', currentUserId);
                         localStorage.setItem('strava_authenticated', 'true');
                         authStatus.textContent = 'Kết nối Strava thành công!';
@@ -330,14 +330,14 @@
                         showAlert(`Lỗi kết nối Strava: ${result.error || 'Không xác định'}`);
                     }
                 } catch (error) {
-                    console.error('Lỗi khi xử lý Strava callback:', error);
-                    authStatus.textContent = 'Lỗi mạng hoặc server khi xử lý Strava callback.';
-                    showAlert('Lỗi mạng hoặc server khi xử lý Strava callback.');
+                    console.error('Error processing Strava callback:', error);
+                    authStatus.textContent = 'Network or server error when processing Strava callback.';
+                    showAlert('Network or server error when processing Strava callback.');
                 }
             }
         }
 
-        // --- Tải xuống và lưu trữ dữ liệu chạy bộ ---
+        // --- Download and store running data ---
         document.getElementById('fetch-activities-btn').addEventListener('click', async () => {
             if (!isAuthenticated || !currentUserId) {
                 showAlert('Vui lòng kết nối tài khoản Strava trước.');
@@ -361,20 +361,20 @@
                 if (response.ok && result.success) {
                     dataStatus.textContent = `Đã tải ${result.count} hoạt động thành công!`;
                     showAlert(`Đã tải ${result.count} hoạt động thành công!`);
-                    userActivities = result.activities; // Lưu toàn bộ hoạt động
-                    displayRecentActivities(userActivities); // Hiển thị các hoạt động mới tải
+                    userActivities = result.activities; // Save all activities
+                    displayRecentActivities(userActivities); // Display newly loaded activities
                 } else {
                     dataStatus.textContent = `Lỗi khi tải hoạt động: ${result.error || 'Không xác định'}`;
                     showAlert(`Lỗi khi tải hoạt động: ${result.error || 'Không xác định'}`);
                 }
             } catch (error) {
-                console.error('Lỗi khi tải hoạt động:', error);
-                dataStatus.textContent = 'Lỗi mạng hoặc server khi tải hoạt động.';
-                showAlert('Lỗi mạng hoặc server khi tải hoạt động.');
+                console.error('Error fetching activities:', error);
+                dataStatus.textContent = 'Network or server error when fetching activities.';
+                showAlert('Network or server error when fetching activities.');
             }
         });
 
-        // Hàm hiển thị các hoạt động gần đây
+        // Function to display recent activities
         function displayRecentActivities(activities) {
             const recentActivitiesList = document.getElementById('recent-activities');
             recentActivitiesList.innerHTML = ''; // Clear previous list
@@ -396,7 +396,7 @@
             }
         }
 
-        // Hàm định dạng thời gian (giây thành HH:MM:SS)
+        // Function to format duration (seconds to HH:MM:SS)
         function formatDuration(seconds) {
             const h = Math.floor(seconds / 3600);
             const m = Math.floor((seconds % 3600) / 60);
@@ -404,7 +404,7 @@
             return [h, m, s].map(v => v < 10 ? "0" + v : v).filter((v, i) => v !== "00" || i > 0).join(":");
         }
 
-        // --- Thống kê và trực quan hóa kết quả ---
+        // --- Statistics and visualization of results ---
         document.getElementById('view-stats-btn').addEventListener('click', async () => {
             if (!isAuthenticated || !currentUserId) {
                 showAlert('Vui lòng kết nối tài khoản Strava trước.');
@@ -427,15 +427,16 @@
 
                 if (response.ok && result.success) {
                     chartStatus.textContent = 'Đã tải dữ liệu thống kê thành công.';
-                    renderBubbleChart(result.weeklyStats); // Vẽ biểu đồ
+                    weeklyStatsData = result.weeklyStats; // Store data globally
+                    renderBubbleChart(weeklyStatsData); // Draw chart
                 } else {
                     chartStatus.textContent = `Lỗi khi tải thống kê: ${result.error || 'Không xác định'}`;
                     showAlert(`Lỗi khi tải thống kê: ${result.error || 'Không xác định'}`);
                 }
             } catch (error) {
-                console.error('Lỗi khi tải thống kê:', error);
-                chartStatus.textContent = 'Lỗi mạng hoặc server khi tải thống kê.';
-                showAlert('Lỗi mạng hoặc server khi tải thống kê.');
+                console.error('Error fetching statistics:', error);
+                chartStatus.textContent = 'Network or server error when fetching statistics.';
+                showAlert('Network or server error when fetching statistics.');
             }
         });
 
@@ -457,7 +458,7 @@
             return date;
         }
 
-        // Hàm vẽ biểu đồ bong bóng
+        // Function to draw the bubble chart
         function renderBubbleChart(data) {
             // data is weeklyStats: [{ week: 'YYYY-WW', totalDistance: ..., totalTime: ... }]
 
@@ -487,21 +488,17 @@
             }
 
             const width = container.clientWidth;
-            const defaultHeight = container.clientHeight; // Initial height from CSS
+            // Dynamic height calculation based on number of months and screen size
+            const monthBandHeight = width < 768 ? 100 : 150; // Smaller height for mobile
+            const topPaddingForChart = width < 768 ? 50 : 90; // Smaller padding for mobile
 
-            // Add top padding for the chart content to prevent clipping
-            const topPaddingForChart = 90; // Increased padding for month label and top bubbles
-
-            // Calculate total height needed for SVG based on number of months and top padding
-            const totalSvgContentHeight = (monthlyData.length * 140) + topPaddingForChart; // 150px per month band + top padding
-            const svgHeight = Math.max(defaultHeight, totalSvgContentHeight);
-
+            const totalSvgContentHeight = (monthlyData.length * monthBandHeight) + topPaddingForChart;
+            const svgHeight = Math.max(container.clientHeight, totalSvgContentHeight); // Ensure minimum height is met
 
             const svg = d3.select(container)
                 .append("svg")
                 .attr("width", width)
                 .attr("height", svgHeight) // Set SVG height to accommodate all content
-                // Adjust viewBox to start lower, effectively adding space at the top
                 .attr("viewBox", `0 0 ${width} ${svgHeight}`)
                 .attr("preserveAspectRatio", "xMidYMid meet");
 
@@ -509,18 +506,20 @@
             const maxDistance = d3.max(data, d => d.totalDistance);
             const minDistance = d3.min(data, d => d.totalDistance);
 
+            // Dynamic radius scale based on container width
+            const maxRadius = width < 768 ? 30 : 60; // Smaller max radius for small screens
+            const minRadius = width < 768 ? 8 : 15; // Smaller min radius for small screens
+
             const radiusScale = d3.scaleSqrt()
                 .domain([0, maxDistance])
-                .range([15, 60]); // Min and max radius for bubbles
+                .range([minRadius, maxRadius]); // Min and max radius for bubbles
 
             // Color scale: larger distance -> darker color (using Viridis, reversed)
-            // Viridis goes from purple (low) to yellow (high). Reversing domain makes high values purple/darker.
             const colorScale = d3.scaleSequential(d3.interpolateViridis)
                 .domain([maxDistance, minDistance]); // Reversed domain for darker color on larger values
 
             // Layout parameters
-            const monthBandHeight = 150; // Height allocated for each month
-            const bubbleHorizontalPadding = 20; // Padding between bubbles horizontally
+            const bubbleHorizontalPadding = width < 768 ? 10 : 20; // Smaller padding for mobile
             const bubbleVerticalOffset = monthBandHeight / 2; // Center bubbles vertically in their band
 
 
@@ -535,7 +534,7 @@
                 monthGroup.append("text")
                     .attr("x", 20) // Left padding
                     .attr("y", 0) // Position label at the top of the month band
-                    .attr("font-size", "1.2rem")
+                    .attr("font-size", width < 768 ? "1rem" : "1.2rem") // Smaller font size for mobile
                     .attr("font-weight", "bold")
                     .attr("fill", "#555")
                     .text(`Tháng ${monthObj.month.substring(5)}/${monthObj.month.substring(0, 4)}`);
@@ -550,7 +549,7 @@
                     const r = radiusScale(d.totalDistance);
                     const cx = currentX + r;
                     currentX += (r * 2) + bubbleHorizontalPadding;
-                    return { ...d, r, cx, cy: bubbleVerticalOffset + 20 }; // Offset bubbles slightly below month label
+                    return { ...d, r, cx, cy: bubbleVerticalOffset + (width < 768 ? 10 : 20) }; // Offset bubbles slightly below month label
                 });
 
                 // Draw circles
@@ -585,7 +584,7 @@
                     .attr("class", "bubble-text")
                     .attr("x", d => d.cx)
                     .attr("y", d => d.cy)
-                    .text(d => d.r > 25 ? d.week.split('-W')[1] : '') // Show only week number if bubble is large enough
+                    .text(d => d.r > (width < 768 ? 15 : 25) ? d.week.split('-W')[1] : '') // Show only week number if bubble is large enough (dynamic threshold)
                     .attr("dy", "0.35em")
                     .attr("fill", "white") // Text color
                     .attr("pointer-events", "none");
@@ -599,25 +598,33 @@
         }
 
 
-        // Khi trang tải xong
+        // When the page loads
         window.onload = () => {
-            handleStravaCallback(); // Kiểm tra và xử lý callback từ Strava
-            checkAuthState(); // Kiểm tra trạng thái xác thực ban đầu
+            handleStravaCallback(); // Check and handle callback from Strava
+            checkAuthState(); // Check initial authentication status
         };
 
-        // Hàm chuyển đổi Markdown cơ bản sang HTML
+        // Add resize event listener to redraw the chart
+        window.addEventListener('resize', () => {
+            // Only redraw if there is data to display
+            if (weeklyStatsData && weeklyStatsData.length > 0) {
+                renderBubbleChart(weeklyStatsData);
+            }
+        });
+
+        // Function to convert basic Markdown to HTML
         function markdownToHtml(markdownText) {
             let htmlText = markdownText;
-            // Chuyển đổi **text** thành <strong>text</strong>
+            // Convert **text** to <strong>text</strong>
             htmlText = htmlText.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-            // Chuyển đổi *text* thành <em>text</em>
+            // Convert *text* to <em>text</em>
             htmlText = htmlText.replace(/\*(.*?)\*/g, '<em>$1</em>');
-            // Chuyển đổi xuống dòng thành <br>
+            // Convert newlines to <br>
             htmlText = htmlText.replace(/\n/g, '<br>');
             return htmlText;
         }
 
-        // --- Tính năng phân tích hoạt động bằng LLM ---
+        // --- LLM activity analysis feature ---
         document.getElementById('analyze-activities-btn').addEventListener('click', async () => {
             if (!isAuthenticated || !currentUserId) {
                 showAlert('Vui lòng kết nối tài khoản Strava trước.');
@@ -628,7 +635,7 @@
             const llmAnalysisContent = document.getElementById('llm-analysis-content');
             const llmAnalysisStatus = document.getElementById('llm-analysis-status');
 
-            llmAnalysisSection.classList.remove('hidden'); // Hiển thị phần phân tích
+            llmAnalysisSection.classList.remove('hidden'); // Show analysis section
             llmAnalysisContent.innerHTML = '<p class="text-gray-500">Đang phân tích hoạt động của bạn... <span class="loader"></span></p>';
             llmAnalysisStatus.textContent = '';
 
@@ -638,20 +645,20 @@
             }
 
             try {
-                // Chuẩn bị dữ liệu hoạt động để gửi đến LLM
+                // Prepare activity data to send to LLM
                 const activitiesForLLM = userActivities.map(activity => ({
                     name: activity.name,
                     distance_km: (activity.distance / 1000).toFixed(2),
                     moving_time_seconds: activity.moving_time,
-                    start_date: new Date(activity.start_date).toLocaleDateString('vi-VN'), // Định dạng ngày tháng tiếng Việt
-                    average_speed_kmh: activity.average_speed ? (activity.average_speed * 3.6).toFixed(2) : 'N/A', // Chuyển m/s sang km/h
+                    start_date: new Date(activity.start_date).toLocaleDateString('vi-VN'), // Format date to Vietnamese
+                    average_speed_kmh: activity.average_speed ? (activity.average_speed * 3.6).toFixed(2) : 'N/A', // Convert m/s to km/h
                     total_elevation_gain_m: activity.total_elevation_gain ? activity.total_elevation_gain.toFixed(0) : 'N/A'
                 }));
 
                 const prompt = `Dựa trên dữ liệu hoạt động chạy bộ sau đây của người dùng, hãy cung cấp một bản tóm tắt chi tiết, những thông tin chi tiết đáng chú ý (ví dụ: quãng đường trung bình, thời gian trung bình, tốc độ trung bình, hoạt động dài nhất/ngắn nhất, xu hướng tăng/giảm hiệu suất), và một vài lời khuyên hoặc gợi ý cụ thể để cải thiện hoặc duy trì phong độ. Hãy viết bằng tiếng Việt và sử dụng ngôn ngữ thân thiện, dễ hiểu. Dữ liệu: ${JSON.stringify(activitiesForLLM)}.`;
 
-                // Sử dụng API key do người dùng cung cấp
-                const apiKey = 'AIzaSyBaLi7TzZJ9SwmHilU24SRcV2i7lU6gqdQ';
+                // Use the API key provided by the user
+                const apiKey = ''; // Leave blank, Canvas will provide it at runtime
                 const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
 
                 const payload = { contents: [{ role: "user", parts: [{ text: prompt }] }] };
@@ -668,7 +675,7 @@
                     result.candidates[0].content && result.candidates[0].content.parts &&
                     result.candidates[0].content.parts.length > 0) {
                     const analysisText = result.candidates[0].content.parts[0].text;
-                    // Chuyển đổi Markdown sang HTML trước khi hiển thị
+                    // Convert Markdown to HTML before displaying
                     llmAnalysisContent.innerHTML = `<p>${markdownToHtml(analysisText)}</p>`;
                     llmAnalysisStatus.textContent = 'Phân tích hoàn tất!';
                 } else {
@@ -683,18 +690,19 @@
             }
         });
 
-        // --- Xử lý ngắt kết nối Strava ---
+        // --- Handle Strava disconnect ---
         document.getElementById('disconnect-strava-btn').addEventListener('click', () => {
-            // Xóa thông tin phiên khỏi localStorage
+            // Clear session information from localStorage
             localStorage.removeItem('strava_user_id');
             localStorage.removeItem('strava_authenticated');
             currentUserId = null;
             isAuthenticated = false;
-            userActivities = []; // Xóa dữ liệu hoạt động
+            userActivities = []; // Clear activity data
+            weeklyStatsData = []; // Clear stats data
 
             showAlert('Đã ngắt kết nối với Strava. Vui lòng kết nối lại để sử dụng ứng dụng.');
-            updateUI(); // Cập nhật giao diện người dùng
-            // Xóa nội dung các phần dữ liệu và phân tích
+            updateUI(); // Update user interface
+            // Clear content of data and analysis sections
             document.getElementById('recent-activities').innerHTML = '';
             document.getElementById('llm-analysis-content').innerHTML = '<p class="text-gray-500">Nhấn "✨ Phân tích hoạt động" để nhận phân tích từ AI.</p>';
             document.getElementById('llm-analysis-section').classList.add('hidden');
