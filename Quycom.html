@@ -1,8 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
-// Removed: import { createClient } from '@supabase/supabase-js'; // This import caused the error
 
 // Initialize Supabase client variables (will be set after CDN loads)
-// Removed process.env as it's not available in browser environment
 const supabaseUrl = 'https://rmbsxccrwrktbjlnezpu.supabase.co'; // Replace with your actual Supabase URL
 const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJtYnN4Y2Nyd3JrdGJqbG5lenB1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg2MjczNjQsImV4cCI6MjA2NDIwMzM2NH0.ydCqificftdtn1niRciFCifeuo8aX6SDGti-hCY5Z_Y'; // Replace with your actual Supabase Anon Key
 
@@ -49,6 +47,11 @@ const App = () => {
     const [showReportSelectionModal, setShowReportSelectionModal] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
     const [supabaseClient, setSupabaseClient] = useState(null); // State to hold the Supabase client instance
+
+    // New states for Gemini API integration
+    const [showFundInsightsModal, setShowFundInsightsModal] = useState(false);
+    const [fundInsights, setFundInsights] = useState('');
+    const [isGeneratingInsights, setIsGeneratingInsights] = useState(false);
 
     // Effect to load Supabase CDN and initialize client
     useEffect(() => {
@@ -433,7 +436,71 @@ const App = () => {
         setShowFundReport(false);
         setShowMemberReports(false);
         setShowReportSelectionModal(false);
+        setShowFundInsightsModal(false); // Hide insights modal too
     };
+
+    // ✨ Gemini API Integration: Generate Fund Insights
+    const generateFundInsights = async () => {
+        setIsGeneratingInsights(true);
+        setFundInsights('');
+        setErrorMessage(''); // Clear previous errors
+
+        // Construct prompt for LLM
+        let prompt = `Given the following fund transactions and current fund balance for a group's meal fund, provide a concise summary of the fund's financial health and suggest 3-5 actionable tips for better fund management. The response should be in Vietnamese.
+
+Current Fund Balance: ${formatNumberForDisplay(fundBalance)} VNĐ
+
+Recent Transactions:\n`;
+
+        if (transactions.length === 0) {
+            prompt += "No transactions recorded yet.\n";
+        } else {
+            transactions.slice(-10).reverse().forEach(t => { // Last 10 transactions
+                const memberNames = t.type === 'contribution'
+                    ? members.find(m => m.id === t.contributingMemberId)?.name || 'N/A'
+                    : (t.involvedMemberIds && t.involvedMemberIds.length > 0
+                        ? t.involvedMemberIds.map(id => members.find(m => m.id === id)?.name || 'N/A').join(', ')
+                        : 'Tất cả thành viên');
+                prompt += `- ${t.date} | Loại: ${t.type === 'contribution' ? 'Đóng Góp' : 'Chi Tiêu'} | Số tiền: ${formatNumberForDisplay(t.amount)} VNĐ | Mô tả: ${t.description} | Thành viên: ${memberNames}\n`;
+            });
+        }
+
+        console.log("Sending prompt to Gemini API:", prompt);
+
+        try {
+            let chatHistory = [];
+            chatHistory.push({ role: "user", parts: [{ text: prompt }] });
+            const payload = { contents: chatHistory };
+            const apiKey = ""; // Leave as empty string for Canvas to provide
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+            const response = await fetch(apiUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            const result = await response.json();
+            console.log("Gemini API response:", result);
+
+            if (result.candidates && result.candidates.length > 0 &&
+                result.candidates[0].content && result.candidates[0].content.parts &&
+                result.candidates[0].content.parts.length > 0) {
+                const text = result.candidates[0].content.parts[0].text;
+                setFundInsights(text);
+            } else {
+                setFundInsights("Không thể tạo thông tin chi tiết. Vui lòng thử lại.");
+                console.error("Unexpected Gemini API response structure:", result);
+            }
+        } catch (error) {
+            console.error("Error calling Gemini API:", error);
+            setErrorMessage(`Lỗi khi tạo thông tin chi tiết: ${error.message}. Vui lòng thử lại.`);
+            setFundInsights("Đã xảy ra lỗi khi kết nối với AI. Vui lòng thử lại.");
+        } finally {
+            setIsGeneratingInsights(false);
+        }
+    };
+
 
     if (isLoading) {
         return (
@@ -592,6 +659,16 @@ const App = () => {
                     <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fillRule="evenodd" d="M3 3a1 1 0 011-1h12a1 1 0 011 1v14a1 1 0 01-1 1H4a1 1 0 01-1-1V3zm4.5 9.5a.5.5 0 000 1h5a.5.5 0 000-1h-5zM7 7a1 1 0 011-1h4a1 1 0 110 2H8a1 1 0 01-1-1z" clipRule="evenodd"></path></svg>
                     Báo Cáo
                 </button>
+                <button
+                    onClick={() => {
+                        hideAllSections();
+                        setShowFundInsightsModal(true);
+                        generateFundInsights(); // Trigger insights generation
+                    }}
+                    className="btn-primary flex items-center justify-center w-full sm:w-auto"
+                >
+                    ✨ Nhận Thông Tin Quỹ
+                </button>
             </div>
 
             {/* Add Member Form */}
@@ -707,6 +784,16 @@ const App = () => {
                     message={`Bạn có chắc chắn muốn xóa giao dịch "${transactionToDelete.description}" này không?`}
                     onConfirm={confirmDelete}
                     onCancel={cancelDelete}
+                />
+            )}
+
+            {/* Fund Insights Modal */}
+            {showFundInsightsModal && (
+                <FundInsightsModal
+                    insights={fundInsights}
+                    isLoading={isGeneratingInsights}
+                    onClose={() => setShowFundInsightsModal(false)}
+                    errorMessage={errorMessage}
                 />
             )}
         </div>
@@ -1620,5 +1707,43 @@ const MemberBalancePieChart = ({ members }) => {
         </div>
     );
 };
+
+// New Component for Fund Insights Modal
+const FundInsightsModal = ({ insights, isLoading, onClose, errorMessage }) => {
+    return (
+        <div className="modal-overlay">
+            <div className="modal-content w-11/12 md:w-2/3 lg:w-1/2">
+                <h2 className="text-2xl font-semibold mb-6 text-[#006B68]">Thông Tin Chi Tiết Quỹ ✨</h2>
+                {isLoading ? (
+                    <div className="flex flex-col items-center justify-center p-8">
+                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#006B68]"></div>
+                        <p className="mt-4 text-gray-600">Đang tạo thông tin chi tiết từ AI...</p>
+                    </div>
+                ) : errorMessage ? (
+                    <div className="error-message mb-4">
+                        {errorMessage}
+                    </div>
+                ) : (
+                    <div className="prose max-w-none">
+                        {insights ? (
+                            // Render insights, preserving newlines
+                            insights.split('\n').map((line, index) => (
+                                <p key={index} className="mb-2 text-gray-700">{line}</p>
+                            ))
+                        ) : (
+                            <p className="text-center text-gray-500">Không có thông tin chi tiết nào được tạo. Vui lòng thử lại.</p>
+                        )}
+                    </div>
+                )}
+                <div className="flex justify-end mt-6">
+                    <button type="button" onClick={onClose} className="btn-primary">
+                        Đóng
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 
 export default App;
