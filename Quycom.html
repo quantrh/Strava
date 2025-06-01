@@ -117,7 +117,10 @@
             Báo Cáo
         </button>
         <button id="get-insights-btn" class="btn-primary flex items-center justify-center w-full sm:w-auto">
-            ✨ AI Nhận Xét Quỹ
+            ✨ Nhận Thông Tin Quỹ
+        </button>
+        <button id="get-food-suggestions-btn" class="btn-primary flex items-center justify-center w-full sm:w-auto">
+            🍜 Gợi ý món ăn
         </button>
     </div>
 
@@ -325,6 +328,17 @@
         </div>
     </div>
 
+    <div id="food-suggestion-modal" class="modal-overlay hidden">
+        <div class="modal-content w-11/12 md:w-2/3 lg:w-1/2">
+            <h2 class="text-2xl font-semibold mb-6 text-[#006B68]">Gợi Ý Món Ăn ✨</h2>
+            <div id="food-suggestion-content">
+                </div>
+            <div class="flex justify-end mt-6">
+                <button type="button" id="close-food-suggestion-btn" class="btn-primary">Đóng</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         // Supabase Client Initialization
         const SUPABASE_URL = 'https://rmbsxccrwrktbjlnezpu.supabase.co'; // Replace with your actual Supabase URL
@@ -339,6 +353,7 @@
         let selectedMemberForDetails = null;
         let transactionToDelete = null;
         let isGeneratingInsights = false;
+        let isGeneratingFoodSuggestions = false; // New state for food suggestions
 
         // DOM Elements
         const fundBalanceDisplay = document.getElementById('fund-balance-display');
@@ -361,6 +376,8 @@
         const reportSelectionModal = document.getElementById('report-selection-modal');
         const fundInsightsModal = document.getElementById('fund-insights-modal');
         const fundInsightsContent = document.getElementById('fund-insights-content');
+        const foodSuggestionModal = document.getElementById('food-suggestion-modal'); // New modal
+        const foodSuggestionContent = document.getElementById('food-suggestion-content'); // New content div
 
         // Forms and Inputs
         const addMemberForm = document.getElementById('add-member-form');
@@ -388,7 +405,7 @@
 
         // Member Details Modal Elements
         const memberDetailsName = document.getElementById('member-details-name');
-        const memberDetailsBalance = document = document.getElementById('member-details-balance');
+        const memberDetailsBalance = document.getElementById('member-details-balance');
         const memberDetailsTransactionsContainer = document.getElementById('member-details-transactions-container');
         const closeMemberDetailsBtn = document.getElementById('close-member-details-btn');
 
@@ -413,6 +430,9 @@
 
         // Insights Modal Elements
         const closeInsightsBtn = document.getElementById('close-insights-btn');
+
+        // Food Suggestion Modal Elements
+        const closeFoodSuggestionBtn = document.getElementById('close-food-suggestion-btn'); // New close button
 
         // --- Helper Functions ---
 
@@ -464,6 +484,7 @@
             confirmationModal.classList.add('hidden');
             reportSelectionModal.classList.add('hidden');
             fundInsightsModal.classList.add('hidden');
+            foodSuggestionModal.classList.add('hidden'); // Hide new modal
             hideErrorMessage();
         }
 
@@ -1592,6 +1613,57 @@ Recent Transactions:\n`;
             }
         }
 
+        // New function to generate food suggestions
+        async function generateFoodSuggestions(latitude, longitude) {
+            isGeneratingFoodSuggestions = true;
+            foodSuggestionContent.innerHTML = `
+                <div class="flex flex-col items-center justify-center p-8">
+                    <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-[#006B68]"></div>
+                    <p class="mt-4 text-gray-600">Đang tìm kiếm gợi ý món ăn gần bạn...</p>
+                </div>
+            `;
+            hideErrorMessage(); // Clear previous errors for food suggestions
+
+            // Construct prompt for LLM
+            let prompt = `Dựa trên vị trí GPS hiện tại của tôi (vĩ độ: ${latitude}, kinh độ: ${longitude}), hãy gợi ý 3-5 món ăn phổ biến và các quán ăn ngon gần đó. Vui lòng tham khảo thông tin từ Google Maps và cung cấp tên quán, địa chỉ (nếu có thể), và một mô tả ngắn về món ăn. Phản hồi nên bằng tiếng Việt và được định dạng bằng Markdown (ví dụ: sử dụng ## cho tiêu đề, - cho các mục danh sách, ** cho in đậm).`;
+
+            console.log("Sending food suggestion prompt to Gemini API:", prompt);
+
+            try {
+                let chatHistory = [];
+                chatHistory.push({ role: "user", parts: [{ text: prompt }] });
+                const payload = { contents: chatHistory };
+                const apiKey = ""; // Leave as empty string for Canvas to provide
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await response.json();
+                console.log("Gemini API food suggestion response:", result);
+
+                if (result.candidates && result.candidates.length > 0 &&
+                    result.candidates[0].content && result.candidates[0].content.parts &&
+                    result.candidates[0].content.parts.length > 0) {
+                    const markdownText = result.candidates[0].content.parts[0].text;
+                    // Convert Markdown to HTML before setting innerHTML
+                    foodSuggestionContent.innerHTML = markdownToHtml(markdownText);
+                } else {
+                    foodSuggestionContent.innerHTML = '<p class="text-center text-gray-500">Không thể tạo gợi ý món ăn. Vui lòng thử lại.</p>';
+                    console.error("Unexpected Gemini API food suggestion response structure:", result);
+                }
+            } catch (error) {
+                console.error("Error calling Gemini API for food suggestions:", error);
+                showErrorMessage(`Lỗi khi tạo gợi ý món ăn: ${error.message}. Vui lòng thử lại.`);
+                foodSuggestionContent.innerHTML = '<p class="text-center text-gray-500">Đã xảy ra lỗi khi kết nối với AI. Vui lòng thử lại.</p>';
+            } finally {
+                isGeneratingFoodSuggestions = false;
+            }
+        }
+
 
         // --- Event Listeners ---
 
@@ -1629,6 +1701,34 @@ Recent Transactions:\n`;
             generateFundInsights();
         };
 
+        // New Food Suggestion Button
+        document.getElementById('get-food-suggestions-btn').onclick = () => {
+            hideAllSections();
+            foodSuggestionModal.classList.remove('hidden');
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition((position) => {
+                    generateFoodSuggestions(position.coords.latitude, position.coords.longitude);
+                }, (error) => {
+                    console.error("Error getting location:", error);
+                    let errorMessage = "Không thể lấy vị trí hiện tại của bạn. Vui lòng cho phép truy cập vị trí.";
+                    if (error.code === error.PERMISSION_DENIED) {
+                        errorMessage = "Bạn đã từ chối quyền truy cập vị trí. Vui lòng cho phép trong cài đặt trình duyệt để nhận gợi ý món ăn.";
+                    } else if (error.code === error.POSITION_UNAVAILABLE) {
+                        errorMessage = "Thông tin vị trí không khả dụng.";
+                    } else if (error.code === error.TIMEOUT) {
+                        errorMessage = "Hết thời gian chờ khi cố gắng lấy vị trí.";
+                    }
+                    foodSuggestionContent.innerHTML = `<p class="text-center text-red-500">${errorMessage}</p>`;
+                    showErrorMessage(errorMessage);
+                });
+            } else {
+                const errorMessage = "Trình duyệt của bạn không hỗ trợ tính năng định vị địa lý.";
+                foodSuggestionContent.innerHTML = `<p class="text-center text-red-500">${errorMessage}</p>`;
+                showErrorMessage(errorMessage);
+            }
+        };
+
+
         // Report Selection Modal Buttons
         selectFundReportBtn.onclick = () => {
             hideAllSections();
@@ -1665,6 +1765,12 @@ Recent Transactions:\n`;
         closeInsightsBtn.onclick = () => {
             fundInsightsModal.classList.add('hidden');
             fundInsightsContent.innerHTML = ''; // Clear content when closing
+        };
+
+        // Close Food Suggestion Modal Button
+        closeFoodSuggestionBtn.onclick = () => {
+            foodSuggestionModal.classList.add('hidden');
+            foodSuggestionContent.innerHTML = ''; // Clear content when closing
         };
 
         // Member Report Dropdown Change
