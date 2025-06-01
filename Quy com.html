@@ -1,0 +1,1476 @@
+import React, { useState, useEffect, useCallback } from 'react'; // Import useCallback
+
+// Helper function to generate unique IDs
+const generateId = () => Math.random().toString(36).substring(2, 9);
+
+// Helper function to format a number with thousands separators for display
+const formatNumberForDisplay = (num) => {
+    if (typeof num !== 'number' || isNaN(num)) {
+        return '';
+    }
+    return num.toLocaleString('vi-VN');
+};
+
+// Helper function to format a number string with thousands separators for input
+// This function handles the input value to add/remove thousands separators
+const formatNumberForInput = (value) => {
+    // Remove all non-digit characters
+    const cleanedValue = value.replace(/\D/g, '');
+    if (!cleanedValue) {
+        return '';
+    }
+    // Convert to number, then format with locale string
+    return parseFloat(cleanedValue).toLocaleString('vi-VN');
+};
+
+// Helper function to parse a formatted number string back to a raw number
+const parseFormattedNumber = (formattedValue) => {
+    // Remove all non-digit characters (including thousands separators)
+    const cleanedValue = formattedValue.replace(/\D/g, '');
+    return parseFloat(cleanedValue) || 0;
+};
+
+
+// Main App Component
+const App = () => {
+    // State for members and transactions
+    const [members, setMembers] = useState([]);
+    const [transactions, setTransactions] = useState([]);
+    const [fundBalance, setFundBalance] = useState(0);
+    const [showAddMember, setShowAddMember] = useState(false);
+    const [showAddTransaction, setShowAddTransaction] = useState(false);
+    const [showTransactions, setShowTransactions] = useState(false);
+    const [editingTransaction, setEditingTransaction] = useState(null); // State to hold transaction being edited
+    const [errorMessage, setErrorMessage] = useState(''); // State for displaying error messages
+    const [selectedMemberForDetails, setSelectedMemberForDetails] = useState(null); // State for showing member details
+    const [showConfirmDelete, setShowConfirmDelete] = useState(false); // State for custom delete confirmation modal
+    const [transactionToDelete, setTransactionToDelete] = useState(null); // State to hold transaction object to be deleted
+    const [showFundReport, setShowFundReport] = useState(false); // State for showing fund report
+    const [showMemberReports, setShowMemberReports] = useState(false); // State for showing individual member reports
+    const [showReportSelectionModal, setShowReportSelectionModal] = useState(false); // New state for report selection modal
+
+    // Load data from localStorage on initial render
+    useEffect(() => {
+        try {
+            const storedMembers = JSON.parse(localStorage.getItem('fundMembers'));
+            const storedTransactions = JSON.parse(localStorage.getItem('fundTransactions'));
+
+            // Define initial members
+            const defaultInitialMembers = [
+                { id: generateId(), name: 'Trương Hồng Quân', balance: 0 },
+                { id: generateId(), name: 'Bùi Hoàng Giang', balance: 0 },
+                { id: generateId(), name: 'Nguyễn Thị Hoa Hậu', balance: 0 },
+            ];
+
+            // Define initial transactions (using IDs from defaultInitialMembers)
+            const defaultInitialTransactions = [
+                { id: generateId(), type: 'contribution', amount: 500000, description: 'Đóng góp ban đầu', date: new Date().toLocaleString(), contributingMemberId: defaultInitialMembers[0].id, involvedMemberIds: [] },
+                { id: generateId(), type: 'contribution', amount: 300000, description: 'Đóng góp thêm', date: new Date().toLocaleString(), contributingMemberId: defaultInitialMembers[1].id, involvedMemberIds: [] },
+                { id: generateId(), type: 'expense', amount: 150000, description: 'Mua đồ ăn nhẹ', date: new Date().toLocaleString(), contributingMemberId: null, involvedMemberIds: [defaultInitialMembers[0].id, defaultInitialMembers[1].id, defaultInitialMembers[2].id] },
+                { id: generateId(), type: 'contribution', amount: 200000, description: 'Đóng góp tháng 5', date: new Date().toLocaleString(), contributingMemberId: defaultInitialMembers[2].id, involvedMemberIds: [] },
+                { id: generateId(), type: 'expense', amount: 250000, description: 'Tiền nước uống', date: new Date().toLocaleString(), contributingMemberId: null, involvedMemberIds: [defaultInitialMembers[0].id, defaultInitialMembers[2].id] },
+                { id: generateId(), type: 'expense', amount: 300000, description: 'Đặt cơm trưa', date: new Date().toLocaleString(), contributingMemberId: null, involvedMemberIds: [defaultInitialMembers[0].id, defaultInitialMembers[1].id, defaultInitialMembers[2].id] },
+            ];
+
+            if (!storedMembers || storedMembers.length === 0) {
+                // If no members are stored, initialize with default members and transactions
+                setMembers(defaultInitialMembers);
+                setTransactions(defaultInitialTransactions);
+            } else {
+                // If members exist, load them and existing transactions
+                setMembers(storedMembers);
+                setTransactions(storedTransactions || []); // Ensure transactions is an array even if null
+            }
+        } catch (error) {
+            console.error("Error loading data from localStorage or initializing default data:", error);
+            // Fallback to empty arrays if parsing or initialization fails
+            setMembers([]);
+            setTransactions([]);
+        }
+    }, []);
+
+    // Save data to localStorage whenever members or transactions change
+    useEffect(() => {
+        localStorage.setItem('fundMembers', JSON.stringify(members));
+    }, [members]);
+
+    useEffect(() => {
+        localStorage.setItem('fundTransactions', JSON.stringify(transactions));
+    }, [transactions]);
+
+    // Calculate fund balance and member balances whenever transactions or members change
+    useEffect(() => {
+        let totalBalance = 0;
+        // Create a temporary map to hold updated balances for members
+        const tempMemberBalances = new Map(members.map(m => [m.id, 0]));
+
+        transactions.forEach(t => {
+            if (t.type === 'contribution') {
+                totalBalance += t.amount;
+                if (tempMemberBalances.has(t.contributingMemberId)) {
+                    tempMemberBalances.set(t.contributingMemberId, tempMemberBalances.get(t.contributingMemberId) + t.amount);
+                }
+            } else if (t.type === 'expense') {
+                totalBalance -= t.amount;
+                // Distribute expense cost
+                const involvedMembers = t.involvedMemberIds && t.involvedMemberIds.length > 0
+                    ? t.involvedMemberIds
+                    : members.map(m => m.id); // Fallback to all members if no specific ones selected
+
+                // Ensure cost is distributed only if there are involved members
+                if (involvedMembers.length > 0) {
+                    const costPerMember = t.amount / involvedMembers.length;
+                    involvedMembers.forEach(memberId => {
+                        if (tempMemberBalances.has(memberId)) {
+                            tempMemberBalances.set(memberId, tempMemberBalances.get(memberId) - costPerMember);
+                        }
+                    });
+                }
+            }
+        });
+
+        // Update members state with calculated balances
+        const updatedMembers = members.map(member => ({
+            ...member,
+            balance: tempMemberBalances.get(member.id) || 0 // Ensure balance is set, default to 0 if not found
+        }));
+
+        setFundBalance(totalBalance);
+        setMembers(updatedMembers);
+    }, [transactions, members.length]); // Depend on transactions and members.length to trigger recalculation
+
+    // Calculate total contributions and total expenses for reporting
+    const totalContributions = transactions.filter(t => t.type === 'contribution').reduce((sum, t) => sum + t.amount, 0);
+    const totalExpenses = transactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
+
+
+    // --- Member Management ---
+    const addMember = (name) => {
+        if (!name.trim()) {
+            setErrorMessage('Tên thành viên không được để trống.');
+            return;
+        }
+        setErrorMessage(''); // Clear error
+        const newMember = {
+            id: generateId(),
+            name: name.trim(),
+            balance: 0, // Initial balance, will be updated by transactions
+        };
+        setMembers(prevMembers => [...prevMembers, newMember]);
+        setShowAddMember(false); // Hide form after adding
+    };
+
+    // --- Transaction Management ---
+    const addTransaction = (type, amount, description, contributingMemberId = null, involvedMemberIds = []) => {
+        if (isNaN(amount) || amount <= 0 || !description.trim()) {
+            setErrorMessage('Vui lòng nhập số tiền hợp lệ và mô tả.');
+            return;
+        }
+
+        if (type === 'contribution' && !contributingMemberId) {
+            setErrorMessage('Vui lòng chọn thành viên đóng góp.');
+            return;
+        }
+
+        if (type === 'expense' && involvedMemberIds.length === 0) {
+            setErrorMessage('Vui lòng chọn ít nhất một thành viên tham gia chi tiêu.');
+            return;
+        }
+        setErrorMessage(''); // Clear error
+
+        const newTransaction = {
+            id: generateId(),
+            type, // 'contribution' or 'expense'
+            amount: parseFloat(amount),
+            description: description.trim(),
+            date: new Date().toLocaleString(),
+            contributingMemberId: type === 'contribution' ? contributingMemberId : null, // Only for contributions
+            involvedMemberIds: type === 'expense' ? involvedMemberIds : [], // Only for expenses
+        };
+        setTransactions(prevTransactions => [...prevTransactions, newTransaction]);
+        setShowAddTransaction(false); // Hide form after adding
+    };
+
+    const editTransaction = (updatedTransaction) => {
+        if (isNaN(updatedTransaction.amount) || updatedTransaction.amount <= 0 || !updatedTransaction.description.trim()) {
+            setErrorMessage('Vui lòng nhập số tiền hợp lệ và mô tả cho giao dịch.');
+            return;
+        }
+        if (updatedTransaction.type === 'contribution' && !updatedTransaction.contributingMemberId) {
+            setErrorMessage('Vui lòng chọn thành viên đóng góp cho giao dịch này.');
+            return;
+        }
+        if (updatedTransaction.type === 'expense' && updatedTransaction.involvedMemberIds.length === 0) {
+            setErrorMessage('Vui lòng chọn ít nhất một thành viên tham gia chi tiêu cho giao dịch này.');
+            return;
+        }
+        setErrorMessage(''); // Clear error
+
+        setTransactions(prevTransactions =>
+            prevTransactions.map(t =>
+                t.id === updatedTransaction.id ? { ...updatedTransaction, amount: parseFloat(updatedTransaction.amount) } : t
+            )
+        );
+        setEditingTransaction(null); // Close edit form
+    };
+
+    const deleteTransaction = (transaction) => {
+        setTransactionToDelete(transaction);
+        setShowConfirmDelete(true);
+    };
+
+    const confirmDelete = () => {
+        if (transactionToDelete) {
+            setTransactions(prevTransactions => prevTransactions.filter(t => t.id !== transactionToDelete.id));
+        }
+        setShowConfirmDelete(false);
+        setTransactionToDelete(null);
+    };
+
+    const cancelDelete = () => {
+        setShowConfirmDelete(false);
+        setTransactionToDelete(null);
+    };
+
+    const settleUpMember = (memberId) => {
+        const memberToSettle = members.find(m => m.id === memberId);
+        if (!memberToSettle) return;
+
+        const settlementAmount = Math.abs(memberToSettle.balance);
+        const settlementType = memberToSettle.balance < 0 ? 'contribution' : 'expense';
+
+        if (settlementAmount > 0) {
+            const settlementTransaction = {
+                id: generateId(),
+                type: settlementType,
+                amount: settlementAmount,
+                description: `Thanh toán số dư cho ${memberToSettle.name}`,
+                date: new Date().toLocaleString(),
+                contributingMemberId: settlementType === 'contribution' ? memberToSettle.id : null,
+                involvedMemberIds: settlementType === 'expense' ? [memberToSettle.id] : [],
+            };
+            setTransactions(prevTransactions => [...prevTransactions, settlementTransaction]);
+        }
+    };
+
+    // Function to hide all other sections
+    const hideAllSections = () => {
+        setShowAddMember(false);
+        setShowAddTransaction(false);
+        setShowTransactions(false);
+        setSelectedMemberForDetails(null);
+        setErrorMessage('');
+        setShowFundReport(false);
+        setShowMemberReports(false);
+        setShowReportSelectionModal(false); // Hide report selection modal as well
+    };
+
+    return (
+        <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4 font-sans text-gray-800">
+            {/* CDN for Tailwind CSS, XLSX */}
+            <script src="https://cdn.tailwindcss.com"></script>
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+            <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+            <style>
+                {`
+                body { font-family: 'Inter', sans-serif; }
+                .card {
+                    background-color: #fff;
+                    border-radius: 1rem;
+                    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+                    padding: 1.5rem;
+                }
+                .btn-primary {
+                    background-color: #006B68; /* BIDV Brand Blue */
+                    color: white;
+                    padding: 0.75rem 1.5rem;
+                    border-radius: 0.75rem;
+                    font-weight: 600;
+                    transition: background-color 0.2s;
+                }
+                .btn-primary:hover { background-color: #005A58; /* Darker BIDV Blue */ }
+                .btn-secondary {
+                    background-color: #E0E7FF; /* Light background */
+                    color: #006B68; /* BIDV Brand Blue for text */
+                    padding: 0.75rem 1.5rem;
+                    border-radius: 0.75rem;
+                    font-weight: 600;
+                    transition: background-color 0.2s;
+                }
+                .btn-secondary:hover { background-color: #CCF0EF; /* Lighter BIDV Blue for hover */ }
+                .input-field {
+                    border: 1px solid #D1D5DB;
+                    border-radius: 0.5rem;
+                    padding: 0.75rem 1rem;
+                    width: 100%;
+                }
+                .table-header th {
+                    padding: 0.75rem;
+                    text-align: left;
+                    font-weight: 600;
+                    color: #4B5563;
+                    border-bottom: 1px solid #E5E7EB;
+                }
+                .table-row td {
+                    padding: 0.75rem;
+                    border-bottom: 1px solid #F3F4F6;
+                }
+                .balance-positive { color: #10B981; font-weight: 600; } /* Green */
+                .balance-negative { color: #EF4444; font-weight: 600; } /* Red */
+                .balance-zero { color: #6B7280; } /* Gray */
+                .error-message {
+                    background-color: #FEE2E2;
+                    color: #DC2626;
+                    padding: 0.75rem;
+                    border-radius: 0.5rem;
+                    margin-bottom: 1rem;
+                    text-align: center;
+                }
+                .modal-overlay {
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    background-color: rgba(0, 0, 0, 0.5);
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    z-index: 1000;
+                }
+                .modal-content {
+                    background-color: white;
+                    padding: 2rem;
+                    border-radius: 1rem;
+                    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+                    max-width: 90%;
+                    max-height: 90%;
+                    overflow-y: auto;
+                }
+                .text-right-aligned {
+                    text-align: right; /* Custom class for right alignment */
+                }
+                `}
+            </style>
+
+            <h1 className="text-4xl font-bold text-center text-[#006B68] mb-8">Quản Lý Quỹ Cơm Nhóm</h1>
+
+            {/* Overall Fund Balance */}
+            <div className="card mb-8 text-center">
+                <h2 className="text-2xl font-semibold text-gray-700 mb-4">Số Dư Quỹ Chung</h2>
+                <p className={`text-5xl font-extrabold ${fundBalance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    {formatNumberForDisplay(fundBalance)} VNĐ
+                </p>
+            </div>
+
+            {/* Error Message Display */}
+            {errorMessage && (
+                <div className="error-message mb-4">
+                    {errorMessage}
+                </div>
+            )}
+
+            {/* Action Buttons */}
+            {/* Responsive: Buttons will stack on small screens and align horizontally on larger screens */}
+            <div className="flex flex-col sm:flex-row justify-center gap-4 mb-8">
+                <button
+                    onClick={() => {
+                        hideAllSections();
+                        setShowAddMember(!showAddMember);
+                    }}
+                    className="btn-primary flex items-center justify-center w-full sm:w-auto"
+                >
+                    <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd"></path></svg>
+                    Thêm Thành Viên
+                </button>
+                <button
+                    onClick={() => {
+                        hideAllSections();
+                        setShowAddTransaction(!showAddTransaction);
+                    }}
+                    className="btn-primary flex items-center justify-center w-full sm:w-auto"
+                >
+                    <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z" clipRule="evenodd"></path></svg>
+                    Thêm Giao Dịch
+                </button>
+                <button
+                    onClick={() => {
+                        hideAllSections();
+                        setShowTransactions(!showTransactions);
+                    }}
+                    className="btn-secondary flex items-center justify-center w-full sm:w-auto"
+                >
+                    <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"></path><path fillRule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h.01a1 1 0 100-2H10zm3 0a1 1 0 000 2h.01a1 1 0 100-2H13zm-3 4a1 1 0 000 2h.01a1 1 0 100-2H10zm3 0a1 1 0 000 2h.01a1 1 0 100-2H13z" clipRule="evenodd"></path></svg>
+                    Xem Lịch Sử
+                </button>
+                {/* New combined Report button */}
+                <button
+                    onClick={() => {
+                        hideAllSections();
+                        setShowReportSelectionModal(true);
+                    }}
+                    className="btn-secondary flex items-center justify-center w-full sm:w-auto"
+                >
+                    <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fillRule="evenodd" d="M3 3a1 1 0 011-1h12a1 1 0 011 1v14a1 1 0 01-1 1H4a1 1 0 01-1-1V3zm4.5 9.5a.5.5 0 000 1h5a.5.5 0 000-1h-5zM7 7a1 1 0 011-1h4a1 1 0 110 2H8a1 1 0 01-1-1z" clipRule="evenodd"></path></svg>
+                    Báo Cáo
+                </button>
+            </div>
+
+            {/* Add Member Form */}
+            {showAddMember && (
+                <div className="card mb-8">
+                    <h2 className="text-xl font-semibold mb-4 text-[#006B68]">Thêm Thành Viên Mới</h2>
+                    <AddMemberForm onAddMember={addMember} />
+                </div>
+            )}
+
+            {/* Add Transaction Form */}
+            {showAddTransaction && (
+                <div className="card mb-8">
+                    <h2 className="text-xl font-semibold mb-4 text-[#006B68]">Thêm Giao Dịch Mới</h2>
+                    <AddTransactionForm members={members} onAddTransaction={addTransaction} />
+                </div>
+            )}
+
+            {/* Member List */}
+            <div className="card mb-8">
+                <h2 className="text-xl font-semibold mb-4 text-[#006B68]">Danh Sách Thành Viên</h2>
+                <MemberList
+                    members={members}
+                    onSettleUp={settleUpMember}
+                    onViewDetails={setSelectedMemberForDetails} // Pass function to set selected member for details
+                />
+            </div>
+
+            {/* Reporting Summary */}
+            <div className="card mb-8">
+                <h2 className="text-xl font-semibold mb-4 text-[#006B68]">Báo Cáo Tóm Tắt</h2>
+                {/* Responsive: Grid columns will adjust based on screen size */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-center">
+                    <div className="p-4 bg-green-50 rounded-lg">
+                        <p className="text-lg font-medium text-green-700">Tổng Đóng Góp</p>
+                        <p className="text-3xl font-bold text-green-600">{formatNumberForDisplay(totalContributions)} VNĐ</p>
+                    </div>
+                    <div className="p-4 bg-red-50 rounded-lg">
+                        <p className="text-lg font-medium text-red-700">Tổng Chi Tiêu</p>
+                        <p className="text-3xl font-bold text-red-600">{formatNumberForDisplay(totalExpenses)} VNĐ</p>
+                    </div>
+                </div>
+                {/* Member Balance Pie Chart */}
+                <h3 className="text-xl font-semibold mt-8 mb-4 text-[#006B68] text-center">Số Dư Thành Viên (Biểu Đồ Tròn)</h3>
+                <MemberBalancePieChart members={members} />
+            </div>
+
+            {/* Report Selection Modal */}
+            {showReportSelectionModal && (
+                <ReportSelectionModal
+                    onSelectFundReport={() => {
+                        hideAllSections();
+                        setShowFundReport(true);
+                    }}
+                    onSelectMemberReport={() => {
+                        hideAllSections();
+                        setShowMemberReports(true);
+                    }}
+                    onClose={() => setShowReportSelectionModal(false)}
+                />
+            )}
+
+            {/* Fund Report Section */}
+            {showFundReport && (
+                <div className="card mb-8">
+                    <h2 className="text-xl font-semibold mb-4 text-[#006B68]">Báo Cáo Quỹ Chung</h2>
+                    <FundReport transactions={transactions} members={members} />
+                </div>
+            )}
+
+            {/* Member Reports Section */}
+            {showMemberReports && (
+                <div className="card mb-8">
+                    <h2 className="text-xl font-semibold mb-4 text-[#006B68]">Báo Cáo Từng Thành Viên</h2>
+                    <MemberReport members={members} transactions={transactions} />
+                </div>
+            )}
+
+            {/* Transaction List */}
+            {showTransactions && (
+                <div className="card">
+                    <h2 className="text-xl font-semibold mb-4 text-[#006B68]">Lịch Sử Giao Dịch</h2>
+                    <TransactionList
+                        transactions={transactions}
+                        members={members}
+                        onEdit={setEditingTransaction} // Pass function to set which transaction is being edited
+                        onDelete={deleteTransaction} // Pass the new delete handler
+                    />
+                </div>
+            )}
+
+            {/* Edit Transaction Modal */}
+            {editingTransaction && (
+                <EditTransactionModal
+                    transaction={editingTransaction}
+                    members={members}
+                    onSave={editTransaction}
+                    onClose={() => setEditingTransaction(null)}
+                />
+            )}
+
+            {/* Member Details Modal */}
+            {selectedMemberForDetails && (
+                <MemberDetailsModal
+                    member={selectedMemberForDetails}
+                    transactions={transactions}
+                    members={members} // Pass all members to resolve names
+                    onClose={() => setSelectedMemberForDetails(null)}
+                />
+            )}
+
+            {/* Custom Delete Confirmation Modal */}
+            {showConfirmDelete && transactionToDelete && (
+                <ConfirmationModal
+                    message={`Bạn có chắc chắn muốn xóa giao dịch "${transactionToDelete.description}" này không?`}
+                    onConfirm={confirmDelete}
+                    onCancel={cancelDelete}
+                />
+            )}
+        </div>
+    );
+};
+
+// Component for adding a new member
+const AddMemberForm = ({ onAddMember }) => {
+    const [memberName, setMemberName] = useState('');
+
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        onAddMember(memberName);
+        setMemberName('');
+    };
+
+    return (
+        // Responsive: Form fields will stack on small screens and align horizontally on larger screens
+        <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-4">
+            <input
+                type="text"
+                placeholder="Tên thành viên"
+                value={memberName}
+                onChange={(e) => setMemberName(e.target.value)}
+                className="input-field flex-grow"
+                required
+            />
+            <button type="submit" className="btn-primary flex-shrink-0 w-full sm:w-auto">
+                Thêm
+            </button>
+        </form>
+    );
+};
+
+// Component for adding a new transaction (contribution or expense)
+const AddTransactionForm = ({ members, onAddTransaction }) => {
+    const [type, setType] = useState('contribution');
+    const [amount, setAmount] = useState(''); // Keep as string for formatted input
+    const [description, setDescription] = useState('');
+    const [contributingMemberId, setContributingMemberId] = useState('');
+    const [selectedExpenseMembers, setSelectedExpenseMembers] = useState([]);
+
+    useEffect(() => {
+        // Set default selected member for contribution if members list is not empty
+        if (members.length > 0 && !contributingMemberId) {
+            setContributingMemberId(members[0].id);
+        }
+    }, [members, contributingMemberId]);
+
+    const handleExpenseMemberChange = (memberId) => {
+        setSelectedExpenseMembers(prevSelected =>
+            prevSelected.includes(memberId)
+                ? prevSelected.filter(id => id !== memberId)
+                : [...prevSelected, memberId]
+        );
+    };
+
+    const handleAmountChange = (e) => {
+        const formattedValue = formatNumberForInput(e.target.value);
+        setAmount(formattedValue);
+    };
+
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        const parsedAmount = parseFormattedNumber(amount); // Parse before passing
+        onAddTransaction(type, parsedAmount, description, contributingMemberId, selectedExpenseMembers);
+        setAmount('');
+        setDescription('');
+        setSelectedExpenseMembers([]); // Reset selected members for next expense
+    };
+
+    return (
+        // Responsive: Grid columns will adjust based on screen size
+        <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="col-span-full">
+                <label htmlFor="transaction-type" className="block text-sm font-medium text-gray-700 mb-1">Loại Giao Dịch</label>
+                <select
+                    id="transaction-type"
+                    value={type}
+                    onChange={(e) => {
+                        setType(e.target.value);
+                        // Reset selected members when changing type to avoid inconsistencies
+                        if (e.target.value === 'contribution') {
+                            setSelectedExpenseMembers([]);
+                        } else {
+                            setContributingMemberId('');
+                        }
+                    }}
+                    className="input-field"
+                >
+                    <option value="contribution">💵 Đóng Góp</option>
+                    <option value="expense">🍺 Chi Tiêu</option>
+                </select>
+            </div>
+
+            {type === 'contribution' && (
+                <div className="col-span-full">
+                    <label htmlFor="member-select" className="block text-sm font-medium text-gray-700 mb-1">Thành Viên Đóng Góp</label>
+                    <select
+                        id="member-select"
+                        value={contributingMemberId}
+                        onChange={(e) => setContributingMemberId(e.target.value)}
+                        className="input-field"
+                        required={type === 'contribution'}
+                    >
+                        {members.length === 0 ? (
+                            <option value="">Chưa có thành viên nào</option>
+                        ) : (
+                            members.map(member => (
+                                <option key={member.id} value={member.id}>{member.name}</option>
+                            ))
+                        )}
+                    </select>
+                </div>
+            )}
+
+            {type === 'expense' && (
+                <div className="col-span-full">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Thành Viên Tham Gia Chi Tiêu</label>
+                    {members.length === 0 ? (
+                        <p className="text-gray-500 text-sm">Chưa có thành viên nào để chọn.</p>
+                    ) : (
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 p-2 border border-gray-300 rounded-md bg-gray-50">
+                            {members.map(member => (
+                                <label key={member.id} className="inline-flex items-center cursor-pointer">
+                                    <input
+                                        type="checkbox"
+                                        className="form-checkbox h-4 w-4 text-[#006B68] transition duration-150 ease-in-out rounded focus:ring-[#006B68]"
+                                        value={member.id}
+                                        checked={selectedExpenseMembers.includes(member.id)}
+                                        onChange={() => handleExpenseMemberChange(member.id)}
+                                    />
+                                    <span className="ml-2 text-sm text-gray-700">{member.name}</span>
+                                </label>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            )}
+
+            <div>
+                <label htmlFor="amount" className="block text-sm font-medium text-gray-700 mb-1">Số Tiền (VNĐ)</label>
+                <input
+                    id="amount"
+                    type="text" // Changed to text to allow custom formatting
+                    placeholder="Số tiền"
+                    value={amount}
+                    onChange={handleAmountChange} // Use custom handler
+                    className="input-field text-right" // Right-align input
+                    required
+                />
+            </div>
+            <div>
+                <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">Mô Tả</label>
+                <input
+                    id="description"
+                    type="text"
+                    placeholder="Mô tả giao dịch"
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    className="input-field"
+                    required
+                />
+            </div>
+            <div className="col-span-full">
+                <button type="submit" className="btn-primary w-full">
+                    Ghi Lại Giao Dịch
+                </button>
+            </div>
+        </form>
+    );
+};
+
+// Component for displaying the list of members
+const MemberList = ({ members, onSettleUp, onViewDetails }) => {
+    return (
+        <div className="overflow-x-auto"> {/* Added overflow-x-auto for responsive tables */}
+            {members.length === 0 ? (
+                <p className="text-center text-gray-500">Chưa có thành viên nào. Hãy thêm thành viên!</p>
+            ) : (
+                <table className="min-w-full bg-white rounded-lg shadow-sm">
+                    <thead><tr><th className="table-header">Tên Thành Viên</th><th className="table-header text-right-aligned">Số Dư</th><th className="table-header">Hành Động</th></tr></thead>
+                    <tbody>
+                        {members.map(member => (
+                            <tr key={member.id} className="table-row">
+                                <td className="font-medium text-gray-900">{member.name}</td>
+                                <td className="text-right-aligned">
+                                    <span className={`text-lg font-bold ${ // Added text-lg and font-bold for prominence
+                                        member.balance > 0 ? 'balance-positive' :
+                                        member.balance < 0 ? 'balance-negative' :
+                                        'balance-zero'
+                                    }`}>
+                                        {formatNumberForDisplay(member.balance)} VNĐ
+                                    </span>
+                                </td>
+                                {/* Responsive: Buttons will stack on small screens and align horizontally on larger screens */}
+                                <td className="flex flex-col sm:flex-row gap-2">
+                                    <button
+                                        onClick={() => onSettleUp(member.id)}
+                                        className="text-[#006B68] hover:text-[#005A58] font-semibold text-sm w-full sm:w-auto"
+                                        disabled={member.balance === 0}
+                                    >
+                                        Thanh Toán
+                                    </button>
+                                    <button
+                                        onClick={() => onViewDetails(member)}
+                                        className="text-blue-600 hover:text-blue-900 font-semibold text-sm w-full sm:w-auto"
+                                    >
+                                        Xem chi tiết
+                                    </button>
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            )}
+        </div>
+    );
+};
+
+// Component for displaying the list of transactions
+const TransactionList = ({ transactions, members, onEdit, onDelete }) => {
+    const getMemberName = (memberId) => {
+        const member = members.find(m => m.id === memberId);
+        return member ? member.name : 'N/A';
+    };
+
+    const getInvolvedMembersNames = (involvedMemberIds) => {
+        if (!involvedMemberIds || involvedMemberIds.length === 0) {
+            return 'Tất cả'; // Fallback for old transactions or if no specific members selected
+        }
+        return involvedMemberIds.map(id => getMemberName(id)).join(', ');
+    };
+
+    return (
+        <div className="overflow-x-auto"> {/* Added overflow-x-auto for responsive tables */}
+            {transactions.length === 0 ? (
+                <p className="text-center text-gray-500">Chưa có giao dịch nào.</p>
+            ) : (
+                <table className="min-w-full bg-white rounded-lg shadow-sm">
+                    <thead><tr><th className="table-header">Ngày</th><th>Loại</th><th>Mô Tả</th><th>Thành Viên Liên Quan</th><th className="table-header text-right-aligned">Số Tiền (VNĐ)</th><th>Hành Động</th></tr></thead>
+                    <tbody>
+                        {transactions.slice().reverse().map(t => { // Display newest first
+                            // Calculate displayed amount for expense transactions
+                            const displayedAmount = t.type === 'expense' && t.involvedMemberIds && t.involvedMemberIds.length > 0
+                                ? t.amount / t.involvedMemberIds.length
+                                : t.amount;
+
+                            return (
+                                <tr key={t.id} className="table-row">
+                                    <td>{t.date}</td>
+                                    <td>
+                                        <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                                            t.type === 'contribution' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                                        }`}>
+                                            {/* Add icons */}
+                                            {t.type === 'contribution' ? '💵 Đóng Góp' : '🍺 Chi Tiêu'}
+                                        </span>
+                                    </td>
+                                    <td>{t.description}</td>
+                                    <td>
+                                        {t.type === 'contribution' ? getMemberName(t.contributingMemberId) : getInvolvedMembersNames(t.involvedMemberIds)}
+                                    </td>
+                                    <td className={`text-right-aligned ${
+                                        t.type === 'contribution' ? 'balance-positive' : 'balance-negative'
+                                    }`}>
+                                        {t.type === 'contribution' ? '+' : '-'}
+                                        {formatNumberForDisplay(displayedAmount)}
+                                    </td>
+                                    {/* Responsive: Buttons will stack on small screens and align horizontally on larger screens */}
+                                    <td className="flex flex-col sm:flex-row gap-2">
+                                        <button
+                                            onClick={() => onEdit(t)}
+                                            className="text-blue-600 hover:text-blue-900 font-semibold text-sm w-full sm:w-auto"
+                                        >
+                                            Sửa
+                                        </button>
+                                        <button
+                                            onClick={() => onDelete(t)} // Pass the full transaction object
+                                            className="text-red-600 hover:text-red-900 font-semibold text-sm w-full sm:w-auto"
+                                        >
+                                            Xóa
+                                        </button>
+                                    </td>
+                                </tr>
+                            );
+                        })}
+                    </tbody>
+                </table>
+            )}
+        </div>
+    );
+};
+
+// Component for Fund Report (Quỹ Chung)
+const FundReport = ({ transactions, members }) => {
+    const getMemberName = (memberId) => {
+        const member = members.find(m => m.id === memberId);
+        return member ? member.name : 'N/A';
+    };
+
+    const getInvolvedMembersNames = (involvedMemberIds) => {
+        if (!involvedMemberIds || involvedMemberIds.length === 0) {
+            return 'Tất cả';
+        }
+        return involvedMemberIds.map(id => getMemberName(id)).join(', ');
+    };
+
+    const exportToExcel = () => {
+        if (typeof window.XLSX === 'undefined') {
+            alert('Thư viện XLSX chưa được tải. Vui lòng thử lại sau.');
+            return;
+        }
+
+        const reportData = transactions.slice().reverse().map(t => {
+            const displayedAmount = t.type === 'expense' && t.involvedMemberIds && t.involvedMemberIds.length > 0
+                ? t.amount / t.involvedMemberIds.length
+                : t.amount;
+            return {
+                'Ngày': t.date,
+                'Loại': t.type === 'contribution' ? 'Đóng Góp' : 'Chi Tiêu',
+                'Mô Tả': t.description,
+                'Thành Viên Liên Quan': t.type === 'contribution' ? getMemberName(t.contributingMemberId) : getInvolvedMembersNames(t.involvedMemberIds),
+                'Số Tiền (VNĐ)': (t.type === 'contribution' ? '+' : '-') + formatNumberForDisplay(displayedAmount),
+            };
+        });
+
+        const ws = window.XLSX.utils.json_to_sheet(reportData);
+        const wb = window.XLSX.utils.book_new();
+        window.XLSX.utils.book_append_sheet(wb, ws, 'Báo Cáo Quỹ Chung');
+        window.XLSX.writeFile(wb, 'BaoCaoQuyChung.xlsx');
+    };
+
+    return (
+        <div>
+            <div className="flex flex-wrap justify-end gap-4 mb-4">
+                <button onClick={exportToExcel} className="btn-secondary flex items-center">
+                    <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd"></path></svg>
+                    Xuất Excel
+                </button>
+            </div>
+            {transactions.length === 0 ? (
+                <p className="text-center text-gray-500">Chưa có giao dịch nào để báo cáo.</p>
+            ) : (
+                <div className="overflow-x-auto">
+                    <table className="min-w-full bg-white rounded-lg shadow-sm">
+                        <thead>
+                            <tr>
+                                <th className="table-header">Ngày</th>
+                                <th className="table-header">Loại</th>
+                                <th className="table-header">Mô Tả</th>
+                                <th className="table-header">Thành Viên Liên Quan</th>
+                                <th className="table-header text-right-aligned">Số Tiền (VNĐ)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {transactions.slice().reverse().map(t => {
+                                const displayedAmount = t.type === 'expense' && t.involvedMemberIds && t.involvedMemberIds.length > 0
+                                    ? t.amount / t.involvedMemberIds.length
+                                    : t.amount;
+                                return (
+                                    <tr key={t.id} className="table-row">
+                                        <td>{t.date}</td>
+                                        <td>
+                                            <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                                                t.type === 'contribution' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                                            }`}>
+                                                {t.type === 'contribution' ? '💵 Đóng Góp' : '🍺 Chi Tiêu'}
+                                            </span>
+                                        </td>
+                                        <td>{t.description}</td>
+                                        <td>
+                                            {t.type === 'contribution' ? getMemberName(t.contributingMemberId) : getInvolvedMembersNames(t.involvedMemberIds)}
+                                        </td>
+                                        <td className={`text-right-aligned ${
+                                            t.type === 'contribution' ? 'balance-positive' : 'balance-negative'
+                                        }`}>
+                                            {t.type === 'contribution' ? '+' : '-'}
+                                            {formatNumberForDisplay(displayedAmount)}
+                                        </td>
+                                    </tr>
+                                );
+                            })}
+                        </tbody>
+                    </table>
+                </div>
+            )}
+        </div>
+    );
+};
+
+// Component for Individual Member Reports
+const MemberReport = ({ members, transactions }) => {
+    const [selectedMemberId, setSelectedMemberId] = useState('');
+    const [memberTransactions, setMemberTransactions] = useState([]);
+
+    useEffect(() => {
+        if (members.length > 0 && !selectedMemberId) {
+            setSelectedMemberId(members[0].id); // Select first member by default
+        }
+    }, [members, selectedMemberId]);
+
+    useEffect(() => {
+        if (selectedMemberId) {
+            const filteredTransactions = transactions.filter(t =>
+                (t.type === 'contribution' && t.contributingMemberId === selectedMemberId) ||
+                (t.type === 'expense' && t.involvedMemberIds && t.involvedMemberIds.includes(selectedMemberId))
+            ).sort((a, b) => new Date(b.date) - new Date(a.date));
+            setMemberTransactions(filteredTransactions);
+        } else {
+            setMemberTransactions([]);
+        }
+    }, [selectedMemberId, transactions]);
+
+    const getMemberName = (memberId) => {
+        const member = members.find(m => m.id === memberId);
+        return member ? member.name : 'N/A';
+    };
+
+    const exportToExcel = () => {
+        if (typeof window.XLSX === 'undefined') {
+            alert('Thư viện XLSX chưa được tải. Vui lòng thử lại sau.');
+            return;
+        }
+        const memberName = getMemberName(selectedMemberId);
+        const reportData = memberTransactions.map(t => {
+            let displayedAmount = t.amount;
+            if (t.type === 'expense' && t.involvedMemberIds && t.involvedMemberIds.length > 0) {
+                displayedAmount = t.amount / t.involvedMemberIds.length;
+            }
+            return {
+                'Ngày': t.date,
+                'Loại': t.type === 'contribution' ? 'Đóng Góp' : 'Chi Tiêu',
+                'Mô Tả': t.description,
+                'Số Tiền (VNĐ)': (t.type === 'contribution' ? '+' : '-') + formatNumberForDisplay(displayedAmount),
+            };
+        });
+
+        const ws = window.XLSX.utils.json_to_sheet(reportData);
+        const wb = window.XLSX.utils.book_new();
+        window.XLSX.utils.book_append_sheet(wb, ws, `Báo Cáo ${memberName}`);
+        window.XLSX.writeFile(wb, `BaoCao_${memberName}.xlsx`);
+    };
+
+    return (
+        <div>
+            <div className="mb-4">
+                <label htmlFor="select-member-report" className="block text-sm font-medium text-gray-700 mb-1">Chọn Thành Viên:</label>
+                <select
+                    id="select-member-report"
+                    value={selectedMemberId}
+                    onChange={(e) => setSelectedMemberId(e.target.value)}
+                    className="input-field"
+                >
+                    {members.length === 0 ? (
+                        <option value="">Chưa có thành viên nào</option>
+                    ) : (
+                        members.map(member => (
+                            <option key={member.id} value={member.id}>{member.name}</option>
+                        ))
+                    )}
+                </select>
+            </div>
+
+            {selectedMemberId && (
+                <div className="flex flex-wrap justify-end gap-4 mb-4">
+                    <button onClick={exportToExcel} className="btn-secondary flex items-center">
+                        <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd"></path></svg>
+                        Xuất Excel
+                    </button>
+                </div>
+            )}
+
+            {selectedMemberId && memberTransactions.length === 0 ? (
+                <p className="text-center text-gray-500">Thành viên này chưa có giao dịch nào.</p>
+            ) : selectedMemberId ? (
+                <div className="overflow-x-auto">
+                    <table className="min-w-full bg-white rounded-lg shadow-sm">
+                        <thead>
+                            <tr>
+                                <th className="table-header">Ngày</th>
+                                <th className="table-header">Loại</th>
+                                <th className="table-header">Mô Tả</th>
+                                <th className="table-header text-right-aligned">Số Tiền (VNĐ)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {memberTransactions.map(t => {
+                                let displayedAmount = t.amount;
+                                if (t.type === 'expense' && t.involvedMemberIds && t.involvedMemberIds.length > 0) {
+                                    displayedAmount = t.amount / t.involvedMemberIds.length;
+                                }
+                                return (
+                                    <tr key={t.id} className="table-row">
+                                        <td>{t.date}</td>
+                                        <td>
+                                            <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                                                t.type === 'contribution' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                                            }`}>
+                                                {t.type === 'contribution' ? '💵 Đóng Góp' : '🍺 Chi Tiêu'}
+                                            </span>
+                                        </td>
+                                        <td>{t.description}</td>
+                                        <td className={`text-right-aligned ${
+                                            t.type === 'contribution' ? 'balance-positive' : 'balance-negative'
+                                        }`}>
+                                            {t.type === 'contribution' ? '+' : '-'}
+                                            {formatNumberForDisplay(displayedAmount)}
+                                        </td>
+                                    </tr>
+                                );
+                            })}
+                        </tbody>
+                    </table>
+                </div>
+            ) : (
+                <p className="text-center text-gray-500">Vui lòng chọn một thành viên để xem báo cáo.</p>
+            )}
+        </div>
+    );
+};
+
+// Modal for editing a transaction
+const EditTransactionModal = ({ transaction, members, onSave, onClose }) => {
+    const [editedType, setEditedType] = useState(transaction.type);
+    const [editedAmount, setEditedAmount] = useState(formatNumberForInput(transaction.amount.toString())); // Format for input
+    const [editedDescription, setEditedDescription] = useState(transaction.description);
+    const [editedContributingMemberId, setEditedContributingMemberId] = useState(transaction.contributingMemberId || '');
+    const [editedInvolvedMemberIds, setEditedInvolvedMemberIds] = useState(transaction.involvedMemberIds || []);
+
+    // Wrap in useCallback
+    const handleMemberCheckboxChange = useCallback((memberId) => {
+        setEditedInvolvedMemberIds(prevSelected =>
+            prevSelected.includes(memberId)
+                ? prevSelected.filter(id => id !== memberId)
+                : [...prevSelected, memberId]
+        );
+    }, []); // Empty dependency array because setEditedInvolvedMemberIds is stable
+
+    const handleEditedAmountChange = (e) => {
+        const formattedValue = formatNumberForInput(e.target.value);
+        setEditedAmount(formattedValue);
+    };
+
+    useEffect(() => {
+        // Ensure contributing member is selected if type is contribution and members exist
+        if (editedType === 'contribution' && members.length > 0 && !editedContributingMemberId) {
+            setEditedContributingMemberId(members[0].id);
+        }
+        // When type changes, reset irrelevant selected members
+        if (editedType === 'contribution') {
+            setEditedInvolvedMemberIds([]);
+        } else {
+            setEditedContributingMemberId('');
+        }
+    }, [editedType, members, editedContributingMemberId]);
+
+
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        const parsedEditedAmount = parseFormattedNumber(editedAmount); // Parse before saving
+        onSave({
+            ...transaction,
+            type: editedType,
+            amount: parsedEditedAmount,
+            description: editedDescription,
+            contributingMemberId: editedType === 'contribution' ? editedContributingMemberId : null,
+            involvedMemberIds: editedType === 'expense' ? editedInvolvedMemberIds : [],
+        });
+    };
+
+    return (
+        <div className="modal-overlay">
+            {/* Responsive: Modal content will have max-width and adjust for smaller screens */}
+            <div className="modal-content w-11/12 md:w-2/3 lg:w-1/2">
+                <h2 className="text-2xl font-semibold mb-6 text-[#006B68]">Chỉnh Sửa Giao Dịch</h2>
+                {/* Responsive: Grid columns will adjust based on screen size */}
+                <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="col-span-full">
+                        <label htmlFor="edit-transaction-type" className="block text-sm font-medium text-gray-700 mb-1">Loại Giao Dịch</label>
+                        <select
+                            id="edit-transaction-type"
+                            value={editedType}
+                            onChange={(e) => setEditedType(e.target.value)}
+                            className="input-field"
+                        >
+                            <option value="contribution">💵 Đóng Góp</option>
+                            <option value="expense">🍺 Chi Tiêu</option>
+                        </select>
+                    </div>
+
+                    {editedType === 'contribution' && (
+                        <div className="col-span-full">
+                            <label htmlFor="edit-member-select" className="block text-sm font-medium text-gray-700 mb-1">Thành Viên Đóng Góp</label>
+                            <select
+                                id="edit-member-select"
+                                value={editedContributingMemberId}
+                                onChange={(e) => setEditedContributingMemberId(e.target.value)}
+                                className="input-field"
+                                required={editedType === 'contribution'}
+                            >
+                                {members.length === 0 ? (
+                                    <option value="">Chưa có thành viên nào</option>
+                                ) : (
+                                    members.map(member => (
+                                        <option key={member.id} value={member.id}>{member.name}</option>
+                                    ))
+                                )}
+                            </select>
+                        </div>
+                    )}
+
+                    {editedType === 'expense' && (
+                        <div className="col-span-full">
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Thành Viên Tham Gia Chi Tiêu</label>
+                            {members.length === 0 ? (
+                                <p className="text-gray-500 text-sm">Chưa có thành viên nào để chọn.</p>
+                            ) : (
+                                // Responsive: Checkbox grid columns will adjust based on screen size
+                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 p-2 border border-gray-300 rounded-md bg-gray-50">
+                                    {members.map(member => (
+                                        <label key={member.id} className="inline-flex items-center cursor-pointer">
+                                            <input
+                                                type="checkbox"
+                                                className="form-checkbox h-4 w-4 text-[#006B68] transition duration-150 ease-in-out rounded focus:ring-[#006B68]"
+                                                value={member.id}
+                                                checked={editedInvolvedMemberIds.includes(member.id)}
+                                                onChange={() => handleMemberCheckboxChange(member.id)}
+                                            />
+                                            <span className="ml-2 text-sm text-gray-700">{member.name}</span>
+                                        </label>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    <div>
+                        <label htmlFor="edit-amount" className="block text-sm font-medium text-gray-700 mb-1">Số Tiền (VNĐ)</label>
+                        <input
+                            id="edit-amount"
+                            type="text" // Changed to text
+                            placeholder="Số tiền"
+                            value={editedAmount}
+                            onChange={handleEditedAmountChange} // Use custom handler
+                            className="input-field text-right" // Right-align input
+                            required
+                        />
+                    </div>
+                    <div>
+                        <label htmlFor="edit-description" className="block text-sm font-medium text-gray-700 mb-1">Mô Tả</label>
+                        <input
+                            id="edit-description"
+                            type="text"
+                            placeholder="Mô tả giao dịch"
+                            value={editedDescription}
+                            onChange={(e) => setEditedDescription(e.target.value)}
+                            className="input-field"
+                            required
+                        />
+                    </div>
+                    {/* Responsive: Buttons will stack on small screens and align horizontally on larger screens */}
+                    <div className="col-span-full flex flex-col sm:flex-row justify-end gap-4 mt-4">
+                        <button type="button" onClick={onClose} className="btn-secondary w-full sm:w-auto">
+                            Hủy
+                        </button>
+                        <button type="submit" className="btn-primary w-full sm:w-auto">
+                            Lưu Thay Đổi
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    );
+};
+
+// Modal for displaying individual member details and transactions
+const MemberDetailsModal = ({ member, transactions, members, onClose }) => {
+    const getMemberName = (memberId) => {
+        const foundMember = members.find(m => m.id === memberId);
+        return foundMember ? foundMember.name : 'N/A';
+    };
+
+    const getInvolvedMembersNames = (involvedMemberIds) => {
+        if (!involvedMemberIds || involvedMemberIds.length === 0) {
+            return 'Tất cả';
+        }
+        return involvedMemberIds.map(id => getMemberName(id)).join(', ');
+    };
+
+    const memberTransactions = transactions.filter(t =>
+        (t.type === 'contribution' && t.contributingMemberId === member.id) ||
+        (t.type === 'expense' && t.involvedMemberIds && t.involvedMemberIds.includes(member.id))
+    ).sort((a, b) => new Date(b.date) - new Date(a.date)); // Sort by newest first
+
+    return (
+        <div className="modal-overlay">
+            {/* Responsive: Modal content will have max-width and adjust for smaller screens */}
+            <div className="modal-content w-11/12 md:w-2/3 lg:w-1/2">
+                <h2 className="text-2xl font-semibold mb-6 text-[#006B68]">Chi Tiết Thành Viên: {member.name}</h2>
+                <div className="mb-4">
+                    <p className="text-lg font-medium text-gray-700">Số Dư Hiện Tại:</p>
+                    <p className={`text-3xl font-bold ${member.balance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        {formatNumberForDisplay(member.balance)} VNĐ
+                    </p>
+                </div>
+
+                <h3 className="text-xl font-semibold mb-3 text-[#006B68]">Các Giao Dịch Liên Quan</h3>
+                {memberTransactions.length === 0 ? (
+                    <p className="text-center text-gray-500">Chưa có giao dịch nào liên quan đến thành viên này.</p>
+                ) : (
+                    <div className="overflow-x-auto max-h-80"> {/* Added max-height and overflow for scrollability */}
+                        <table className="min-w-full bg-white rounded-lg shadow-sm">
+                            <thead><tr><th>Ngày</th><th>Loại</th><th>Mô Tả</th><th className="table-header text-right-aligned">Số Tiền (VNĐ)</th></tr></thead>
+                            <tbody>
+                                {memberTransactions.map(t => {
+                                    // Calculate displayed amount for expense transactions in MemberDetailsModal
+                                    let displayedAmount = t.amount;
+                                    if (t.type === 'expense' && t.involvedMemberIds && t.involvedMemberIds.length > 0) {
+                                        displayedAmount = t.amount / t.involvedMemberIds.length;
+                                    }
+
+                                    return (
+                                        <tr key={t.id} className="table-row">
+                                            <td>{t.date}</td>
+                                            <td>
+                                                <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                                                    t.type === 'contribution' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                                                }`}>
+                                                    {/* Add icons */}
+                                                    {t.type === 'contribution' ? '💵 Đóng Góp' : '🍺 Chi Tiêu'}
+                                                </span>
+                                            </td>
+                                            <td>{t.description}</td>
+                                            <td className={`text-right-aligned ${
+                                                t.type === 'contribution' ? 'balance-positive' : 'balance-negative'
+                                            }`}>
+                                                {t.type === 'contribution' ? '+' : '-'}
+                                                {formatNumberForDisplay(displayedAmount)}
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
+                <div className="flex justify-end mt-6">
+                    <button type="button" onClick={onClose} className="btn-primary">
+                        Đóng
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+// Generic Confirmation Modal
+const ConfirmationModal = ({ message, onConfirm, onCancel }) => {
+    return (
+        <div className="modal-overlay">
+            {/* Responsive: Modal content will have max-width and adjust for smaller screens */}
+            <div className="modal-content w-11/12 md:w-1/2 lg:w-1/3">
+                <h2 className="text-xl font-semibold mb-4 text-gray-800">Xác Nhận</h2>
+                <p className="mb-6 text-gray-700">{message}</p>
+                {/* Responsive: Buttons will stack on small screens and align horizontally on larger screens */}
+                <div className="flex flex-col sm:flex-row justify-end gap-4">
+                    <button onClick={onCancel} className="btn-secondary w-full sm:w-auto">
+                        Hủy
+                    </button>
+                    <button onClick={onConfirm} className="btn-primary w-full sm:w-auto">
+                        Xác Nhận
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+// New component for Report Selection Modal
+const ReportSelectionModal = ({ onSelectFundReport, onSelectMemberReport, onClose }) => {
+    return (
+        <div className="modal-overlay">
+            <div className="modal-content w-11/12 md:w-1/2 lg:w-1/3">
+                <h2 className="text-2xl font-semibold mb-6 text-[#006B68] text-center">Chọn Loại Báo Cáo</h2>
+                <div className="flex flex-col gap-4">
+                    <button
+                        onClick={() => {
+                            onSelectFundReport();
+                            onClose();
+                        }}
+                        className="btn-primary flex items-center justify-center w-full"
+                    >
+                        <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path d="M10 12a2 2 0 100-4 2 2 0 000 4z"></path><path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd"></path></svg>
+                        Báo Cáo Quỹ Chung
+                    </button>
+                    <button
+                        onClick={() => {
+                            onSelectMemberReport();
+                            onClose();
+                        }}
+                        className="btn-primary flex items-center justify-center w-full"
+                    >
+                        <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-6-3a2 2 0 11-4 0 2 2 0 014 0zm-2 4a4 4 0 00-4 4h8a4 4 0 00-4-4z" clipRule="evenodd"></path></svg>
+                        Báo Cáo Từng Thành Viên
+                    </button>
+                </div>
+                <div className="flex justify-end mt-6">
+                    <button type="button" onClick={onClose} className="btn-secondary">
+                        Đóng
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+// Helper functions for SVG arc drawing (placed outside component for reusability)
+const polarToCartesian = (centerX, centerY, radius, angleInDegrees) => {
+    const angleInRadians = (angleInDegrees - 90) * Math.PI / 180.0;
+    return {
+        x: centerX + (radius * Math.cos(angleInRadians)),
+        y: centerY + (radius * Math.sin(angleInRadians))
+    };
+};
+
+const describePieSlice = (centerX, centerY, radius, startAngle, endAngle) => {
+    const start = polarToCartesian(centerX, centerY, radius, endAngle);
+    const end = polarToCartesian(centerX, centerY, radius, startAngle);
+    const largeArcFlag = endAngle - startAngle <= 180 ? "0" : "1";
+
+    const pathData = [
+        `M ${centerX} ${centerY}`, // Move to center
+        `L ${start.x} ${start.y}`, // Line to start of arc
+        `A ${radius} ${radius} 0 ${largeArcFlag} 0 ${end.x} ${end.y}`, // Arc
+        `L ${centerX} ${centerY}`, // Line back to center
+        `Z` // Close path
+    ].join(" ");
+
+    return pathData;
+};
+
+// New Component for Member Balance Pie Chart
+const MemberBalancePieChart = ({ members }) => {
+    const CHART_SIZE = 200; // Kích thước của canvas SVG (chiều rộng và chiều cao)
+    const RADIUS = CHART_SIZE / 2 - 10; // Bán kính của biểu đồ tròn, có một chút padding
+    const centerX = CHART_SIZE / 2;
+    const centerY = CHART_SIZE / 2;
+
+    // Define a color palette for the pie chart slices
+    // These colors are chosen to be distinct and visually appealing
+    const colorPalette = [
+        '#4CAF50', // Green
+        '#2196F3', // Blue
+        '#FFC107', // Amber
+        '#F44336', // Red
+        '#9C27B0', // Purple
+        '#FF9800', // Orange
+        '#00BCD4', // Cyan
+        '#E91E63', // Pink
+        '#795548', // Brown
+        '#607D8B', // Blue Grey
+    ];
+
+    // Lọc các thành viên có số dư khác 0 và tính tổng giá trị tuyệt đối của số dư
+    const chartData = members.filter(m => m.balance !== 0);
+    const totalAbsoluteBalance = chartData.reduce((sum, m) => sum + Math.abs(m.balance), 0);
+
+    if (chartData.length === 0) {
+        return <p className="text-center text-gray-500 mt-4">Chưa có số dư nào để hiển thị biểu đồ.</p>;
+    }
+
+    let currentAngle = 0;
+    const slices = [];
+
+    chartData.forEach((member, index) => {
+        const sliceAngle = (Math.abs(member.balance) / totalAbsoluteBalance) * 360;
+        const startAngle = currentAngle;
+        const endAngle = currentAngle + sliceAngle;
+
+        const pathData = describePieSlice(centerX, centerY, RADIUS, startAngle, endAngle);
+        // Assign a color from the palette, cycling through if there are more members than colors
+        const color = colorPalette[index % colorPalette.length];
+
+        // Tính toán vị trí nhãn (điểm giữa của cung)
+        const midAngle = startAngle + sliceAngle / 2;
+        const labelRadius = RADIUS * 0.7; // Đặt nhãn hơi vào trong cung
+        const labelPos = polarToCartesian(centerX, centerY, labelRadius, midAngle);
+
+        slices.push(
+            <g key={member.id}>
+                <path
+                    d={pathData}
+                    fill={color}
+                    stroke="white"
+                    strokeWidth="1"
+                />
+                {/* Thêm nhãn văn bản cho tên thành viên */}
+                {sliceAngle > 10 && ( // Chỉ hiển thị nhãn nếu lát cắt đủ lớn
+                    <text
+                        x={labelPos.x}
+                        y={labelPos.y}
+                        fill="white"
+                        fontSize="10"
+                        textAnchor="middle"
+                        alignmentBaseline="middle"
+                        fontWeight="bold"
+                    >
+                        {member.name}
+                    </text>
+                )}
+            </g>
+        );
+        currentAngle = endAngle;
+    });
+
+    return (
+        <div className="flex justify-center items-center w-full my-4">
+            <svg viewBox={`0 0 ${CHART_SIZE} ${CHART_SIZE}`} width="100%" height="auto" style={{ maxWidth: '300px' }}>
+                {slices}
+                {/* Thêm văn bản ở giữa hiển thị tổng số dư */}
+                <text x={centerX} y={centerY} textAnchor="middle" alignmentBaseline="middle" fontSize="12" fontWeight="bold" fill="#333">
+                    Tổng: {formatNumberForDisplay(totalAbsoluteBalance)} VNĐ
+                </text>
+            </svg>
+            {/* Thêm phần chú thích màu sắc */}
+            <div className="ml-8 p-4 bg-gray-50 rounded-lg shadow-sm">
+                <h4 className="font-semibold text-gray-700 mb-2">Chú Thích:</h4>
+                {chartData.map((member, index) => (
+                    <div key={member.id} className="flex items-center mb-1">
+                        <span
+                            className="inline-block w-4 h-4 rounded-full mr-2"
+                            style={{ backgroundColor: colorPalette[index % colorPalette.length] }}
+                        ></span>
+                        <span className="text-sm text-gray-800">{member.name}</span>
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+};
+
+export default App;
