@@ -6,6 +6,7 @@
     <title>Ứng dụng Quản lý Thành tích Chạy bộ - BIDV Running Club</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         /* Define BIDV brand colors */
         :root {
@@ -201,12 +202,8 @@
         // URL của Edge Function để lấy dữ liệu thống kê
         const GET_STATS_API_URL = 'https://rmbsxccrwrktbjlnezpu.supabase.co/functions/v1/get-user-activities';
 
-
-        // --- Khởi tạo Firebase (được cung cấp bởi môi trường Canvas, không cần khởi tạo lại) ---
-        // const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
-        // const app = firebase.initializeApp(firebaseConfig);
-        // const auth = firebase.auth(); // Hoặc getAuth(app) nếu dùng modular SDK
-        // const db = firebase.firestore(); // Hoặc getFirestore(app) nếu dùng modular SDK
+        // Khởi tạo Supabase Client
+        const supabase = Supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         // Biến toàn cục để lưu trữ trạng thái người dùng
         let currentUserId = null;
@@ -214,30 +211,17 @@
 
         // Hàm kiểm tra trạng thái đăng nhập và cập nhật UI
         async function checkAuthState() {
-            // Trong môi trường Canvas, __initial_auth_token được cung cấp
-            // Chúng ta sẽ giả định người dùng đã được xác thực nếu có token này
-            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                // Giả định rằng token này đã được dùng để đăng nhập Firebase Auth
-                // và chúng ta có thể lấy uid từ đó.
-                // Trong ứng dụng thực tế, bạn sẽ dùng onAuthStateChanged của Firebase Auth
-                // để lấy userId sau khi signInWithCustomToken.
-                // Vì đây là một ví dụ front-end, chúng ta sẽ giả định một userId tạm thời
-                // hoặc bạn sẽ cần một cách để backend trả về userId sau OAuth.
-                // Để đơn giản, chúng ta sẽ sử dụng một ID giả định hoặc lấy từ URL nếu có.
-                const params = new URLSearchParams(window.location.search);
-                const userIdFromUrl = params.get('userId'); // Giả định backend trả về userId sau OAuth
-                if (userIdFromUrl) {
-                    currentUserId = userIdFromUrl;
-                    isAuthenticated = true;
-                } else {
-                    // Nếu không có userId từ URL, có thể là lần đầu tiên truy cập hoặc lỗi
-                    // Trong môi trường Canvas, __initial_auth_token chỉ ra rằng người dùng đã đăng nhập vào Canvas
-                    // nhưng không nhất thiết là đã hoàn tất OAuth với Strava.
-                    // Để đơn giản ví dụ này, chúng ta sẽ giả định người dùng cần kết nối Strava.
-                    // Hoặc bạn có thể sử dụng một Firebase UID giả định nếu muốn mô phỏng.
-                    // Ví dụ: currentUserId = "firebase-user-id-123";
-                    // isAuthenticated = true;
-                }
+            // Sử dụng Supabase SDK để kiểm tra phiên hiện có
+            const { data: { session }, error } = await supabase.auth.getSession();
+
+            if (session) {
+                currentUserId = session.user.id;
+                isAuthenticated = true;
+                console.log('User is authenticated via Supabase session:', currentUserId);
+            } else {
+                currentUserId = null;
+                isAuthenticated = false;
+                console.log('No active Supabase session found.');
             }
 
             updateUI();
@@ -294,21 +278,42 @@
                     const result = await response.json();
 
                     if (response.ok && result.success) {
-                        isAuthenticated = true;
-                        currentUserId = result.userId; // Edge Function sẽ trả về userId sau khi lưu token
-                        authStatus.textContent = 'Kết nối Strava thành công!';
-                        showAlert('Kết nối Strava thành công!');
-                        // Xóa các tham số OAuth khỏi URL
-                        window.history.replaceState({}, document.title, window.location.pathname);
-                        updateUI();
+                        // Sử dụng token từ Edge Function để đăng nhập vào Supabase Auth
+                        const { data: { session }, error: signInError } = await supabase.auth.signInWithCustomToken(result.token);
+
+                        if (signInError) {
+                            console.error('Error signing in with custom token:', signInError);
+                            authStatus.textContent = `Lỗi đăng nhập Supabase: ${signInError.message}`;
+                            showAlert(`Lỗi đăng nhập Supabase: ${signInError.message}`);
+                            isAuthenticated = false;
+                            currentUserId = null;
+                        } else if (session) {
+                            isAuthenticated = true;
+                            currentUserId = session.user.id;
+                            authStatus.textContent = 'Kết nối Strava thành công!';
+                            showAlert('Kết nối Strava thành công!');
+                            // Xóa các tham số OAuth khỏi URL
+                            window.history.replaceState({}, document.title, window.location.pathname);
+                            updateUI();
+                        } else {
+                            // Should not happen if result.success is true and no signInError
+                            authStatus.textContent = `Lỗi kết nối Strava: Không thể lấy session Supabase.`;
+                            showAlert(`Lỗi kết nối Strava: Không thể lấy session Supabase.`);
+                            isAuthenticated = false;
+                            currentUserId = null;
+                        }
                     } else {
                         authStatus.textContent = `Lỗi kết nối Strava: ${result.error || 'Không xác định'}`;
                         showAlert(`Lỗi kết nối Strava: ${result.error || 'Không xác định'}`);
+                        isAuthenticated = false;
+                        currentUserId = null;
                     }
                 } catch (error) {
                     console.error('Lỗi khi xử lý Strava callback:', error);
                     authStatus.textContent = 'Lỗi mạng hoặc server khi xử lý Strava callback.';
                     showAlert('Lỗi mạng hoặc server khi xử lý Strava callback.');
+                    isAuthenticated = false;
+                    currentUserId = null;
                 }
             }
         }
@@ -329,8 +334,10 @@
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        // Thêm token xác thực nếu Edge Function yêu cầu (ví dụ: Firebase ID token)
-                        // 'Authorization': `Bearer ${await auth.currentUser.getIdToken()}`
+                        // Không cần Authorization header ở đây vì Edge Function không yêu cầu JWT
+                        // và sử dụng Service Role Key để tương tác với DB.
+                        // Nếu Edge Function yêu cầu JWT, bạn sẽ cần:
+                        // 'Authorization': `Bearer ${supabase.auth.session()?.access_token}`
                     },
                     body: JSON.stringify({ userId: currentUserId }),
                 });
@@ -398,7 +405,10 @@
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        // Thêm token xác thực nếu Edge Function yêu cầu
+                        // Không cần Authorization header ở đây vì Edge Function không yêu cầu JWT
+                        // và sử dụng Service Role Key để tương tác với DB.
+                        // Nếu Edge Function yêu cầu JWT, bạn sẽ cần:
+                        // 'Authorization': `Bearer ${supabase.auth.session()?.access_token}`
                     },
                     body: JSON.stringify({ userId: currentUserId }),
                 });
@@ -515,42 +525,17 @@
 
 
         // Khi trang tải xong
-        window.onload = () => {
-            handleStravaCallback(); // Kiểm tra và xử lý callback từ Strava
-            checkAuthState(); // Kiểm tra trạng thái xác thực ban đầu
+        window.onload = async () => { // Đổi thành async để await checkAuthState
+            // Xử lý callback từ Strava trước
+            const urlParams = new URLSearchParams(window.location.search);
+            const code = urlParams.get('code');
+            if (code) {
+                await handleStravaCallback(); // Đợi xử lý callback hoàn tất
+            }
+            
+            // Sau đó kiểm tra trạng thái xác thực Supabase
+            await checkAuthState(); 
         };
-
-        // --- Cấu hình cho việc sử dụng Firebase Auth (được cung cấp bởi Canvas) ---
-        // Đây là phần giả định cho môi trường Canvas.
-        // Trong ứng dụng thực tế, bạn sẽ cần Firebase SDK và logic xác thực đầy đủ.
-        // const auth = getAuth(); // Lấy đối tượng Auth
-        // onAuthStateChanged(auth, (user) => {
-        //     if (user) {
-        //         currentUserId = user.uid;
-        //         isAuthenticated = true;
-        //     } else {
-        //         currentUserId = null;
-        //         isAuthenticated = false;
-        //         // Nếu không có token ban đầu, đăng nhập ẩn danh
-        //         if (typeof __initial_auth_token === 'undefined') {
-        //             signInAnonymously(auth).then(() => {
-        //                 console.log("Signed in anonymously.");
-        //             }).catch((error) => {
-        //                 console.error("Anonymous sign-in failed:", error);
-        //             });
-        //         }
-        //     }
-        //     updateUI();
-        // });
-
-        // // Sử dụng __initial_auth_token nếu có
-        // if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-        //     signInWithCustomToken(auth, __initial_auth_token).catch((error) => {
-        //         console.error("Error signing in with custom token:", error);
-        //     });
-        // } else {
-        //     // Nếu không có token, onAuthStateChanged sẽ xử lý đăng nhập ẩn danh
-        // }
 
     </script>
 </body>
