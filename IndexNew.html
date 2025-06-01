@@ -489,10 +489,11 @@
             const width = container.clientWidth;
             const defaultHeight = container.clientHeight; // Initial height from CSS
 
-            // Calculate total height needed for SVG based on number of months
-            const totalSvgContentHeight = monthlyData.length * 150; // 150px per month band
-            // Adjust SVG height to fit all content. We set a minimum height for the container in CSS,
-            // but the SVG itself should expand to fit its content for proper scaling within the scrollable div.
+            // Add top padding for the chart content to prevent clipping
+            const topPaddingForChart = 60; // Increased padding for month label and top bubbles
+
+            // Calculate total height needed for SVG based on number of months and top padding
+            const totalSvgContentHeight = (monthlyData.length * 150) + topPaddingForChart; // 150px per month band + top padding
             const svgHeight = Math.max(defaultHeight, totalSvgContentHeight);
 
 
@@ -500,7 +501,8 @@
                 .append("svg")
                 .attr("width", width)
                 .attr("height", svgHeight) // Set SVG height to accommodate all content
-                .attr("viewBox", `0 0 ${width} ${svgHeight}`) // Adjust viewBox as well
+                // Adjust viewBox to start lower, effectively adding space at the top
+                .attr("viewBox", `0 0 ${width} ${svgHeight}`)
                 .attr("preserveAspectRatio", "xMidYMid meet");
 
             // Define scales
@@ -522,7 +524,7 @@
             const bubbleVerticalOffset = monthBandHeight / 2; // Center bubbles vertically in their band
 
 
-            let currentYOffset = 0;
+            let currentYOffset = topPaddingForChart; // Start Y offset with the added padding
 
             // Draw each month's band
             monthlyData.forEach((monthObj, monthIndex) => {
@@ -532,7 +534,7 @@
                 // Add month label
                 monthGroup.append("text")
                     .attr("x", 20) // Left padding
-                    .attr("y", 30) // Top padding within the band
+                    .attr("y", 0) // Position label at the top of the month band
                     .attr("font-size", "1.2rem")
                     .attr("font-weight", "bold")
                     .attr("fill", "#555")
@@ -548,7 +550,7 @@
                     const r = radiusScale(d.totalDistance);
                     const cx = currentX + r;
                     currentX += (r * 2) + bubbleHorizontalPadding;
-                    return { ...d, r, cx, cy: bubbleVerticalOffset };
+                    return { ...d, r, cx, cy: bubbleVerticalOffset + 20 }; // Offset bubbles slightly below month label
                 });
 
                 // Draw circles
