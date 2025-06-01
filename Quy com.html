@@ -1,7 +1,10 @@
-import React, { useState, useEffect, useCallback } from 'react'; // Import useCallback
+import React, { useState, useEffect, useCallback } from 'react';
+// Removed: import { createClient } from '@supabase/supabase-js'; // This import caused the error
 
-// Helper function to generate unique IDs
-const generateId = () => Math.random().toString(36).substring(2, 9);
+// Initialize Supabase client variables (will be set after CDN loads)
+// Removed process.env as it's not available in browser environment
+const supabaseUrl = 'https://rmbsxccrwrktbjlnezpu.supabase.co'; // Replace with your actual Supabase URL
+const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJtYnN4Y2Nyd3JrdGJqbG5lenB1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg2MjczNjQsImV4cCI6MjA2NDIwMzM2NH0.ydCqificftdtn1niRciFCifeuo8aX6SDGti-hCY5Z_Y'; // Replace with your actual Supabase Anon Key
 
 // Helper function to format a number with thousands separators for display
 const formatNumberForDisplay = (num) => {
@@ -12,20 +15,16 @@ const formatNumberForDisplay = (num) => {
 };
 
 // Helper function to format a number string with thousands separators for input
-// This function handles the input value to add/remove thousands separators
 const formatNumberForInput = (value) => {
-    // Remove all non-digit characters
     const cleanedValue = value.replace(/\D/g, '');
     if (!cleanedValue) {
         return '';
     }
-    // Convert to number, then format with locale string
     return parseFloat(cleanedValue).toLocaleString('vi-VN');
 };
 
 // Helper function to parse a formatted number string back to a raw number
 const parseFormattedNumber = (formattedValue) => {
-    // Remove all non-digit characters (including thousands separators)
     const cleanedValue = formattedValue.replace(/\D/g, '');
     return parseFloat(cleanedValue) || 0;
 };
@@ -40,68 +39,184 @@ const App = () => {
     const [showAddMember, setShowAddMember] = useState(false);
     const [showAddTransaction, setShowAddTransaction] = useState(false);
     const [showTransactions, setShowTransactions] = useState(false);
-    const [editingTransaction, setEditingTransaction] = useState(null); // State to hold transaction being edited
-    const [errorMessage, setErrorMessage] = useState(''); // State for displaying error messages
-    const [selectedMemberForDetails, setSelectedMemberForDetails] = useState(null); // State for showing member details
-    const [showConfirmDelete, setShowConfirmDelete] = useState(false); // State for custom delete confirmation modal
-    const [transactionToDelete, setTransactionToDelete] = useState(null); // State to hold transaction object to be deleted
-    const [showFundReport, setShowFundReport] = useState(false); // State for showing fund report
-    const [showMemberReports, setShowMemberReports] = useState(false); // State for showing individual member reports
-    const [showReportSelectionModal, setShowReportSelectionModal] = useState(false); // New state for report selection modal
+    const [editingTransaction, setEditingTransaction] = useState(null);
+    const [errorMessage, setErrorMessage] = useState('');
+    const [selectedMemberForDetails, setSelectedMemberForDetails] = useState(null);
+    const [showConfirmDelete, setShowConfirmDelete] = useState(false);
+    const [transactionToDelete, setTransactionToDelete] = useState(null);
+    const [showFundReport, setShowFundReport] = useState(false);
+    const [showMemberReports, setShowMemberReports] = useState(false);
+    const [showReportSelectionModal, setShowReportSelectionModal] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
+    const [supabaseClient, setSupabaseClient] = useState(null); // State to hold the Supabase client instance
 
-    // Load data from localStorage on initial render
+    // Effect to load Supabase CDN and initialize client
     useEffect(() => {
-        try {
-            const storedMembers = JSON.parse(localStorage.getItem('fundMembers'));
-            const storedTransactions = JSON.parse(localStorage.getItem('fundTransactions'));
+        const loadSupabaseClient = () => {
+            // Check if window.supabase is available (meaning CDN script has loaded)
+            if (window.supabase && !supabaseClient) {
+                // Ensure the placeholder values are not used if actual values are intended
+                if (supabaseUrl === 'YOUR_SUPABASE_URL' || supabaseAnonKey === 'YOUR_SUPABASE_ANON_KEY') {
+                    console.warn("Supabase URL or Anon Key are still placeholders. Please replace them with your actual Supabase project credentials.");
+                    setErrorMessage("Cảnh báo: URL hoặc Khóa Supabase vẫn là giá trị mặc định. Vui lòng thay thế bằng thông tin dự án thực của bạn.");
+                    setIsLoading(false);
+                    return;
+                }
+                const client = window.supabase.createClient(supabaseUrl, supabaseAnonKey);
+                setSupabaseClient(client);
+                console.log("Supabase client initialized.");
+            }
+        };
 
-            // Define initial members
-            const defaultInitialMembers = [
-                { id: generateId(), name: 'Trương Hồng Quân', balance: 0 },
-                { id: generateId(), name: 'Bùi Hoàng Giang', balance: 0 },
-                { id: generateId(), name: 'Nguyễn Thị Hoa Hậu', balance: 0 },
-            ];
-
-            // Define initial transactions (using IDs from defaultInitialMembers)
-            const defaultInitialTransactions = [
-                { id: generateId(), type: 'contribution', amount: 500000, description: 'Đóng góp ban đầu', date: new Date().toLocaleString(), contributingMemberId: defaultInitialMembers[0].id, involvedMemberIds: [] },
-                { id: generateId(), type: 'contribution', amount: 300000, description: 'Đóng góp thêm', date: new Date().toLocaleString(), contributingMemberId: defaultInitialMembers[1].id, involvedMemberIds: [] },
-                { id: generateId(), type: 'expense', amount: 150000, description: 'Mua đồ ăn nhẹ', date: new Date().toLocaleString(), contributingMemberId: null, involvedMemberIds: [defaultInitialMembers[0].id, defaultInitialMembers[1].id, defaultInitialMembers[2].id] },
-                { id: generateId(), type: 'contribution', amount: 200000, description: 'Đóng góp tháng 5', date: new Date().toLocaleString(), contributingMemberId: defaultInitialMembers[2].id, involvedMemberIds: [] },
-                { id: generateId(), type: 'expense', amount: 250000, description: 'Tiền nước uống', date: new Date().toLocaleString(), contributingMemberId: null, involvedMemberIds: [defaultInitialMembers[0].id, defaultInitialMembers[2].id] },
-                { id: generateId(), type: 'expense', amount: 300000, description: 'Đặt cơm trưa', date: new Date().toLocaleString(), contributingMemberId: null, involvedMemberIds: [defaultInitialMembers[0].id, defaultInitialMembers[1].id, defaultInitialMembers[2].id] },
-            ];
-
-            if (!storedMembers || storedMembers.length === 0) {
-                // If no members are stored, initialize with default members and transactions
-                setMembers(defaultInitialMembers);
-                setTransactions(defaultInitialTransactions);
+        // If the script is already loaded (e.g., on re-render after initial load)
+        if (window.supabase) {
+            loadSupabaseClient();
+        } else {
+            // If the script is not loaded, wait for the DOM to be ready
+            // and then check for the script. If not found, create it.
+            // This is a fallback for environments where the script might not be injected
+            // directly into the head by React's initial render.
+            const scriptExists = document.querySelector('script[src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"]');
+            if (!scriptExists) {
+                const script = document.createElement('script');
+                script.src = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2";
+                script.async = true; // Load asynchronously
+                script.onload = loadSupabaseClient; // Call load function once script is loaded
+                script.onerror = () => {
+                    console.error("Failed to load Supabase CDN script.");
+                    setErrorMessage("Lỗi: Không thể tải thư viện Supabase. Vui lòng kiểm tra kết nối mạng.");
+                    setIsLoading(false);
+                };
+                document.head.appendChild(script);
             } else {
-                // If members exist, load them and existing transactions
-                setMembers(storedMembers);
-                setTransactions(storedTransactions || []); // Ensure transactions is an array even if null
+                // If script exists but client isn't initialized, try to initialize
+                loadSupabaseClient();
+            }
+        }
+    }, [supabaseClient]); // Dependency array ensures this runs when supabaseClient is null or changes
+
+    // Function to fetch data from Supabase
+    const fetchData = useCallback(async () => {
+        if (!supabaseClient) {
+            console.log("Supabase client not ready for fetching data.");
+            setIsLoading(true); // Keep loading state true until client is ready
+            return;
+        }
+
+        setIsLoading(true);
+        try {
+            // Fetch members
+            const { data: membersData, error: membersError } = await supabaseClient
+                .from('members')
+                .select('*');
+
+            if (membersError) {
+                if (membersError.message.includes('relation "public.members" does not exist')) {
+                    setErrorMessage("Lỗi: Các bảng dữ liệu (members, transactions) chưa được tạo trong Supabase. Vui lòng chạy các script SQL đã cung cấp trước đó.");
+                } else {
+                    setErrorMessage(`Lỗi khi tải dữ liệu thành viên: ${membersError.message}`);
+                }
+                throw membersError; // Still throw to stop further execution in this block
+            }
+
+            // Fetch transactions
+            const { data: transactionsData, error: transactionsError } = await supabaseClient
+                .from('transactions')
+                .select('*');
+
+            if (transactionsError) {
+                if (transactionsError.message.includes('relation "public.transactions" does not exist')) {
+                    setErrorMessage("Lỗi: Các bảng dữ liệu (members, transactions) chưa được tạo trong Supabase. Vui lòng chạy các script SQL đã cung cấp trước đó.");
+                } else {
+                    setErrorMessage(`Lỗi khi tải dữ liệu giao dịch: ${transactionsError.message}`);
+                }
+                throw transactionsError;
+            }
+
+            // If no members exist, populate with default data
+            if (!membersData || membersData.length === 0) {
+                console.log("No members found, populating with default data...");
+                const initialMembers = [
+                    { name: 'Trương Hồng Quân' },
+                    { name: 'Bùi Hoàng Giang' },
+                    { name: 'Nguyễn Thị Hoa Hậu' },
+                ];
+                const { data: newMembers, error: newMembersError } = await supabaseClient
+                    .from('members')
+                    .insert(initialMembers)
+                    .select(); // Use select() to get the inserted data with generated IDs
+
+                if (newMembersError) throw newMembersError;
+
+                setMembers(newMembers);
+
+                // Create initial transactions using the IDs of newly inserted members
+                const initialTransactions = [
+                    { type: 'contribution', amount: 500000, description: 'Đóng góp ban đầu', date: new Date().toLocaleString(), contributingMemberId: newMembers[0].id },
+                    { type: 'contribution', amount: 300000, description: 'Đóng góp thêm', date: new Date().toLocaleString(), contributingMemberId: newMembers[1].id },
+                    { type: 'expense', amount: 150000, description: 'Mua đồ ăn nhẹ', date: new Date().toLocaleString(), involvedMemberIds: [newMembers[0].id, newMembers[1].id, newMembers[2].id] },
+                    { type: 'contribution', amount: 200000, description: 'Đóng góp tháng 5', date: new Date().toLocaleString(), contributingMemberId: newMembers[2].id },
+                    { type: 'expense', amount: 250000, description: 'Tiền nước uống', date: new Date().toLocaleString(), involvedMemberIds: [newMembers[0].id, newMembers[2].id] },
+                    { type: 'expense', amount: 300000, description: 'Đặt cơm trưa', date: new Date().toLocaleString(), involvedMemberIds: [newMembers[0].id, newMembers[1].id, newMembers[2].id] },
+                ];
+                const { data: newTransactions, error: newTransactionsError } = await supabaseClient
+                    .from('transactions')
+                    .insert(initialTransactions)
+                    .select();
+
+                if (newTransactionsError) throw newTransactionsError;
+                setTransactions(newTransactions);
+
+            } else {
+                setMembers(membersData);
+                setTransactions(transactionsData);
             }
         } catch (error) {
-            console.error("Error loading data from localStorage or initializing default data:", error);
-            // Fallback to empty arrays if parsing or initialization fails
-            setMembers([]);
-            setTransactions([]);
+            // Error message already set by specific checks above, or fallback here
+            if (!errorMessage) { // Only set if not already set by specific error
+                setErrorMessage(`Lỗi khi tải dữ liệu: ${error.message}`);
+            }
+        } finally {
+            setIsLoading(false);
         }
-    }, []);
+    }, [supabaseClient, members.length, errorMessage]); // Add errorMessage to dependencies to prevent stale closure for error message check
 
-    // Save data to localStorage whenever members or transactions change
+    // Effect for real-time subscriptions (runs after client is initialized)
     useEffect(() => {
-        localStorage.setItem('fundMembers', JSON.stringify(members));
-    }, [members]);
+        if (!supabaseClient) return; // Only subscribe if client is ready
 
-    useEffect(() => {
-        localStorage.setItem('fundTransactions', JSON.stringify(transactions));
-    }, [transactions]);
+        fetchData(); // Initial fetch after client is ready
 
-    // Calculate fund balance and member balances whenever transactions or members change
+        // Real-time subscription for members
+        const memberSubscription = supabaseClient
+            .channel('public:members')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'members' }, payload => {
+                console.log('Member change received!', payload);
+                fetchData(); // Re-fetch data on any change to members
+            })
+            .subscribe();
+
+        // Real-time subscription for transactions
+        const transactionSubscription = supabaseClient
+            .channel('public:transactions')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'transactions' }, payload => {
+                console.log('Transaction change received!', payload);
+                fetchData(); // Re-fetch data on any change to transactions
+            })
+            .subscribe();
+
+        // Cleanup subscriptions on component unmount
+        return () => {
+            if (supabaseClient) {
+                supabaseClient.removeChannel(memberSubscription);
+                supabaseClient.removeChannel(transactionSubscription);
+            }
+        };
+    }, [supabaseClient, fetchData]); // Depend on supabaseClient and fetchData
+
+    // Calculate fund balance and member balances whenever data changes
     useEffect(() => {
         let totalBalance = 0;
-        // Create a temporary map to hold updated balances for members
         const tempMemberBalances = new Map(members.map(m => [m.id, 0]));
 
         transactions.forEach(t => {
@@ -112,12 +227,10 @@ const App = () => {
                 }
             } else if (t.type === 'expense') {
                 totalBalance -= t.amount;
-                // Distribute expense cost
                 const involvedMembers = t.involvedMemberIds && t.involvedMemberIds.length > 0
                     ? t.involvedMemberIds
-                    : members.map(m => m.id); // Fallback to all members if no specific ones selected
+                    : members.map(m => m.id);
 
-                // Ensure cost is distributed only if there are involved members
                 if (involvedMembers.length > 0) {
                     const costPerMember = t.amount / involvedMembers.length;
                     involvedMembers.forEach(memberId => {
@@ -129,15 +242,15 @@ const App = () => {
             }
         });
 
-        // Update members state with calculated balances
         const updatedMembers = members.map(member => ({
             ...member,
-            balance: tempMemberBalances.get(member.id) || 0 // Ensure balance is set, default to 0 if not found
+            balance: tempMemberBalances.get(member.id) || 0
         }));
 
         setFundBalance(totalBalance);
         setMembers(updatedMembers);
-    }, [transactions, members.length]); // Depend on transactions and members.length to trigger recalculation
+    }, [transactions, members.length]);
+
 
     // Calculate total contributions and total expenses for reporting
     const totalContributions = transactions.filter(t => t.type === 'contribution').reduce((sum, t) => sum + t.amount, 0);
@@ -145,23 +258,30 @@ const App = () => {
 
 
     // --- Member Management ---
-    const addMember = (name) => {
+    const addMember = async (name) => {
         if (!name.trim()) {
             setErrorMessage('Tên thành viên không được để trống.');
             return;
         }
-        setErrorMessage(''); // Clear error
-        const newMember = {
-            id: generateId(),
-            name: name.trim(),
-            balance: 0, // Initial balance, will be updated by transactions
-        };
-        setMembers(prevMembers => [...prevMembers, newMember]);
-        setShowAddMember(false); // Hide form after adding
+        setErrorMessage('');
+        if (!supabaseClient) {
+            setErrorMessage('Lỗi: Supabase client chưa sẵn sàng.');
+            return;
+        }
+        try {
+            const { data, error } = await supabaseClient
+                .from('members')
+                .insert({ name: name.trim(), balance: 0 });
+            if (error) throw error;
+            setShowAddMember(false);
+        } catch (error) {
+            console.error("Error adding member:", error.message);
+            setErrorMessage(`Lỗi khi thêm thành viên: ${error.message}`);
+        }
     };
 
     // --- Transaction Management ---
-    const addTransaction = (type, amount, description, contributingMemberId = null, involvedMemberIds = []) => {
+    const addTransaction = async (type, amount, description, contributingMemberId = null, involvedMemberIds = []) => {
         if (isNaN(amount) || amount <= 0 || !description.trim()) {
             setErrorMessage('Vui lòng nhập số tiền hợp lệ và mô tả.');
             return;
@@ -176,22 +296,32 @@ const App = () => {
             setErrorMessage('Vui lòng chọn ít nhất một thành viên tham gia chi tiêu.');
             return;
         }
-        setErrorMessage(''); // Clear error
-
-        const newTransaction = {
-            id: generateId(),
-            type, // 'contribution' or 'expense'
-            amount: parseFloat(amount),
-            description: description.trim(),
-            date: new Date().toLocaleString(),
-            contributingMemberId: type === 'contribution' ? contributingMemberId : null, // Only for contributions
-            involvedMemberIds: type === 'expense' ? involvedMemberIds : [], // Only for expenses
-        };
-        setTransactions(prevTransactions => [...prevTransactions, newTransaction]);
-        setShowAddTransaction(false); // Hide form after adding
+        setErrorMessage('');
+        if (!supabaseClient) {
+            setErrorMessage('Lỗi: Supabase client chưa sẵn sàng.');
+            return;
+        }
+        try {
+            const newTransaction = {
+                type,
+                amount: parseFloat(amount),
+                description: description.trim(),
+                date: new Date().toLocaleString(),
+                contributingMemberId: type === 'contribution' ? contributingMemberId : null,
+                involvedMemberIds: type === 'expense' ? involvedMemberIds : [],
+            };
+            const { data, error } = await supabaseClient
+                .from('transactions')
+                .insert(newTransaction);
+            if (error) throw error;
+            setShowAddTransaction(false);
+        } catch (error) {
+            console.error("Error adding transaction:", error.message);
+            setErrorMessage(`Lỗi khi thêm giao dịch: ${error.message}`);
+        }
     };
 
-    const editTransaction = (updatedTransaction) => {
+    const editTransaction = async (updatedTransaction) => {
         if (isNaN(updatedTransaction.amount) || updatedTransaction.amount <= 0 || !updatedTransaction.description.trim()) {
             setErrorMessage('Vui lòng nhập số tiền hợp lệ và mô tả cho giao dịch.');
             return;
@@ -204,14 +334,28 @@ const App = () => {
             setErrorMessage('Vui lòng chọn ít nhất một thành viên tham gia chi tiêu cho giao dịch này.');
             return;
         }
-        setErrorMessage(''); // Clear error
-
-        setTransactions(prevTransactions =>
-            prevTransactions.map(t =>
-                t.id === updatedTransaction.id ? { ...updatedTransaction, amount: parseFloat(updatedTransaction.amount) } : t
-            )
-        );
-        setEditingTransaction(null); // Close edit form
+        setErrorMessage('');
+        if (!supabaseClient) {
+            setErrorMessage('Lỗi: Supabase client chưa sẵn sàng.');
+            return;
+        }
+        try {
+            const { data, error } = await supabaseClient
+                .from('transactions')
+                .update({
+                    type: updatedTransaction.type,
+                    amount: parseFloat(updatedTransaction.amount),
+                    description: updatedTransaction.description,
+                    contributingMemberId: updatedTransaction.type === 'contribution' ? updatedTransaction.contributingMemberId : null,
+                    involvedMemberIds: updatedTransaction.type === 'expense' ? updatedTransaction.involvedMemberIds : [],
+                })
+                .eq('id', updatedTransaction.id);
+            if (error) throw error;
+            setEditingTransaction(null);
+        } catch (error) {
+            console.error("Error editing transaction:", error.message);
+            setErrorMessage(`Lỗi khi sửa giao dịch: ${error.message}`);
+        }
     };
 
     const deleteTransaction = (transaction) => {
@@ -219,9 +363,24 @@ const App = () => {
         setShowConfirmDelete(true);
     };
 
-    const confirmDelete = () => {
+    const confirmDelete = async () => {
         if (transactionToDelete) {
-            setTransactions(prevTransactions => prevTransactions.filter(t => t.id !== transactionToDelete.id));
+            if (!supabaseClient) {
+                setErrorMessage('Lỗi: Supabase client chưa sẵn sàng.');
+                setShowConfirmDelete(false);
+                setTransactionToDelete(null);
+                return;
+            }
+            try {
+                const { error } = await supabaseClient
+                    .from('transactions')
+                    .delete()
+                    .eq('id', transactionToDelete.id);
+                if (error) throw error;
+            } catch (error) {
+                console.error("Error deleting transaction:", error.message);
+                setErrorMessage(`Lỗi khi xóa giao dịch: ${error.message}`);
+            }
         }
         setShowConfirmDelete(false);
         setTransactionToDelete(null);
@@ -232,7 +391,7 @@ const App = () => {
         setTransactionToDelete(null);
     };
 
-    const settleUpMember = (memberId) => {
+    const settleUpMember = async (memberId) => {
         const memberToSettle = members.find(m => m.id === memberId);
         if (!memberToSettle) return;
 
@@ -240,16 +399,27 @@ const App = () => {
         const settlementType = memberToSettle.balance < 0 ? 'contribution' : 'expense';
 
         if (settlementAmount > 0) {
-            const settlementTransaction = {
-                id: generateId(),
-                type: settlementType,
-                amount: settlementAmount,
-                description: `Thanh toán số dư cho ${memberToSettle.name}`,
-                date: new Date().toLocaleString(),
-                contributingMemberId: settlementType === 'contribution' ? memberToSettle.id : null,
-                involvedMemberIds: settlementType === 'expense' ? [memberToSettle.id] : [],
-            };
-            setTransactions(prevTransactions => [...prevTransactions, settlementTransaction]);
+            if (!supabaseClient) {
+                setErrorMessage('Lỗi: Supabase client chưa sẵn sàng.');
+                return;
+            }
+            try {
+                const settlementTransaction = {
+                    type: settlementType,
+                    amount: settlementAmount,
+                    description: `Thanh toán số dư cho ${memberToSettle.name}`,
+                    date: new Date().toLocaleString(),
+                    contributingMemberId: settlementType === 'contribution' ? memberToSettle.id : null,
+                    involvedMemberIds: settlementType === 'expense' ? [memberToSettle.id] : [],
+                };
+                const { data, error } = await supabaseClient
+                    .from('transactions')
+                    .insert(settlementTransaction);
+                if (error) throw error;
+            } catch (error) {
+                console.error("Error settling up member:", error.message);
+                setErrorMessage(`Lỗi khi thanh toán số dư: ${error.message}`);
+            }
         }
     };
 
@@ -262,12 +432,22 @@ const App = () => {
         setErrorMessage('');
         setShowFundReport(false);
         setShowMemberReports(false);
-        setShowReportSelectionModal(false); // Hide report selection modal as well
+        setShowReportSelectionModal(false);
     };
+
+    if (isLoading) {
+        return (
+            <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4 flex items-center justify-center">
+                <p className="text-xl font-semibold text-gray-700">Đang tải dữ liệu...</p>
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4 font-sans text-gray-800">
-            {/* CDN for Tailwind CSS, XLSX */}
+            {/* Supabase CDN script - Added here to ensure it's loaded in the DOM */}
+            <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+            {/* Other CDNs */}
             <script src="https://cdn.tailwindcss.com"></script>
             <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
             <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
@@ -371,7 +551,6 @@ const App = () => {
             )}
 
             {/* Action Buttons */}
-            {/* Responsive: Buttons will stack on small screens and align horizontally on larger screens */}
             <div className="flex flex-col sm:flex-row justify-center gap-4 mb-8">
                 <button
                     onClick={() => {
@@ -403,7 +582,6 @@ const App = () => {
                     <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"></path><path fillRule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h.01a1 1 0 100-2H10zm3 0a1 1 0 000 2h.01a1 1 0 100-2H13zm-3 4a1 1 0 000 2h.01a1 1 0 100-2H10zm3 0a1 1 0 000 2h.01a1 1 0 100-2H13z" clipRule="evenodd"></path></svg>
                     Xem Lịch Sử
                 </button>
-                {/* New combined Report button */}
                 <button
                     onClick={() => {
                         hideAllSections();
@@ -438,14 +616,13 @@ const App = () => {
                 <MemberList
                     members={members}
                     onSettleUp={settleUpMember}
-                    onViewDetails={setSelectedMemberForDetails} // Pass function to set selected member for details
+                    onViewDetails={setSelectedMemberForDetails}
                 />
             </div>
 
             {/* Reporting Summary */}
             <div className="card mb-8">
                 <h2 className="text-xl font-semibold mb-4 text-[#006B68]">Báo Cáo Tóm Tắt</h2>
-                {/* Responsive: Grid columns will adjust based on screen size */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-center">
                     <div className="p-4 bg-green-50 rounded-lg">
                         <p className="text-lg font-medium text-green-700">Tổng Đóng Góp</p>
@@ -456,7 +633,6 @@ const App = () => {
                         <p className="text-3xl font-bold text-red-600">{formatNumberForDisplay(totalExpenses)} VNĐ</p>
                     </div>
                 </div>
-                {/* Member Balance Pie Chart */}
                 <h3 className="text-xl font-semibold mt-8 mb-4 text-[#006B68] text-center">Số Dư Thành Viên (Biểu Đồ Tròn)</h3>
                 <MemberBalancePieChart members={members} />
             </div>
@@ -499,8 +675,8 @@ const App = () => {
                     <TransactionList
                         transactions={transactions}
                         members={members}
-                        onEdit={setEditingTransaction} // Pass function to set which transaction is being edited
-                        onDelete={deleteTransaction} // Pass the new delete handler
+                        onEdit={setEditingTransaction}
+                        onDelete={deleteTransaction}
                     />
                 </div>
             )}
@@ -520,7 +696,7 @@ const App = () => {
                 <MemberDetailsModal
                     member={selectedMemberForDetails}
                     transactions={transactions}
-                    members={members} // Pass all members to resolve names
+                    members={members}
                     onClose={() => setSelectedMemberForDetails(null)}
                 />
             )}
@@ -548,7 +724,6 @@ const AddMemberForm = ({ onAddMember }) => {
     };
 
     return (
-        // Responsive: Form fields will stack on small screens and align horizontally on larger screens
         <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-4">
             <input
                 type="text"
@@ -568,13 +743,12 @@ const AddMemberForm = ({ onAddMember }) => {
 // Component for adding a new transaction (contribution or expense)
 const AddTransactionForm = ({ members, onAddTransaction }) => {
     const [type, setType] = useState('contribution');
-    const [amount, setAmount] = useState(''); // Keep as string for formatted input
+    const [amount, setAmount] = useState('');
     const [description, setDescription] = useState('');
     const [contributingMemberId, setContributingMemberId] = useState('');
     const [selectedExpenseMembers, setSelectedExpenseMembers] = useState([]);
 
     useEffect(() => {
-        // Set default selected member for contribution if members list is not empty
         if (members.length > 0 && !contributingMemberId) {
             setContributingMemberId(members[0].id);
         }
@@ -595,15 +769,14 @@ const AddTransactionForm = ({ members, onAddTransaction }) => {
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        const parsedAmount = parseFormattedNumber(amount); // Parse before passing
+        const parsedAmount = parseFormattedNumber(amount);
         onAddTransaction(type, parsedAmount, description, contributingMemberId, selectedExpenseMembers);
         setAmount('');
         setDescription('');
-        setSelectedExpenseMembers([]); // Reset selected members for next expense
+        setSelectedExpenseMembers([]);
     };
 
     return (
-        // Responsive: Grid columns will adjust based on screen size
         <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="col-span-full">
                 <label htmlFor="transaction-type" className="block text-sm font-medium text-gray-700 mb-1">Loại Giao Dịch</label>
@@ -612,7 +785,6 @@ const AddTransactionForm = ({ members, onAddTransaction }) => {
                     value={type}
                     onChange={(e) => {
                         setType(e.target.value);
-                        // Reset selected members when changing type to avoid inconsistencies
                         if (e.target.value === 'contribution') {
                             setSelectedExpenseMembers([]);
                         } else {
@@ -661,7 +833,7 @@ const AddTransactionForm = ({ members, onAddTransaction }) => {
                                         className="form-checkbox h-4 w-4 text-[#006B68] transition duration-150 ease-in-out rounded focus:ring-[#006B68]"
                                         value={member.id}
                                         checked={selectedExpenseMembers.includes(member.id)}
-                                        onChange={() => handleExpenseMemberChange(member.id)}
+                                        onChange={() => handleMemberCheckboxChange(member.id)}
                                     />
                                     <span className="ml-2 text-sm text-gray-700">{member.name}</span>
                                 </label>
@@ -675,11 +847,11 @@ const AddTransactionForm = ({ members, onAddTransaction }) => {
                 <label htmlFor="amount" className="block text-sm font-medium text-gray-700 mb-1">Số Tiền (VNĐ)</label>
                 <input
                     id="amount"
-                    type="text" // Changed to text to allow custom formatting
+                    type="text"
                     placeholder="Số tiền"
                     value={amount}
-                    onChange={handleAmountChange} // Use custom handler
-                    className="input-field text-right" // Right-align input
+                    onChange={handleAmountChange}
+                    className="input-field text-right"
                     required
                 />
             </div>
@@ -707,7 +879,7 @@ const AddTransactionForm = ({ members, onAddTransaction }) => {
 // Component for displaying the list of members
 const MemberList = ({ members, onSettleUp, onViewDetails }) => {
     return (
-        <div className="overflow-x-auto"> {/* Added overflow-x-auto for responsive tables */}
+        <div className="overflow-x-auto">
             {members.length === 0 ? (
                 <p className="text-center text-gray-500">Chưa có thành viên nào. Hãy thêm thành viên!</p>
             ) : (
@@ -718,7 +890,7 @@ const MemberList = ({ members, onSettleUp, onViewDetails }) => {
                             <tr key={member.id} className="table-row">
                                 <td className="font-medium text-gray-900">{member.name}</td>
                                 <td className="text-right-aligned">
-                                    <span className={`text-lg font-bold ${ // Added text-lg and font-bold for prominence
+                                    <span className={`text-lg font-bold ${
                                         member.balance > 0 ? 'balance-positive' :
                                         member.balance < 0 ? 'balance-negative' :
                                         'balance-zero'
@@ -726,7 +898,6 @@ const MemberList = ({ members, onSettleUp, onViewDetails }) => {
                                         {formatNumberForDisplay(member.balance)} VNĐ
                                     </span>
                                 </td>
-                                {/* Responsive: Buttons will stack on small screens and align horizontally on larger screens */}
                                 <td className="flex flex-col sm:flex-row gap-2">
                                     <button
                                         onClick={() => onSettleUp(member.id)}
@@ -760,21 +931,20 @@ const TransactionList = ({ transactions, members, onEdit, onDelete }) => {
 
     const getInvolvedMembersNames = (involvedMemberIds) => {
         if (!involvedMemberIds || involvedMemberIds.length === 0) {
-            return 'Tất cả'; // Fallback for old transactions or if no specific members selected
+            return 'Tất cả';
         }
         return involvedMemberIds.map(id => getMemberName(id)).join(', ');
     };
 
     return (
-        <div className="overflow-x-auto"> {/* Added overflow-x-auto for responsive tables */}
+        <div className="overflow-x-auto">
             {transactions.length === 0 ? (
                 <p className="text-center text-gray-500">Chưa có giao dịch nào.</p>
             ) : (
                 <table className="min-w-full bg-white rounded-lg shadow-sm">
                     <thead><tr><th className="table-header">Ngày</th><th>Loại</th><th>Mô Tả</th><th>Thành Viên Liên Quan</th><th className="table-header text-right-aligned">Số Tiền (VNĐ)</th><th>Hành Động</th></tr></thead>
                     <tbody>
-                        {transactions.slice().reverse().map(t => { // Display newest first
-                            // Calculate displayed amount for expense transactions
+                        {transactions.slice().reverse().map(t => {
                             const displayedAmount = t.type === 'expense' && t.involvedMemberIds && t.involvedMemberIds.length > 0
                                 ? t.amount / t.involvedMemberIds.length
                                 : t.amount;
@@ -786,7 +956,6 @@ const TransactionList = ({ transactions, members, onEdit, onDelete }) => {
                                         <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
                                             t.type === 'contribution' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
                                         }`}>
-                                            {/* Add icons */}
                                             {t.type === 'contribution' ? '💵 Đóng Góp' : '🍺 Chi Tiêu'}
                                         </span>
                                     </td>
@@ -800,7 +969,6 @@ const TransactionList = ({ transactions, members, onEdit, onDelete }) => {
                                         {t.type === 'contribution' ? '+' : '-'}
                                         {formatNumberForDisplay(displayedAmount)}
                                     </td>
-                                    {/* Responsive: Buttons will stack on small screens and align horizontally on larger screens */}
                                     <td className="flex flex-col sm:flex-row gap-2">
                                         <button
                                             onClick={() => onEdit(t)}
@@ -809,7 +977,7 @@ const TransactionList = ({ transactions, members, onEdit, onDelete }) => {
                                             Sửa
                                         </button>
                                         <button
-                                            onClick={() => onDelete(t)} // Pass the full transaction object
+                                            onClick={() => onDelete(t)}
                                             className="text-red-600 hover:text-red-900 font-semibold text-sm w-full sm:w-auto"
                                         >
                                             Xóa
@@ -929,7 +1097,7 @@ const MemberReport = ({ members, transactions }) => {
 
     useEffect(() => {
         if (members.length > 0 && !selectedMemberId) {
-            setSelectedMemberId(members[0].id); // Select first member by default
+            setSelectedMemberId(members[0].id);
         }
     }, [members, selectedMemberId]);
 
@@ -1056,19 +1224,18 @@ const MemberReport = ({ members, transactions }) => {
 // Modal for editing a transaction
 const EditTransactionModal = ({ transaction, members, onSave, onClose }) => {
     const [editedType, setEditedType] = useState(transaction.type);
-    const [editedAmount, setEditedAmount] = useState(formatNumberForInput(transaction.amount.toString())); // Format for input
+    const [editedAmount, setEditedAmount] = useState(formatNumberForInput(transaction.amount.toString()));
     const [editedDescription, setEditedDescription] = useState(transaction.description);
     const [editedContributingMemberId, setEditedContributingMemberId] = useState(transaction.contributingMemberId || '');
     const [editedInvolvedMemberIds, setEditedInvolvedMemberIds] = useState(transaction.involvedMemberIds || []);
 
-    // Wrap in useCallback
     const handleMemberCheckboxChange = useCallback((memberId) => {
         setEditedInvolvedMemberIds(prevSelected =>
             prevSelected.includes(memberId)
                 ? prevSelected.filter(id => id !== memberId)
                 : [...prevSelected, memberId]
         );
-    }, []); // Empty dependency array because setEditedInvolvedMemberIds is stable
+    }, []);
 
     const handleEditedAmountChange = (e) => {
         const formattedValue = formatNumberForInput(e.target.value);
@@ -1076,11 +1243,9 @@ const EditTransactionModal = ({ transaction, members, onSave, onClose }) => {
     };
 
     useEffect(() => {
-        // Ensure contributing member is selected if type is contribution and members exist
         if (editedType === 'contribution' && members.length > 0 && !editedContributingMemberId) {
             setEditedContributingMemberId(members[0].id);
         }
-        // When type changes, reset irrelevant selected members
         if (editedType === 'contribution') {
             setEditedInvolvedMemberIds([]);
         } else {
@@ -1091,7 +1256,7 @@ const EditTransactionModal = ({ transaction, members, onSave, onClose }) => {
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        const parsedEditedAmount = parseFormattedNumber(editedAmount); // Parse before saving
+        const parsedEditedAmount = parseFormattedNumber(editedAmount);
         onSave({
             ...transaction,
             type: editedType,
@@ -1104,10 +1269,8 @@ const EditTransactionModal = ({ transaction, members, onSave, onClose }) => {
 
     return (
         <div className="modal-overlay">
-            {/* Responsive: Modal content will have max-width and adjust for smaller screens */}
             <div className="modal-content w-11/12 md:w-2/3 lg:w-1/2">
                 <h2 className="text-2xl font-semibold mb-6 text-[#006B68]">Chỉnh Sửa Giao Dịch</h2>
-                {/* Responsive: Grid columns will adjust based on screen size */}
                 <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="col-span-full">
                         <label htmlFor="edit-transaction-type" className="block text-sm font-medium text-gray-700 mb-1">Loại Giao Dịch</label>
@@ -1149,7 +1312,6 @@ const EditTransactionModal = ({ transaction, members, onSave, onClose }) => {
                             {members.length === 0 ? (
                                 <p className="text-gray-500 text-sm">Chưa có thành viên nào để chọn.</p>
                             ) : (
-                                // Responsive: Checkbox grid columns will adjust based on screen size
                                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 p-2 border border-gray-300 rounded-md bg-gray-50">
                                     {members.map(member => (
                                         <label key={member.id} className="inline-flex items-center cursor-pointer">
@@ -1172,11 +1334,11 @@ const EditTransactionModal = ({ transaction, members, onSave, onClose }) => {
                         <label htmlFor="edit-amount" className="block text-sm font-medium text-gray-700 mb-1">Số Tiền (VNĐ)</label>
                         <input
                             id="edit-amount"
-                            type="text" // Changed to text
+                            type="text"
                             placeholder="Số tiền"
                             value={editedAmount}
-                            onChange={handleEditedAmountChange} // Use custom handler
-                            className="input-field text-right" // Right-align input
+                            onChange={handleEditedAmountChange}
+                            className="input-field text-right"
                             required
                         />
                     </div>
@@ -1192,7 +1354,6 @@ const EditTransactionModal = ({ transaction, members, onSave, onClose }) => {
                             required
                         />
                     </div>
-                    {/* Responsive: Buttons will stack on small screens and align horizontally on larger screens */}
                     <div className="col-span-full flex flex-col sm:flex-row justify-end gap-4 mt-4">
                         <button type="button" onClick={onClose} className="btn-secondary w-full sm:w-auto">
                             Hủy
@@ -1224,11 +1385,10 @@ const MemberDetailsModal = ({ member, transactions, members, onClose }) => {
     const memberTransactions = transactions.filter(t =>
         (t.type === 'contribution' && t.contributingMemberId === member.id) ||
         (t.type === 'expense' && t.involvedMemberIds && t.involvedMemberIds.includes(member.id))
-    ).sort((a, b) => new Date(b.date) - new Date(a.date)); // Sort by newest first
+    ).sort((a, b) => new Date(b.date) - new Date(a.date));
 
     return (
         <div className="modal-overlay">
-            {/* Responsive: Modal content will have max-width and adjust for smaller screens */}
             <div className="modal-content w-11/12 md:w-2/3 lg:w-1/2">
                 <h2 className="text-2xl font-semibold mb-6 text-[#006B68]">Chi Tiết Thành Viên: {member.name}</h2>
                 <div className="mb-4">
@@ -1242,12 +1402,11 @@ const MemberDetailsModal = ({ member, transactions, members, onClose }) => {
                 {memberTransactions.length === 0 ? (
                     <p className="text-center text-gray-500">Chưa có giao dịch nào liên quan đến thành viên này.</p>
                 ) : (
-                    <div className="overflow-x-auto max-h-80"> {/* Added max-height and overflow for scrollability */}
+                    <div className="overflow-x-auto max-h-80">
                         <table className="min-w-full bg-white rounded-lg shadow-sm">
                             <thead><tr><th>Ngày</th><th>Loại</th><th>Mô Tả</th><th className="table-header text-right-aligned">Số Tiền (VNĐ)</th></tr></thead>
                             <tbody>
                                 {memberTransactions.map(t => {
-                                    // Calculate displayed amount for expense transactions in MemberDetailsModal
                                     let displayedAmount = t.amount;
                                     if (t.type === 'expense' && t.involvedMemberIds && t.involvedMemberIds.length > 0) {
                                         displayedAmount = t.amount / t.involvedMemberIds.length;
@@ -1260,7 +1419,6 @@ const MemberDetailsModal = ({ member, transactions, members, onClose }) => {
                                                 <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
                                                     t.type === 'contribution' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
                                                 }`}>
-                                                    {/* Add icons */}
                                                     {t.type === 'contribution' ? '💵 Đóng Góp' : '🍺 Chi Tiêu'}
                                                 </span>
                                             </td>
@@ -1292,11 +1450,9 @@ const MemberDetailsModal = ({ member, transactions, members, onClose }) => {
 const ConfirmationModal = ({ message, onConfirm, onCancel }) => {
     return (
         <div className="modal-overlay">
-            {/* Responsive: Modal content will have max-width and adjust for smaller screens */}
             <div className="modal-content w-11/12 md:w-1/2 lg:w-1/3">
                 <h2 className="text-xl font-semibold mb-4 text-gray-800">Xác Nhận</h2>
                 <p className="mb-6 text-gray-700">{message}</p>
-                {/* Responsive: Buttons will stack on small screens and align horizontally on larger screens */}
                 <div className="flex flex-col sm:flex-row justify-end gap-4">
                     <button onClick={onCancel} className="btn-secondary w-full sm:w-auto">
                         Hủy
@@ -1363,11 +1519,11 @@ const describePieSlice = (centerX, centerY, radius, startAngle, endAngle) => {
     const largeArcFlag = endAngle - startAngle <= 180 ? "0" : "1";
 
     const pathData = [
-        `M ${centerX} ${centerY}`, // Move to center
-        `L ${start.x} ${start.y}`, // Line to start of arc
-        `A ${radius} ${radius} 0 ${largeArcFlag} 0 ${end.x} ${end.y}`, // Arc
-        `L ${centerX} ${centerY}`, // Line back to center
-        `Z` // Close path
+        `M ${centerX} ${centerY}`,
+        `L ${start.x} ${start.y}`,
+        `A ${radius} ${radius} 0 ${largeArcFlag} 0 ${end.x} ${end.y}`,
+        `L ${centerX} ${centerY}`,
+        `Z`
     ].join(" ");
 
     return pathData;
@@ -1375,13 +1531,11 @@ const describePieSlice = (centerX, centerY, radius, startAngle, endAngle) => {
 
 // New Component for Member Balance Pie Chart
 const MemberBalancePieChart = ({ members }) => {
-    const CHART_SIZE = 200; // Kích thước của canvas SVG (chiều rộng và chiều cao)
-    const RADIUS = CHART_SIZE / 2 - 10; // Bán kính của biểu đồ tròn, có một chút padding
+    const CHART_SIZE = 200;
+    const RADIUS = CHART_SIZE / 2 - 10;
     const centerX = CHART_SIZE / 2;
     const centerY = CHART_SIZE / 2;
 
-    // Define a color palette for the pie chart slices
-    // These colors are chosen to be distinct and visually appealing
     const colorPalette = [
         '#4CAF50', // Green
         '#2196F3', // Blue
@@ -1395,7 +1549,6 @@ const MemberBalancePieChart = ({ members }) => {
         '#607D8B', // Blue Grey
     ];
 
-    // Lọc các thành viên có số dư khác 0 và tính tổng giá trị tuyệt đối của số dư
     const chartData = members.filter(m => m.balance !== 0);
     const totalAbsoluteBalance = chartData.reduce((sum, m) => sum + Math.abs(m.balance), 0);
 
@@ -1412,12 +1565,10 @@ const MemberBalancePieChart = ({ members }) => {
         const endAngle = currentAngle + sliceAngle;
 
         const pathData = describePieSlice(centerX, centerY, RADIUS, startAngle, endAngle);
-        // Assign a color from the palette, cycling through if there are more members than colors
         const color = colorPalette[index % colorPalette.length];
 
-        // Tính toán vị trí nhãn (điểm giữa của cung)
         const midAngle = startAngle + sliceAngle / 2;
-        const labelRadius = RADIUS * 0.7; // Đặt nhãn hơi vào trong cung
+        const labelRadius = RADIUS * 0.7;
         const labelPos = polarToCartesian(centerX, centerY, labelRadius, midAngle);
 
         slices.push(
@@ -1428,8 +1579,7 @@ const MemberBalancePieChart = ({ members }) => {
                     stroke="white"
                     strokeWidth="1"
                 />
-                {/* Thêm nhãn văn bản cho tên thành viên */}
-                {sliceAngle > 10 && ( // Chỉ hiển thị nhãn nếu lát cắt đủ lớn
+                {sliceAngle > 10 && (
                     <text
                         x={labelPos.x}
                         y={labelPos.y}
@@ -1451,12 +1601,10 @@ const MemberBalancePieChart = ({ members }) => {
         <div className="flex justify-center items-center w-full my-4">
             <svg viewBox={`0 0 ${CHART_SIZE} ${CHART_SIZE}`} width="100%" height="auto" style={{ maxWidth: '300px' }}>
                 {slices}
-                {/* Thêm văn bản ở giữa hiển thị tổng số dư */}
                 <text x={centerX} y={centerY} textAnchor="middle" alignmentBaseline="middle" fontSize="12" fontWeight="bold" fill="#333">
                     Tổng: {formatNumberForDisplay(totalAbsoluteBalance)} VNĐ
                 </text>
             </svg>
-            {/* Thêm phần chú thích màu sắc */}
             <div className="ml-8 p-4 bg-gray-50 rounded-lg shadow-sm">
                 <h4 className="font-semibold text-gray-700 mb-2">Chú Thích:</h4>
                 {chartData.map((member, index) => (
