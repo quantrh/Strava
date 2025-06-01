@@ -66,38 +66,47 @@
             justify-content: center;
             align-items: center;
             overflow: hidden; /* Hide overflow if bubbles go outside */
+            position: relative; /* For tooltip positioning */
         }
 
         .bubble {
             stroke: var(--bidv-green);
-            stroke-width: 2px;
-            fill-opacity: 0.7;
+            stroke-width: 1px; /* Thinner stroke for heatmap style */
+            fill-opacity: 0.9;
             cursor: pointer;
-            transition: fill-opacity 0.3s ease;
+            transition: fill-opacity 0.3s ease, stroke-width 0.3s ease, stroke 0.3s ease;
         }
 
         .bubble:hover {
             fill-opacity: 1;
+            stroke-width: 2px;
+            stroke: #333; /* Darker stroke on hover */
         }
 
         .bubble-text {
-            font-size: 0.8rem;
+            font-size: 0.7rem; /* Smaller font for numbers */
             text-anchor: middle;
-            fill: white;
+            fill: #333; /* Darker text for better contrast on light bubbles */
             pointer-events: none; /* Allow clicks to pass through text to bubble */
+        }
+
+        .axis-label {
+            font-size: 0.8rem;
+            fill: #555;
         }
 
         .tooltip {
             position: absolute;
             text-align: center;
             padding: 0.5rem;
-            background: rgba(0, 0, 0, 0.7);
+            background: rgba(0, 0, 0, 0.8);
             color: white;
             border-radius: 0.5rem;
             pointer-events: none;
             opacity: 0;
             transition: opacity 0.2s ease;
             font-size: 0.9rem;
+            z-index: 100; /* Ensure tooltip is on top */
         }
 
         /* Responsive adjustments */
@@ -105,8 +114,12 @@
             .container {
                 padding: 1rem;
             }
-            .grid-cols-2 {
-                grid-template-columns: 1fr;
+            .flex-wrap {
+                flex-direction: column;
+            }
+            .flex-wrap .btn-primary, .flex-wrap .btn-secondary {
+                width: 100%;
+                margin-bottom: 0.5rem;
             }
             #bubble-chart-container {
                 height: 400px; /* Adjust height for smaller screens */
@@ -164,7 +177,7 @@
         </section>
 
         <section id="stats-section" class="card hidden">
-            <h2 class="text-xl font-semibold mb-4">Thống kê thành tích theo tuần</h2>
+            <h2 class="text-xl font-semibold mb-4">Thống kê thành tích theo tuần và ngày</h2>
             <div id="bubble-chart-container">
                 </div>
             <div id="chart-status" class="mt-4 text-sm text-gray-600"></div>
@@ -206,16 +219,12 @@
                 }
 
                 // Cấu hình Strava và Supabase của bạn
-                // THAY THẾ CÁC GIÁ TRỊ NÀY BẰNG THÔNG TIN THỰC TẾ CỦA BẠN
                 const STRAVA_CLIENT_ID = '55949'; // Lấy từ Strava API application
                 const SUPABASE_URL = 'https://rmbsxccrwrktbjlnezpu.supabase.co'; // URL dự án Supabase của bạn
                 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJtYnN4Y2Nyd3JrdGJqbG5lenB1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg2MjczNjQsImV4cCI6MjA2NDIwMzM2NH0.ydCqificftdtn1niRciFCifeuo8aX6SDGti-hCY5Z_Y'; // Khóa anon public của Supabase
-                // URL của Edge Function để xử lý OAuth callback
                 const STRAVA_OAUTH_CALLBACK_URL = 'https://rmbsxccrwrktbjlnezpu.supabase.co/functions/v1/strava-oauth-callback';
-                // URL của Edge Function để tải dữ liệu hoạt động
                 const FETCH_ACTIVITIES_API_URL = 'https://rmbsxccrwrktbjlnezpu.supabase.co/functions/v1/fetch-strava-activities';
-                // URL của Edge Function để lấy dữ liệu thống kê
-                const GET_STATS_API_URL = 'https://rmbsxccrwrktbjlnezpu.supabase.co/functions/v1/get-user-activities'; // Đã cập nhật URL này
+                const GET_STATS_API_URL = 'https://rmbsxccrwrktbjlnezpu.supabase.co/functions/v1/get-user-activities';
 
                 // Khởi tạo Supabase Client
                 const supabase = Supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -223,11 +232,10 @@
                 // Biến toàn cục để lưu trữ trạng thái người dùng và các hoạt động
                 let currentUserId = null;
                 let isAuthenticated = false;
-                let userActivities = []; // Biến mới để lưu trữ các hoạt động
+                let userActivities = []; // Biến mới để lưu trữ tất cả các hoạt động đã tải
 
                 // Hàm kiểm tra trạng thái đăng nhập và cập nhật UI
                 async function checkAuthState() {
-                    // Sử dụng Supabase SDK để kiểm tra phiên hiện có
                     const { data: { session }, error } = await supabase.auth.getSession();
 
                     if (session) {
@@ -282,19 +290,15 @@
                     if (code) {
                         authStatus.textContent = 'Đang xử lý kết nối Strava...';
                         try {
-                            // Gửi mã ủy quyền (code) đến Edge Function của Supabase để trao đổi token
                             const response = await fetch(STRAVA_OAUTH_CALLBACK_URL, {
                                 method: 'POST',
-                                headers: {
-                                    'Content-Type': 'application/json',
-                                },
+                                headers: { 'Content-Type': 'application/json' },
                                 body: JSON.stringify({ code: code, redirect_uri: window.location.origin + '/Strava/IndexNew.html' }),
                             });
 
                             const result = await response.json();
 
                             if (response.ok && result.success) {
-                                // Sử dụng token từ Edge Function để đăng nhập vào Supabase Auth
                                 const { data: { session }, error: signInError } = await supabase.auth.signInWithCustomToken(result.token);
 
                                 if (signInError) {
@@ -308,11 +312,9 @@
                                     currentUserId = session.user.id;
                                     authStatus.textContent = 'Kết nối Strava thành công!';
                                     showAlert('Kết nối Strava thành công!');
-                                    // Xóa các tham số OAuth khỏi URL
                                     window.history.replaceState({}, document.title, window.location.pathname);
                                     updateUI();
                                 } else {
-                                    // Should not happen if result.success is true and no signInError
                                     authStatus.textContent = `Lỗi kết nối Strava: Không thể lấy session Supabase.`;
                                     showAlert(`Lỗi kết nối Strava: Không thể lấy session Supabase.`);
                                     isAuthenticated = false;
@@ -345,16 +347,9 @@
                     dataStatus.textContent = 'Đang tải dữ liệu hoạt động từ Strava...';
 
                     try {
-                        // Gửi yêu cầu đến Edge Function của Supabase để tải dữ liệu
                         const response = await fetch(FETCH_ACTIVITIES_API_URL, {
                             method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                // Không cần Authorization header ở đây vì Edge Function không yêu cầu JWT
-                                // và sử dụng Service Role Key để tương tác với DB.
-                                // Nếu Edge Function yêu cầu JWT, bạn sẽ cần:
-                                // 'Authorization': `Bearer ${supabase.auth.session()?.access_token}`
-                            },
+                            headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ userId: currentUserId }),
                         });
 
@@ -406,6 +401,21 @@
                     return [h, m, s].map(v => v < 10 ? "0" + v : v).filter((v, i) => v !== "00" || i > 0).join(":");
                 }
 
+                // Hàm tính toán số tuần trong năm (ISO week date)
+                // Tham khảo: https://weeknumber.net/how-to/javascript
+                function getWeekNumber(d) {
+                    // Copy date so don't modify original
+                    d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+                    // Set to nearest Thursday: current date + 4 - current day number
+                    // Make Sunday's day number 7
+                    d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
+                    // Get first day of year
+                    var yearStart = new Date(Date.UTC(d.getFullYear(), 0, 1));
+                    // Calculate full weeks to nearest Thursday
+                    var weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+                    return weekNo;
+                }
+
                 // --- Thống kê và trực quan hóa kết quả ---
                 document.getElementById('view-stats-btn').addEventListener('click', async () => {
                     if (!isAuthenticated || !currentUserId) {
@@ -417,16 +427,10 @@
                     chartStatus.textContent = 'Đang tải dữ liệu thống kê...';
 
                     try {
-                        // Gửi yêu cầu đến Edge Function của Supabase để lấy dữ liệu thống kê
+                        // Gửi yêu cầu đến Edge Function của Supabase để lấy dữ liệu hoạt động thô
                         const response = await fetch(GET_STATS_API_URL, {
                             method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                // Không cần Authorization header ở đây vì Edge Function không yêu cầu JWT
-                                // và sử dụng Service Role Key để tương tác với DB.
-                                // Nếu Edge Function yêu cầu JWT, bạn sẽ cần:
-                                // 'Authorization': `Bearer ${supabase.auth.session()?.access_token}`
-                            },
+                            headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ userId: currentUserId }),
                         });
 
@@ -434,7 +438,45 @@
 
                         if (response.ok && result.success) {
                             chartStatus.textContent = 'Đã tải dữ liệu thống kê thành công.';
-                            renderBubbleChart(result.weeklyStats); // Vẽ biểu đồ
+                            
+                            // Xử lý dữ liệu thô để tạo thống kê theo tuần và ngày
+                            const activities = result.activities;
+                            const dailyWeeklyStats = {}; // { 'YYYY-WW': { 'DayOfWeek': { totalDistance: X, totalTime: Y } } }
+
+                            activities.forEach(activity => {
+                                const startDate = new Date(activity.start_date);
+                                const year = startDate.getFullYear();
+                                const weekNumber = getWeekNumber(startDate); // ISO week number
+                                const dayOfWeek = startDate.getDay(); // 0 for Sunday, 1 for Monday, ..., 6 for Saturday
+
+                                const weekKey = `${year}-W${String(weekNumber).padStart(2, '0')}`;
+                                const dayKey = dayOfWeek.toString(); // Use day number as key
+
+                                if (!dailyWeeklyStats[weekKey]) {
+                                    dailyWeeklyStats[weekKey] = {};
+                                }
+                                if (!dailyWeeklyStats[weekKey][dayKey]) {
+                                    dailyWeeklyStats[weekKey][dayKey] = { totalDistance: 0, totalTime: 0 };
+                                }
+
+                                dailyWeeklyStats[weekKey][dayKey].totalDistance += activity.distance || 0;
+                                dailyWeeklyStats[weekKey][dayKey].totalTime += activity.moving_time || 0;
+                            });
+
+                            // Chuyển đổi dữ liệu sang định dạng phẳng cho biểu đồ
+                            const chartData = [];
+                            for (const week in dailyWeeklyStats) {
+                                for (const day in dailyWeeklyStats[week]) {
+                                    chartData.push({
+                                        week: week,
+                                        day: parseInt(day), // Day of week (0-6)
+                                        totalDistance: dailyWeeklyStats[week][day].totalDistance,
+                                        totalTime: dailyWeeklyStats[week][day].totalTime,
+                                    });
+                                }
+                            }
+
+                            renderBubbleChart(chartData); // Vẽ biểu đồ với dữ liệu mới
                         } else {
                             chartStatus.textContent = `Lỗi khi tải thống kê: ${result.error || 'Không xác định'}`;
                             showAlert(`Lỗi khi tải thống kê: ${result.error || 'Không xác định'}`);
@@ -446,7 +488,7 @@
                     }
                 });
 
-                // Hàm vẽ biểu đồ bong bóng
+                // Hàm vẽ biểu đồ bong bóng (heatmap-style)
                 function renderBubbleChart(data) {
                     const container = document.getElementById('bubble-chart-container');
                     container.innerHTML = ''; // Clear previous chart
@@ -456,88 +498,120 @@
                         return;
                     }
 
-                    const width = container.clientWidth;
-                    const height = container.clientHeight;
+                    const margin = { top: 40, right: 20, bottom: 60, left: 60 };
+                    const width = container.clientWidth - margin.left - margin.right;
+                    const height = container.clientHeight - margin.top - margin.bottom;
 
                     const svg = d3.select(container)
                         .append("svg")
-                        .attr("width", width)
-                        .attr("height", height)
-                        .attr("viewBox", `0 0 ${width} ${height}`)
-                        .attr("preserveAspectRatio", "xMidYMid meet");
+                        .attr("width", width + margin.left + margin.right)
+                        .attr("height", height + margin.top + margin.bottom)
+                        .append("g")
+                        .attr("transform", `translate(${margin.left},${margin.top})`);
 
-                    // Tạo một nhóm để chứa các bong bóng và di chuyển nó vào giữa
-                    const g = svg.append("g")
-                        .attr("transform", `translate(${width / 2},${height / 2})`);
+                    // Lấy tất cả các tuần và ngày duy nhất
+                    const allWeeks = Array.from(new Set(data.map(d => d.week))).sort();
+                    // Sắp xếp lại thứ trong tuần từ Thứ Hai đến Chủ Nhật (1-6, 0)
+                    const allDays = ['Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy', 'Chủ Nhật'];
+                    const dayOrder = [1, 2, 3, 4, 5, 6, 0]; // Monday=1, ..., Saturday=6, Sunday=0
 
-                    // Tạo layout pack cho biểu đồ bong bóng
-                    const pack = d3.pack()
-                        .size([width, height])
-                        .padding(2);
+                    // Scales
+                    const xScale = d3.scaleBand()
+                        .domain(dayOrder.map(d => allDays[d])) // Map day numbers to Vietnamese names
+                        .range([0, width])
+                        .paddingInner(0.1)
+                        .paddingOuter(0.2);
 
-                    // Chuyển đổi dữ liệu thành định dạng phân cấp mà d3.pack yêu cầu
-                    // Dữ liệu mẫu: [{ week: '2025-W20', totalDistance: 50000, totalTime: 18000 }]
-                    const root = d3.hierarchy({ children: data })
-                        .sum(d => d.totalDistance); // Kích thước bong bóng dựa trên tổng quãng đường
+                    const yScale = d3.scaleBand()
+                        .domain(allWeeks)
+                        .range([height, 0])
+                        .paddingInner(0.1)
+                        .paddingOuter(0.2);
 
-                    const nodes = pack(root).leaves();
-
-                    const colorScale = d3.scaleLinear()
-                        .domain([d3.min(data, d => d.totalDistance), d3.max(data, d => d.totalDistance)])
-                        .range([0, 1]); // Sử dụng để tạo màu sắc dựa trên khoảng cách
+                    const maxDistance = d3.max(data, d => d.totalDistance);
+                    // Dải màu sinh động (ví dụ: từ vàng nhạt đến xanh đậm)
+                    const colorScale = d3.scaleSequential(d3.interpolateYlGnBu) // Yellow-Green-Blue
+                        .domain([0, maxDistance]);
 
                     const tooltip = d3.select("body").append("div")
                         .attr("class", "tooltip");
 
-                    // Lấy giá trị của biến CSS
-                    const style = getComputedStyle(document.documentElement);
-                    const bidvYellow = style.getPropertyValue('--bidv-yellow').trim();
-                    const bidvGreen = style.getPropertyValue('--bidv-green').trim();
-
                     // Vẽ các bong bóng
-                    g.selectAll(".bubble")
-                        .data(nodes)
+                    svg.selectAll(".bubble")
+                        .data(data)
                         .enter().append("circle")
                         .attr("class", "bubble")
-                        .attr("cx", d => d.x - width / 2) // Điều chỉnh vị trí do translate của g
-                        .attr("cy", d => d.y - height / 2) // Điều chỉnh vị trí do translate của g
-                        .attr("r", d => d.r)
-                        .attr("fill", d => {
-                            // Sử dụng màu xanh BIDV, có thể điều chỉnh độ sáng/tối dựa trên giá trị
-                            const t = colorScale(d.data.totalDistance);
-                            return d3.interpolateRgb(bidvGreen, "#003331")(t); // Biến thể màu xanh
+                        .attr("cx", d => xScale(allDays[d.day]) + xScale.bandwidth() / 2)
+                        .attr("cy", d => yScale(d.week) + yScale.bandwidth() / 2)
+                        .attr("r", d => {
+                            // Kích thước bong bóng dựa trên quãng đường, có thể điều chỉnh
+                            return Math.sqrt(d.totalDistance / Math.PI) * 0.1; // Scale factor
                         })
+                        .attr("fill", d => colorScale(d.totalDistance))
                         .on("mouseover", function(event, d) {
-                            d3.select(this).attr("stroke", bidvYellow).attr("stroke-width", 3);
+                            d3.select(this).attr("stroke", "#333").attr("stroke-width", 2);
                             tooltip.style("opacity", 1)
-                                .html(`Tuần: ${d.data.week}<br>
-                                       Quãng đường: ${(d.data.totalDistance / 1000).toFixed(2)} km<br>
-                                       Thời gian: ${formatDuration(d.data.totalTime)}`)
+                                .html(`Tuần: ${d.week}<br>
+                                       Thứ: ${allDays[d.day]}<br>
+                                       Quãng đường: ${(d.totalDistance / 1000).toFixed(2)} km<br>
+                                       Thời gian: ${formatDuration(d.totalTime)}`)
                                 .style("left", (event.pageX + 10) + "px")
                                 .style("top", (event.pageY - 28) + "px");
                         })
                         .on("mouseout", function() {
-                            d3.select(this).attr("stroke", bidvGreen).attr("stroke-width", 2);
+                            d3.select(this).attr("stroke", "var(--bidv-green)").attr("stroke-width", 1);
                             tooltip.style("opacity", 0);
                         });
 
-                    // Thêm văn bản vào bong bóng
-                    g.selectAll(".bubble-text")
-                        .data(nodes)
+                    // Thêm văn bản (quãng đường) vào bong bóng nếu đủ lớn
+                    svg.selectAll(".bubble-text")
+                        .data(data)
                         .enter().append("text")
                         .attr("class", "bubble-text")
-                        .attr("x", d => d.x - width / 2)
-                        .attr("y", d => d.y - height / 2)
+                        .attr("x", d => xScale(allDays[d.day]) + xScale.bandwidth() / 2)
+                        .attr("y", d => yScale(d.week) + yScale.bandwidth() / 2)
                         .text(d => {
-                            // Hiển thị tuần nếu bong bóng đủ lớn
-                            return d.r > 30 ? d.data.week : '';
+                            const radius = Math.sqrt(d.totalDistance / Math.PI) * 0.1;
+                            return radius > 10 ? `${(d.totalDistance / 1000).toFixed(1)}` : ''; // Hiển thị km nếu bong bóng đủ lớn
                         })
-                        .attr("dy", "0.35em"); // Căn giữa theo chiều dọc
+                        .attr("dy", "0.35em");
+
+                    // Trục X (Thứ trong tuần)
+                    svg.append("g")
+                        .attr("transform", `translate(0,${height})`)
+                        .call(d3.axisBottom(xScale))
+                        .selectAll("text")
+                        .attr("class", "axis-label");
+
+                    // Trục Y (Tuần trong năm)
+                    svg.append("g")
+                        .call(d3.axisLeft(yScale))
+                        .selectAll("text")
+                        .attr("class", "axis-label");
+
+                    // Tiêu đề trục X
+                    svg.append("text")
+                        .attr("class", "axis-label")
+                        .attr("x", width / 2)
+                        .attr("y", height + margin.bottom - 10)
+                        .attr("text-anchor", "middle")
+                        .text("Thứ trong tuần");
+
+                    // Tiêu đề trục Y
+                    svg.append("text")
+                        .attr("class", "axis-label")
+                        .attr("transform", "rotate(-90)")
+                        .attr("y", -margin.left + 20)
+                        .attr("x", -height / 2)
+                        .attr("text-anchor", "middle")
+                        .text("Tuần trong năm");
 
                     // Xử lý thay đổi kích thước cửa sổ
-                    window.addEventListener('resize', () => {
-                        renderBubbleChart(data); // Vẽ lại biểu đồ khi thay đổi kích thước
-                    });
+                    window.removeEventListener('resize', resizeChart); // Remove old listener
+                    function resizeChart() {
+                        renderBubbleChart(data); // Re-render chart on resize
+                    }
+                    window.addEventListener('resize', resizeChart);
                 }
 
                 // Hàm để tạo phân tích chạy bộ bằng Gemini API
