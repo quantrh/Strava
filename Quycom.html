@@ -86,6 +86,32 @@
         .text-right-aligned {
             text-align: right; /* Custom class for right alignment */
         }
+        /* Styles for the scroll-to-top button */
+        #scroll-to-top-btn {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background-color: #006B68;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            font-size: 24px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: opacity 0.3s, transform 0.3s;
+            opacity: 0; /* Initially hidden */
+            transform: scale(0.8); /* Slightly smaller when hidden */
+            z-index: 999; /* Ensure it's above other content */
+        }
+        #scroll-to-top-btn.show {
+            opacity: 1;
+            transform: scale(1);
+        }
     </style>
 </head>
 <body class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4 font-sans text-gray-800">
@@ -339,6 +365,12 @@
         </div>
     </div>
 
+    <button id="scroll-to-top-btn" title="Cuộn lên đầu">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"></path>
+        </svg>
+    </button>
+
     <script>
         // Supabase Client Initialization
         const SUPABASE_URL = 'https://rmbsxccrwrktbjlnezpu.supabase.co'; // Replace with your actual Supabase URL
@@ -434,6 +466,9 @@
         // Food Suggestion Modal Elements
         const closeFoodSuggestionBtn = document.getElementById('close-food-suggestion-btn'); // New close button
 
+        // Scroll to Top Button Element
+        const scrollToTopBtn = document.getElementById('scroll-to-top-btn');
+
         // --- Helper Functions ---
 
         // Formats a number with thousands separators for display
@@ -486,6 +521,14 @@
             fundInsightsModal.classList.add('hidden');
             foodSuggestionModal.classList.add('hidden'); // Hide new modal
             hideErrorMessage();
+        }
+
+        // Scrolls to a specific section on the page
+        function scrollToSection(elementId) {
+            const element = document.getElementById(elementId);
+            if (element) {
+                element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
         }
 
         // --- Supabase and Data Management ---
@@ -1672,6 +1715,7 @@ Recent Transactions:\n`;
             hideAllSections();
             addMemberSection.classList.remove('hidden');
             memberNameInput.value = ''; // Clear input
+            scrollToSection('add-member-section'); // Scroll to section
         };
 
         document.getElementById('add-transaction-btn').onclick = () => {
@@ -1682,23 +1726,27 @@ Recent Transactions:\n`;
             transactionTypeSelect.value = 'contribution'; // Reset to default
             populateMemberSelectors(); // Repopulate and reset selections
             transactionTypeSelect.dispatchEvent(new Event('change')); // Trigger change to show/hide correct fields
+            scrollToSection('add-transaction-section'); // Scroll to section
         };
 
         document.getElementById('view-transactions-btn').onclick = () => {
             hideAllSections();
             transactionsSection.classList.remove('hidden');
             renderTransactionList(); // Render transactions when section is shown
+            scrollToSection('transactions-section'); // Scroll to section
         };
 
         document.getElementById('show-report-selection-btn').onclick = () => {
             hideAllSections();
             reportSelectionModal.classList.remove('hidden');
+            // No scroll here, as it's a modal overlay
         };
 
         document.getElementById('get-insights-btn').onclick = () => {
             hideAllSections();
             fundInsightsModal.classList.remove('hidden');
             generateFundInsights();
+            // No scroll here, as it's a modal overlay
         };
 
         // New Food Suggestion Button
@@ -1726,6 +1774,7 @@ Recent Transactions:\n`;
                 foodSuggestionContent.innerHTML = `<p class="text-center text-red-500">${errorMessage}</p>`;
                 showErrorMessage(errorMessage);
             }
+            // No scroll here, as it's a modal overlay
         };
 
 
@@ -1735,6 +1784,7 @@ Recent Transactions:\n`;
             fundReportSection.classList.remove('hidden');
             reportSelectionModal.classList.add('hidden');
             renderFundReport();
+            scrollToSection('fund-report-section'); // Scroll to section
         };
 
         selectMemberReportBtn.onclick = () => {
@@ -1742,6 +1792,7 @@ Recent Transactions:\n`;
             memberReportsSection.classList.remove('hidden');
             reportSelectionModal.classList.add('hidden');
             renderMemberReportDropdown(); // Re-render dropdown and initial member report
+            scrollToSection('member-reports-section'); // Scroll to section
         };
 
         closeReportSelectionBtn.onclick = () => {
@@ -1783,6 +1834,19 @@ Recent Transactions:\n`;
         editAmountInput.addEventListener('input', (e) => {
             e.target.value = formatNumberForInput(e.target.value);
         });
+
+        // --- Scroll to Top Button Logic ---
+        window.onscroll = function() {
+            if (document.body.scrollTop > 20 || document.documentElement.scrollTop > 20) {
+                scrollToTopBtn.classList.add('show');
+            } else {
+                scrollToTopBtn.classList.remove('show');
+            }
+        };
+
+        scrollToTopBtn.onclick = function() {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        };
 
 
         // Initial data fetch and UI render when DOM is fully loaded
