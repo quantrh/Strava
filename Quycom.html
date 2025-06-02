@@ -134,6 +134,49 @@
         .word-export-table .balance-negative { color: #EF4444; }
         .word-export-table .balance-zero { color: #6B7280; }
         .word-export-table .text-right-aligned { text-align: right; }
+
+        /* Camera Modal Specific Styles */
+        #camera-modal .modal-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1rem;
+            max-width: 95%;
+            width: 600px; /* Max width for camera feed */
+        }
+        #video-feed {
+            width: 100%;
+            max-width: 100%;
+            height: auto;
+            border-radius: 0.5rem;
+            background-color: black;
+        }
+        #captured-image {
+            max-width: 100%;
+            height: auto;
+            border-radius: 0.5rem;
+            margin-top: 1rem;
+            display: none; /* Hidden by default */
+        }
+        #camera-controls {
+            display: flex;
+            gap: 1rem;
+            width: 100%;
+            justify-content: center;
+        }
+        #camera-loading-spinner {
+            display: none; /* Hidden by default */
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-top: 4px solid #006B68;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4 font-sans text-gray-800">
@@ -209,6 +252,10 @@
             <div>
                 <label for="description" class="block text-sm font-medium text-gray-700 mb-1">Mô Tả</label>
                 <input type="text" id="description-input" name="description" placeholder="Mô tả giao dịch" class="input-field" required />
+                <button type="button" id="ai-describe-btn" class="btn-secondary mt-2 w-full flex items-center justify-center">
+                    <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M4 5a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2V7a2 2 0 00-2-2h-1.586a1 1 0 01-.707-.293l-1.147-1.146A2 2 0 009.172 3H6a2 2 0 00-2 2zM14 8a2 2 0 11-4 0 2 2 0 014 0z" clip-rule="evenodd"></path></svg>
+                    Mô tả bằng AI (Camera)
+                </button>
             </div>
             <div class="col-span-full">
                 <button type="submit" class="btn-primary w-full">Ghi Lại Giao Dịch</button>
@@ -395,6 +442,26 @@
         </div>
     </div>
 
+    <div id="camera-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h2 class="text-2xl font-semibold mb-4 text-[#006B68]">Mô tả giao dịch bằng Camera</h2>
+            <video id="video-feed" autoplay playsinline></video>
+            <canvas id="camera-canvas" class="hidden"></canvas>
+            <img id="captured-image" alt="Captured Image">
+            <div id="camera-loading-spinner"></div>
+            <div id="camera-controls">
+                <button id="capture-btn" class="btn-primary flex items-center justify-center">
+                    <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M4 5a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2V7a2 2 0 00-2-2h-1.586a1 1 0 01-.707-.293l-1.147-1.146A2 2 0 009.172 3H6a2 2 0 00-2 2zM14 8a2 2 0 11-4 0 2 2 0 014 0z" clip-rule="evenodd"></path></svg>
+                    Chụp Ảnh
+                </button>
+                <button id="cancel-camera-btn" class="btn-secondary flex items-center justify-center">
+                    <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg>
+                    Hủy
+                </button>
+            </div>
+        </div>
+    </div>
+
     <button id="scroll-to-top-btn" title="Cuộn lên đầu">
         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"></path>
@@ -415,7 +482,8 @@
         let selectedMemberForDetails = null;
         let transactionToDelete = null;
         let isGeneratingInsights = false;
-        let isGeneratingFoodSuggestions = false; // New state for food suggestions
+        let isGeneratingFoodSuggestions = false;
+        let cameraStream = null; // To store the camera stream
 
         // DOM Elements
         const fundBalanceDisplay = document.getElementById('fund-balance-display');
@@ -438,8 +506,9 @@
         const reportSelectionModal = document.getElementById('report-selection-modal');
         const fundInsightsModal = document.getElementById('fund-insights-modal');
         const fundInsightsContent = document.getElementById('fund-insights-content');
-        const foodSuggestionModal = document.getElementById('food-suggestion-modal'); // New modal
-        const foodSuggestionContent = document.getElementById('food-suggestion-content'); // New content div
+        const foodSuggestionModal = document.getElementById('food-suggestion-modal');
+        const foodSuggestionContent = document.getElementById('food-suggestion-content');
+        const cameraModal = document.getElementById('camera-modal'); // New camera modal
 
         // Forms and Inputs
         const addMemberForm = document.getElementById('add-member-form');
@@ -452,6 +521,15 @@
         const involvedMembersCheckboxes = document.getElementById('involved-members-checkboxes');
         const amountInput = document.getElementById('amount-input');
         const descriptionInput = document.getElementById('description-input');
+        const aiDescribeBtn = document.getElementById('ai-describe-btn'); // New AI describe button
+
+        // Camera Elements
+        const videoFeed = document.getElementById('video-feed');
+        const cameraCanvas = document.getElementById('camera-canvas');
+        const capturedImage = document.getElementById('captured-image');
+        const captureBtn = document.getElementById('capture-btn');
+        const cancelCameraBtn = document.getElementById('cancel-camera-btn');
+        const cameraLoadingSpinner = document.getElementById('camera-loading-spinner');
 
         // Edit Transaction Form Elements
         let editingTransaction = null; // Store the transaction being edited
@@ -551,7 +629,8 @@
             confirmationModal.classList.add('hidden');
             reportSelectionModal.classList.add('hidden');
             fundInsightsModal.classList.add('hidden');
-            foodSuggestionModal.classList.add('hidden'); // Hide new modal
+            foodSuggestionModal.classList.add('hidden');
+            cameraModal.classList.add('hidden'); // Hide camera modal
             hideErrorMessage();
         }
 
@@ -1773,7 +1852,7 @@ Recent Transactions:\n`;
                 let chatHistory = [];
                 chatHistory.push({ role: "user", parts: [{ text: prompt }] });
                 const payload = { contents: chatHistory };
-                const apiKey = "AIzaSyBaLi7TzZJ9SwmHilU24SRcV2i7lU6gqdQ"; // Leave as empty string for Canvas to provide
+                const apiKey = ""; // Leave as empty string for Canvas to provide
                 const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
 
                 const response = await fetch(apiUrl, {
@@ -1824,7 +1903,7 @@ Recent Transactions:\n`;
                 let chatHistory = [];
                 chatHistory.push({ role: "user", parts: [{ text: prompt }] });
                 const payload = { contents: chatHistory };
-                const apiKey = "AIzaSyBaLi7TzZJ9SwmHilU24SRcV2i7lU6gqdQ"; // Leave as empty string for Canvas to provide
+                const apiKey = ""; // Leave as empty string for Canvas to provide
                 const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
 
                 const response = await fetch(apiUrl, {
@@ -1852,6 +1931,153 @@ Recent Transactions:\n`;
                 foodSuggestionContent.innerHTML = '<p class="text-center text-gray-500">Đã xảy ra lỗi khi kết nối với AI. Vui lòng thử lại.</p>';
             } finally {
                 isGeneratingFoodSuggestions = false;
+            }
+        }
+
+
+        // --- Camera and AI Description Functions ---
+
+        // Sets up camera stream
+        async function setupCamera() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: true }); // Changed to generic 'video: true'
+                videoFeed.srcObject = stream;
+                cameraStream = stream; // Store stream to stop later
+                videoFeed.play();
+                cameraModal.classList.remove('hidden');
+                captureBtn.classList.remove('hidden');
+                videoFeed.classList.remove('hidden');
+                capturedImage.classList.add('hidden');
+                cameraLoadingSpinner.style.display = 'none';
+                hideErrorMessage();
+            } catch (err) {
+                console.error("Error accessing camera: ", err);
+                let message = "Không thể truy cập camera. Vui lòng kiểm tra quyền truy cập.";
+                if (err.name === "NotAllowedError") {
+                    message = "Bạn đã từ chối quyền truy cập camera. Vui lòng cho phép trong cài đặt trình duyệt.";
+                } else if (err.name === "NotFoundError" || err.name === "DevicesNotFoundError") {
+                    message = "Không tìm thấy thiết bị camera nào.";
+                }
+                showErrorMessage(message);
+                cameraModal.classList.add('hidden'); // Hide modal if camera access fails
+            }
+        }
+
+        // Stops camera stream
+        function stopCamera() {
+            if (cameraStream) {
+                cameraStream.getTracks().forEach(track => track.stop());
+                videoFeed.srcObject = null;
+                cameraStream = null;
+            }
+        }
+
+        // Captures image from video feed and processes it
+        function captureAndProcessImage() {
+            if (!videoFeed.srcObject) {
+                showErrorMessage("Không có luồng video từ camera.");
+                return;
+            }
+
+            const context = cameraCanvas.getContext('2d');
+            const videoWidth = videoFeed.videoWidth;
+            const videoHeight = videoFeed.videoHeight;
+
+            // Set canvas dimensions
+            cameraCanvas.width = videoWidth;
+            cameraCanvas.height = videoHeight;
+
+            // Draw video frame to canvas
+            context.drawImage(videoFeed, 0, 0, videoWidth, videoHeight);
+
+            // Resize image for performance
+            const MAX_DIMENSION = 800; // Max width or height
+            let newWidth = videoWidth;
+            let newHeight = videoHeight;
+
+            if (videoWidth > videoHeight) {
+                if (videoWidth > MAX_DIMENSION) {
+                    newHeight = videoHeight * (MAX_DIMENSION / videoWidth);
+                    newWidth = MAX_DIMENSION;
+                }
+            } else {
+                if (videoHeight > MAX_DIMENSION) {
+                    newWidth = videoWidth * (MAX_DIMENSION / videoHeight);
+                    newHeight = MAX_DIMENSION;
+                }
+            }
+
+            const tempCanvas = document.createElement('canvas');
+            const tempContext = tempCanvas.getContext('2d');
+            tempCanvas.width = newWidth;
+            tempCanvas.height = newHeight;
+            tempContext.drawImage(cameraCanvas, 0, 0, newWidth, newHeight);
+
+            const base64Image = tempCanvas.toDataURL('image/jpeg', 0.8); // Convert to JPEG, quality 0.8
+            console.log("Captured image size (Base64 length):", base64Image.length);
+
+            // Display captured image and show loading
+            capturedImage.src = base64Image;
+            capturedImage.classList.remove('hidden');
+            videoFeed.classList.add('hidden');
+            captureBtn.classList.add('hidden');
+            cameraLoadingSpinner.style.display = 'block';
+
+            stopCamera(); // Stop camera after capture
+
+            // Send to Gemini API
+            const base64DataOnly = base64Image.split(',')[1]; // Remove "data:image/jpeg;base64," prefix
+            callGeminiVisionAPI(base64DataOnly);
+        }
+
+        // Calls Gemini Vision API
+        async function callGeminiVisionAPI(base64ImageData) {
+            const prompt = "Mô tả ngắn gọn nội dung của hình ảnh này bằng tiếng Việt.";
+            try {
+                let chatHistory = [];
+                const payload = {
+                    contents: [
+                        {
+                            role: "user",
+                            parts: [
+                                { text: prompt },
+                                {
+                                    inlineData: {
+                                        mimeType: "image/jpeg", // Ensure this matches the type from toDataURL
+                                        data: base64ImageData
+                                    }
+                                }
+                            ]
+                        }
+                    ],
+                };
+                const apiKey = ""; // Leave as empty string for Canvas to provide
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await response.json();
+                console.log("Gemini Vision API response:", result);
+
+                if (result.candidates && result.candidates.length > 0 &&
+                    result.candidates[0].content && result.candidates[0].content.parts &&
+                    result.candidates[0].content.parts.length > 0) {
+                    const description = result.candidates[0].content.parts[0].text;
+                    descriptionInput.value = description; // Fill description input
+                } else {
+                    showErrorMessage('Không thể lấy mô tả hình ảnh từ AI. Vui lòng thử lại.');
+                    console.error("Unexpected Gemini Vision API response structure:", result);
+                }
+            } catch (error) {
+                console.error("Error calling Gemini Vision API:", error);
+                showErrorMessage(`Lỗi khi gọi AI: ${error.message}. Vui lòng thử lại.`);
+            } finally {
+                cameraLoadingSpinner.style.display = 'none';
+                cameraModal.classList.add('hidden'); // Close modal after processing
             }
         }
 
@@ -1897,7 +2123,6 @@ Recent Transactions:\n`;
             // No scroll here, as it's a modal overlay
         };
 
-        // New Food Suggestion Button
         document.getElementById('get-food-suggestions-btn').onclick = () => {
             hideAllSections();
             foodSuggestionModal.classList.remove('hidden');
@@ -1924,7 +2149,6 @@ Recent Transactions:\n`;
             }
             // No scroll here, as it's a modal overlay
         };
-
 
         // Report Selection Modal Buttons
         selectFundReportBtn.onclick = () => {
@@ -1982,6 +2206,14 @@ Recent Transactions:\n`;
         editAmountInput.addEventListener('input', (e) => {
             e.target.value = formatNumberForInput(e.target.value);
         });
+
+        // --- Camera Modal Event Listeners ---
+        aiDescribeBtn.onclick = setupCamera;
+        captureBtn.onclick = captureAndProcessImage;
+        cancelCameraBtn.onclick = () => {
+            stopCamera();
+            cameraModal.classList.add('hidden');
+        };
 
         // --- Scroll to Top Button Logic ---
         window.onscroll = function() {
