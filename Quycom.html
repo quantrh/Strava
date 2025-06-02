@@ -1817,7 +1817,7 @@
 
                     // Construct prompt for LLM
                     let prompt = `Given the following fund transactions and current fund balance for a group's meal fund, provide a concise summary of the fund's financial health and suggest 3-5 actionable tips for better fund management. The response should be in Vietnamese and formatted using Markdown (e.g., use ## for headings, - for list items, ** for bold).
-
+                    
 Current Fund Balance: ${formatNumberForDisplay(fundBalance)} VNĐ
 
 Recent Transactions:\n`;
@@ -1889,9 +1889,11 @@ Recent Transactions:\n`;
                     - Tên quán ăn
                     - Địa chỉ
                     - Số điện thoại (nếu có)
-                    - Link liên kết đến Google Maps (nếu có)
+                    - Link liên kết đến Google Maps (CẦN ĐẢM BẢO ĐÚNG LINK)
                     - Số sao được bình chọn (ví dụ: 4.5)
                     - Khoảng cách dự kiến từ vị trí của tôi (ví dụ: 1.2 km)
+                    - Mô tả ngắn gọn về quán ăn hoặc món ăn đặc trưng.
+                    - Nội dung menu chính hoặc một vài món nổi bật.
 
                     Phản hồi phải là một mảng JSON, mỗi phần tử là một đối tượng chứa các thông tin trên. Ví dụ:
                     [
@@ -1901,7 +1903,9 @@ Recent Transactions:\n`;
                         "phoneNumber": "Số điện thoại",
                         "googleMapsLink": "Link Google Maps",
                         "starRating": 4.5,
-                        "estimatedDistance": "1.2 km"
+                        "estimatedDistance": "1.2 km",
+                        "description": "Mô tả quán ăn",
+                        "menuContent": "Các món nổi bật: Món A, Món B, Món C"
                       }
                     ]
                     `;
@@ -1926,9 +1930,11 @@ Recent Transactions:\n`;
                                             "phoneNumber": { "type": "STRING" },
                                             "googleMapsLink": { "type": "STRING" },
                                             "starRating": { "type": "NUMBER" },
-                                            "estimatedDistance": { "type": "STRING" }
+                                            "estimatedDistance": { "type": "STRING" },
+                                            "description": { "type": "STRING" }, // Added description
+                                            "menuContent": { "type": "STRING" }  // Added menuContent
                                         },
-                                        "propertyOrdering": ["name", "address", "phoneNumber", "googleMapsLink", "starRating", "estimatedDistance"]
+                                        "propertyOrdering": ["name", "address", "phoneNumber", "googleMapsLink", "starRating", "estimatedDistance", "description", "menuContent"]
                                     }
                                 }
                             }
@@ -1961,7 +1967,9 @@ Recent Transactions:\n`;
                                             <p class="text-sm text-gray-600"><strong>Điện thoại:</strong> ${s.phoneNumber || 'N/A'}</p>
                                             <p class="text-sm text-gray-600"><strong>Đánh giá:</strong> ${s.starRating ? `${s.starRating} ⭐` : 'N/A'}</p>
                                             <p class="text-sm text-gray-600"><strong>Khoảng cách:</strong> ${s.estimatedDistance || 'N/A'}</p>
-                                            ${s.googleMapsLink ? `<a href="${s.googleMapsLink}" target="_blank" class="text-blue-500 hover:underline text-sm">Xem trên Google Maps</a>` : ''}
+                                            ${s.description ? `<p class="text-sm text-gray-700 mt-2"><strong>Mô tả:</strong> ${s.description}</p>` : ''}
+                                            ${s.menuContent ? `<p class="text-sm text-gray-700"><strong>Menu:</strong> ${s.menuContent}</p>` : ''}
+                                            ${s.googleMapsLink ? `<a href="${s.googleMapsLink}" target="_blank" class="text-blue-500 hover:underline text-sm mt-2 block">Xem trên Google Maps</a>` : ''}
                                         </div>
                                     `;
                                 });
