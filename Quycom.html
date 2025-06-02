@@ -283,6 +283,18 @@
         <div id="member-balance-pie-chart" class="flex justify-center items-center w-full my-4">
             <p class="text-center text-gray-500 mt-4">Đang tải biểu đồ...</p>
         </div>
+
+        <h3 class="text-xl font-semibold mt-8 mb-4 text-[#006B68] text-center">Thu/Chi Theo Phân Loại (Biểu Đồ Bánh)</h3>
+        <div id="category-pie-charts" class="flex flex-col md:flex-row justify-around items-center w-full my-4 gap-8">
+            <div id="income-pie-chart-container" class="flex flex-col items-center">
+                <h4 class="text-lg font-semibold text-green-700 mb-2">Thu nhập theo loại</h4>
+                <p class="text-center text-gray-500 mt-4">Đang tải biểu đồ...</p>
+            </div>
+            <div id="expense-pie-chart-container" class="flex flex-col items-center">
+                <h4 class="text-lg font-semibold text-red-700 mb-2">Chi tiêu theo loại</h4>
+                <p class="text-center text-gray-500 mt-4">Đang tải biểu đồ...</p>
+            </div>
+        </div>
     </div>
 
     <div id="fund-report-section" class="card mb-8 hidden">
@@ -489,13 +501,14 @@
         const totalContributionsDisplay = document.getElementById('total-contributions-display');
         const totalExpensesDisplay = document.getElementById('total-expenses-display');
         const memberBalancePieChartDiv = document.getElementById('member-balance-pie-chart');
+        const categoryPieChartsDiv = document.getElementById('category-pie-charts'); // Changed from categoryBarChartDiv
 
         // Modals
         const editTransactionModal = document.getElementById('edit-transaction-modal');
         const memberDetailsModal = document.getElementById('member-details-modal');
         const confirmationModal = document.getElementById('confirmation-modal');
         const reportSelectionModal = document.getElementById('report-selection-modal');
-        const fundInsightsModal = document = document.getElementById('fund-insights-modal');
+        const fundInsightsModal = document.getElementById('fund-insights-modal');
         const fundInsightsContent = document.getElementById('fund-insights-content');
         const foodSuggestionModal = document.getElementById('food-suggestion-modal');
         const foodSuggestionContent = document.getElementById('food-suggestion-content');
@@ -515,10 +528,8 @@
         const aiDescribeBtn = document.getElementById('ai-describe-btn'); // New AI describe button
 
         // Camera/Image Upload Elements
-        // Removed videoFeed, cameraCanvas, captureBtn as they are no longer used
         const imageUploadInput = document.getElementById('image-upload-input'); // New file input
         const uploadedImagePreview = document.getElementById('uploaded-image-preview'); // New image preview
-        // Removed captureBtn
         const cancelCameraBtn = document.getElementById('cancel-camera-btn');
         const cameraLoadingSpinner = document.getElementById('camera-loading-spinner');
 
@@ -771,6 +782,7 @@
             renderTransactionList(); // Re-render transaction list if visible
             renderMemberReportDropdown(); // Update member report dropdown
             renderMemberBalancePieChart(); // Update pie chart
+            renderCategoryPieCharts(); // Render the new category pie charts
         }
 
         // Calculates fund and member balances
@@ -1767,6 +1779,136 @@
                         </div>
                     `;
                 }
+
+                // --- Pie Charts for Categories (Income and Expense) ---
+
+                // Extracts category from transaction description
+                function extractCategory(description) {
+                    const match = description.match(/\(Phân loại: ([^)]+)\)/);
+                    return match ? match[1].trim() : 'Khác';
+                }
+
+                // Calculates total income and expense for each category
+                function calculateCategoryBalances() {
+                    const incomeCategories = new Map();
+                    const expenseCategories = new Map();
+
+                    transactions.forEach(t => {
+                        const category = extractCategory(t.description);
+                        if (t.type === 'contribution') {
+                            incomeCategories.set(category, (incomeCategories.get(category) || 0) + t.amount);
+                        } else if (t.type === 'expense') {
+                            expenseCategories.set(category, (expenseCategories.get(category) || 0) + t.amount);
+                        }
+                    });
+
+                    return { incomeCategories, expenseCategories };
+                }
+
+                // Renders a single pie chart for a given type (income or expense)
+                function renderSingleCategoryPieChart(containerElement, title, dataMap, totalAmount, colors) {
+                    const CHART_SIZE = 200;
+                    const RADIUS = CHART_SIZE / 2 - 10;
+                    const centerX = CHART_SIZE / 2;
+                    const centerY = CHART_SIZE / 2;
+
+                    if (totalAmount === 0) {
+                        containerElement.innerHTML = `<p class="text-center text-gray-500 mt-4">Chưa có ${title.toLowerCase()} để hiển thị biểu đồ.</p>`;
+                        return;
+                    }
+
+                    let currentAngle = 0;
+                    let slicesSvg = '';
+                    let legendHtml = '';
+                    let index = 0;
+
+                    // Sort categories alphabetically for consistent display
+                    const sortedCategories = Array.from(dataMap.keys()).sort();
+
+                    sortedCategories.forEach(category => {
+                        const amount = dataMap.get(category);
+                        const percentage = (amount / totalAmount) * 100;
+                        const sliceAngle = (amount / totalAmount) * 360;
+                        const startAngle = currentAngle;
+                        const endAngle = currentAngle + sliceAngle;
+
+                        const pathData = describePieSlice(centerX, centerY, RADIUS, startAngle, endAngle);
+                        const color = colors[index % colors.length];
+
+                        const midAngle = startAngle + sliceAngle / 2;
+                        const labelRadius = RADIUS * 0.7;
+                        const labelPos = polarToCartesian(centerX, centerY, labelRadius, midAngle);
+
+                        slicesSvg += `
+                            <g>
+                                <path
+                                    d="${pathData}"
+                                    fill="${color}"
+                                    stroke="white"
+                                    stroke-width="1"
+                                />
+                                ${percentage > 5 ? ` <text
+                                        x="${labelPos.x}"
+                                        y="${labelPos.y}"
+                                        fill="white"
+                                        font-size="10"
+                                        text-anchor="middle"
+                                        alignment-baseline="middle"
+                                        font-weight="bold"
+                                    >
+                                        ${percentage.toFixed(1)}%
+                                    </text>
+                                ` : ''}
+                            </g>
+                        `;
+                        currentAngle = endAngle;
+
+                        legendHtml += `
+                            <div class="flex items-center mb-1">
+                                <span class="inline-block w-4 h-4 rounded-full mr-2" style="background-color: ${color};"></span>
+                                <span class="text-sm text-gray-800">${category}: ${formatNumberForDisplay(amount)} VNĐ (${percentage.toFixed(1)}%)</span>
+                            </div>
+                        `;
+                        index++;
+                    });
+
+                    containerElement.innerHTML = `
+                        <svg viewBox="0 0 ${CHART_SIZE} ${CHART_SIZE}" width="100%" height="auto" style="max-width: 300px;">
+                            ${slicesSvg}
+                            <text x="${centerX}" y="${centerY}" text-anchor="middle" alignment-baseline="middle" font-size="12" font-weight="bold" fill="#333">
+                                Tổng: ${formatNumberForDisplay(totalAmount)} VNĐ
+                            </text>
+                        </svg>
+                        <div class="mt-4 p-4 bg-gray-50 rounded-lg shadow-sm w-full max-w-[300px]">
+                            <h4 class="font-semibold text-gray-700 mb-2">Chú Thích ${title}:</h4>
+                            ${legendHtml}
+                        </div>
+                    `;
+                }
+
+                // Renders both income and expense category pie charts
+                function renderCategoryPieCharts() {
+                    const { incomeCategories, expenseCategories } = calculateCategoryBalances();
+
+                    const incomeColors = [
+                        '#4CAF50', '#8BC34A', '#CDDC39', '#FFEB3B', '#FFC107', // Greens to Yellows
+                        '#26A69A', '#00BCD4', '#009688', '#4DD0E1', '#80CBC4'  // Teals
+                    ];
+                    const expenseColors = [
+                        '#F44336', '#E57373', '#FFCDD2', '#D32F2F', '#C62828', // Reds
+                        '#FF9800', '#FFB74D', '#FFECB3', '#FB8C00', '#E65100'  // Oranges
+                    ];
+
+                    const totalIncome = Array.from(incomeCategories.values()).reduce((sum, val) => sum + val, 0);
+                    const totalExpense = Array.from(expenseCategories.values()).reduce((sum, val) => sum + val, 0);
+
+                    const incomeChartContainer = document.getElementById('income-pie-chart-container');
+                    const expenseChartContainer = document.getElementById('expense-pie-chart-container');
+
+                    renderSingleCategoryPieChart(incomeChartContainer, 'Thu nhập', incomeCategories, totalIncome, incomeColors);
+                    renderSingleCategoryPieChart(expenseChartContainer, 'Chi tiêu', expenseCategories, totalExpense, expenseColors);
+                }
+
 
                 // --- Gemini API Integration ---
 
