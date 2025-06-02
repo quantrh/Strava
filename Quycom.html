@@ -144,14 +144,8 @@
             max-width: 95%;
             width: 600px; /* Max width for camera feed */
         }
-        #video-feed {
-            width: 100%;
-            max-width: 100%;
-            height: auto;
-            border-radius: 0.5rem;
-            background-color: black;
-        }
-        #captured-image {
+        /* Removed video-feed and camera-canvas styles as they are no longer used */
+        #uploaded-image-preview { /* Renamed from captured-image */
             max-width: 100%;
             height: auto;
             border-radius: 0.5rem;
@@ -211,7 +205,7 @@
             ✨ AI Nhận xét Quỹ
         </button>
         <button id="get-food-suggestions-btn" class="btn-primary flex items-center justify-center w-full sm:w-auto">
-            🍜 AI Gợi ý món ăn
+            🍜 Gợi ý món ăn
         </button>
     </div>
 
@@ -251,19 +245,12 @@
             </div>
             <div>
                 <label for="description" class="block text-sm font-medium text-gray-700 mb-1">Mô Tả</label>
-                <input type="text" id="description-input" name="description" placeholder="Mô tả giao dịch" class="input-field" required />
-                <div class="flex flex-col sm:flex-row gap-2 mt-2">
-                    <button type="button" id="ai-describe-btn" class="btn-secondary w-full flex items-center justify-center">
-                        <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M4 5a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2V7a2 2 0 00-2-2h-1.586a1 1 0 01-.707-.293l-1.147-1.146A2 2 0 009.172 3H6a2 2 0 00-2 2zM14 8a2 2 0 11-4 0 2 2 0 014 0z" clip-rule="evenodd"></path></svg>
-                        Mô tả bằng AI (Camera)
-                    </button>
-                    <button type="button" id="upload-image-btn" class="btn-secondary w-full flex items-center justify-center">
-                        <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-4 4 4 4-4V5h-2a1 1 0 100 2h2v6l-3-3-4 4-2-2-4 4z" clip-rule="evenodd"></path></svg>
-                        Tải Ảnh Lên
-                    </button>
-                    <input type="file" accept="image/*" class="hidden" id="image-upload-input">
+                <textarea id="description-input" name="description" placeholder="Mô tả giao dịch" class="input-field resize-y overflow-auto" rows="3" required></textarea>
+                <button type="button" id="ai-describe-btn" class="btn-secondary mt-2 w-full flex items-center justify-center">
+                    <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M4 5a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2V7a2 2 0 00-2-2h-1.586a1 1 0 01-.707-.293l-1.147-1.146A2 2 0 009.172 3H6a2 2 0 00-2 2zM14 8a2 2 0 11-4 0 2 2 0 014 0z" clip-rule="evenodd"></path></svg>
+                    Mô tả AI từ Ảnh/Camera
+                </button>
                 </div>
-            </div>
             <div class="col-span-full">
                 <button type="submit" class="btn-primary w-full">Ghi Lại Giao Dịch</button>
             </div>
@@ -369,8 +356,8 @@
                 </div>
                 <div>
                     <label for="edit-description" class="block text-sm font-medium text-gray-700 mb-1">Mô Tả</label>
-                    <input type="text" id="edit-description-input" name="editDescription" placeholder="Mô tả giao dịch" class="input-field" required />
-                </div>
+                    <textarea id="edit-description-input" name="editDescription" placeholder="Mô tả giao dịch" class="input-field resize-y overflow-auto" rows="3" required></textarea>
+                    </div>
                 <div class="col-span-full flex flex-col sm:flex-row justify-end gap-4 mt-4">
                     <button type="button" id="cancel-edit-transaction-btn" class="btn-secondary w-full sm:w-auto">Hủy</button>
                     <button type="submit" class="btn-primary w-full sm:w-auto">Lưu Thay Đổi</button>
@@ -451,24 +438,18 @@
 
     <div id="camera-modal" class="modal-overlay hidden">
         <div class="modal-content">
-            <h2 class="text-2xl font-semibold mb-4 text-[#006B68]">Mô tả giao dịch bằng Camera</h2>
-            <video id="video-feed" autoplay playsinline></video>
-            <canvas id="camera-canvas" class="hidden"></canvas>
-            <img id="captured-image" alt="Captured Image">
-            <div id="camera-loading-spinner"></div>
-            <div id="camera-controls">
-                <button id="capture-btn" class="btn-primary flex items-center justify-center">
-                    <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M4 5a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2V7a2 2 0 00-2-2h-1.586a1 1 0 01-.707-.293l-1.147-1.146A2 2 0 009.172 3H6a2 2 0 00-2 2zM14 8a2 2 0 11-4 0 2 2 0 014 0z" clip-rule="evenodd"></path></svg>
-                    Chụp Ảnh
-                </button>
-                <button id="cancel-camera-btn" class="btn-secondary flex items-center justify-center">
+            <h2 class="text-2xl font-semibold mb-4 text-[#006B68]">Mô tả giao dịch bằng AI</h2>
+            <input type="file" id="image-upload-input" accept="image/*" class="hidden">
+            <img id="uploaded-image-preview" alt="Uploaded Image" class="max-w-full h-auto rounded-md my-4 hidden">
+            <div id="camera-loading-spinner" class="hidden"></div>
+            <div id="camera-controls" class="flex gap-4 mt-4">
+                <button id="cancel-camera-btn" class="btn-secondary flex items-center justify-center w-full">
                     <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg>
                     Hủy
                 </button>
             </div>
         </div>
     </div>
-
     <button id="scroll-to-top-btn" title="Cuộn lên đầu">
         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"></path>
@@ -490,10 +471,7 @@
         let transactionToDelete = null;
         let isGeneratingInsights = false;
         let isGeneratingFoodSuggestions = false;
-        let cameraStream = null; // To store the camera stream
-        let currentLatitude = null; // Store current latitude
-        let currentLongitude = null; // Store current longitude
-
+        // Removed cameraStream as it's no longer needed
 
         // DOM Elements
         const fundBalanceDisplay = document.getElementById('fund-balance-display');
@@ -532,14 +510,12 @@
         const amountInput = document.getElementById('amount-input');
         const descriptionInput = document.getElementById('description-input');
         const aiDescribeBtn = document.getElementById('ai-describe-btn'); // New AI describe button
-        const uploadImageBtn = document.getElementById('upload-image-btn'); // New Upload Image button
-        const imageUploadInput = document.getElementById('image-upload-input'); // Hidden file input
 
-        // Camera Elements
-        const videoFeed = document.getElementById('video-feed');
-        const cameraCanvas = document.getElementById('camera-canvas');
-        const capturedImage = document.getElementById('captured-image');
-        const captureBtn = document.getElementById('capture-btn');
+        // Camera/Image Upload Elements
+        // Removed videoFeed, cameraCanvas, captureBtn as they are no longer used
+        const imageUploadInput = document.getElementById('image-upload-input'); // New file input
+        const uploadedImagePreview = document.getElementById('uploaded-image-preview'); // New image preview
+        // Removed captureBtn
         const cancelCameraBtn = document.getElementById('cancel-camera-btn');
         const cameraLoadingSpinner = document.getElementById('camera-loading-spinner');
 
@@ -1476,896 +1452,827 @@
                 const typeClass = t.type === 'contribution' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800';
                 const amountClass = t.type === 'contribution' ? 'balance-positive' : 'balance-negative';
 
-                tableHtml += `
-                    <tr class="table-row">
-                        <td>${t.date}</td>
-                        <td><span class="px-2 py-1 rounded-full text-xs font-semibold ${typeClass}">${typeText}</span></td>
-                        <td>${t.description}</td>
-                        <td class="text-right-aligned ${amountClass}">${t.type === 'contribution' ? '+' : '-'}${formatNumberForDisplay(displayedAmount)}</td>
-                    </tr>
-                `;
-            });
-            tableHtml += `
-                    </tbody>
-                </table>
-            `;
-            memberReportTableContainer.innerHTML = tableHtml;
-        }
-
-        // Export Fund Report to Excel
-        exportFundReportExcelBtn.onclick = () => {
-            if (typeof window.XLSX === 'undefined') {
-                showErrorMessage('Thư viện XLSX chưa được tải. Vui lòng thử lại sau.');
-                return;
-            }
-
-            const reportData = transactions.slice().reverse().map(t => {
-                // For Excel export of fund report, use the total amount
-                const displayedAmount = t.amount;
-                return {
-                    'Ngày': t.date,
-                    'Loại': t.type === 'contribution' ? 'Đóng Góp' : 'Chi Tiêu',
-                    'Mô Tả': t.description,
-                    'Thành Viên Liên Quan': t.type === 'contribution' ? getMemberName(t.contributingMemberId) : getInvolvedMembersNames(t.involvedMemberIds),
-                    'Số Tiền (VNĐ)': (t.type === 'contribution' ? '+' : '-') + formatNumberForDisplay(displayedAmount),
-                };
-            });
-
-            const ws = window.XLSX.utils.json_to_sheet(reportData);
-            const wb = window.XLSX.utils.book_new();
-            window.XLSX.utils.book_append_sheet(wb, ws, 'Báo Cáo Quỹ Chung');
-            window.XLSX.writeFile(wb, 'BaoCaoQuyChung.xlsx');
-        };
-
-        // Export Member Report to Excel
-        exportMemberReportExcelBtn.onclick = () => {
-            if (typeof window.XLSX === 'undefined') {
-                showErrorMessage('Thư viện XLSX chưa được tải. Vui lòng thử lại sau.');
-                return;
-            }
-            const selectedMemberId = selectMemberReportDropdown.value;
-            if (!selectedMemberId) {
-                showErrorMessage('Vui lòng chọn một thành viên để xuất báo cáo.');
-                return;
-            }
-            const memberName = getMemberName(selectedMemberId);
-            const memberTransactions = transactions.filter(t =>
-                (t.type === 'contribution' && t.contributingMemberId === selectedMemberId) ||
-                (t.type === 'expense' && t.involvedMemberIds && t.involvedMemberIds.includes(selectedMemberId))
-            ).sort((a, b) => new Date(b.date) - new Date(a.date));
-
-            const reportData = memberTransactions.map(t => {
-                let displayedAmount = t.amount;
-                // For Excel export of member report, use the per-person share
-                if (t.type === 'expense' && t.involvedMemberIds && t.involvedMemberIds.length > 0) {
-                    displayedAmount = t.amount / t.involvedMemberIds.length;
-                }
-                return {
-                    'Ngày': t.date,
-                    'Loại': t.type === 'contribution' ? 'Đóng Góp' : 'Chi Tiêu',
-                    'Mô Tả': t.description,
-                    'Số Tiền (VNĐ)': (t.type === 'contribution' ? '+' : '-') + formatNumberForDisplay(displayedAmount),
-                };
-            });
-
-            const ws = window.XLSX.utils.json_to_sheet(reportData);
-            const wb = window.XLSX.utils.book_new();
-            window.XLSX.utils.book_append_sheet(wb, ws, `Báo Cáo ${memberName}`);
-            window.XLSX.writeFile(wb, `BaoCao_${memberName}.xlsx`);
-        };
-
-        // --- Word Export Functions ---
-
-        // Helper function to get HTML content for Word export with inline styles
-        function getHtmlForWordExport(containerId, title) {
-            const container = document.getElementById(containerId);
-            if (!container) return '';
-
-            // Clone the container to manipulate its content without affecting the live DOM
-            const clonedContainer = container.cloneNode(true);
-
-            // Apply inline styles to the cloned table elements for better Word rendering
-            const table = clonedContainer.querySelector('table');
-            if (table) {
-                table.classList.add('word-export-table'); // Add a specific class for Word export styling
-                // Apply inline styles to th and td elements
-                clonedContainer.querySelectorAll('th, td').forEach(cell => {
-                    cell.style.border = '1px solid #e5e7eb';
-                    cell.style.padding = '0.75rem';
-                    cell.style.textAlign = cell.classList.contains('text-right-aligned') ? 'right' : 'left';
-                    if (cell.tagName === 'TH') {
-                        cell.style.backgroundColor = '#f3f4f6';
-                        cell.style.fontWeight = 'bold';
-                    }
-                    // Apply color for balance classes
-                    if (cell.querySelector('.balance-positive')) {
-                        cell.style.color = '#10B981';
-                    } else if (cell.querySelector('.balance-negative')) {
-                        cell.style.color = '#EF4444';
-                    } else if (cell.querySelector('.balance-zero')) {
-                        cell.style.color = '#6B7280';
-                    }
-                    // Remove span elements that apply color/background on web for Word export
-                    const span = cell.querySelector('span.px-2.py-1.rounded-full');
-                    if (span) {
-                        cell.textContent = span.textContent; // Move text from span to cell
-                        span.remove(); // Remove the span
-                    }
+                    tableHtml += `
+                        <tr class="table-row">
+                            <td>${t.date}</td>
+                            <td><span class="px-2 py-1 rounded-full text-xs font-semibold ${typeClass}">${typeText}</span></td>
+                            <td>${t.description}</td>
+                            <td class="text-right-aligned ${amountClass}">${t.type === 'contribution' ? '+' : '-'}${formatNumberForDisplay(displayedAmount)}</td>
+                        </tr>
+                    `;
                 });
-            }
-
-            let htmlContent = `
-                <!DOCTYPE html>
-                <html>
-                <head>
-                    <meta charset="utf-8">
-                    <title>${title}</title>
-                    <style>
-                        /* Basic styles for Word document */
-                        body { font-family: 'Inter', sans-serif; }
-                        table {
-                            border-collapse: collapse;
-                            width: 100%;
-                        }
-                        th, td {
-                            border: 1px solid #e5e7eb;
-                            padding: 0.75rem;
-                            text-align: left;
-                        }
-                        th {
-                            background-color: #f3f4f6;
-                            font-weight: bold;
-                        }
-                        .balance-positive { color: #10B981; }
-                        .balance-negative { color: #EF4444; }
-                        .balance-zero { color: #6B7280; }
-                        .text-right-aligned { text-align: right; }
-                    </style>
-                </head>
-                <body>
-                    <h1>${title}</h1>
-                    ${clonedContainer.innerHTML}
-                </body>
-                </html>
-            `;
-            return htmlContent;
-        }
-
-
-        // Export Fund Report to Word
-        exportFundReportWordBtn.onclick = () => {
-            if (typeof window.saveAs === 'undefined') {
-                showErrorMessage('Thư viện FileSaver.js chưa được tải. Vui lòng thử lại sau.');
-                return;
-            }
-
-            const title = 'Báo Cáo Quỹ Chung';
-            const content = getHtmlForWordExport('fund-report-table-container', title); // Use the actual table container ID
-
-            const blob = new Blob([content], {
-                type: 'application/msword;charset=utf-8'
-            });
-            saveAs(blob, 'BaoCaoQuyChung.doc');
-        };
-
-        // Export Member Report to Word
-        exportMemberReportWordBtn.onclick = () => {
-            if (typeof window.saveAs === 'undefined') {
-                showErrorMessage('Thư viện FileSaver.js chưa được tải. Vui lòng thử lại sau.');
-                return;
-            }
-            const selectedMemberId = selectMemberReportDropdown.value;
-            if (!selectedMemberId) {
-                showErrorMessage('Vui lòng chọn một thành viên để xuất báo cáo Word.');
-                return;
-            }
-            const memberName = getMemberName(selectedMemberId);
-            const title = `Báo Cáo Thành Viên: ${memberName}`;
-            const content = getHtmlForWordExport('member-report-table-container', title); // Use the actual table container ID
-
-            const blob = new Blob([content], {
-                type: 'application/msword;charset=utf-8'
-            });
-            saveAs(blob, `BaoCao_${memberName}.doc`);
-        };
-
-
-        // --- Pie Chart Functions ---
-
-        // Helper for SVG arc drawing
-        function polarToCartesian(centerX, centerY, radius, angleInDegrees) {
-            const angleInRadians = (angleInDegrees - 90) * Math.PI / 180.0;
-            return {
-                x: centerX + (radius * Math.cos(angleInRadians)),
-                y: centerY + (radius * Math.sin(angleInRadians))
-            };
-        }
-
-        function describePieSlice(centerX, centerY, radius, startAngle, endAngle) {
-            const start = polarToCartesian(centerX, centerY, radius, endAngle);
-            const end = polarToCartesian(centerX, centerY, radius, startAngle);
-            const largeArcFlag = endAngle - startAngle <= 180 ? "0" : "1";
-
-            const pathData = [
-                `M ${centerX} ${centerY}`,
-                `L ${start.x} ${start.y}`,
-                `A ${radius} ${radius} 0 ${largeArcFlag} 0 ${end.x} ${end.y}`,
-                `L ${centerX} ${centerY}`,
-                `Z`
-            ].join(" ");
-
-            return pathData;
-        }
-
-        // Renders the Member Balance Pie Chart
-        function renderMemberBalancePieChart() {
-            const CHART_SIZE = 200;
-            const RADIUS = CHART_SIZE / 2 - 10;
-            const centerX = CHART_SIZE / 2;
-            const centerY = CHART_SIZE / 2;
-
-            const colorPalette = [
-                '#4CAF50', // Green
-                '#2196F3', // Blue
-                '#FFC107', // Amber
-                '#F44336', // Red
-                '#9C27B0', // Purple
-                '#FF9800', // Orange
-                '#00BCD4', // Cyan
-                '#E91E63', // Pink
-                '#795548', // Brown
-                '#607D8B', // Blue Grey
-            ];
-
-            const chartData = members.filter(m => m.balance !== 0);
-            const totalAbsoluteBalance = chartData.reduce((sum, m) => sum + Math.abs(m.balance), 0);
-
-            if (chartData.length === 0) {
-                memberBalancePieChartDiv.innerHTML = '<p class="text-center text-gray-500 mt-4">Chưa có số dư nào để hiển thị biểu đồ.</p>';
-                return;
-            }
-
-            let currentAngle = 0;
-            let slicesSvg = '';
-            let legendHtml = '';
-
-            chartData.forEach((member, index) => {
-                const sliceAngle = (Math.abs(member.balance) / totalAbsoluteBalance) * 360;
-                const startAngle = currentAngle;
-                const endAngle = currentAngle + sliceAngle;
-
-                const pathData = describePieSlice(centerX, centerY, RADIUS, startAngle, endAngle);
-                const color = colorPalette[index % colorPalette.length];
-
-                const midAngle = startAngle + sliceAngle / 2;
-                const labelRadius = RADIUS * 0.7;
-                const labelPos = polarToCartesian(centerX, centerY, labelRadius, midAngle);
-
-                slicesSvg += `
-                    <g>
-                        <path
-                            d="${pathData}"
-                            fill="${color}"
-                            stroke="white"
-                            stroke-width="1"
-                        />
-                        ${sliceAngle > 10 ? `
-                            <text
-                                x="${labelPos.x}"
-                                y="${labelPos.y}"
-                                fill="white"
-                                font-size="10"
-                                text-anchor="middle"
-                                alignment-baseline="middle"
-                                font-weight="bold"
-                            >
-                                ${member.name}
-                            </text>
-                        ` : ''}
-                    </g>
+                tableHtml += `
+                        </tbody>
+                    </table>
                 `;
-                currentAngle = endAngle;
+                memberReportTableContainer.innerHTML = tableHtml;
+            }
 
-                legendHtml += `
-                    <div class="flex items-center mb-1">
-                        <span class="inline-block w-4 h-4 rounded-full mr-2" style="background-color: ${color};"></span>
-                        <span class="text-sm text-gray-800">${member.name}</span>
+            // Export Fund Report to Excel
+            exportFundReportExcelBtn.onclick = () => {
+                if (typeof window.XLSX === 'undefined') {
+                    showErrorMessage('Thư viện XLSX chưa được tải. Vui lòng thử lại sau.');
+                    return;
+                }
+
+                const reportData = transactions.slice().reverse().map(t => {
+                    // For Excel export of fund report, use the total amount
+                    const displayedAmount = t.amount;
+                    return {
+                        'Ngày': t.date,
+                        'Loại': t.type === 'contribution' ? 'Đóng Góp' : 'Chi Tiêu',
+                        'Mô Tả': t.description,
+                        'Thành Viên Liên Quan': t.type === 'contribution' ? getMemberName(t.contributingMemberId) : getInvolvedMembersNames(t.involvedMemberIds),
+                        'Số Tiền (VNĐ)': (t.type === 'contribution' ? '+' : '-') + formatNumberForDisplay(displayedAmount),
+                    };
+                });
+
+                const ws = window.XLSX.utils.json_to_sheet(reportData);
+                const wb = window.XLSX.utils.book_new();
+                window.XLSX.utils.book_append_sheet(wb, ws, 'Báo Cáo Quỹ Chung');
+                window.XLSX.writeFile(wb, 'BaoCaoQuyChung.xlsx');
+            };
+
+            // Export Member Report to Excel
+            exportMemberReportExcelBtn.onclick = () => {
+                if (typeof window.XLSX === 'undefined') {
+                    showErrorMessage('Thư viện XLSX chưa được tải. Vui lòng thử lại sau.');
+                    return;
+                }
+                const selectedMemberId = selectMemberReportDropdown.value;
+                if (!selectedMemberId) {
+                    showErrorMessage('Vui lòng chọn một thành viên để xuất báo cáo.');
+                    return;
+                }
+                const memberName = getMemberName(selectedMemberId);
+                const memberTransactions = transactions.filter(t =>
+                    (t.type === 'contribution' && t.contributingMemberId === selectedMemberId) ||
+                    (t.type === 'expense' && t.involvedMemberIds && t.involvedMemberIds.includes(selectedMemberId))
+                ).sort((a, b) => new Date(b.date) - new Date(a.date));
+
+                const reportData = memberTransactions.map(t => {
+                    let displayedAmount = t.amount;
+                    // For Excel export of member report, use the per-person share
+                    if (t.type === 'expense' && t.involvedMemberIds && t.involvedMemberIds.length > 0) {
+                        displayedAmount = t.amount / t.involvedMemberIds.length;
+                    }
+                    return {
+                        'Ngày': t.date,
+                        'Loại': t.type === 'contribution' ? 'Đóng Góp' : 'Chi Tiêu',
+                        'Mô Tả': t.description,
+                        'Số Tiền (VNĐ)': (t.type === 'contribution' ? '+' : '-') + formatNumberForDisplay(displayedAmount),
+                    };
+                });
+
+                const ws = window.XLSX.utils.json_to_sheet(reportData);
+                const wb = window.XLSX.utils.book_new();
+                window.XLSX.utils.book_append_sheet(wb, ws, `Báo Cáo ${memberName}`);
+                window.XLSX.writeFile(wb, `BaoCao_${memberName}.xlsx`);
+            };
+
+            // --- Word Export Functions ---
+
+            // Helper function to get HTML content for Word export with inline styles
+            function getHtmlForWordExport(containerId, title) {
+                const container = document.getElementById(containerId);
+                if (!container) return '';
+
+                // Clone the container to manipulate its content without affecting the live DOM
+                const clonedContainer = container.cloneNode(true);
+
+                // Apply inline styles to the cloned table elements for better Word rendering
+                const table = clonedContainer.querySelector('table');
+                if (table) {
+                    table.classList.add('word-export-table'); // Add a specific class for Word export styling
+                    // Apply inline styles to th and td elements
+                    clonedContainer.querySelectorAll('th, td').forEach(cell => {
+                        cell.style.border = '1px solid #e5e7eb';
+                        cell.style.padding = '0.75rem';
+                        cell.style.textAlign = cell.classList.contains('text-right-aligned') ? 'right' : 'left';
+                        if (cell.tagName === 'TH') {
+                            cell.style.backgroundColor = '#f3f4f6';
+                            cell.style.fontWeight = 'bold';
+                        }
+                        // Apply color for balance classes
+                        if (cell.querySelector('.balance-positive')) {
+                            cell.style.color = '#10B981';
+                        } else if (cell.querySelector('.balance-negative')) {
+                            cell.style.color = '#EF4444';
+                        } else if (cell.querySelector('.balance-zero')) {
+                            cell.style.color = '#6B7280';
+                        }
+                        // Remove span elements that apply color/background on web for Word export
+                        const span = cell.querySelector('span.px-2.py-1.rounded-full');
+                        if (span) {
+                            cell.textContent = span.textContent; // Move text from span to cell
+                            span.remove(); // Remove the span
+                        }
+                    });
+                }
+
+                let htmlContent = `
+                    <!DOCTYPE html>
+                    <html>
+                    <head>
+                        <meta charset="utf-8">
+                        <title>${title}</title>
+                        <style>
+                            /* Basic styles for Word document */
+                            body { font-family: 'Inter', sans-serif; }
+                            table {
+                                border-collapse: collapse;
+                                width: 100%;
+                            }
+                            th, td {
+                                border: 1px solid #e5e7eb;
+                                padding: 0.75rem;
+                                text-align: left;
+                            }
+                            th {
+                                background-color: #f3f4f6;
+                                font-weight: bold;
+                            }
+                            .balance-positive { color: #10B981; }
+                            .balance-negative { color: #EF4444; }
+                            .balance-zero { color: #6B7280; }
+                            .text-right-aligned { text-align: right; }
+                        </style>
+                    </head>
+                    <body>
+                        <h1>${title}</h1>
+                        ${clonedContainer.innerHTML}
+                    </body>
+                    </html>
+                `;
+                return htmlContent;
+            }
+
+
+            // Export Fund Report to Word
+            exportFundReportWordBtn.onclick = () => {
+                if (typeof window.saveAs === 'undefined') {
+                    showErrorMessage('Thư viện FileSaver.js chưa được tải. Vui lòng thử lại sau.');
+                    return;
+                }
+
+                const title = 'Báo Cáo Quỹ Chung';
+                const content = getHtmlForWordExport('fund-report-table-container', title); // Use the actual table container ID
+
+                const blob = new Blob([content], {
+                    type: 'application/msword;charset=utf-8'
+                });
+                saveAs(blob, 'BaoCaoQuyChung.doc');
+            };
+
+            // Export Member Report to Word
+            exportMemberReportWordBtn.onclick = () => {
+                if (typeof window.saveAs === 'undefined') {
+                    showErrorMessage('Thư viện FileSaver.js chưa được tải. Vui lòng thử lại sau.');
+                    return;
+                }
+                const selectedMemberId = selectMemberReportDropdown.value;
+                if (!selectedMemberId) {
+                    showErrorMessage('Vui lòng chọn một thành viên để xuất báo cáo Word.');
+                    return;
+                }
+                const memberName = getMemberName(selectedMemberId);
+                const title = `Báo Cáo Thành Viên: ${memberName}`;
+                const content = getHtmlForWordExport('member-report-table-container', title); // Use the actual table container ID
+
+                const blob = new Blob([content], {
+                    type: 'application/msword;charset=utf-8'
+                });
+                saveAs(blob, `BaoCao_${memberName}.doc`);
+            };
+
+
+            // --- Pie Chart Functions ---
+
+            // Helper for SVG arc drawing
+            function polarToCartesian(centerX, centerY, radius, angleInDegrees) {
+                const angleInRadians = (angleInDegrees - 90) * Math.PI / 180.0;
+                return {
+                    x: centerX + (radius * Math.cos(angleInRadians)),
+                    y: centerY + (radius * Math.sin(angleInRadians))
+                };
+            }
+
+            function describePieSlice(centerX, centerY, radius, startAngle, endAngle) {
+                const start = polarToCartesian(centerX, centerY, radius, endAngle);
+                const end = polarToCartesian(centerX, centerY, radius, startAngle);
+                const largeArcFlag = endAngle - startAngle <= 180 ? "0" : "1";
+
+                const pathData = [
+                    `M ${centerX} ${centerY}`,
+                    `L ${start.x} ${start.y}`,
+                    `A ${radius} ${radius} 0 ${largeArcFlag} 0 ${end.x} ${end.y}`,
+                    `L ${centerX} ${centerY}`,
+                    `Z`
+                ].join(" ");
+
+                return pathData;
+            }
+
+            // Renders the Member Balance Pie Chart
+            function renderMemberBalancePieChart() {
+                const CHART_SIZE = 200;
+                const RADIUS = CHART_SIZE / 2 - 10;
+                const centerX = CHART_SIZE / 2;
+                const centerY = CHART_SIZE / 2;
+
+                const colorPalette = [
+                    '#4CAF50', // Green
+                    '#2196F3', // Blue
+                    '#FFC107', // Amber
+                    '#F44336', // Red
+                    '#9C27B0', // Purple
+                    '#FF9800', // Orange
+                    '#00BCD4', // Cyan
+                    '#E91E63', // Pink
+                    '#795548', // Brown
+                    '#607D8B', // Blue Grey
+                ];
+
+                const chartData = members.filter(m => m.balance !== 0);
+                const totalAbsoluteBalance = chartData.reduce((sum, m) => sum + Math.abs(m.balance), 0);
+
+                if (chartData.length === 0) {
+                    memberBalancePieChartDiv.innerHTML = '<p class="text-center text-gray-500 mt-4">Chưa có số dư nào để hiển thị biểu đồ.</p>';
+                    return;
+                }
+
+                let currentAngle = 0;
+                let slicesSvg = '';
+                let legendHtml = '';
+
+                chartData.forEach((member, index) => {
+                    const sliceAngle = (Math.abs(member.balance) / totalAbsoluteBalance) * 360;
+                    const startAngle = currentAngle;
+                    const endAngle = currentAngle + sliceAngle;
+
+                    const pathData = describePieSlice(centerX, centerY, RADIUS, startAngle, endAngle);
+                    const color = colorPalette[index % colorPalette.length];
+
+                    const midAngle = startAngle + sliceAngle / 2;
+                    const labelRadius = RADIUS * 0.7;
+                    const labelPos = polarToCartesian(centerX, centerY, labelRadius, midAngle);
+
+                    slicesSvg += `
+                        <g>
+                            <path
+                                d="${pathData}"
+                                fill="${color}"
+                                stroke="white"
+                                stroke-width="1"
+                            />
+                            ${sliceAngle > 10 ? `
+                                <text
+                                    x="${labelPos.x}"
+                                    y="${labelPos.y}"
+                                    fill="white"
+                                    font-size="10"
+                                    text-anchor="middle"
+                                    alignment-baseline="middle"
+                                    font-weight="bold"
+                                >
+                                    ${member.name}
+                                </text>
+                            ` : ''}
+                        </g>
+                    `;
+                    currentAngle = endAngle;
+
+                    legendHtml += `
+                        <div class="flex items-center mb-1">
+                            <span class="inline-block w-4 h-4 rounded-full mr-2" style="background-color: ${color};"></span>
+                            <span class="text-sm text-gray-800">${member.name}</span>
+                        </div>
+                    `;
+                });
+
+                memberBalancePieChartDiv.innerHTML = `
+                    <svg viewBox="0 0 ${CHART_SIZE} ${CHART_SIZE}" width="100%" height="auto" style="max-width: 300px;">
+                        ${slicesSvg}
+                        <text x="${centerX}" y="${centerY}" text-anchor="middle" alignment-baseline="middle" font-size="12" font-weight="bold" fill="#333">
+                            Tổng: ${formatNumberForDisplay(totalAbsoluteBalance)} VNĐ
+                        </text>
+                    </svg>
+                    <div class="ml-8 p-4 bg-gray-50 rounded-lg shadow-sm">
+                        <h4 class="font-semibold text-gray-700 mb-2">Chú Thích:</h4>
+                        ${legendHtml}
                     </div>
                 `;
-            });
+            }
 
-            memberBalancePieChartDiv.innerHTML = `
-                <svg viewBox="0 0 ${CHART_SIZE} ${CHART_SIZE}" width="100%" height="auto" style="max-width: 300px;">
-                    ${slicesSvg}
-                    <text x="${centerX}" y="${centerY}" text-anchor="middle" alignment-baseline="middle" font-size="12" font-weight="bold" fill="#333">
-                        Tổng: ${formatNumberForDisplay(totalAbsoluteBalance)} VNĐ
-                    </text>
-                </svg>
-                <div class="ml-8 p-4 bg-gray-50 rounded-lg shadow-sm">
-                    <h4 class="font-semibold text-gray-700 mb-2">Chú Thích:</h4>
-                    ${legendHtml}
-                </div>
-            `;
-        }
+            // --- Gemini API Integration ---
 
-        // --- Gemini API Integration ---
+            // Simple Markdown to HTML converter
+            function markdownToHtml(markdown) {
+                let html = markdown;
 
-        // Simple Markdown to HTML converter
-        function markdownToHtml(markdown) {
-            let html = markdown;
+                // Convert headings (e.g., ## Heading) to <h2>
+                html = html.replace(/^### (.*$)/gim, '<h3>$1</h3>');
+                html = html.replace(/^## (.*$)/gim, '<h2>$1</h2>');
+                html = html.replace(/^# (.*$)/gim, '<h1>$1</h1>');
 
-            // Convert headings (e.g., ## Heading) to <h2>
-            html = html.replace(/^### (.*$)/gim, '<h3>$1</h3>');
-            html = html.replace(/^## (.*$)/gim, '<h2>$1</h2>');
-            html = html.replace(/^# (.*$)/gim, '<h1>$1</h1>');
+                // Convert bold (e.g., **text**) to <strong>
+                html = html.replace(/\*\*(.*?)\*\*/gim, '<strong>$1</strong>');
+                // Convert italics (e.g., *text*) to <em>
+                html = html.replace(/\*(.*?)\*/gim, '<em>$1</em>');
 
-            // Convert bold (e.g., **text**) to <strong>
-            html = html.replace(/\*\*(.*?)\*\*/gim, '<strong>$1</strong>');
-            // Convert italics (e.g., *text*) to <em>
-            html = html.replace(/\*(.*?)\*/gim, '<em>$1</em>');
+                // Convert unordered lists (e.g., - item) to <ul> and <li>
+                html = html.replace(/^\s*\-\s(.*)$/gim, '<li>$1</li>');
+                html = html.replace(/^(<li>.*<\/li>(\n<li>.*<\/li>)*)/gim, '<ul>$1</ul>');
 
-            // Convert unordered lists (e.g., - item) to <ul> and <li>
-            html = html.replace(/^\s*\-\s(.*)$/gim, '<li>$1</li>');
-            html = html.replace(/^(<li>.*<\/li>(\n<li>.*<\/li>)*)/gim, '<ul>$1</ul>');
-
-            // Convert ordered lists (e.g., 1. item) to <ol> and <li>
-            html = html.replace(/^\s*\d+\.\s(.*)$/gim, '<li>$1</li>');
-            html = html.replace(/^(<li>.*<\/li>(\n<li>.*<\/li>)*)/gim, '<ol>$1</ol>');
+                // Convert ordered lists (e.g., 1. item) to <ol> and <li>
+                html = html.replace(/^\s*\d+\.\s(.*)$/gim, '<li>$1</li>');
+                html = html.replace(/^(<li>.*<\/li>(\n<li>.*<\/li>)*)/gim, '<ol>$1</ol>');
 
 
-            // Convert newlines to paragraphs, but only if not already part of a block element
-            html = html.split('\n').map(line => {
-                if (line.trim() === '' || line.startsWith('<h') || line.startsWith('<ul') || line.startsWith('<ol') || line.startsWith('<li>')) {
-                    return line;
-                }
-                return `<p class="mb-2 text-gray-700">${line}</p>`;
-            }).join('');
+                // Convert newlines to paragraphs, but only if not already part of a block element
+                html = html.split('\n').map(line => {
+                    if (line.trim() === '' || line.startsWith('<h') || line.startsWith('<ul') || line.startsWith('<ol') || line.startsWith('<li>')) {
+                        return line;
+                    }
+                    return `<p class="mb-2 text-gray-700">${line}</p>`;
+                }).join('');
 
-            // Clean up empty paragraphs that might be created by the above logic
-            html = html.replace(/<p class="mb-2 text-gray-700"><\/p>/g, '');
+                // Clean up empty paragraphs that might be created by the above logic
+                html = html.replace(/<p class="mb-2 text-gray-700"><\/p>/g, '');
 
-            return html;
-        }
+                return html;
+            }
 
 
-        async function generateFundInsights() {
-            isGeneratingInsights = true;
-            fundInsightsContent.innerHTML = `
-                <div class="flex flex-col items-center justify-center p-8">
-                    <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-[#006B68]"></div>
-                    <p class="mt-4 text-gray-600">Đang tạo thông tin chi tiết từ AI...</p>
-                </div>
-            `;
-            hideErrorMessage(); // Clear previous errors for insights
+            async function generateFundInsights() {
+                isGeneratingInsights = true;
+                fundInsightsContent.innerHTML = `
+                    <div class="flex flex-col items-center justify-center p-8">
+                        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-[#006B68]"></div>
+                        <p class="mt-4 text-gray-600">Đang tạo thông tin chi tiết từ AI...</p>
+                    </div>
+                `;
+                hideErrorMessage(); // Clear previous errors for insights
 
-            // Construct prompt for LLM
-            let prompt = `Given the following fund transactions and current fund balance for a group's meal fund, provide a concise summary of the fund's financial health and suggest 3-5 actionable tips for better fund management. The response should be in Vietnamese and formatted using Markdown (e.g., use ## for headings, - for list items, ** for bold).
+                // Construct prompt for LLM
+                let prompt = `Given the following fund transactions and current fund balance for a group's meal fund, provide a concise summary of the fund's financial health and suggest 3-5 actionable tips for better fund management. The response should be in Vietnamese and formatted using Markdown (e.g., use ## for headings, - for list items, ** for bold).
 
 Current Fund Balance: ${formatNumberForDisplay(fundBalance)} VNĐ
 
 Recent Transactions:\n`;
 
-            if (transactions.length === 0) {
-                prompt += "No transactions recorded yet.\n";
-            } else {
-                transactions.slice(-10).reverse().forEach(t => { // Last 10 transactions
-                    const memberNames = t.type === 'contribution'
-                        ? getMemberName(t.contributingMemberId)
-                        : (t.involvedMemberIds && t.involvedMemberIds.length > 0
-                            ? t.involvedMemberIds.map(id => getMemberName(id)).join(', ')
-                            : 'Tất cả thành viên');
-                    prompt += `- ${t.date} | Loại: ${t.type === 'contribution' ? 'Đóng Góp' : 'Chi Tiêu'} | Số tiền: ${formatNumberForDisplay(t.amount)} VNĐ | Mô tả: ${t.description} | Thành viên: ${memberNames}\n`;
-                });
-            }
-
-            console.log("Sending prompt to Gemini API:", prompt);
-
-            try {
-                let chatHistory = [];
-                chatHistory.push({ role: "user", parts: [{ text: prompt }] });
-                const payload = { contents: chatHistory };
-                const apiKey = "AIzaSyBaLi7TzZJ9SwmHilU24SRcV2i7lU6gqdQ"; // Leave as empty string for Canvas to provide
-                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
-
-                const response = await fetch(apiUrl, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-
-                const result = await response.json();
-                console.log("Gemini API response:", result);
-
-                if (result.candidates && result.candidates.length > 0 &&
-                    result.candidates[0].content && result.candidates[0].content.parts &&
-                    result.candidates[0].content.parts.length > 0) {
-                    const markdownText = result.candidates[0].content.parts[0].text;
-                    // Convert Markdown to HTML before setting innerHTML
-                    fundInsightsContent.innerHTML = markdownToHtml(markdownText);
+                if (transactions.length === 0) {
+                    prompt += "No transactions recorded yet.\n";
                 } else {
-                    fundInsightsContent.innerHTML = '<p class="text-center text-gray-500">Không thể tạo thông tin chi tiết. Vui lòng thử lại.</p>';
-                    console.error("Unexpected Gemini API response structure:", result);
+                    transactions.slice(-10).reverse().forEach(t => { // Last 10 transactions
+                        const memberNames = t.type === 'contribution'
+                            ? getMemberName(t.contributingMemberId)
+                            : (t.involvedMemberIds && t.involvedMemberIds.length > 0
+                                ? t.involvedMemberIds.map(id => getMemberName(id)).join(', ')
+                                : 'Tất cả thành viên');
+                        prompt += `- ${t.date} | Loại: ${t.type === 'contribution' ? 'Đóng Góp' : 'Chi Tiêu'} | Số tiền: ${formatNumberForDisplay(t.amount)} VNĐ | Mô tả: ${t.description} | Thành viên: ${memberNames}\n`;
+                    });
                 }
-            } catch (error) {
-                console.error("Error calling Gemini API:", error);
-                showErrorMessage(`Lỗi khi tạo thông tin chi tiết: ${error.message}. Vui lòng thử lại.`);
-                fundInsightsContent.innerHTML = '<p class="text-center text-gray-500">Đã xảy ra lỗi khi kết nối với AI. Vui lòng thử lại.</p>';
-            } finally {
-                isGeneratingInsights = false;
-            }
-        }
 
-        // New function to generate food suggestions
-        async function generateFoodSuggestions(latitude, longitude) {
-            isGeneratingFoodSuggestions = true;
-            foodSuggestionContent.innerHTML = `
-                <div class="flex flex-col items-center justify-center p-8">
-                    <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-[#006B68]"></div>
-                    <p class="mt-4 text-gray-600">Đang tìm kiếm gợi ý món ăn gần bạn...</p>
-                </div>
-            `;
-            hideErrorMessage(); // Clear previous errors for food suggestions
+                console.log("Sending prompt to Gemini API:", prompt);
 
-            // Construct prompt for LLM
-            let prompt = `Dựa trên vị trí GPS hiện tại của tôi (vĩ độ: ${latitude}, kinh độ: ${longitude}), hãy gợi ý 3-5 món ăn phổ biến và các quán ăn ngon gần đó. Vui lòng tham khảo thông tin từ Google Maps và cung cấp tên quán, địa chỉ (nếu có thể), và một mô tả ngắn về món ăn. Phản hồi nên bằng tiếng Việt và được định dạng bằng Markdown (ví dụ: sử dụng ## cho tiêu đề, - cho các mục danh sách, ** cho in đậm).`;
+                try {
+                    let chatHistory = [];
+                    chatHistory.push({ role: "user", parts: [{ text: prompt }] });
+                    const payload = { contents: chatHistory };
+                    const apiKey = ""; // Leave as empty string for Canvas to provide
+                    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
 
-            console.log("Sending food suggestion prompt to Gemini API:", prompt);
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
 
-            try {
-                let chatHistory = [];
-                chatHistory.push({ role: "user", parts: [{ text: prompt }] });
-                const payload = { contents: chatHistory };
-                const apiKey = "AIzaSyBaLi7TzZJ9SwmHilU24SRcV2i7lU6gqdQ"; // Leave as empty string for Canvas to provide
-                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+                    const result = await response.json();
+                    console.log("Gemini API response:", result);
 
-                const response = await fetch(apiUrl, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-
-                const result = await response.json();
-                console.log("Gemini API food suggestion response:", result);
-
-                if (result.candidates && result.candidates.length > 0 &&
-                    result.candidates[0].content && result.candidates[0].content.parts &&
-                    result.candidates[0].content.parts.length > 0) {
-                    const markdownText = result.candidates[0].content.parts[0].text;
-                    // Convert Markdown to HTML before setting innerHTML
-                    foodSuggestionContent.innerHTML = markdownToHtml(markdownText);
-                } else {
-                    foodSuggestionContent.innerHTML = '<p class="text-center text-gray-500">Không thể tạo gợi ý món ăn. Vui lòng thử lại.</p>';
-                    console.error("Unexpected Gemini API food suggestion response structure:", result);
+                    if (result.candidates && result.candidates.length > 0 &&
+                        result.candidates[0].content && result.candidates[0].content.parts &&
+                        result.candidates[0].content.parts.length > 0) {
+                        const markdownText = result.candidates[0].content.parts[0].text;
+                        // Convert Markdown to HTML before setting innerHTML
+                        fundInsightsContent.innerHTML = markdownToHtml(markdownText);
+                    } else {
+                        fundInsightsContent.innerHTML = '<p class="text-center text-gray-500">Không thể tạo thông tin chi tiết. Vui lòng thử lại.</p>';
+                        console.error("Unexpected Gemini API response structure:", result);
+                    }
+                } catch (error) {
+                    console.error("Error calling Gemini API:", error);
+                    showErrorMessage(`Lỗi khi tạo thông tin chi tiết: ${error.message}. Vui lòng thử lại.`);
+                    fundInsightsContent.innerHTML = '<p class="text-center text-gray-500">Đã xảy ra lỗi khi kết nối với AI. Vui lòng thử lại.</p>';
+                } finally {
+                    isGeneratingInsights = false;
                 }
-            } catch (error) {
-                console.error("Error calling Gemini API for food suggestions:", error);
-                showErrorMessage(`Lỗi khi tạo gợi ý món ăn: ${error.message}. Vui lòng thử lại.`);
-                foodSuggestionContent.innerHTML = '<p class="text-center text-gray-500">Đã xảy ra lỗi khi kết nối với AI. Vui lòng thử lại.</p>';
-            } finally {
-                isGeneratingFoodSuggestions = false;
             }
-        }
 
-        // --- Geolocation Function ---
-        async function getCurrentLocation() {
-            return new Promise((resolve, reject) => {
+            // New function to generate food suggestions
+            async function generateFoodSuggestions(latitude, longitude) {
+                isGeneratingFoodSuggestions = true;
+                foodSuggestionContent.innerHTML = `
+                    <div class="flex flex-col items-center justify-center p-8">
+                        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-[#006B68]"></div>
+                        <p class="mt-4 text-gray-600">Đang tìm kiếm gợi ý món ăn gần bạn...</p>
+                    </div>
+                `;
+                hideErrorMessage(); // Clear previous errors for food suggestions
+
+                // START: Updated prompt for food suggestions
+                let prompt = `Dựa trên vị trí GPS hiện tại của tôi (vĩ độ: ${latitude}, kinh độ: ${longitude}), hãy gợi ý 3-5 món ăn phổ biến và các quán ăn ngon gần đó.
+                Đối với mỗi gợi ý, cung cấp các thông tin sau:
+                - Tên quán ăn
+                - Địa chỉ
+                - Số điện thoại (nếu có)
+                - Link liên kết đến Google Maps (nếu có)
+                - Số sao được bình chọn (ví dụ: 4.5)
+                - Khoảng cách dự kiến từ vị trí của tôi (ví dụ: 1.2 km)
+
+                Phản hồi phải là một mảng JSON, mỗi phần tử là một đối tượng chứa các thông tin trên. Ví dụ:
+                [
+                  {
+                    "name": "Tên quán ăn",
+                    "address": "Địa chỉ quán ăn",
+                    "phoneNumber": "Số điện thoại",
+                    "googleMapsLink": "Link Google Maps",
+                    "starRating": 4.5,
+                    "estimatedDistance": "1.2 km"
+                  }
+                ]
+                `;
+                // END: Updated prompt for food suggestions
+
+                console.log("Sending food suggestion prompt to Gemini API:", prompt);
+
+                try {
+                    let chatHistory = [];
+                    chatHistory.push({ role: "user", parts: [{ text: prompt }] });
+                    const payload = {
+                        contents: chatHistory,
+                        generationConfig: {
+                            responseMimeType: "application/json",
+                            responseSchema: {
+                                type: "ARRAY",
+                                items: {
+                                    type: "OBJECT",
+                                    properties: {
+                                        "name": { "type": "STRING" },
+                                        "address": { "type": "STRING" },
+                                        "phoneNumber": { "type": "STRING" },
+                                        "googleMapsLink": { "type": "STRING" },
+                                        "starRating": { "type": "NUMBER" },
+                                        "estimatedDistance": { "type": "STRING" }
+                                    },
+                                    "propertyOrdering": ["name", "address", "phoneNumber", "googleMapsLink", "starRating", "estimatedDistance"]
+                                }
+                            }
+                        }
+                    };
+                    const apiKey = ""; // Leave as empty string for Canvas to provide
+                    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    const result = await response.json();
+                    console.log("Gemini API food suggestion response:", result);
+
+                    if (result.candidates && result.candidates.length > 0 &&
+                        result.candidates[0].content && result.candidates[0].content.parts &&
+                        result.candidates[0].content.parts.length > 0) {
+                        const jsonText = result.candidates[0].content.parts[0].text;
+                        const suggestions = JSON.parse(jsonText);
+
+                        let htmlContent = '<div class="space-y-4">';
+                        if (suggestions.length > 0) {
+                            suggestions.forEach(s => {
+                                htmlContent += `
+                                    <div class="p-4 border border-gray-200 rounded-lg shadow-sm bg-white">
+                                        <h3 class="text-lg font-semibold text-[#006B68]">${s.name}</h3>
+                                        <p class="text-sm text-gray-600"><strong>Địa chỉ:</strong> ${s.address || 'N/A'}</p>
+                                        <p class="text-sm text-gray-600"><strong>Điện thoại:</strong> ${s.phoneNumber || 'N/A'}</p>
+                                        <p class="text-sm text-gray-600"><strong>Đánh giá:</strong> ${s.starRating ? `${s.starRating} ⭐` : 'N/A'}</p>
+                                        <p class="text-sm text-gray-600"><strong>Khoảng cách:</strong> ${s.estimatedDistance || 'N/A'}</p>
+                                        ${s.googleMapsLink ? `<a href="${s.googleMapsLink}" target="_blank" class="text-blue-500 hover:underline text-sm">Xem trên Google Maps</a>` : ''}
+                                    </div>
+                                `;
+                            });
+                        } else {
+                            htmlContent += '<p class="text-center text-gray-500">Không tìm thấy gợi ý món ăn nào.</p>';
+                        }
+                        htmlContent += '</div>';
+                        foodSuggestionContent.innerHTML = htmlContent;
+
+                    } else {
+                        foodSuggestionContent.innerHTML = '<p class="text-center text-gray-500">Không thể tạo gợi ý món ăn. Vui lòng thử lại.</p>';
+                        console.error("Unexpected Gemini API food suggestion response structure:", result);
+                    }
+                } catch (error) {
+                    console.error("Error calling Gemini API for food suggestions:", error);
+                    showErrorMessage(`Lỗi khi tạo gợi ý món ăn: ${error.message}. Vui lòng thử lại.`);
+                    foodSuggestionContent.innerHTML = '<p class="text-center text-gray-500">Đã xảy ra lỗi khi kết nối với AI. Vui lòng thử lại.</p>';
+                } finally {
+                    isGeneratingFoodSuggestions = false;
+                }
+            }
+
+
+            // --- Image Upload and AI Description Functions ---
+
+            // Calls Gemini Vision API
+            async function callGeminiVisionAPI(base64ImageData, mimeType) { // Added mimeType parameter
+                // START: Updated prompt for image description
+                const prompt = `Mô tả ngắn gọn nội dung của hình ảnh này nhằm mục đích làm rõ chi hoặc thu cho nội dung gì.
+                Ví dụ về chi: uống cà phê, ăn cơm, ăn bún, ăn đồ thái, ăn lẩu.
+                Ví dụ về thu: Bạn Văn A nộp tiền chuyển khoản từ ngân hàng BIDV.
+                Thông tin về địa điểm nếu có trong ảnh (ví dụ như tên nhà hàng).
+                Phân loại thu chi liên quan đến nộp tiền và các loại thực phẩm ăn uống. Ví dụ: 'nộp quỹ', 'ăn cơm', 'uống cà phê', 'ăn phở', 'ăn bún', 'ăn đồ nhật', 'ăn đồ thái'.
+                Nếu trong ảnh có số tiền thì điền số tiền vào cột số tiền (chỉ số, không đơn vị).
+                Nếu có thông tin về thu hoặc chi thì chọn loại giao dịch tương ứng là 'contribution' (thu) hoặc 'expense' (chi). Nếu không chắc chắn, để trống.
+
+                Phản hồi phải là một đối tượng JSON với các trường sau:
+                {
+                  "description": "Mô tả ngắn gọn nội dung hình ảnh",
+                  "amount": "Số tiền (chỉ số, không đơn vị, nếu có)",
+                  "transactionType": "Loại giao dịch ('contribution' hoặc 'expense', nếu xác định được)",
+                  "location": "Địa điểm (nếu có)",
+                  "category": "Phân loại (ví dụ: 'nộp quỹ', 'ăn cơm', 'uống cà phê')"
+                }
+                `;
+                // END: Updated prompt for image description
+
+                try {
+                    let chatHistory = [];
+                    const payload = {
+                        contents: [
+                            {
+                                role: "user",
+                                parts: [
+                                    { text: prompt },
+                                    {
+                                        inlineData: {
+                                            mimeType: mimeType, // Use the provided mimeType
+                                            data: base64ImageData
+                                        }
+                                    }
+                                ]
+                            }
+                        ],
+                        generationConfig: {
+                            responseMimeType: "application/json",
+                            responseSchema: {
+                                type: "OBJECT",
+                                properties: {
+                                    "description": { "type": "STRING" },
+                                    "amount": { "type": "STRING" }, // Keep as string to handle non-numeric cases from AI
+                                    "transactionType": { "type": "STRING" },
+                                    "location": { "type": "STRING" },
+                                    "category": { "type": "STRING" }
+                                },
+                                "propertyOrdering": ["description", "amount", "transactionType", "location", "category"]
+                            }
+                        }
+                    };
+                    const apiKey = ""; // Leave as empty string for Canvas to provide
+                    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    const result = await response.json();
+                    console.log("Gemini Vision API response:", result);
+
+                    if (result.candidates && result.candidates.length > 0 &&
+                        result.candidates[0].content && result.candidates[0].content.parts &&
+                        result.candidates[0].content.parts.length > 0) {
+                        const jsonString = result.candidates[0].content.parts[0].text;
+                        const parsedResult = JSON.parse(jsonString);
+
+                        // Update description
+                        let fullDescription = parsedResult.description || '';
+                        if (parsedResult.location) {
+                            fullDescription += ` (Địa điểm: ${parsedResult.location})`;
+                        }
+                        if (parsedResult.category) {
+                            fullDescription += ` (Phân loại: ${parsedResult.category})`;
+                        }
+                        descriptionInput.value = fullDescription.trim();
+
+                        // Update amount if valid
+                        const extractedAmount = parseFloat(parsedResult.amount.replace(/\D/g, '')); // Clean non-digits
+                        if (!isNaN(extractedAmount) && extractedAmount > 0) {
+                            amountInput.value = formatNumberForInput(extractedAmount.toString());
+                        }
+
+                        // Update transaction type
+                        if (parsedResult.transactionType === 'contribution' || parsedResult.transactionType === 'expense') {
+                            transactionTypeSelect.value = parsedResult.transactionType;
+                            transactionTypeSelect.dispatchEvent(new Event('change')); // Trigger change event
+                        }
+
+                    } else {
+                        showErrorMessage('Không thể lấy mô tả hình ảnh từ AI. Vui lòng thử lại.');
+                        console.error("Unexpected Gemini Vision API response structure:", result);
+                    }
+                } catch (error) {
+                    console.error("Error calling Gemini Vision API:", error);
+                    showErrorMessage(`Lỗi khi gọi AI: ${error.message}. Vui lòng thử lại.`);
+                } finally {
+                    cameraLoadingSpinner.style.display = 'none';
+                    cameraModal.classList.add('hidden'); // Close modal after processing
+                }
+            }
+
+
+            // --- Event Listeners ---
+
+            // Main Navigation Buttons
+            document.getElementById('add-member-btn').onclick = () => {
+                hideAllSections();
+                addMemberSection.classList.remove('hidden');
+                memberNameInput.value = ''; // Clear input
+                scrollToSection('add-member-section'); // Scroll to section
+            };
+
+            document.getElementById('add-transaction-btn').onclick = () => {
+                hideAllSections();
+                addTransactionSection.classList.remove('hidden');
+                amountInput.value = ''; // Clear input
+                descriptionInput.value = ''; // Clear input
+                transactionTypeSelect.value = 'contribution'; // Reset to default
+                populateMemberSelectors(); // Repopulate and reset selections
+                transactionTypeSelect.dispatchEvent(new Event('change')); // Trigger change to show/hide correct fields
+                scrollToSection('add-transaction-section'); // Scroll to section
+            };
+
+            document.getElementById('view-transactions-btn').onclick = () => {
+                hideAllSections();
+                transactionsSection.classList.remove('hidden');
+                renderTransactionList(); // Render transactions when section is shown
+                scrollToSection('transactions-section'); // Scroll to section
+            };
+
+            document.getElementById('show-report-selection-btn').onclick = () => {
+                hideAllSections();
+                reportSelectionModal.classList.remove('hidden');
+                // No scroll here, as it's a modal overlay
+            };
+
+            document.getElementById('get-insights-btn').onclick = () => {
+                hideAllSections();
+                fundInsightsModal.classList.remove('hidden');
+                generateFundInsights();
+                // No scroll here, as it's a modal overlay
+            };
+
+            document.getElementById('get-food-suggestions-btn').onclick = () => {
+                hideAllSections();
+                foodSuggestionModal.classList.remove('hidden');
                 if (navigator.geolocation) {
                     navigator.geolocation.getCurrentPosition((position) => {
-                        currentLatitude = position.coords.latitude;
-                        currentLongitude = position.coords.longitude;
-                        resolve({ latitude: currentLatitude, longitude: currentLongitude });
+                        generateFoodSuggestions(position.coords.latitude, position.coords.longitude);
                     }, (error) => {
                         console.error("Error getting location:", error);
-                        let message = "Không thể lấy vị trí hiện tại của bạn. Vui lòng cho phép truy cập vị trí.";
+                        let errorMessage = "Không thể lấy vị trí hiện tại của bạn. Vui lòng cho phép truy cập vị trí.";
                         if (error.code === error.PERMISSION_DENIED) {
-                            message = "Bạn đã từ chối quyền truy cập vị trí. Vui lòng cho phép trong cài đặt trình duyệt.";
+                            errorMessage = "Bạn đã từ chối quyền truy cập vị trí. Vui lòng cho phép trong cài đặt trình duyệt để nhận gợi ý món ăn.";
                         } else if (error.code === error.POSITION_UNAVAILABLE) {
-                            message = "Thông tin vị trí không khả dụng.";
+                            errorMessage = "Thông tin vị trí không khả dụng.";
                         } else if (error.code === error.TIMEOUT) {
-                            message = "Hết thời gian chờ khi cố gắng lấy vị trí.";
+                            errorMessage = "Hết thời gian chờ khi cố gắng lấy vị trí.";
                         }
-                        showErrorMessage(message);
-                        reject(new Error(message));
+                        foodSuggestionContent.innerHTML = `<p class="text-center text-red-500">${errorMessage}</p>`;
+                        showErrorMessage(errorMessage);
                     });
                 } else {
-                    const message = "Trình duyệt của bạn không hỗ trợ tính năng định vị địa lý.";
-                    showErrorMessage(message);
-                    reject(new Error(message));
-                }
-            });
-        }
-
-
-        // --- Camera and AI Description Functions ---
-
-        // Sets up camera stream
-        async function setupCamera() {
-            try {
-                await getCurrentLocation(); // Get location before camera
-                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { exact: "environment" } } }); // Prefer rear camera
-                videoFeed.srcObject = stream;
-                cameraStream = stream; // Store stream to stop later
-                videoFeed.play();
-                cameraModal.classList.remove('hidden');
-                captureBtn.classList.remove('hidden');
-                videoFeed.classList.remove('hidden');
-                capturedImage.classList.add('hidden');
-                cameraLoadingSpinner.style.display = 'none';
-                hideErrorMessage();
-            } catch (err) {
-                console.warn("Could not access rear camera, trying default camera:", err);
-                try {
-                    // Fallback to any available camera if rear camera fails
-                    const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-                    videoFeed.srcObject = stream;
-                    cameraStream = stream;
-                    videoFeed.play();
-                    cameraModal.classList.remove('hidden');
-                    captureBtn.classList.remove('hidden');
-                    videoFeed.classList.remove('hidden');
-                    capturedImage.classList.add('hidden');
-                    cameraLoadingSpinner.style.display = 'none';
-                    hideErrorMessage();
-                } catch (fallbackErr) {
-                    console.error("Error accessing camera: ", fallbackErr);
-                    let message = "Không thể truy cập camera. Vui lòng kiểm tra quyền truy cập.";
-                    if (fallbackErr.name === "NotAllowedError") {
-                        message = "Bạn đã từ chối quyền truy cập camera. Vui lòng cho phép trong cài đặt trình duyệt.";
-                    } else if (fallbackErr.name === "NotFoundError" || fallbackErr.name === "DevicesNotFoundError") {
-                        message = "Không tìm thấy thiết bị camera nào.";
-                    }
-                    showErrorMessage(message);
-                    cameraModal.classList.add('hidden'); // Hide modal if camera access fails
-                }
-            }
-        }
-
-        // Stops camera stream
-        function stopCamera() {
-            if (cameraStream) {
-                cameraStream.getTracks().forEach(track => track.stop());
-                videoFeed.srcObject = null;
-                cameraStream = null;
-            }
-        }
-
-        // Captures image from video feed and processes it
-        function captureAndProcessImage() {
-            if (!videoFeed.srcObject) {
-                showErrorMessage("Không có luồng video từ camera.");
-                return;
-            }
-
-            const context = cameraCanvas.getContext('2d');
-            const videoWidth = videoFeed.videoWidth;
-            const videoHeight = videoFeed.videoHeight;
-
-            // Set canvas dimensions
-            cameraCanvas.width = videoWidth;
-            cameraCanvas.height = videoHeight;
-
-            // Draw video frame to canvas
-            context.drawImage(videoFeed, 0, 0, videoWidth, videoHeight);
-
-            // Resize image for performance
-            const MAX_DIMENSION = 800; // Max width or height
-            let newWidth = videoWidth;
-            let newHeight = videoHeight;
-
-            if (videoWidth > videoHeight) {
-                if (videoWidth > MAX_DIMENSION) {
-                    newHeight = videoHeight * (MAX_DIMENSION / videoWidth);
-                    newWidth = MAX_DIMENSION;
-                }
-            } else {
-                if (videoHeight > MAX_DIMENSION) {
-                    newWidth = videoWidth * (MAX_DIMENSION / videoHeight);
-                    newHeight = MAX_DIMENSION;
-                }
-            }
-
-            const tempCanvas = document.createElement('canvas');
-            const tempContext = tempCanvas.getContext('2d');
-            tempCanvas.width = newWidth;
-            tempCanvas.height = newHeight;
-            tempContext.drawImage(cameraCanvas, 0, 0, newWidth, newHeight);
-
-            const base64Image = tempCanvas.toDataURL('image/jpeg', 0.8); // Convert to JPEG, quality 0.8
-            console.log("Captured image size (Base64 length):", base64Image.length);
-
-            // Display captured image and show loading
-            capturedImage.src = base64Image;
-            capturedImage.classList.remove('hidden');
-            videoFeed.classList.add('hidden');
-            captureBtn.classList.add('hidden');
-            cameraLoadingSpinner.style.display = 'block';
-
-            stopCamera(); // Stop camera after capture
-
-            // Send to Gemini API with current location
-            const base64DataOnly = base64Image.split(',')[1]; // Remove "data:image/jpeg;base64," prefix
-            callGeminiVisionAPI(base64DataOnly, currentLatitude, currentLongitude);
-        }
-
-        // Handles image file upload and processes it
-        async function handleImageUpload(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-
-            hideAllSections(); // Hide other sections
-            cameraModal.classList.remove('hidden'); // Show camera modal for loading/display
-            capturedImage.classList.add('hidden'); // Hide captured image initially
-            videoFeed.classList.add('hidden'); // Hide video feed
-            captureBtn.classList.add('hidden'); // Hide capture button
-            cameraLoadingSpinner.style.display = 'block'; // Show spinner
-
-            const reader = new FileReader();
-            reader.onload = async (e) => {
-                const base64Image = e.target.result;
-                const base64DataOnly = base64Image.split(',')[1];
-
-                capturedImage.src = base64Image;
-                capturedImage.classList.remove('hidden'); // Show the uploaded image
-
-                try {
-                    await getCurrentLocation(); // Get location before sending image
-                    callGeminiVisionAPI(base64DataOnly, currentLatitude, currentLongitude);
-                } catch (error) {
-                    console.error("Error getting location for image upload:", error);
-                    cameraLoadingSpinner.style.display = 'none';
-                    cameraModal.classList.add('hidden');
-                }
-            };
-            reader.onerror = (error) => {
-                console.error("Error reading file:", error);
-                showErrorMessage("Lỗi khi đọc tệp ảnh.");
-                cameraLoadingSpinner.style.display = 'none';
-                cameraModal.classList.add('hidden');
-            };
-            reader.readAsDataURL(file);
-        }
-
-
-        // Calls Gemini Vision API
-        async function callGeminiVisionAPI(base64ImageData, latitude, longitude) {
-            let locationInfo = '';
-            if (latitude && longitude) {
-                locationInfo = ` tại vị trí GPS vĩ độ ${latitude}, kinh độ ${longitude}`;
-            }
-
-            // Prompt for Gemini Vision API to get structured output
-            const prompt = `Mô tả ngắn gọn nội dung của hình ảnh này${locationInfo}. Hãy xác định đây là một khoản chi hay thu. Nếu có số tiền trong ảnh, hãy trích xuất số tiền đó. Đồng thời, đề xuất một nhóm chi tiêu phù hợp (ví dụ: Hoa quả, Cà phê, Cơm, cháo, bún, Di chuyển, Mua sắm, Giải trí, Hóa đơn, Lương, Thưởng).
-            
-            Phản hồi phải là một đối tượng JSON với các trường sau:
-            {
-              "description": "Mô tả ngắn gọn nội dung ảnh, bao gồm địa điểm nếu có thể suy ra từ GPS.",
-              "amount": "Số tiền trích xuất từ ảnh (chỉ số, không định dạng, ví dụ: 150000). Nếu không có, để trống hoặc 0.",
-              "category": "Nhóm chi tiêu đề xuất (ví dụ: Cơm, cháo, bún, Cà phê, Hoa quả, Di chuyển, Mua sắm, Giải trí, Hóa đơn, Lương, Thưởng)."
-            }`;
-
-            try {
-                let chatHistory = [];
-                const payload = {
-                    contents: [
-                        {
-                            role: "user",
-                            parts: [
-                                { text: prompt },
-                                {
-                                    inlineData: {
-                                        mimeType: "image/jpeg", // Ensure this matches the type from toDataURL
-                                        data: base64ImageData
-                                    }
-                                }
-                            ]
-                        }
-                    ],
-                    generationConfig: {
-                        responseMimeType: "application/json",
-                        responseSchema: {
-                            type: "OBJECT",
-                            properties: {
-                                "description": { "type": "STRING" },
-                                "amount": { "type": "NUMBER" },
-                                "category": { "type": "STRING" }
-                            },
-                            required: ["description", "amount", "category"]
-                        }
-                    }
-                };
-                const apiKey = "AIzaSyBaLi7TzZJ9SwmHilU24SRcV2i7lU6gqdQ"; // Leave as empty string for Canvas to provide
-                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
-
-                const response = await fetch(apiUrl, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-
-                const result = await response.json();
-                console.log("Gemini Vision API response:", result);
-
-                if (result.candidates && result.candidates.length > 0 &&
-                    result.candidates[0].content && result.candidates[0].content.parts &&
-                    result.candidates[0].content.parts.length > 0) {
-                    const jsonResponse = JSON.parse(result.candidates[0].content.parts[0].text);
-                    descriptionInput.value = jsonResponse.description || ''; // Fill description input
-                    amountInput.value = formatNumberForInput(jsonResponse.amount ? jsonResponse.amount.toString() : ''); // Fill amount input
-                    // You might want to add logic here to set the transaction category based on jsonResponse.category
-                    // For example, if you have a category dropdown:
-                    // categorySelect.value = jsonResponse.category;
-                } else {
-                    showErrorMessage('Không thể lấy mô tả hình ảnh từ AI. Vui lòng thử lại.');
-                    console.error("Unexpected Gemini Vision API response structure:", result);
-                }
-            } catch (error) {
-                console.error("Error calling Gemini Vision API:", error);
-                showErrorMessage(`Lỗi khi gọi AI: ${error.message}. Vui lòng thử lại.`);
-            } finally {
-                cameraLoadingSpinner.style.display = 'none';
-                cameraModal.classList.add('hidden'); // Close modal after processing
-            }
-        }
-
-
-        // --- Event Listeners ---
-
-        // Main Navigation Buttons
-        document.getElementById('add-member-btn').onclick = () => {
-            hideAllSections();
-            addMemberSection.classList.remove('hidden');
-            memberNameInput.value = ''; // Clear input
-            scrollToSection('add-member-section'); // Scroll to section
-        };
-
-        document.getElementById('add-transaction-btn').onclick = () => {
-            hideAllSections();
-            addTransactionSection.classList.remove('hidden');
-            amountInput.value = ''; // Clear input
-            descriptionInput.value = ''; // Clear input
-            transactionTypeSelect.value = 'contribution'; // Reset to default
-            populateMemberSelectors(); // Repopulate and reset selections
-            transactionTypeSelect.dispatchEvent(new Event('change')); // Trigger change to show/hide correct fields
-            scrollToSection('add-transaction-section'); // Scroll to section
-        };
-
-        document.getElementById('view-transactions-btn').onclick = () => {
-            hideAllSections();
-            transactionsSection.classList.remove('hidden');
-            renderTransactionList(); // Render transactions when section is shown
-            scrollToSection('transactions-section'); // Scroll to section
-        };
-
-        document.getElementById('show-report-selection-btn').onclick = () => {
-            hideAllSections();
-            reportSelectionModal.classList.remove('hidden');
-            // No scroll here, as it's a modal overlay
-        };
-
-        document.getElementById('get-insights-btn').onclick = () => {
-            hideAllSections();
-            fundInsightsModal.classList.remove('hidden');
-            generateFundInsights();
-            // No scroll here, as it's a modal overlay
-        };
-
-        document.getElementById('get-food-suggestions-btn').onclick = () => {
-            hideAllSections();
-            foodSuggestionModal.classList.remove('hidden');
-            if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition((position) => {
-                    generateFoodSuggestions(position.coords.latitude, position.coords.longitude);
-                }, (error) => {
-                    console.error("Error getting location:", error);
-                    let errorMessage = "Không thể lấy vị trí hiện tại của bạn. Vui lòng cho phép truy cập vị trí.";
-                    if (error.code === error.PERMISSION_DENIED) {
-                        errorMessage = "Bạn đã từ chối quyền truy cập vị trí. Vui lòng cho phép trong cài đặt trình duyệt để nhận gợi ý món ăn.";
-                    } else if (error.code === error.POSITION_UNAVAILABLE) {
-                        errorMessage = "Thông tin vị trí không khả dụng.";
-                    } else if (error.code === error.TIMEOUT) {
-                        errorMessage = "Hết thời gian chờ khi cố gắng lấy vị trí.";
-                    }
+                    const errorMessage = "Trình duyệt của bạn không hỗ trợ tính năng định vị địa lý.";
                     foodSuggestionContent.innerHTML = `<p class="text-center text-red-500">${errorMessage}</p>`;
                     showErrorMessage(errorMessage);
-                });
-            } else {
-                const errorMessage = "Trình duyệt của bạn không hỗ trợ tính năng định vị địa lý.";
-                foodSuggestionContent.innerHTML = `<p class="text-center text-red-500">${errorMessage}</p>`;
-                showErrorMessage(errorMessage);
-            }
-            // No scroll here, as it's a modal overlay
-        };
+                }
+                // No scroll here, as it's a modal overlay
+            };
 
-        // Report Selection Modal Buttons
-        selectFundReportBtn.onclick = () => {
-            hideAllSections();
-            fundReportSection.classList.remove('hidden');
-            reportSelectionModal.classList.add('hidden');
-            renderFundReport();
-            scrollToSection('fund-report-section'); // Scroll to section
-        };
+            // Report Selection Modal Buttons
+            selectFundReportBtn.onclick = () => {
+                hideAllSections();
+                fundReportSection.classList.remove('hidden');
+                reportSelectionModal.classList.add('hidden');
+                renderFundReport();
+                scrollToSection('fund-report-section'); // Scroll to section
+            };
 
-        selectMemberReportBtn.onclick = () => {
-            hideAllSections();
-            memberReportsSection.classList.remove('hidden');
-            reportSelectionModal.classList.add('hidden');
-            renderMemberReportDropdown(); // Re-render dropdown and initial member report
-            scrollToSection('member-reports-section'); // Scroll to section
-        };
+            selectMemberReportBtn.onclick = () => {
+                hideAllSections();
+                memberReportsSection.classList.remove('hidden');
+                reportSelectionModal.classList.add('hidden');
+                renderMemberReportDropdown(); // Re-render dropdown and initial member report
+                scrollToSection('member-reports-section'); // Scroll to section
+            };
 
-        closeReportSelectionBtn.onclick = () => {
-            reportSelectionModal.classList.add('hidden');
-        };
+            closeReportSelectionBtn.onclick = () => {
+                reportSelectionModal.classList.add('hidden');
+            };
 
-        // Edit Transaction Modal Buttons
-        cancelEditTransactionBtn.onclick = () => {
-            editTransactionModal.classList.add('hidden');
-            editingTransaction = null;
-            hideErrorMessage();
-        };
+            // Edit Transaction Modal Buttons
+            cancelEditTransactionBtn.onclick = () => {
+                editTransactionModal.classList.add('hidden');
+                editingTransaction = null;
+                hideErrorMessage();
+            };
 
-        // Member Details Modal Button
-        closeMemberDetailsBtn.onclick = () => {
-            memberDetailsModal.classList.add('hidden');
-            selectedMemberForDetails = null;
-        };
+            // Member Details Modal Button
+            closeMemberDetailsBtn.onclick = () => {
+                memberDetailsModal.classList.add('hidden');
+                selectedMemberForDetails = null;
+            };
 
-        // Close Insights Modal Button
-        closeInsightsBtn.onclick = () => {
-            fundInsightsModal.classList.add('hidden');
-            fundInsightsContent.innerHTML = ''; // Clear content when closing
-        };
+            // Close Insights Modal Button
+            closeInsightsBtn.onclick = () => {
+                fundInsightsModal.classList.add('hidden');
+                fundInsightsContent.innerHTML = ''; // Clear content when closing
+            };
 
-        // Close Food Suggestion Modal Button
-        closeFoodSuggestionBtn.onclick = () => {
-            foodSuggestionModal.classList.add('hidden');
-            foodSuggestionContent.innerHTML = ''; // Clear content when closing
-        };
+            // Close Food Suggestion Modal Button
+            closeFoodSuggestionBtn.onclick = () => {
+                foodSuggestionModal.classList.add('hidden');
+                foodSuggestionContent.innerHTML = ''; // Clear content when closing
+            };
 
-        // Member Report Dropdown Change
-        selectMemberReportDropdown.onchange = renderSelectedMemberReport;
+            // Member Report Dropdown Change
+            selectMemberReportDropdown.onchange = renderSelectedMemberReport;
 
-        // Amount input formatting for add and edit forms
-        amountInput.addEventListener('input', (e) => {
-            e.target.value = formatNumberForInput(e.target.value);
-        });
-        editAmountInput.addEventListener('input', (e) => {
-            e.target.value = formatNumberForInput(e.target.value);
-        });
+            // Amount input formatting for add and edit forms
+            amountInput.addEventListener('input', (e) => {
+                e.target.value = formatNumberForInput(e.target.value);
+            });
+            editAmountInput.addEventListener('input', (e) => {
+                e.target.value = formatNumberForInput(e.target.value);
+            });
 
-        // --- Camera Modal Event Listeners ---
-        aiDescribeBtn.onclick = setupCamera;
-        captureBtn.onclick = captureAndProcessImage;
-        cancelCameraBtn.onclick = () => {
-            stopCamera();
-            cameraModal.classList.add('hidden');
-        };
+            // --- Image Upload Modal Event Listeners ---
+            aiDescribeBtn.onclick = () => {
+                hideErrorMessage();
+                cameraModal.classList.remove('hidden'); // Show the modal
+                uploadedImagePreview.classList.add('hidden'); // Hide previous image
+                cameraLoadingSpinner.style.display = 'none'; // Hide spinner initially
+                imageUploadInput.value = ''; // Clear any previously selected file
+                imageUploadInput.click(); // Trigger file input click
+            };
 
-        // --- Image Upload Event Listeners ---
-        uploadImageBtn.onclick = () => {
-            imageUploadInput.click(); // Trigger the hidden file input
-        };
-        imageUploadInput.onchange = handleImageUpload;
+            imageUploadInput.onchange = (event) => {
+                const file = event.target.files[0];
+                if (!file) {
+                    cameraModal.classList.add('hidden'); // Close modal if no file selected
+                    return;
+                }
+
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    uploadedImagePreview.src = e.target.result;
+                    uploadedImagePreview.classList.remove('hidden');
+                    cameraLoadingSpinner.style.display = 'block';
+
+                    const base64Image = e.target.result;
+                    const mimeType = file.type;
+                    const base64DataOnly = base64Image.split(',')[1];
+                    callGeminiVisionAPI(base64DataOnly, mimeType);
+                };
+                reader.readAsDataURL(file);
+            };
+
+            cancelCameraBtn.onclick = () => {
+                cameraModal.classList.add('hidden');
+                imageUploadInput.value = ''; // Clear selected file when cancelling
+            };
+
+            // --- Scroll to Top Button Logic ---
+            window.onscroll = function() {
+                if (document.body.scrollTop > 20 || document.documentElement.scrollTop > 20) {
+                    scrollToTopBtn.classList.add('show');
+                } else {
+                    scrollToTopBtn.classList.remove('show');
+                }
+            };
+
+            scrollToTopBtn.onclick = function() {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            };
 
 
-        // --- Scroll to Top Button Logic ---
-        window.onscroll = function() {
-            if (document.body.scrollTop > 20 || document.documentElement.scrollTop > 20) {
-                scrollToTopBtn.classList.add('show');
-            } else {
-                scrollToTopBtn.classList.remove('show');
-            }
-        };
-
-        scrollToTopBtn.onclick = function() {
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        };
-
-
-        // Initial data fetch and UI render when DOM is fully loaded
-        document.addEventListener('DOMContentLoaded', () => {
-            initializeSupabase();
-        });
-    </script>
-</body>
-</html>
+            // Initial data fetch and UI render when DOM is fully loaded
+            document.addEventListener('DOMContentLoaded', () => {
+                initializeSupabase();
+            });
+        </script>
+    </body>
+    </html>
