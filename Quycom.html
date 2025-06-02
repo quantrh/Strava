@@ -252,10 +252,17 @@
             <div>
                 <label for="description" class="block text-sm font-medium text-gray-700 mb-1">Mô Tả</label>
                 <input type="text" id="description-input" name="description" placeholder="Mô tả giao dịch" class="input-field" required />
-                <button type="button" id="ai-describe-btn" class="btn-secondary mt-2 w-full flex items-center justify-center">
-                    <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M4 5a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2V7a2 2 0 00-2-2h-1.586a1 1 0 01-.707-.293l-1.147-1.146A2 2 0 009.172 3H6a2 2 0 00-2 2zM14 8a2 2 0 11-4 0 2 2 0 014 0z" clip-rule="evenodd"></path></svg>
-                    Mô tả bằng AI (Camera)
-                </button>
+                <div class="flex flex-col sm:flex-row gap-2 mt-2">
+                    <button type="button" id="ai-describe-btn" class="btn-secondary w-full flex items-center justify-center">
+                        <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M4 5a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2V7a2 2 0 00-2-2h-1.586a1 1 0 01-.707-.293l-1.147-1.146A2 2 0 009.172 3H6a2 2 0 00-2 2zM14 8a2 2 0 11-4 0 2 2 0 014 0z" clip-rule="evenodd"></path></svg>
+                        Mô tả bằng AI (Camera)
+                    </button>
+                    <button type="button" id="upload-image-btn" class="btn-secondary w-full flex items-center justify-center">
+                        <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-4 4 4 4-4V5h-2a1 1 0 100 2h2v6l-3-3-4 4-2-2-4 4z" clip-rule="evenodd"></path></svg>
+                        Tải Ảnh Lên
+                    </button>
+                    <input type="file" accept="image/*" class="hidden" id="image-upload-input">
+                </div>
             </div>
             <div class="col-span-full">
                 <button type="submit" class="btn-primary w-full">Ghi Lại Giao Dịch</button>
@@ -484,6 +491,9 @@
         let isGeneratingInsights = false;
         let isGeneratingFoodSuggestions = false;
         let cameraStream = null; // To store the camera stream
+        let currentLatitude = null; // Store current latitude
+        let currentLongitude = null; // Store current longitude
+
 
         // DOM Elements
         const fundBalanceDisplay = document.getElementById('fund-balance-display');
@@ -522,6 +532,8 @@
         const amountInput = document.getElementById('amount-input');
         const descriptionInput = document.getElementById('description-input');
         const aiDescribeBtn = document.getElementById('ai-describe-btn'); // New AI describe button
+        const uploadImageBtn = document.getElementById('upload-image-btn'); // New Upload Image button
+        const imageUploadInput = document.getElementById('image-upload-input'); // Hidden file input
 
         // Camera Elements
         const videoFeed = document.getElementById('video-feed');
@@ -1934,13 +1946,43 @@ Recent Transactions:\n`;
             }
         }
 
+        // --- Geolocation Function ---
+        async function getCurrentLocation() {
+            return new Promise((resolve, reject) => {
+                if (navigator.geolocation) {
+                    navigator.geolocation.getCurrentPosition((position) => {
+                        currentLatitude = position.coords.latitude;
+                        currentLongitude = position.coords.longitude;
+                        resolve({ latitude: currentLatitude, longitude: currentLongitude });
+                    }, (error) => {
+                        console.error("Error getting location:", error);
+                        let message = "Không thể lấy vị trí hiện tại của bạn. Vui lòng cho phép truy cập vị trí.";
+                        if (error.code === error.PERMISSION_DENIED) {
+                            message = "Bạn đã từ chối quyền truy cập vị trí. Vui lòng cho phép trong cài đặt trình duyệt.";
+                        } else if (error.code === error.POSITION_UNAVAILABLE) {
+                            message = "Thông tin vị trí không khả dụng.";
+                        } else if (error.code === error.TIMEOUT) {
+                            message = "Hết thời gian chờ khi cố gắng lấy vị trí.";
+                        }
+                        showErrorMessage(message);
+                        reject(new Error(message));
+                    });
+                } else {
+                    const message = "Trình duyệt của bạn không hỗ trợ tính năng định vị địa lý.";
+                    showErrorMessage(message);
+                    reject(new Error(message));
+                }
+            });
+        }
+
 
         // --- Camera and AI Description Functions ---
 
         // Sets up camera stream
         async function setupCamera() {
             try {
-                const stream = await navigator.mediaDevices.getUserMedia({ video: true }); // Changed to generic 'video: true'
+                await getCurrentLocation(); // Get location before camera
+                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { exact: "environment" } } }); // Prefer rear camera
                 videoFeed.srcObject = stream;
                 cameraStream = stream; // Store stream to stop later
                 videoFeed.play();
@@ -1951,15 +1993,30 @@ Recent Transactions:\n`;
                 cameraLoadingSpinner.style.display = 'none';
                 hideErrorMessage();
             } catch (err) {
-                console.error("Error accessing camera: ", err);
-                let message = "Không thể truy cập camera. Vui lòng kiểm tra quyền truy cập.";
-                if (err.name === "NotAllowedError") {
-                    message = "Bạn đã từ chối quyền truy cập camera. Vui lòng cho phép trong cài đặt trình duyệt.";
-                } else if (err.name === "NotFoundError" || err.name === "DevicesNotFoundError") {
-                    message = "Không tìm thấy thiết bị camera nào.";
+                console.warn("Could not access rear camera, trying default camera:", err);
+                try {
+                    // Fallback to any available camera if rear camera fails
+                    const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                    videoFeed.srcObject = stream;
+                    cameraStream = stream;
+                    videoFeed.play();
+                    cameraModal.classList.remove('hidden');
+                    captureBtn.classList.remove('hidden');
+                    videoFeed.classList.remove('hidden');
+                    capturedImage.classList.add('hidden');
+                    cameraLoadingSpinner.style.display = 'none';
+                    hideErrorMessage();
+                } catch (fallbackErr) {
+                    console.error("Error accessing camera: ", fallbackErr);
+                    let message = "Không thể truy cập camera. Vui lòng kiểm tra quyền truy cập.";
+                    if (fallbackErr.name === "NotAllowedError") {
+                        message = "Bạn đã từ chối quyền truy cập camera. Vui lòng cho phép trong cài đặt trình duyệt.";
+                    } else if (fallbackErr.name === "NotFoundError" || fallbackErr.name === "DevicesNotFoundError") {
+                        message = "Không tìm thấy thiết bị camera nào.";
+                    }
+                    showErrorMessage(message);
+                    cameraModal.classList.add('hidden'); // Hide modal if camera access fails
                 }
-                showErrorMessage(message);
-                cameraModal.classList.add('hidden'); // Hide modal if camera access fails
             }
         }
 
@@ -2025,14 +2082,67 @@ Recent Transactions:\n`;
 
             stopCamera(); // Stop camera after capture
 
-            // Send to Gemini API
+            // Send to Gemini API with current location
             const base64DataOnly = base64Image.split(',')[1]; // Remove "data:image/jpeg;base64," prefix
-            callGeminiVisionAPI(base64DataOnly);
+            callGeminiVisionAPI(base64DataOnly, currentLatitude, currentLongitude);
         }
 
+        // Handles image file upload and processes it
+        async function handleImageUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            hideAllSections(); // Hide other sections
+            cameraModal.classList.remove('hidden'); // Show camera modal for loading/display
+            capturedImage.classList.add('hidden'); // Hide captured image initially
+            videoFeed.classList.add('hidden'); // Hide video feed
+            captureBtn.classList.add('hidden'); // Hide capture button
+            cameraLoadingSpinner.style.display = 'block'; // Show spinner
+
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                const base64Image = e.target.result;
+                const base64DataOnly = base64Image.split(',')[1];
+
+                capturedImage.src = base64Image;
+                capturedImage.classList.remove('hidden'); // Show the uploaded image
+
+                try {
+                    await getCurrentLocation(); // Get location before sending image
+                    callGeminiVisionAPI(base64DataOnly, currentLatitude, currentLongitude);
+                } catch (error) {
+                    console.error("Error getting location for image upload:", error);
+                    cameraLoadingSpinner.style.display = 'none';
+                    cameraModal.classList.add('hidden');
+                }
+            };
+            reader.onerror = (error) => {
+                console.error("Error reading file:", error);
+                showErrorMessage("Lỗi khi đọc tệp ảnh.");
+                cameraLoadingSpinner.style.display = 'none';
+                cameraModal.classList.add('hidden');
+            };
+            reader.readAsDataURL(file);
+        }
+
+
         // Calls Gemini Vision API
-        async function callGeminiVisionAPI(base64ImageData) {
-            const prompt = "Mô tả ngắn gọn nội dung của hình ảnh này bằng tiếng Việt.";
+        async function callGeminiVisionAPI(base64ImageData, latitude, longitude) {
+            let locationInfo = '';
+            if (latitude && longitude) {
+                locationInfo = ` tại vị trí GPS vĩ độ ${latitude}, kinh độ ${longitude}`;
+            }
+
+            // Prompt for Gemini Vision API to get structured output
+            const prompt = `Mô tả ngắn gọn nội dung của hình ảnh này${locationInfo}. Hãy xác định đây là một khoản chi hay thu. Nếu có số tiền trong ảnh, hãy trích xuất số tiền đó. Đồng thời, đề xuất một nhóm chi tiêu phù hợp (ví dụ: Hoa quả, Cà phê, Cơm, cháo, bún, Di chuyển, Mua sắm, Giải trí, Hóa đơn, Lương, Thưởng).
+            
+            Phản hồi phải là một đối tượng JSON với các trường sau:
+            {
+              "description": "Mô tả ngắn gọn nội dung ảnh, bao gồm địa điểm nếu có thể suy ra từ GPS.",
+              "amount": "Số tiền trích xuất từ ảnh (chỉ số, không định dạng, ví dụ: 150000). Nếu không có, để trống hoặc 0.",
+              "category": "Nhóm chi tiêu đề xuất (ví dụ: Cơm, cháo, bún, Cà phê, Hoa quả, Di chuyển, Mua sắm, Giải trí, Hóa đơn, Lương, Thưởng)."
+            }`;
+
             try {
                 let chatHistory = [];
                 const payload = {
@@ -2050,6 +2160,18 @@ Recent Transactions:\n`;
                             ]
                         }
                     ],
+                    generationConfig: {
+                        responseMimeType: "application/json",
+                        responseSchema: {
+                            type: "OBJECT",
+                            properties: {
+                                "description": { "type": "STRING" },
+                                "amount": { "type": "NUMBER" },
+                                "category": { "type": "STRING" }
+                            },
+                            required: ["description", "amount", "category"]
+                        }
+                    }
                 };
                 const apiKey = "AIzaSyBaLi7TzZJ9SwmHilU24SRcV2i7lU6gqdQ"; // Leave as empty string for Canvas to provide
                 const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
@@ -2066,8 +2188,12 @@ Recent Transactions:\n`;
                 if (result.candidates && result.candidates.length > 0 &&
                     result.candidates[0].content && result.candidates[0].content.parts &&
                     result.candidates[0].content.parts.length > 0) {
-                    const description = result.candidates[0].content.parts[0].text;
-                    descriptionInput.value = description; // Fill description input
+                    const jsonResponse = JSON.parse(result.candidates[0].content.parts[0].text);
+                    descriptionInput.value = jsonResponse.description || ''; // Fill description input
+                    amountInput.value = formatNumberForInput(jsonResponse.amount ? jsonResponse.amount.toString() : ''); // Fill amount input
+                    // You might want to add logic here to set the transaction category based on jsonResponse.category
+                    // For example, if you have a category dropdown:
+                    // categorySelect.value = jsonResponse.category;
                 } else {
                     showErrorMessage('Không thể lấy mô tả hình ảnh từ AI. Vui lòng thử lại.');
                     console.error("Unexpected Gemini Vision API response structure:", result);
@@ -2214,6 +2340,13 @@ Recent Transactions:\n`;
             stopCamera();
             cameraModal.classList.add('hidden');
         };
+
+        // --- Image Upload Event Listeners ---
+        uploadImageBtn.onclick = () => {
+            imageUploadInput.click(); // Trigger the hidden file input
+        };
+        imageUploadInput.onchange = handleImageUpload;
+
 
         // --- Scroll to Top Button Logic ---
         window.onscroll = function() {
