@@ -175,9 +175,9 @@
 </head>
 <body class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4 font-sans text-gray-800">
 
-    <h1 class="text-4xl font-bold text-center text-[#006B68] mb-8">QUẢN LÝ QUỸ NHÓM</h1>
-    <div class="flex justify-center mb-8">
-        <img src="LogoQuy.png" alt="Logo Quản Lý Quỹ Nhóm" class="h-24 w-auto rounded-lg shadow-md" onerror="this.onerror=null;this.src='https://placehold.co/150x150/006B68/FFFFFF?text=Logo+Quy';">
+    <div class="flex items-center justify-start gap-4 mb-8">
+        <img src="LogoQuy.png" alt="Logo Quản Lý Quỹ Nhóm" class="h-16 w-auto rounded-lg shadow-md" onerror="this.onerror=null;this.src='https://placehold.co/100x100/006B68/FFFFFF?text=Logo+Quy';">
+        <h1 class="text-4xl font-bold text-[#006B68]">QUẢN LÝ QUỸ NHÓM</h1>
     </div>
 
     <div id="fund-balance-card" class="card mb-8 text-center">
@@ -495,7 +495,7 @@
         const memberDetailsModal = document.getElementById('member-details-modal');
         const confirmationModal = document.getElementById('confirmation-modal');
         const reportSelectionModal = document.getElementById('report-selection-modal');
-        const fundInsightsModal = document.getElementById('fund-insights-modal');
+        const fundInsightsModal = document = document.getElementById('fund-insights-modal');
         const fundInsightsContent = document.getElementById('fund-insights-content');
         const foodSuggestionModal = document.getElementById('food-suggestion-modal');
         const foodSuggestionContent = document.getElementById('food-suggestion-content');
@@ -1886,13 +1886,11 @@ Recent Transactions:\n`;
                     `;
                     hideErrorMessage(); // Clear previous errors for food suggestions
 
-                    // START: Updated prompt for food suggestions
                     let prompt = `Dựa trên vị trí GPS hiện tại của tôi (vĩ độ: ${latitude}, kinh độ: ${longitude}), hãy gợi ý 3-10 món ăn phổ biến và các quán ăn ngon gần đó.
                     Đối với mỗi gợi ý, cung cấp các thông tin sau:
                     - Tên quán ăn
-                    - Địa chỉ
+                    - Địa chỉ đầy đủ (bao gồm số nhà, tên đường, phường/xã, quận/huyện, thành phố).
                     - Số điện thoại (nếu có)
-                    - Link liên kết đến Google Maps (CẦN ĐẢM BẢO ĐÚNG LINK)
                     - Số sao được bình chọn (ví dụ: 4.5)
                     - Khoảng cách dự kiến từ vị trí của tôi (ví dụ: 1.2 km)
                     - Mô tả ngắn gọn về quán ăn hoặc món ăn đặc trưng.
@@ -1902,9 +1900,8 @@ Recent Transactions:\n`;
                     [
                       {
                         "name": "Tên quán ăn",
-                        "address": "Địa chỉ quán ăn",
+                        "address": "Địa chỉ quán ăn đầy đủ",
                         "phoneNumber": "Số điện thoại",
-                        "googleMapsLink": "Link Google Maps",
                         "starRating": 4.5,
                         "estimatedDistance": "1.2 km",
                         "description": "Mô tả quán ăn",
@@ -1912,7 +1909,6 @@ Recent Transactions:\n`;
                       }
                     ]
                     `;
-                    // END: Updated prompt for food suggestions
 
                     console.log("Sending food suggestion prompt to Gemini API:", prompt);
 
@@ -1929,20 +1925,19 @@ Recent Transactions:\n`;
                                         type: "OBJECT",
                                         properties: {
                                             "name": { "type": "STRING" },
-                                            "address": { "type": "STRING" },
+                                            "address": { "type": "STRING" }, // Ensure address is a string
                                             "phoneNumber": { "type": "STRING" },
-                                            "googleMapsLink": { "type": "STRING" },
                                             "starRating": { "type": "NUMBER" },
                                             "estimatedDistance": { "type": "STRING" },
-                                            "description": { "type": "STRING" }, // Added description
-                                            "menuContent": { "type": "STRING" }  // Added menuContent
+                                            "description": { "type": "STRING" },
+                                            "menuContent": { "type": "STRING" }
                                         },
-                                        "propertyOrdering": ["name", "address", "phoneNumber", "googleMapsLink", "starRating", "estimatedDistance", "description", "menuContent"]
+                                        "propertyOrdering": ["name", "address", "phoneNumber", "starRating", "estimatedDistance", "description", "menuContent"]
                                     }
                                 }
                             }
                         };
-                        const apiKey = "AIzaSyBaLi7TzZJ9SwmHilU24SRcV2i7lU6gqdQ"; // Sử dụng biến môi trường GeminiVisionAPI
+                        const apiKey = "AIzaSyBaLi7TzZJ9SwmHilU24SRcV2i7lU6gqdQ"; // Leave as empty string for Canvas to provide
                         const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
 
                         const response = await fetch(apiUrl, {
@@ -1963,6 +1958,9 @@ Recent Transactions:\n`;
                             let htmlContent = '<div class="space-y-4">';
                             if (suggestions.length > 0) {
                                 suggestions.forEach(s => {
+                                    // Construct Google Maps search link using the restaurant name
+                                    const googleMapsSearchLink = s.name ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(s.name)}` : '#';
+
                                     htmlContent += `
                                         <div class="p-4 border border-gray-200 rounded-lg shadow-sm bg-white">
                                             <h3 class="text-lg font-semibold text-[#006B68]">${s.name}</h3>
@@ -1972,7 +1970,7 @@ Recent Transactions:\n`;
                                             <p class="text-sm text-gray-600"><strong>Khoảng cách:</strong> ${s.estimatedDistance || 'N/A'}</p>
                                             ${s.description ? `<p class="text-sm text-gray-700 mt-2"><strong>Mô tả:</strong> ${s.description}</p>` : ''}
                                             ${s.menuContent ? `<p class="text-sm text-gray-700"><strong>Menu:</strong> ${s.menuContent}</p>` : ''}
-                                            ${s.googleMapsLink ? `<a href="${s.googleMapsLink}" target="_blank" class="text-blue-500 hover:underline text-sm mt-2 block">Xem trên Google Maps</a>` : ''}
+                                            ${s.name ? `<a href="${googleMapsSearchLink}" target="_blank" class="text-blue-500 hover:underline text-sm mt-2 block">Xem trên Google Maps</a>` : ''}
                                         </div>
                                     `;
                                 });
