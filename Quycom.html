@@ -1385,6 +1385,12 @@
         // Handles adding a new transaction
         addTransactionForm.onsubmit = async (e) => {
             e.preventDefault();
+            const submitButton = e.submitter; // Get the button that triggered the submit
+            if (submitButton) {
+                submitButton.disabled = true; // Disable the button immediately
+                submitButton.textContent = 'Đang lưu...'; // Optional: show loading text
+            }
+
             const type = transactionTypeSelect.value;
             const amount = parseFormattedNumber(amountInput.value);
             const description = descriptionInput.value.trim();
@@ -1393,14 +1399,26 @@
 
             if (isNaN(amount) || amount <= 0 || !description) {
                 showErrorMessage(translations[currentLanguage].invalidAmountDesc);
+                if (submitButton) {
+                    submitButton.disabled = false;
+                    submitButton.textContent = translations[currentLanguage].recordTransactionBtn;
+                }
                 return;
             }
             if (type === 'contribution' && !contributingMemberId) {
                 showErrorMessage(translations[currentLanguage].selectContributingMember);
+                if (submitButton) {
+                    submitButton.disabled = false;
+                    submitButton.textContent = translations[currentLanguage].recordTransactionBtn;
+                }
                 return;
             }
             if (type === 'expense' && selectedExpenseMembers.length === 0) {
                 showErrorMessage(translations[currentLanguage].selectInvolvedMembers);
+                if (submitButton) {
+                    submitButton.disabled = false;
+                    submitButton.textContent = translations[currentLanguage].recordTransactionBtn;
+                }
                 return;
             }
             hideErrorMessage();
@@ -1427,6 +1445,11 @@
             } catch (error) {
                 console.error("Error adding transaction:", error.message);
                 showErrorMessage(`${translations[currentLanguage].addTransactionError} ${error.message}`);
+            } finally {
+                if (submitButton) {
+                    submitButton.disabled = false;
+                    submitButton.textContent = translations[currentLanguage].recordTransactionBtn; // Reset button text
+                }
             }
         };
 
@@ -1568,6 +1591,12 @@
             e.preventDefault();
             if (!editingTransaction) return;
 
+            const submitButton = e.submitter; // Get the button that triggered the submit
+            if (submitButton) {
+                submitButton.disabled = true; // Disable the button immediately
+                submitButton.textContent = 'Đang lưu...'; // Optional: show loading text
+            }
+
             const type = editTransactionTypeSelect.value;
             const amount = parseFormattedNumber(editAmountInput.value);
             const description = editDescriptionInput.value.trim();
@@ -1576,14 +1605,26 @@
 
             if (isNaN(amount) || amount <= 0 || !description) {
                 showErrorMessage(translations[currentLanguage].editInvalidAmountDesc);
+                if (submitButton) {
+                    submitButton.disabled = false;
+                    submitButton.textContent = translations[currentLanguage].saveChangesBtn;
+                }
                 return;
             }
             if (type === 'contribution' && !contributingMemberId) {
                 showErrorMessage(translations[currentLanguage].editSelectContributingMember);
+                if (submitButton) {
+                    submitButton.disabled = false;
+                    submitButton.textContent = translations[currentLanguage].saveChangesBtn;
+                }
                 return;
             }
             if (type === 'expense' && involvedMemberIds.length === 0) {
                 showErrorMessage(translations[currentLanguage].editSelectInvolvedMembers);
+                if (submitButton) {
+                    submitButton.disabled = false;
+                    submitButton.textContent = translations[currentLanguage].saveChangesBtn;
+                }
                 return;
             }
             hideErrorMessage();
@@ -1606,6 +1647,11 @@
             } catch (error) {
                 console.error("Error editing transaction:", error.message);
                 showErrorMessage(`${translations[currentLanguage].editTransactionError} ${error.message}`);
+            } finally {
+                if (submitButton) {
+                    submitButton.disabled = false;
+                    submitButton.textContent = translations[currentLanguage].saveChangesBtn; // Reset button text
+                }
             }
         };
 
@@ -2475,7 +2521,7 @@ Recent Transactions:\n`;
                         }
                     } catch (error) {
                         console.error("Error calling Gemini API for food suggestions:", error);
-                        showErrorMessage(`${translations[currentLanguage].aiCallError} ${error.message}. ${translations[currentLanguage].foodSuggestionError}`);
+                        showErrorMessage(`${translations[currentLanguage].aiCallError} ${error.message}. ${translations[currentLanguage].aiConnectionError}`);
                         foodSuggestionContent.innerHTML = `<p class="text-center text-gray-500">${translations[currentLanguage].aiConnectionError}</p>`;
                     } finally {
                         isGeneratingFoodSuggestions = false;
