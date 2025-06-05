@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ứng dụng Thư ký Cuộc họp</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom styles for Inter font */
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* Hide default file input */
+        input[type="file"] {
+            display: none;
+        }
+        /* Style for custom file input button */
+        .custom-file-upload {
+            border: 2px dashed #006B68; /* Use BIDV primary color */
+            background-color: #E6F3E6; /* Lighter shade of primary for background */
+            color: #006B68; /* Use BIDV primary color for text */
+            padding: 1rem 1.5rem;
+            border-radius: 0.5rem; /* rounded-lg */
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            transition: all 0.2s ease-in-out;
+        }
+        .custom-file-upload:hover {
+            border-color: #005A58; /* Darker shade for hover */
+            background-color: #D0E6D0; /* Slightly darker shade for hover */
+        }
+        .custom-file-upload.has-file {
+            border-color: #FFC62F; /* Use BIDV accent yellow for success */
+            background-color: #FFFBEB; /* Lighter shade of accent yellow */
+            color: #D97706; /* Darker yellow/orange for text (tailwind yellow-700 equivalent) */
+        }
+        .loading-spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-left-color: #006B68; /* Use BIDV primary color for spinner */
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Styles for the main buttons using direct hex codes */
+        .btn-bidv-primary {
+            background-color: #006B68;
+            color: white;
+            font-weight: 600;
+            padding: 0.75rem 1.5rem; /* py-3 px-6 */
+            border-radius: 0.5rem; /* rounded-lg */
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1); /* shadow-md */
+            transition: background-color 300ms ease-in-out;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .btn-bidv-primary:hover:not(:disabled) {
+            background-color: #005A58; /* Darker shade for hover */
+        }
+        .btn-bidv-primary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen flex items-center justify-center p-4">
+    <div class="bg-white p-8 rounded-xl shadow-lg w-full max-w-3xl space-y-6">
+        <h1 class="text-3xl font-bold text-gray-800 text-center mb-6">Tạo Lịch Họp từ Tài liệu</h1>
+
+        <!-- File Upload Section -->
+        <div class="border-b pb-6 mb-6">
+            <label for="file-upload" class="custom-file-upload" id="file-upload-label">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5" />
+                </svg>
+                <span id="file-upload-text">Tải lên hoặc chụp ảnh tài liệu (JPG, PNG)</span>
+                <div id="file-upload-spinner" class="loading-spinner hidden"></div>
+            </label>
+            <input id="file-upload" type="file" accept="image/jpeg,image/png" />
+            <div id="image-preview-container" class="mt-4 hidden">
+                <img id="image-preview" class="max-w-full h-auto rounded-lg shadow-md mx-auto" src="#" alt="Xem trước ảnh" />
+            </div>
+            <p id="file-error" class="text-red-500 text-sm mt-2 hidden">Kích thước tệp quá lớn. Vui lòng chọn tệp dưới 4MB.</p>
+        </div>
+
+        <!-- Process Button -->
+        <div class="flex justify-center">
+            <button id="process-button" class="btn-bidv-primary" disabled>
+                <span id="button-text">Trích xuất thông tin & Tạo lịch</span>
+                <div id="loading-spinner" class="loading-spinner hidden"></div>
+            </button>
+        </div>
+
+        <!-- Extracted Information Display -->
+        <div id="extracted-info-section" class="mt-8 border-t pt-6 hidden">
+            <h2 class="text-2xl font-semibold text-gray-700 mb-4">Thông tin cuộc họp đã trích xuất:</h2>
+            <div id="extracted-info" class="bg-gray-50 p-4 rounded-lg border border-gray-200 text-gray-800 text-sm overflow-x-auto">
+                <!-- Extracted JSON will be displayed here -->
+            </div>
+            <div class="flex justify-center mt-6">
+                <a id="download-ics" class="btn-bidv-primary" style="display: none;">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" />
+                    </svg>
+                    Tải xuống tệp ICS
+                </a>
+            </div>
+        </div>
+
+        <!-- Error Message Display -->
+        <div id="error-message" class="mt-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg hidden">
+            <p class="font-semibold">Đã xảy ra lỗi:</p>
+            <p id="error-text"></p>
+        </div>
+    </div>
+
+    <script type="module">
+        // Global variables for Firebase configuration and app ID
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+        // Fix: Use __initial_auth_token instead of initialAuthToken to avoid ReferenceError
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null; 
+
+        // UI elements
+        const fileUpload = document.getElementById('file-upload');
+        const fileUploadLabel = document.getElementById('file-upload-label');
+        const fileUploadText = document.getElementById('file-upload-text');
+        const fileUploadSpinner = document.getElementById('file-upload-spinner'); // New spinner for file upload label
+        const imagePreviewContainer = document.getElementById('image-preview-container');
+        const imagePreview = document.getElementById('image-preview');
+        const fileError = document.getElementById('file-error');
+        const processButton = document.getElementById('process-button');
+        const buttonText = document.getElementById('button-text');
+        const loadingSpinner = document.getElementById('loading-spinner'); // Spinner for process button
+        const extractedInfoSection = document.getElementById('extracted-info-section');
+        const extractedInfoDiv = document.getElementById('extracted-info');
+        const downloadIcsLink = document.getElementById('download-ics');
+        const errorMessageDiv = document.getElementById('error-message');
+        const errorTextP = document.getElementById('error-text');
+
+        let uploadedImageBase64 = null; // Stores the Base64 representation of the uploaded image
+        let mimeTypeForGemini = 'image/jpeg'; // Global variable to store the mime type for Gemini API
+
+        /**
+         * Compresses an image file to be under 4MB, optionally resizing it.
+         * Converts PNG to JPEG if necessary for compression.
+         * @param {File} file The image file to compress.
+         * @returns {Promise<{base64: string, mimeType: string}>} A promise that resolves with the compressed base64 data and its mime type.
+         */
+        async function compressImage(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        const ctx = canvas.getContext('2d');
+
+                        let width = img.width;
+                        let height = img.height;
+                        const MAX_DIMENSION = 2000; // Max dimension for width/height to prevent excessively large canvases
+
+                        // Resize if image is too large in dimensions
+                        if (width > MAX_DIMENSION || height > MAX_DIMENSION) {
+                            if (width > height) {
+                                height = Math.round(height * (MAX_DIMENSION / width));
+                                width = MAX_DIMENSION;
+                            } else {
+                                width = Math.round(width * (MAX_DIMENSION / height));
+                                height = MAX_DIMENSION;
+                            }
+                        }
+
+                        canvas.width = width;
+                        canvas.height = height;
+                        ctx.drawImage(img, 0, 0, width, height);
+
+                        let quality = 0.9; // Start with high quality for JPEG compression
+                        let compressedDataUrl = '';
+                        let compressedBase64 = '';
+                        let outputMimeType = 'image/jpeg'; // Default output to JPEG for compression
+
+                        // If original is PNG and it's large, we'll convert it to JPEG for compression.
+                        // Otherwise, try to maintain original type if it's JPEG.
+                        if (file.type === 'image/png' && file.size > 4 * 1024 * 1024) {
+                            outputMimeType = 'image/jpeg';
+                        } else if (file.type === 'image/jpeg') {
+                            outputMimeType = 'image/jpeg';
+                        } else {
+                            // Fallback for other image types, though accept="image/jpeg,image/png" limits this
+                            outputMimeType = 'image/jpeg';
+                        }
+
+                        const attemptCompression = () => {
+                            compressedDataUrl = canvas.toDataURL(outputMimeType, quality);
+                            compressedBase64 = compressedDataUrl.split(',')[1];
+                            // Approximate size for base64: (length * 0.75) for typical base64 encoding
+                            const sizeInBytes = (compressedBase64.length * 0.75);
+
+                            // If size is within limit or quality is too low, resolve
+                            if (sizeInBytes <= 4 * 1024 * 1024 || quality <= 0.1) {
+                                resolve({ base64: compressedBase64, mimeType: outputMimeType });
+                            } else {
+                                quality -= 0.1; // Reduce quality
+                                if (quality < 0.1) quality = 0.1; // Don't go below 0.1
+                                setTimeout(attemptCompression, 0); // Continue compression asynchronously
+                            }
+                        };
+
+                        attemptCompression();
+                    };
+                    img.onerror = (error) => reject(new Error("Không thể tải ảnh để nén."));
+                    img.src = event.target.result;
+                };
+                reader.onerror = (error) => reject(new Error("Không thể đọc tệp ảnh."));
+                reader.readAsDataURL(file);
+            });
+        }
+
+        // Event listener for file input change
+        fileUpload.addEventListener('change', async function(event) {
+            const file = event.target.files[0];
+            if (!file) {
+                imagePreviewContainer.classList.add('hidden');
+                processButton.disabled = true;
+                fileUploadLabel.classList.remove('has-file');
+                fileUploadText.textContent = 'Tải lên hoặc chụp ảnh tài liệu (JPG, PNG)';
+                uploadedImageBase64 = null;
+                hideResults();
+                hideError();
+                return;
+            }
+
+            fileUploadLabel.classList.add('has-file');
+            fileUploadText.textContent = `Đang xử lý: ${file.name}`;
+            fileUploadSpinner.classList.remove('hidden'); // Show loading spinner on label
+            processButton.disabled = true; // Disable button during processing
+            hideResults();
+            hideError();
+
+            try {
+                let finalBase64 = null;
+                let finalMimeType = file.type; // Start with original mime type
+
+                // If file is already small, just read it
+                if (file.size <= 4 * 1024 * 1024) {
+                    const reader = new FileReader();
+                    await new Promise((resolve) => {
+                        reader.onload = (e) => {
+                            finalBase64 = e.target.result.split(',')[1];
+                            resolve();
+                        };
+                        reader.readAsDataURL(file);
+                    });
+                } else {
+                    // Attempt to compress if larger than 4MB
+                    fileUploadText.textContent = `Đang nén ảnh: ${file.name}`;
+                    const compressedResult = await compressImage(file);
+                    finalBase64 = compressedResult.base64;
+                    finalMimeType = compressedResult.mimeType;
+
+                    // Re-check size after compression
+                    const compressedSizeInBytes = (finalBase64.length * 0.75);
+                    if (compressedSizeInBytes > 4 * 1024 * 1024) {
+                        throw new Error('Kích thước tệp sau khi nén vẫn quá lớn (>4MB).');
+                    }
+                }
+
+                imagePreview.src = `data:${finalMimeType};base64,${finalBase64}`;
+                imagePreviewContainer.classList.remove('hidden');
+                uploadedImageBase64 = finalBase64;
+                mimeTypeForGemini = finalMimeType; // Update global mime type for Gemini
+                processButton.disabled = false; // Enable button
+                fileError.classList.add('hidden'); // Hide any previous file error
+                fileUploadText.textContent = file.name; // Reset label text to original file name
+
+            } catch (error) {
+                console.error('Lỗi khi xử lý tệp ảnh:', error);
+                fileError.textContent = `Lỗi: ${error.message || 'Không thể xử lý tệp ảnh.'} Vui lòng chọn tệp khác.`;
+                fileError.classList.remove('hidden');
+                imagePreviewContainer.classList.add('hidden');
+                processButton.disabled = true;
+                uploadedImageBase64 = null;
+                fileUploadLabel.classList.remove('has-file');
+                fileUploadText.textContent = 'Tải lên hoặc chụp ảnh tài liệu (JPG, PNG)';
+            } finally {
+                fileUploadSpinner.classList.add('hidden'); // Hide loading spinner on label
+            }
+        });
+
+        // Event listener for process button click
+        processButton.addEventListener('click', async () => {
+            if (!uploadedImageBase64) {
+                showError('Vui lòng tải lên một tệp ảnh trước.');
+                return;
+            }
+
+            // Show loading state
+            buttonText.textContent = 'Đang xử lý...';
+            loadingSpinner.classList.remove('hidden');
+            processButton.disabled = true;
+            hideResults();
+            hideError();
+
+            try {
+                const meetingData = await sendImageToGemini(uploadedImageBase64);
+                displayMeetingInfo(meetingData);
+                generateIcsFile(meetingData);
+            } catch (error) {
+                console.error('Lỗi khi xử lý tài liệu:', error);
+                showError('Không thể trích xuất thông tin hoặc tạo tệp ICS. Vui lòng thử lại hoặc kiểm tra định dạng tài liệu.');
+            } finally {
+                // Reset button state
+                buttonText.textContent = 'Trích xuất thông tin & Tạo lịch';
+                loadingSpinner.classList.add('hidden');
+                processButton.disabled = false;
+            }
+        });
+
+        /**
+         * Sends the image to Gemini API for information extraction.
+         * @param {string} base64ImageData The Base64 encoded image data.
+         * @returns {Promise<Object>} A promise that resolves with the extracted meeting data.
+         */
+        async function sendImageToGemini(base64ImageData) {
+            const prompt = `Bạn là trợ lý AI chuyên hỗ trợ tạo và quản lý lịch họp, có khả năng đọc hiểu tài liệu và trích xuất thông tin chính xác để xây dựng lịch họp chuyên nghiệp.
+            
+            Dựa trên tài liệu hình ảnh được cung cấp, hãy trích xuất các thông tin sau và trả về dưới dạng JSON. Nếu thông tin không có, hãy để trống hoặc sử dụng giá trị mặc định theo quy tắc.
+
+            Quy tắc trích xuất:
+            - "Chủ đề cuộc họp": Tiêu đề cuộc họp. **Bắt buộc kèm theo số công văn hoặc số thông báo (nếu có) vào cuối tiêu đề, trong dấu ngoặc đơn.** Ví dụ: "Tiêu đề cuộc họp (CV-2024/001)". Nếu không có số, chỉ ghi tiêu đề.
+            - "Địa điểm họp": Lấy theo nội dung tài liệu. Nếu không có, đánh dấu là "Chưa rõ – cần xác minh".
+            - "Thời gian bắt đầu": Thời gian bắt đầu cuộc họp (định dạng YYYY-MM-DD HH:MM).
+            - "Thời gian kết thúc": Thời gian kết thúc cuộc họp (định dạng YYYY-MM-DD HH:MM). Nếu không được nêu rõ, mặc định = Thời gian bắt đầu + 2 giờ.
+            - "Thành phần tham dự": Liệt kê các đơn vị/cá nhân theo tài liệu dưới dạng mảng các chuỗi.
+            - "Nội dung làm việc chính": Tóm tắt ngắn gọn, rõ ràng nội dung làm việc chính.
+            - "Đơn vị chủ trì hoặc tổ chức thực hiện": Đơn vị chủ trì hoặc tổ chức thực hiện.
+            - "Người chủ trì cuộc họp": (Tùy chọn) Người chủ trì cuộc họp.
+            - "Đường dẫn họp trực tuyến (Zoom/Teams/Meet)": (Tùy chọn) Đường dẫn họp trực tuyến (Zoom/Teams/Meet).
+            - "Yêu cầu nhắc lịch trước": (Tùy chọn) Yêu cầu nhắc lịch trước (ví dụ: "1 NGÀY", "30 PHÚT"). Nếu không có, mặc định là "1 NGÀY".
+
+            Đảm bảo rằng tất cả các trường được liệt kê trong schema đều có mặt trong JSON đầu ra, ngay cả khi chúng trống hoặc là giá trị mặc định.
+            `;
+
+            let chatHistory = [];
+            chatHistory.push({ role: "user", parts: [{ text: prompt }] });
+
+            const payload = {
+                contents: [
+                    {
+                        role: "user",
+                        parts: [
+                            { text: prompt },
+                            {
+                                inlineData: {
+                                    mimeType: mimeTypeForGemini, // Use the dynamically determined mime type
+                                    data: base64ImageData
+                                }
+                            }
+                        ]
+                    }
+                ],
+                generationConfig: {
+                    responseMimeType: "application/json",
+                    responseSchema: {
+                        type: "OBJECT",
+                        properties: {
+                            "Chủ đề cuộc họp": { "type": "STRING" }, // This will now contain the combined subject
+                            // "Số công văn hoặc số thông báo": { "type": "STRING", "nullable": true }, // Removed from schema
+                            "Địa điểm họp": { "type": "STRING" },
+                            "Thời gian bắt đầu": { "type": "STRING" },
+                            "Thời gian kết thúc": { "type": "STRING" },
+                            "Thành phần tham dự": {
+                                "type": "ARRAY",
+                                "items": { "type": "STRING" }
+                            },
+                            "Nội dung làm việc chính": { "type": "STRING" },
+                            "Đơn vị chủ trì hoặc tổ chức thực hiện": { "type": "STRING" },
+                            "Người chủ trì cuộc họp": { "type": "STRING", "nullable": true },
+                            "Đường dẫn họp trực tuyến (Zoom/Teams/Meet)": { "type": "STRING", "nullable": true },
+                            "Yêu cầu nhắc lịch trước": { "type": "STRING", "nullable": true }
+                        },
+                        "required": [
+                            "Chủ đề cuộc họp",
+                            "Địa điểm họp",
+                            "Thời gian bắt đầu",
+                            "Thời gian kết thúc",
+                            "Thành phần tham dự",
+                            "Nội dung làm việc chính",
+                            "Đơn vị chủ trì hoặc tổ chức thực hiện"
+                        ]
+                    }
+                }
+            };
+
+            const apiKey = ""; // Canvas will automatically provide it in runtime
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+            const response = await fetch(apiUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(`API error: ${response.status} ${response.statusText} - ${errorData.error?.message || 'Unknown error'}`);
+            }
+
+            const result = await response.json();
+
+            if (result.candidates && result.candidates.length > 0 &&
+                result.candidates[0].content && result.candidates[0].content.parts &&
+                result.candidates[0].content.parts.length > 0) {
+                const jsonString = result.candidates[0].content.parts[0].text;
+                try {
+                    const parsedJson = JSON.parse(jsonString);
+                    return parsedJson;
+                } catch (parseError) {
+                    console.error("Lỗi phân tích JSON từ Gemini:", parseError);
+                    console.error("Phản hồi thô từ Gemini:", jsonString);
+                    throw new Error("Phản hồi từ AI không phải là JSON hợp lệ.");
+                }
+            } else {
+                throw new Error("Không nhận được phản hồi hợp lệ từ Gemini.");
+            }
+        }
+
+        /**
+         * Displays the extracted meeting information in a readable format.
+         * @param {Object} meetingData The extracted meeting data.
+         */
+        function displayMeetingInfo(meetingData) {
+            extractedInfoDiv.innerHTML = `<pre class="whitespace-pre-wrap">${JSON.stringify(meetingData, null, 2)}</pre>`;
+            extractedInfoSection.classList.remove('hidden');
+        }
+
+        /**
+         * Generates an ICS file from the extracted meeting data and provides a download link.
+         * @param {Object} meetingData The extracted meeting data.
+         */
+        function generateIcsFile(meetingData) {
+            const subjectRaw = meetingData["Chủ đề cuộc họp"] || "Cuộc họp"; // This will now contain the combined subject
+            // const notificationNumber = meetingData["Số công văn hoặc số thông báo"] || ""; // Removed
+            const location = meetingData["Địa điểm họp"] || "Chưa rõ – cần xác minh";
+            const attendees = meetingData["Thành phần tham dự"] || [];
+            const mainContent = meetingData["Nội dung làm việc chính"] || "Không có nội dung chính.";
+            const organizer = meetingData["Đơn vị chủ trì hoặc tổ chức thực hiện"] || "Không rõ";
+            const chair = meetingData["Người chủ trì cuộc họp"] || "";
+            const onlineLink = meetingData["Đường dẫn họp trực tuyến (Zoom/Teams/Meet)"] || "";
+            const reminder = meetingData["Yêu cầu nhắc lịch trước"] || "1 NGÀY"; // Default reminder
+
+            let startTime = null;
+            let endTime = null;
+
+            try {
+                // Parse start time
+                startTime = new Date(meetingData["Thời gian bắt đầu"]);
+                if (isNaN(startTime.getTime())) {
+                    throw new Error("Thời gian bắt đầu không hợp lệ.");
+                }
+
+                // Parse end time, or calculate if missing
+                if (meetingData["Thời gian kết thúc"]) {
+                    endTime = new Date(meetingData["Thời gian kết thúc"]);
+                    if (isNaN(endTime.getTime())) {
+                        throw new Error("Thời gian kết thúc không hợp lệ.");
+                    }
+                } else {
+                    // Default to 2 hours after start time
+                    endTime = new Date(startTime.getTime() + 2 * 60 * 60 * 1000);
+                }
+            } catch (e) {
+                showError(`Lỗi định dạng thời gian: ${e.message}. Vui lòng đảm bảo "Thời gian bắt đầu" và "Thời gian kết thúc" đúng định dạng YYYY-MM-DD HH:MM.`);
+                extractedInfoSection.classList.add('hidden'); // Hide results if time is invalid
+                return;
+            }
+
+            // Format date for ICS (YYYYMMDDTHHMMSS)
+            // Using a helper to format date for ICS, ensuring leading zeros
+            const formatIcsDateTime = (date) => {
+                const year = date.getFullYear();
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const day = String(date.getDate()).padStart(2, '0');
+                const hours = String(date.getHours()).padStart(2, '0');
+                const minutes = String(date.getMinutes()).padStart(2, '0');
+                const seconds = String(date.getSeconds()).padStart(2, '0');
+                return `${year}${month}${day}T${hours}${minutes}${seconds}`;
+            };
+
+            const dtStartIcs = formatIcsDateTime(startTime);
+            const dtEndIcs = formatIcsDateTime(endTime);
+            const dtStampIcs = formatIcsDateTime(new Date()); // Current timestamp
+
+            // Generate a unique ID for the event
+            const uid = `${dtStampIcs}-${Math.random().toString(36).substring(2, 15)}@${window.location.hostname || 'meeting-secretary-app'}`;
+
+            // The summary is now expected to be directly provided by Gemini, including the notification number
+            const icsSummary = subjectRaw;
+
+            // Construct description without the notification number as a separate field
+            let description = `Tiêu đề: ${subjectRaw}`;
+            // if (notificationNumber) { description += `\\nSố công văn/thông báo: ${notificationNumber}`; } // Removed
+            description += `\\n\\n1. Nội dung làm việc chính: ${mainContent}`;
+            if (attendees.length > 0) {
+                description += `\\n2. Thành phần tham dự: ${attendees.join(', ')}`;
+            } else {
+                description += `\\n2. Thành phần tham dự: Chưa rõ`;
+            }
+            description += `\\n3. Đơn vị chủ trì hoặc tổ chức thực hiện: ${organizer}`;
+            
+            if (chair) {
+                description += `\\nNgười chủ trì: ${chair}`;
+            }
+            if (onlineLink) {
+                description += `\\nĐường dẫn trực tuyến: ${onlineLink}`;
+            }
+
+            // Handle reminder (ALARM)
+            let alarmTrigger = '';
+            let reminderValue = 0; // in minutes
+            let reminderUnit = 'MINUTE';
+
+            const reminderMatch = reminder.match(/(\d+)\s*(NGÀY|GIỜ|PHÚT)/i);
+            if (reminderMatch) {
+                reminderValue = parseInt(reminderMatch[1]);
+                reminderUnit = reminderMatch[2].toUpperCase();
+
+                switch (reminderUnit) {
+                    case 'NGÀY':
+                        alarmTrigger = `-P${reminderValue}D`; // P1D for 1 day
+                        break;
+                    case 'GIỜ':
+                        alarmTrigger = `-PT${reminderValue}H`; // PT1H for 1 hour
+                        break;
+                    case 'PHÚT':
+                        alarmTrigger = `-PT${reminderValue}M`; // PT30M for 30 minutes
+                        break;
+                    default:
+                        alarmTrigger = `-P1D`; // Default to 1 day if unit is unrecognized
+                }
+            } else {
+                alarmTrigger = `-P1D`; // Default to 1 day if reminder format is not matched
+            }
+
+            const icsContent = `BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//Meeting Secretary App//NONSGML v1.0//EN
+CALSCALE:GREGORIAN
+BEGIN:VTIMEZONE
+TZID:Asia/Ho_Chi_Minh
+X-LIC-LOCATION:Asia/Ho_Chi_Minh
+BEGIN:STANDARD
+TZOFFSETFROM:+0700
+TZOFFSETTO:+0700
+TZNAME:ICT
+DTSTART:19700101T000000
+END:STANDARD
+END:VTIMEZONE
+BEGIN:VEVENT
+UID:${uid}
+DTSTAMP:${dtStampIcs}
+DTSTART;TZID=Asia/Ho_Chi_Minh:${dtStartIcs}
+DTEND;TZID=Asia/Ho_Chi_Minh:${dtEndIcs}
+SUMMARY:${icsSummary}
+LOCATION:${location}
+DESCRIPTION:${description}
+${organizer ? `ORGANIZER;CN=${organizer}:MAILTO:noreply@example.com` : ''}
+${attendees.map(att => `ATTENDEE;CN=${att}:MAILTO:noreply@example.com`).join('\n')}
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:Nhắc nhở cuộc họp: ${icsSummary}
+TRIGGER:${alarmTrigger}
+END:VALARM
+END:VEVENT
+END:VCALENDAR`;
+
+            const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+
+            downloadIcsLink.href = url;
+            downloadIcsLink.download = `${subjectRaw.replace(/[^a-z0-9]/gi, '_')}.ics`;
+            downloadIcsLink.style.display = 'flex'; // Show the download link
+        }
+
+        /**
+         * Shows an error message.
+         * @param {string} message The error message to display.
+         */
+        function showError(message) {
+            errorTextP.textContent = message;
+            errorMessageDiv.classList.remove('hidden');
+        }
+
+        /**
+         * Hides the error message.
+         */
+        function hideError() {
+            errorMessageDiv.classList.add('hidden');
+            errorTextP.textContent = '';
+        }
+
+        /**
+         * Hides the extracted info and download link.
+         */
+        function hideResults() {
+            extractedInfoSection.classList.add('hidden');
+            extractedInfoDiv.innerHTML = '';
+            downloadIcsLink.style.display = 'none';
+        }
+
+        // Initial state setup
+        hideResults();
+        hideError();
+    </script>
+</body>
+</html>
