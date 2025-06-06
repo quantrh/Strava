@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="vi" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Báo cáo Tương tác: Thị trường Chung cư 3 Phòng ngủ Hà Nội 2024-2025</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Lexend', sans-serif;
+            background-color: #F8F5F2;
+            color: #3A3A3A;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            height: 350px;
+            max-height: 400px;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 450px;
+            }
+        }
+        .nav-button {
+            transition: all 0.3s ease;
+        }
+        .nav-button.active {
+            background-color: #4A6D88;
+            color: #FFFFFF;
+            box-shadow: 0 4px 14px 0 rgba(74, 109, 136, 0.39);
+        }
+        .text-accent {
+            color: #A8763E;
+        }
+        .bg-accent {
+             background-color: #A8763E;
+        }
+        .border-accent {
+            border-color: #A8763E;
+        }
+        .bg-primary {
+            background-color: #4A6D88;
+        }
+        .text-primary {
+            color: #4A6D88;
+        }
+        .border-primary {
+             border-color: #4A6D88;
+        }
+        .factor-card {
+            border: 1px solid #e5e7eb;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .factor-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <nav class="bg-[#F8F5F2]/80 backdrop-blur-lg sticky top-0 z-50 shadow-sm">
+        <div class="container mx-auto px-4">
+            <div class="flex items-center justify-between h-16">
+                <span class="text-xl font-bold text-primary">Báo cáo Thị trường BĐS</span>
+                <div class="hidden md:flex space-x-8">
+                    <a href="#overview" class="text-gray-600 hover:text-primary transition">Tổng Quan</a>
+                    <a href="#explorer" class="text-gray-600 hover:text-primary transition">Khám Phá Quận</a>
+                    <a href="#drivers" class="text-gray-600 hover:text-primary transition">Yếu Tố Cốt Lõi</a>
+                    <a href="#recommendations" class="text-gray-600 hover:text-primary transition">Khuyến Nghị</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main class="container mx-auto px-4 py-8 md:py-12">
+        <header class="text-center mb-16">
+            <h1 class="text-4xl md:text-5xl font-extrabold text-primary mb-4">Thị trường Chung cư 3 Phòng ngủ Hà Nội</h1>
+            <p class="text-lg md:text-xl text-gray-600">Phân tích xu hướng, giá cả và các yếu tố ảnh hưởng giai đoạn 2024-2025</p>
+        </header>
+
+        <section id="overview" class="mb-20">
+            <h2 class="text-3xl font-bold text-center mb-2 text-primary">Bức Tranh Toàn Cảnh</h2>
+            <p class="text-center text-gray-500 mb-10">Từ những kỷ lục về giá trong năm 2024 đến giai đoạn ổn định và dịch chuyển trong năm 2025.</p>
+            
+            <div class="bg-white rounded-xl shadow-lg p-6 md:p-8">
+                <div class="flex justify-center mb-8">
+                    <div class="inline-flex rounded-lg shadow-sm">
+                        <button id="btn-2024" class="nav-button active px-6 py-3 text-lg font-semibold rounded-l-lg focus:outline-none">Năm 2024</button>
+                        <button id="btn-2025" class="nav-button px-6 py-3 text-lg font-semibold rounded-r-lg bg-gray-200 text-gray-700 focus:outline-none">Năm 2025</button>
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+                    <div id="dashboard-text-content" class="text-gray-700 space-y-4">
+                    </div>
+                    <div class="chart-container h-[300px] md:h-[400px]">
+                        <canvas id="marketDashboardChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="explorer" class="mb-20">
+            <h2 class="text-3xl font-bold text-center mb-2 text-primary">Khám Phá Thị Trường Theo Quận</h2>
+            <p class="text-center text-gray-500 mb-10">Chọn một quận để xem phân tích chi tiết về giá cả và các dự án nổi bật.</p>
+
+            <div class="bg-white rounded-xl shadow-lg">
+                <div class="grid grid-cols-1 md:grid-cols-4">
+                    <div class="md:col-span-1 border-r border-gray-200 p-6">
+                        <h3 class="font-bold text-lg mb-4">Chọn Quận</h3>
+                        <div id="district-selector" class="space-y-2">
+                        </div>
+                    </div>
+                    <div id="district-details" class="md:col-span-3 p-6 md:p-8">
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="drivers" class="mb-20">
+            <h2 class="text-3xl font-bold text-center mb-2 text-primary">Yếu Tố Cốt Lõi Định Hình Giá</h2>
+            <p class="text-center text-gray-500 mb-10">Giá trị một căn hộ được quyết định bởi sự kết hợp của nhiều yếu tố then chốt.</p>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+                <div class="factor-card bg-white rounded-xl p-6 text-center lg:col-span-1">
+                    <div class="text-4xl mb-3">📍</div>
+                    <h4 class="font-bold text-lg">Vị trí</h4>
+                    <p class="text-sm text-gray-600 mt-1">Yếu tố quan trọng nhất, quyết định đến 50% giá trị. Vị trí trung tâm, hạ tầng đồng bộ luôn có giá cao vượt trội.</p>
+                </div>
+                 <div class="factor-card bg-white rounded-xl p-6 text-center lg:col-span-1">
+                    <div class="text-4xl mb-3">⚖️</div>
+                    <h4 class="font-bold text-lg">Pháp lý & CĐT</h4>
+                    <p class="text-sm text-gray-600 mt-1">Sự minh bạch pháp lý và uy tín chủ đầu tư là "bảo chứng" cho chất lượng và tiềm năng tăng giá.</p>
+                </div>
+                <div class="factor-card bg-white rounded-xl p-6 text-center lg:col-span-1">
+                    <div class="text-4xl mb-3">🏊‍♂️</div>
+                    <h4 class="font-bold text-lg">Tiện ích</h4>
+                    <p class="text-sm text-gray-600 mt-1">Hệ sinh thái tiện ích (bể bơi, công viên, TTTM) góp phần định hình một mức giá cao hơn.</p>
+                </div>
+                 <div class="factor-card bg-white rounded-xl p-6 text-center lg:col-span-1">
+                    <div class="text-4xl mb-3">🌇</div>
+                    <h4 class="font-bold text-lg">Hướng & Tầng</h4>
+                    <p class="text-sm text-gray-600 mt-1">Các căn góc, tầng trung, hướng mát và có tầm nhìn đẹp luôn được săn đón và có giá cao hơn.</p>
+                </div>
+                 <div class="factor-card bg-white rounded-xl p-6 text-center lg:col-span-1">
+                    <div class="text-4xl mb-3">🏦</div>
+                    <h4 class="font-bold text-lg">Chính sách TC</h4>
+                    <p class="text-sm text-gray-600 mt-1">Lãi suất cho vay và các chính sách từ ngân hàng ảnh hưởng lớn đến thanh khoản thị trường.</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="recommendations">
+            <h2 class="text-3xl font-bold text-center mb-2 text-primary">Góc Nhìn Chuyên Gia</h2>
+             <p class="text-center text-gray-500 mb-10">Dựa trên phân tích thị trường, đây là những khuyến nghị dành cho bạn.</p>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div class="bg-white rounded-xl shadow-lg p-8">
+                    <h3 class="font-bold text-xl mb-4 flex items-center"><span class="text-3xl mr-3">🏠</span> Dành cho Người mua ở thực</h3>
+                    <ul class="space-y-3 list-disc list-inside text-gray-700">
+                        <li><strong>Nghiên cứu kỹ lưỡng:</strong> Đánh giá toàn diện về vị trí, pháp lý, và uy tín chủ đầu tư trước khi ra quyết định.</li>
+                        <li><strong>Mở rộng tầm nhìn:</strong> Cân nhắc các khu vực vùng ven đang phát triển mạnh về hạ tầng để có mức giá tốt hơn.</li>
+                        <li><strong>Kiên nhẫn chờ đợi:</strong> Theo dõi thị trường để nắm bắt cơ hội từ các nguồn cung mới và các đợt điều chỉnh giá.</li>
+                    </ul>
+                </div>
+                <div class="bg-white rounded-xl shadow-lg p-8">
+                     <h3 class="font-bold text-xl mb-4 flex items-center"><span class="text-3xl mr-3">📈</span> Dành cho Nhà đầu tư</h3>
+                    <ul class="space-y-3 list-disc list-inside text-gray-700">
+                        <li><strong>Tập trung dài hạn:</strong> Giai đoạn "lướt sóng" đã qua, hãy ưu tiên các dự án có tiềm năng tăng giá bền vững.</li>
+                        <li><strong>Chọn dự án chiến lược:</strong> Ưu tiên các đại đô thị có quy hoạch đồng bộ, tiện ích đầy đủ và khả năng cho thuê cao.</li>
+                        <li><strong>Đánh giá thanh khoản:</strong> Trong bối cảnh giao dịch có thể chậm lại, cần cân nhắc kỹ khả năng bán lại của tài sản.</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="mt-20 py-8 bg-gray-800 text-white">
+        <div class="container mx-auto px-4 text-center">
+            <p>&copy; 2025 Báo cáo Phân tích Thị trường Bất động sản. </p>
+            <p class="text-sm text-gray-400 mt-1">Thông tin được tổng hợp và phân tích từ các nguồn dữ liệu thị trường đáng tin cậy.</p>
+        </div>
+    </footer>
+    
+    <script>
+        const marketData = {
+            '2024': {
+                textContent: `
+                    <h3 class="text-2xl font-bold mb-4 text-primary">Năm của những kỷ lục giá</h3>
+                    <p class="mb-4">Thị trường 2024 chứng kiến sự tăng trưởng giá đột biến, được thúc đẩy bởi nhu cầu ở thực rất lớn trong khi nguồn cung lại vô cùng khan hiếm. Điều này đã thiết lập một mặt bằng giá mới, cao chưa từng có.</p>
+                    <ul class="list-disc list-inside space-y-2">
+                        <li>Giá sơ cấp trung bình đạt <strong class="text-accent">76,7 triệu/m²</strong>, tăng <strong class="text-accent">54%</strong> so với cùng kỳ.</li>
+                        <li>Các căn hộ dưới 40 triệu/m² gần như biến mất khỏi thị trường.</li>
+                        <li>Tỷ lệ hấp thụ vẫn cao (40-60%) dù giá tăng mạnh, cho thấy lực cầu rất lớn.</li>
+                    </ul>
+                `,
+                chartData: {
+                    labels: ['Giá Sơ cấp (tr/m²)', 'Nguồn Cung (căn)', 'Giao dịch (căn)'],
+                    values: [76.7, 11168, 11200]
+                }
+            },
+            '2025': {
+                textContent: `
+                    <h3 class="text-2xl font-bold mb-4 text-primary">Giai đoạn ổn định & dịch chuyển</h3>
+                    <p class="mb-4">Bước sang 2025, tốc độ tăng giá được dự báo sẽ chậm lại, thị trường chuyển sang trạng thái ổn định hơn. Người mua ở thực trở thành lực cầu chủ đạo, nhưng có tâm lý thận trọng và chờ đợi nhiều hơn.</p>
+                    <ul class="list-disc list-inside space-y-2">
+                        <li>Dự báo tăng trưởng giá chậm lại, ở mức <strong class="text-accent">5-8%</strong>.</li>
+                        <li>Nguồn cung mới dự kiến cải thiện, có thể đạt trên <strong class="text-accent">30.000 căn</strong>, giúp giảm áp lực.</li>
+                        <li>Nhà đầu tư lướt sóng gần như vắng bóng, thị trường tập trung vào giá trị sử dụng thực.</li>
+                    </ul>
+                `,
+                chartData: {
+                    labels: ['Giá Sơ cấp (tr/m²)', 'Nguồn Cung (căn)', 'Giao dịch (căn)'],
+                    values: [76.7 * 1.065, 30000, 7914] // Using avg 6.5% increase for price
+                }
+            }
+        };
+
+        const districtData = {
+            'hoang-mai': {
+                name: 'Quận Hoàng Mai',
+                priceRange: [35.3, 106.8],
+                analysis: 'Là cửa ngõ phía Nam, Hoàng Mai có mức giá dao động rất rộng, phản ánh sự phát triển hạ tầng nhanh chóng và sự hiện diện của các đại đô thị. Mức tăng giá tại đây thuộc top đầu thành phố, thu hút người mua tìm kiếm không gian rộng rãi với giá hợp lý hơn nội đô.',
+                projects: ['Gamuda Gardens (The Zen, The Two)', 'Feliz Homes', 'Sunshine Palace', 'Eco Lake View']
+            },
+            'thanh-xuan': {
+                name: 'Quận Thanh Xuân',
+                priceRange: [52.1, 84.5],
+                analysis: 'Thanh Xuân có sự phân hóa giá mạnh mẽ giữa các chung cư cũ và các dự án cao cấp mới. Các căn 3PN hiện đại thường có giá cao hơn đáng kể so với mặt bằng chung, cho thấy nhu cầu lớn đối với các sản phẩm chất lượng tại khu vực có vị trí thuận lợi này.',
+                 projects: ['Pandora 53 Triều Khúc', 'Dự án tại Hoàng Văn Thái', 'Dự án tại Khương Trung']
+            },
+            'hai-ba-trung': {
+                name: 'Quận Hai Bà Trưng',
+                priceRange: [45.1, 211.1],
+                analysis: 'Là quận trung tâm, Hai Bà Trưng có khoảng giá rộng nhất, từ các khu tập thể cũ đến các dự án hạng sang. Sức hút đến từ vị trí đắc địa và hệ thống tiện ích đồng bộ, khiến giá trị bất động sản luôn duy trì ở mức rất cao.',
+                 projects: ['Times City - Park Hill', 'Imperia Sky Garden', 'Hinode City']
+            },
+            'ha-dong': {
+                name: 'Quận Hà Đông',
+                priceRange: [50, 65],
+                analysis: 'Cửa ngõ phía Tây Nam này đang có xu hướng tăng giá rõ rệt. Giá chung cư cũ đã vượt 50 triệu/m², trong khi các dự án mới có giá trên 60 triệu/m². Sự cải thiện hạ tầng đang biến Hà Đông thành một lựa chọn hấp dẫn cho người mua.',
+                 projects: ['GoldSilk Complex', 'Các dự án dọc trục Tố Hữu, Lê Văn Lương']
+            }
+        };
+
+        let marketDashboardChart;
+        let districtPriceChart;
+        
+        const wrapLabel = (label, maxLength) => {
+            if (typeof label !== 'string' || label.length <= maxLength) {
+                return label;
+            }
+            const words = label.split(' ');
+            const lines = [];
+            let currentLine = '';
+            for (const word of words) {
+                if ((currentLine + word).length > maxLength) {
+                    lines.push(currentLine.trim());
+                    currentLine = '';
+                }
+                currentLine += word + ' ';
+            }
+            lines.push(currentLine.trim());
+            return lines;
+        };
+        
+        const tooltipTitleCallback = (tooltipItems) => {
+            const item = tooltipItems[0];
+            let label = item.chart.data.labels[item.dataIndex];
+            return Array.isArray(label) ? label.join(' ') : label;
+        };
+
+        const commonChartOptions = (additionalOptions = {}) => ({
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false,
+                },
+                tooltip: {
+                    enabled: true,
+                    backgroundColor: 'rgba(0,0,0,0.8)',
+                    titleFont: { size: 14, family: 'Lexend' },
+                    bodyFont: { size: 12, family: 'Lexend' },
+                    padding: 10,
+                    callbacks: { title: tooltipTitleCallback }
+                }
+            },
+            scales: {
+                y: { beginAtZero: true, ticks: { color: '#6b7280', font: { family: 'Lexend' } }, grid: { color: '#e5e7eb' } },
+                x: { ticks: { color: '#6b7280', font: { family: 'Lexend' } }, grid: { display: false } }
+            },
+            ...additionalOptions
+        });
+        
+        function updateDashboard(year) {
+            const data = marketData[year];
+            document.getElementById('dashboard-text-content').innerHTML = data.textContent;
+
+            const chartCtx = document.getElementById('marketDashboardChart').getContext('2d');
+            if (marketDashboardChart) {
+                marketDashboardChart.destroy();
+            }
+            marketDashboardChart = new Chart(chartCtx, {
+                type: 'bar',
+                data: {
+                    labels: data.chartData.labels,
+                    datasets: [{
+                        label: `Dữ liệu năm ${year}`,
+                        data: data.chartData.values,
+                        backgroundColor: ['#4A6D88', '#A8763E', '#607d8b'],
+                        borderRadius: 6,
+                    }]
+                },
+                options: commonChartOptions({
+                     indexAxis: 'y',
+                     scales: {
+                         y: { ...commonChartOptions().scales.y, grid: { display: false } },
+                         x: { ...commonChartOptions().scales.x }
+                     }
+                })
+            });
+        }
+
+        function createDistrictSelector() {
+            const selectorContainer = document.getElementById('district-selector');
+            selectorContainer.innerHTML = '';
+            Object.keys(districtData).forEach((key, index) => {
+                const district = districtData[key];
+                const button = document.createElement('button');
+                button.textContent = district.name;
+                button.className = `w-full text-left px-4 py-3 rounded-lg transition-colors duration-200 ${index === 0 ? 'bg-primary/10 text-primary font-semibold' : 'hover:bg-gray-100'}`;
+                button.dataset.key = key;
+                button.onclick = () => {
+                    document.querySelectorAll('#district-selector button').forEach(btn => {
+                        btn.classList.remove('bg-primary/10', 'text-primary', 'font-semibold');
+                        btn.classList.add('hover:bg-gray-100');
+                    });
+                    button.classList.add('bg-primary/10', 'text-primary', 'font-semibold');
+                    button.classList.remove('hover:bg-gray-100');
+                    updateDistrictDetails(key);
+                };
+                selectorContainer.appendChild(button);
+            });
+        }
+
+        function updateDistrictDetails(key) {
+            const data = districtData[key];
+            const detailsContainer = document.getElementById('district-details');
+            
+            const projectsHtml = data.projects.map(p => `<span class="inline-block bg-gray-200 rounded-full px-3 py-1 text-sm font-semibold text-gray-700 mr-2 mb-2">${p}</span>`).join('');
+
+            detailsContainer.innerHTML = `
+                <h3 class="text-2xl font-bold mb-1 text-primary">${data.name}</h3>
+                <p class="text-gray-600 mb-6">${data.analysis}</p>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div>
+                         <h4 class="font-bold text-lg mb-3">Khoảng giá tham khảo (3PN)</h4>
+                         <div class="chart-container h-[250px]">
+                            <canvas id="districtPriceChart"></canvas>
+                        </div>
+                    </div>
+                    <div>
+                        <h4 class="font-bold text-lg mb-3">Dự án tiêu biểu</h4>
+                        <div class="flex flex-wrap">${projectsHtml}</div>
+                    </div>
+                </div>
+            `;
+            
+            const chartCtx = document.getElementById('districtPriceChart').getContext('2d');
+            if (districtPriceChart) {
+                districtPriceChart.destroy();
+            }
+            districtPriceChart = new Chart(chartCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['Giá tối thiểu', 'Giá tối đa'],
+                    datasets: [{
+                        label: 'Triệu VNĐ/m²',
+                        data: data.priceRange,
+                        backgroundColor: ['#A8763E', '#4A6D88'],
+                        borderRadius: 4,
+                        barPercentage: 0.6
+                    }]
+                },
+                options: commonChartOptions({
+                    indexAxis: 'y',
+                    scales: {
+                         y: { ...commonChartOptions().scales.y, grid: { display: false } },
+                         x: { ...commonChartOptions().scales.x, ticks: { callback: value => `${value}tr` } }
+                     }
+                })
+            });
+        }
+
+
+        window.onload = function() {
+            const btn2024 = document.getElementById('btn-2024');
+            const btn2025 = document.getElementById('btn-2025');
+
+            btn2024.addEventListener('click', () => {
+                btn2024.classList.add('active');
+                btn2024.classList.remove('bg-gray-200', 'text-gray-700');
+                btn2025.classList.remove('active');
+                btn2025.classList.add('bg-gray-200', 'text-gray-700');
+                updateDashboard('2024');
+            });
+
+            btn2025.addEventListener('click', () => {
+                btn2025.classList.add('active');
+                btn2025.classList.remove('bg-gray-200', 'text-gray-700');
+                btn2024.classList.remove('active');
+                btn2024.classList.add('bg-gray-200', 'text-gray-700');
+                updateDashboard('2025');
+            });
+            
+            updateDashboard('2024');
+            createDistrictSelector();
+            updateDistrictDetails('hoang-mai');
+        };
+    </script>
+</body>
+</html>
