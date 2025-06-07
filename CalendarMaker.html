@@ -125,12 +125,6 @@
     </div>
 
     <script type="module">
-        // Global variables for Firebase configuration and app ID
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
-        // Fix: Use __initial_auth_token instead of initialAuthToken to avoid ReferenceError
-        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null; 
-
         // UI elements
         const fileUpload = document.getElementById('file-upload');
         const fileUploadLabel = document.getElementById('file-upload-label');
@@ -338,14 +332,14 @@
             Dựa trên tài liệu hình ảnh được cung cấp, hãy trích xuất các thông tin sau và trả về dưới dạng JSON. Nếu thông tin không có, hãy để trống hoặc sử dụng giá trị mặc định theo quy tắc.
 
             Quy tắc trích xuất:
-            - "Chủ đề cuộc họp": Tiêu đề cuộc họp. **Bắt buộc kèm theo số công văn hoặc số thông báo (nếu có) vào cuối tiêu đề, trong dấu ngoặc đơn.** Ví dụ: "Tiêu đề cuộc họp (CV-2024/001)". Nếu không có số, chỉ ghi tiêu đề.
+            - "Chủ đề cuộc họp": Tiêu đề cuộc họp. **Bắt buộc kèm theo số công văn hoặc số thông báo (nếu có) vào cuối tiêu đề, trong dấu ngoặc đơn (Ví dụ: "Tiêu đề cuộc họp (CV-2024/001)"). Nếu không có số, chỉ ghi tiêu đề.**
             - "Địa điểm họp": Lấy theo nội dung tài liệu. Nếu không có, đánh dấu là "Chưa rõ – cần xác minh".
             - "Thời gian bắt đầu": Thời gian bắt đầu cuộc họp (định dạng YYYY-MM-DD HH:MM).
             - "Thời gian kết thúc": Thời gian kết thúc cuộc họp (định dạng YYYY-MM-DD HH:MM). Nếu không được nêu rõ, mặc định = Thời gian bắt đầu + 2 giờ.
-            - "Thành phần tham dự": Liệt kê các đơn vị/cá nhân theo tài liệu dưới dạng mảng các chuỗi.
-            - "Nội dung làm việc chính": Tóm tắt ngắn gọn, rõ ràng nội dung làm việc chính.
-            - "Đơn vị chủ trì hoặc tổ chức thực hiện": Đơn vị chủ trì hoặc tổ chức thực hiện.
-            - "Người chủ trì cuộc họp": (Tùy chọn) Người chủ trì cuộc họp.
+            - "Thành phần tham dự": Liệt kê các đơn vị/cá nhân theo tài liệu dưới dạng mảng các chuỗi. **Chỉ trích xuất tên/đơn vị, không thêm ký hiệu hay định dạng đặc biệt.**
+            - "Nội dung làm việc chính": Tóm tắt ngắn gọn, rõ ràng nội dung làm việc chính. **Chỉ trích xuất nội dung, không thêm ký hiệu hay định dạng đặc biệt như gạch đầu dòng. Nếu có nhiều mục, mỗi mục trên một dòng mới.**
+            - "Đơn vị chủ trì hoặc tổ chức thực hiện": Đơn vị chủ trì hoặc tổ chức thực hiện. **Chỉ trích xuất tên đơn vị, không thêm ký hiệu hay định dạng đặc biệt.**
+            - "Người chủ trì cuộc họp": (Tùy chọn) Người chủ trì cuộc họp. **Chỉ trích xuất tên người, không thêm ký hiệu hay định dạng đặc biệt.**
             - "Đường dẫn họp trực tuyến (Zoom/Teams/Meet)": (Tùy chọn) Đường dẫn họp trực tuyến (Zoom/Teams/Meet).
             - "Yêu cầu nhắc lịch trước": (Tùy chọn) Yêu cầu nhắc lịch trước (ví dụ: "1 NGÀY", "30 PHÚT"). Nếu không có, mặc định là "1 NGÀY".
 
@@ -375,8 +369,7 @@
                     responseSchema: {
                         type: "OBJECT",
                         properties: {
-                            "Chủ đề cuộc họp": { "type": "STRING" }, // This will now contain the combined subject
-                            // "Số công văn hoặc số thông báo": { "type": "STRING", "nullable": true }, // Removed from schema
+                            "Chủ đề cuộc họp": { "type": "STRING" },
                             "Địa điểm họp": { "type": "STRING" },
                             "Thời gian bắt đầu": { "type": "STRING" },
                             "Thời gian kết thúc": { "type": "STRING" },
@@ -403,7 +396,7 @@
                 }
             };
 
-            const apiKey = "AIzaSyBaLi7TzZJ9SwmHilU24SRcV2i7lU6gqdQ"; // Canvas will automatically provide it in runtime
+            const apiKey = ""; // Canvas will automatically provide it in runtime
             const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
 
             const response = await fetch(apiUrl, {
@@ -450,44 +443,38 @@
          * @param {Object} meetingData The extracted meeting data.
          */
         function generateIcsFile(meetingData) {
-            const subjectRaw = meetingData["Chủ đề cuộc họp"] || "Cuộc họp"; // This will now contain the combined subject
-            // const notificationNumber = meetingData["Số công văn hoặc số thông báo"] || ""; // Removed
+            const subjectRaw = meetingData["Chủ đề cuộc họp"] || "Cuộc họp";
             const location = meetingData["Địa điểm họp"] || "Chưa rõ – cần xác minh";
             const attendees = meetingData["Thành phần tham dự"] || [];
-            const mainContent = meetingData["Nội dung làm việc chính"] || "Không có nội dung chính.";
-            const organizer = meetingData["Đơn vị chủ trì hoặc tổ chức thực hiện"] || "Không rõ";
+            const mainContent = meetingData["Nội dung làm việc chính"] || ""; // Raw content
+            const organizer = meetingData["Đơn vị chủ trì hoặc tổ chức thực hiện"] || "";
             const chair = meetingData["Người chủ trì cuộc họp"] || "";
             const onlineLink = meetingData["Đường dẫn họp trực tuyến (Zoom/Teams/Meet)"] || "";
-            const reminder = meetingData["Yêu cầu nhắc lịch trước"] || "1 NGÀY"; // Default reminder
+            const reminder = meetingData["Yêu cầu nhắc lịch trước"] || "1 NGÀY";
 
             let startTime = null;
             let endTime = null;
 
             try {
-                // Parse start time
                 startTime = new Date(meetingData["Thời gian bắt đầu"]);
                 if (isNaN(startTime.getTime())) {
                     throw new Error("Thời gian bắt đầu không hợp lệ.");
                 }
 
-                // Parse end time, or calculate if missing
                 if (meetingData["Thời gian kết thúc"]) {
                     endTime = new Date(meetingData["Thời gian kết thúc"]);
                     if (isNaN(endTime.getTime())) {
                         throw new Error("Thời gian kết thúc không hợp lệ.");
                     }
                 } else {
-                    // Default to 2 hours after start time
                     endTime = new Date(startTime.getTime() + 2 * 60 * 60 * 1000);
                 }
             } catch (e) {
                 showError(`Lỗi định dạng thời gian: ${e.message}. Vui lòng đảm bảo "Thời gian bắt đầu" và "Thời gian kết thúc" đúng định dạng YYYY-MM-DD HH:MM.`);
-                extractedInfoSection.classList.add('hidden'); // Hide results if time is invalid
+                extractedInfoSection.classList.add('hidden');
                 return;
             }
 
-            // Format date for ICS (YYYYMMDDTHHMMSS)
-            // Using a helper to format date for ICS, ensuring leading zeros
             const formatIcsDateTime = (date) => {
                 const year = date.getFullYear();
                 const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -500,57 +487,69 @@
 
             const dtStartIcs = formatIcsDateTime(startTime);
             const dtEndIcs = formatIcsDateTime(endTime);
-            const dtStampIcs = formatIcsDateTime(new Date()); // Current timestamp
-
-            // Generate a unique ID for the event
+            const dtStampIcs = formatIcsDateTime(new Date());
             const uid = `${dtStampIcs}-${Math.random().toString(36).substring(2, 15)}@${window.location.hostname || 'meeting-secretary-app'}`;
 
-            // The summary is now expected to be directly provided by Gemini, including the notification number
             const icsSummary = subjectRaw;
 
-            // Construct description without the notification number as a separate field
-            let description = `Tiêu đề: ${subjectRaw}`;
-            // if (notificationNumber) { description += `\\nSố công văn/thông báo: ${notificationNumber}`; } // Removed
-            description += `\\n\\n1. Nội dung làm việc chính: ${mainContent}`;
-            if (attendees.length > 0) {
-                description += `\\n2. Thành phần tham dự: ${attendees.join(', ')}`;
+            // Construct description as per user's example
+            let descriptionParts = [];
+
+            // Main Content
+            if (mainContent) {
+                descriptionParts.push('📌 Nội dung làm việc:');
+                // Split by newline and add bullet points, then join with escaped newlines
+                descriptionParts.push(mainContent.split('\n').map(line => `- ${line.trim()}`).join('\\n'));
             } else {
-                description += `\\n2. Thành phần tham dự: Chưa rõ`;
+                descriptionParts.push('📌 Nội dung làm việc:\\n- Không có nội dung chính.');
             }
-            description += `\\n3. Đơn vị chủ trì hoặc tổ chức thực hiện: ${organizer}`;
-            
-            if (chair) {
-                description += `\\nNgười chủ trì: ${chair}`;
+
+            // Chair
+            descriptionParts.push(`\\n👤 Chủ trì: ${chair || 'Chưa rõ'}`);
+
+            // Attendees
+            descriptionParts.push(`\\n👥 Thành phần:`);
+            if (attendees.length > 0) {
+                descriptionParts.push(attendees.map(att => `- ${att.trim()}`).join('\\n'));
+            } else {
+                descriptionParts.push(`- Không có thành phần tham dự cụ thể.`);
             }
+
+            // Organizer
+            descriptionParts.push(`\\n🏢 Đơn vị tổ chức: ${organizer || 'Chưa rõ'}`);
+
+            // Optional fields
             if (onlineLink) {
-                description += `\\nĐường dẫn trực tuyến: ${onlineLink}`;
+                descriptionParts.push(`\\nĐường dẫn trực tuyến: ${onlineLink}`);
             }
+            
+            descriptionParts.push(`\\nĐịa điểm: ${location}`);
+            descriptionParts.push(`Thời gian: Từ ${meetingData["Thời gian bắt đầu"]} đến ${meetingData["Thời gian kết thúc"]}`);
 
-            // Handle reminder (ALARM)
+            const icsDescription = descriptionParts.join('\\n'); // Join all parts with escaped newlines
+
+            // Handle reminder (ALARM) logic remains the same
             let alarmTrigger = '';
-            let reminderValue = 0; // in minutes
-            let reminderUnit = 'MINUTE';
-
             const reminderMatch = reminder.match(/(\d+)\s*(NGÀY|GIỜ|PHÚT)/i);
             if (reminderMatch) {
-                reminderValue = parseInt(reminderMatch[1]);
-                reminderUnit = reminderMatch[2].toUpperCase();
+                const reminderValue = parseInt(reminderMatch[1]);
+                const reminderUnit = reminderMatch[2].toUpperCase();
 
                 switch (reminderUnit) {
                     case 'NGÀY':
-                        alarmTrigger = `-P${reminderValue}D`; // P1D for 1 day
+                        alarmTrigger = `-P${reminderValue}D`;
                         break;
                     case 'GIỜ':
-                        alarmTrigger = `-PT${reminderValue}H`; // PT1H for 1 hour
+                        alarmTrigger = `-PT${reminderValue}H`;
                         break;
                     case 'PHÚT':
-                        alarmTrigger = `-PT${reminderValue}M`; // PT30M for 30 minutes
+                        alarmTrigger = `-PT${reminderValue}M`;
                         break;
                     default:
-                        alarmTrigger = `-P1D`; // Default to 1 day if unit is unrecognized
+                        alarmTrigger = `-P1D`;
                 }
             } else {
-                alarmTrigger = `-P1D`; // Default to 1 day if reminder format is not matched
+                alarmTrigger = `-P1D`;
             }
 
             const icsContent = `BEGIN:VCALENDAR
@@ -574,7 +573,7 @@ DTSTART;TZID=Asia/Ho_Chi_Minh:${dtStartIcs}
 DTEND;TZID=Asia/Ho_Chi_Minh:${dtEndIcs}
 SUMMARY:${icsSummary}
 LOCATION:${location}
-DESCRIPTION:${description}
+DESCRIPTION:${icsDescription}
 ${organizer ? `ORGANIZER;CN=${organizer}:MAILTO:noreply@example.com` : ''}
 ${attendees.map(att => `ATTENDEE;CN=${att}:MAILTO:noreply@example.com`).join('\n')}
 BEGIN:VALARM
@@ -590,7 +589,7 @@ END:VCALENDAR`;
 
             downloadIcsLink.href = url;
             downloadIcsLink.download = `${subjectRaw.replace(/[^a-z0-9]/gi, '_')}.ics`;
-            downloadIcsLink.style.display = 'flex'; // Show the download link
+            downloadIcsLink.style.display = 'flex';
         }
 
         /**
