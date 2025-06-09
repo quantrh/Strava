@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phân Tích Tương Tác Thị Trường Trái Phiếu Việt Nam & Vai Trò Của BIDV (2020-2025)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Calm Corporate -->
+    <!-- Application Structure Plan: Ứng dụng được thiết kế theo cấu trúc dashboard một trang, không theo cấu trúc tuyến tính của báo cáo gốc, nhằm tối ưu hóa trải nghiệm người dùng. Cấu trúc này ưu tiên việc khám phá và so sánh dữ liệu. Các phần chính bao gồm: (1) Header và Thanh điều hướng nhanh; (2) Phần Tổng quan với các thẻ chỉ số chính; (3) Phần Phân tích sâu Thị trường Trái phiếu với các tab tương tác cho Trái phiếu Chính phủ và Doanh nghiệp; (4) Phần Các Yếu tố ảnh hưởng trình bày các yếu tố vĩ mô và pháp lý; (5) Phần Vai trò của BIDV nêu bật đóng góp của ngân hàng; (6) Phần Kết luận & Khuyến nghị. Cấu trúc này giúp người dùng nhanh chóng nắm bắt các điểm chính, sau đó đi sâu vào các lĩnh vực cụ thể thông qua tương tác (click, hover), tạo ra một luồng khám phá thông tin logic và hiệu quả hơn là đọc một báo cáo dài. -->
+    <!-- Visualization & Content Choices: Lựa chọn trực quan hóa tập trung vào việc kể chuyện bằng dữ liệu. Ví dụ: Biểu đồ cột chồng (So sánh quy mô TPCP & TPDN) -> Mục tiêu: So sánh -> Tương tác: Hover -> Lý do: Hiển thị rõ sự chênh lệch và biến động giữa hai thị trường. Biểu đồ đường (So sánh Lợi suất TPCP) -> Mục tiêu: Xu hướng -> Tương tác: Hover -> Lý do: Thể hiện sự thay đổi lợi suất theo thời gian. Biểu đồ tròn (Phân bổ TPDN theo ngành và loại hình phát hành) -> Mục tiêu: Thành phần -> Tương tác: Hover -> Lý do: Làm nổi bật sự thống trị của ngành Ngân hàng/BĐS và sự chuyển dịch quan trọng sang phát hành công khai. Các thẻ thông tin và danh sách được tạo kiểu (Các yếu tố vĩ mô, Vai trò BIDV) -> Mục tiêu: Thông tin -> Tương tác: Hover -> Lý do: Trình bày thông tin định tính một cách cô đọng, dễ tiêu hóa. Tất cả đều sử dụng Chart.js trên nền Canvas. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #F8F9FA;
+            color: #212529;
+        }
+        .nav-link {
+            transition: color 0.3s, border-bottom-color 0.3s;
+            border-bottom: 2px solid transparent;
+        }
+        .nav-link:hover, .nav-link.active {
+            color: #0D6EFD;
+            border-bottom-color: #0D6EFD;
+        }
+        .card {
+            background-color: #FFFFFF;
+            border-radius: 0.75rem;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -2px rgb(0 0 0 / 0.1);
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            height: 400px;
+            max-height: 450px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        @media (max-width: 768px) {
+            .chart-container {
+                height: 300px;
+            }
+        }
+        .tab-button {
+            transition: background-color 0.3s, color 0.3s;
+        }
+        .tab-button.active {
+            background-color: #0D6EFD;
+            color: white;
+        }
+        h1, h2, h3 {
+            color: #0A2A54;
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <header class="bg-white/80 backdrop-blur-lg sticky top-0 z-50 shadow-sm">
+        <nav class="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex-shrink-0">
+                    <h1 class="text-xl md:text-2xl font-bold text-gray-800">Thị Trường Trái Phiếu VN</h1>
+                </div>
+                <div class="hidden md:block">
+                    <div class="ml-10 flex items-baseline space-x-4">
+                        <a href="#overview" class="nav-link px-3 py-2 rounded-md text-sm font-medium">Tổng quan</a>
+                        <a href="#market-analysis" class="nav-link px-3 py-2 rounded-md text-sm font-medium">Phân tích Thị trường</a>
+                        <a href="#factors" class="nav-link px-3 py-2 rounded-md text-sm font-medium">Yếu tố ảnh hưởng</a>
+                        <a href="#bidv-role" class="nav-link px-3 py-2 rounded-md text-sm font-medium">Vai trò BIDV</a>
+                        <a href="#conclusion" class="nav-link px-3 py-2 rounded-md text-sm font-medium">Kết luận</a>
+                    </div>
+                </div>
+                <div class="md:hidden">
+                    <button id="mobile-menu-button" class="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-white hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-white">
+                        <span class="sr-only">Open main menu</span>
+                        <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            <div id="mobile-menu" class="md:hidden hidden">
+                <div class="px-2 pt-2 pb-3 space-y-1 sm:px-3">
+                    <a href="#overview" class="nav-link block px-3 py-2 rounded-md text-base font-medium">Tổng quan</a>
+                    <a href="#market-analysis" class="nav-link block px-3 py-2 rounded-md text-base font-medium">Phân tích Thị trường</a>
+                    <a href="#factors" class="nav-link block px-3 py-2 rounded-md text-base font-medium">Yếu tố ảnh hưởng</a>
+                    <a href="#bidv-role" class="nav-link block px-3 py-2 rounded-md text-base font-medium">Vai trò BIDV</a>
+                    <a href="#conclusion" class="nav-link block px-3 py-2 rounded-md text-base font-medium">Kết luận</a>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <main class="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+        <section id="overview" class="scroll-mt-20">
+            <h2 class="text-3xl font-bold mb-2">Tổng quan Thị trường Trái phiếu 2020-2025</h2>
+            <p class="text-lg text-gray-600 mb-8">
+                Một hành trình đầy biến động từ tăng trưởng nóng, qua khủng hoảng niềm tin đến giai đoạn phục hồi và tái cấu trúc hướng tới sự minh bạch.
+            </p>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div class="card p-6 flex flex-col justify-between">
+                    <div>
+                        <h3 class="font-semibold text-lg text-gray-500">Dư nợ TPDN (cuối 2024)</h3>
+                        <p class="text-4xl font-bold text-[#0D6EFD] mt-2">~1,276K tỷ</p>
+                    </div>
+                    <p class="text-sm text-gray-500 mt-4">Tương đương 11.3% GDP, cho thấy sự phục hồi sau giai đoạn sụt giảm năm 2023.</p>
+                </div>
+                <div class="card p-6 flex flex-col justify-between">
+                    <div>
+                        <h3 class="font-semibold text-lg text-gray-500">Dư nợ TPCP (cuối 2023)</h3>
+                        <p class="text-4xl font-bold text-[#198754]">1,800K tỷ</p>
+                    </div>
+                    <p class="text-sm text-gray-500 mt-4">Tương đương 17.6% GDP, là kênh huy động vốn ổn định cho ngân sách nhà nước.</p>
+                </div>
+                <div class="card p-6 flex flex-col justify-between">
+                    <div>
+                        <h3 class="font-semibold text-lg text-gray-500">Lãi suất BĐS (T4/2025)</h3>
+                        <p class="text-4xl font-bold text-[#DC3545]">10.7%/năm</p>
+                    </div>
+                    <p class="text-sm text-gray-500 mt-4">Mức chênh lệch lớn so với trái phiếu ngân hàng, phản ánh phần bù rủi ro cao.</p>
+                </div>
+                <div class="card p-6 flex flex-col justify-between">
+                    <div>
+                        <h3 class="font-semibold text-lg text-gray-500">GDP Q1/2025</h3>
+                        <p class="text-4xl font-bold text-[#FFC107]">6.93%</p>
+                    </div>
+                    <p class="text-sm text-gray-500 mt-4">Tăng trưởng cao nhất giai đoạn 2020-2025, tạo nền tảng vĩ mô tích cực.</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="market-analysis" class="mt-16 scroll-mt-20">
+            <h2 class="text-3xl font-bold mb-2">Phân Tích Sâu Thị Trường Trái Phiếu</h2>
+             <p class="text-lg text-gray-600 mb-8">
+                Khám phá sự khác biệt trong quỹ đạo tăng trưởng giữa Trái phiếu Chính phủ và Trái phiếu Doanh nghiệp, cùng những chuyển dịch cấu trúc quan trọng.
+            </p>
+            <div class="mb-8 flex justify-center">
+                <div class="bg-gray-200 rounded-lg p-1 flex space-x-1">
+                    <button id="btn-gov" class="tab-button active px-4 py-2 rounded-md font-semibold">Trái phiếu Chính phủ</button>
+                    <button id="btn-corp" class="tab-button px-4 py-2 rounded-md font-semibold">Trái phiếu Doanh nghiệp</button>
+                </div>
+            </div>
+
+            <div id="gov-content">
+                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <div class="card p-6">
+                        <h3 class="text-xl font-semibold mb-4">Khối lượng Phát hành TPCP (2020-2024)</h3>
+                        <p class="text-sm text-gray-500 mb-4">Khối lượng phát hành TPCP thể hiện sự ổn định tương đối, sụt giảm nhẹ năm 2022 và phục hồi sau đó, đóng vai trò kênh huy động vốn chủ lực và ổn định cho chính phủ.</p>
+                        <div class="chart-container"><canvas id="govIssuanceChart"></canvas></div>
+                    </div>
+                    <div class="card p-6">
+                        <h3 class="text-xl font-semibold mb-4">Lợi suất TPCP theo Kỳ hạn (2021-2025)</h3>
+                        <p class="text-sm text-gray-500 mb-4">Biến động lợi suất phản ánh chính sách tiền tệ của NHNN và kỳ vọng thị trường. Kỳ hạn 10 năm luôn là kỳ hạn chuẩn thu hút sự quan tâm lớn nhất.</p>
+                        <div class="chart-container"><canvas id="govYieldChart"></canvas></div>
+                    </div>
+                 </div>
+            </div>
+
+            <div id="corp-content" class="hidden">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+                    <div class="card p-6">
+                        <h3 class="text-xl font-semibold mb-4">Khối lượng Phát hành TPDN (2020-2024)</h3>
+                         <p class="text-sm text-gray-500 mb-4">Thị trường TPDN biến động dữ dội, tăng trưởng bùng nổ năm 2021, sụp đổ năm 2022 sau khủng hoảng BĐS và các quy định thắt chặt, và đang trên đà phục hồi mạnh mẽ.</p>
+                        <div class="chart-container"><canvas id="corpIssuanceChart"></canvas></div>
+                    </div>
+                     <div class="card p-6">
+                        <h3 class="text-xl font-semibold mb-4">Lãi suất TPDN Bình quân (2020-2025)</h3>
+                         <p class="text-sm text-gray-500 mb-4">Lãi suất TPDN phản ánh rõ nét mức độ rủi ro qua các thời kỳ. Chênh lệch lãi suất giữa ngành Bất động sản và Ngân hàng cho thấy sự phân hóa rủi ro sâu sắc trên thị trường.</p>
+                        <div class="chart-container"><canvas id="corpInterestRateChart"></canvas></div>
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                     <div class="card p-6">
+                        <h3 class="text-xl font-semibold mb-4">Cơ cấu Phát hành TPDN theo Ngành (2024)</h3>
+                         <p class="text-sm text-gray-500 mb-4">Sự thống trị của ngành Ngân hàng và Bất động sản tạo ra rủi ro tập trung lớn cho thị trường, dù các quy định mới đang hướng tới việc đa dạng hóa các nhà phát hành.</p>
+                        <div class="chart-container h-80 max-h-[350px]"><canvas id="corpIndustryChart"></canvas></div>
+                    </div>
+                     <div class="card p-6">
+                        <h3 class="text-xl font-semibold mb-4">Chuyển dịch sang Phát hành Công khai (Q1/2025)</h3>
+                         <p class="text-sm text-gray-500 mb-4">Sau Nghị định 65, thị trường chứng kiến sự chuyển dịch cấu trúc mạnh mẽ từ phát hành riêng lẻ sang công khai, một bước tiến quan trọng về minh bạch và bảo vệ nhà đầu tư.</p>
+                        <div class="chart-container h-80 max-h-[350px]"><canvas id="corpPublicPrivateChart"></canvas></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="factors" class="mt-16 scroll-mt-20">
+            <h2 class="text-3xl font-bold mb-2">Các Yếu Tố Chính Ảnh Hưởng</h2>
+            <p class="text-lg text-gray-600 mb-8">
+                Sự vận động của thị trường trái phiếu chịu tác động mạnh mẽ từ nền tảng kinh tế vĩ mô ổn định và những thay đổi mang tính bước ngoặt trong khung pháp lý.
+            </p>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div class="card p-6">
+                    <h3 class="text-xl font-semibold mb-4">Nền tảng Kinh tế vĩ mô</h3>
+                    <ul class="space-y-4 text-gray-700">
+                        <li class="flex items-start">
+                            <span class="text-green-500 text-2xl mr-3">▲</span>
+                            <div><strong>Tăng trưởng GDP:</strong> Nền kinh tế tăng trưởng mạnh mẽ (Q1/2025: 6.93%) tạo ra nhu cầu vốn và củng cố khả năng trả nợ của doanh nghiệp.</div>
+                        </li>
+                        <li class="flex items-start">
+                            <span class="text-blue-500 text-2xl mr-3">~</span>
+                            <div><strong>Lạm phát được kiểm soát:</strong> CPI trong mục tiêu (Q1/2025: 3.22%) cho phép NHNN duy trì chính sách tiền tệ nới lỏng, hỗ trợ lãi suất thấp.</div>
+                        </li>
+                        <li class="flex items-start">
+                             <span class="text-yellow-500 text-2xl mr-3">▶</span>
+                            <div><strong>Dòng vốn FDI ổn định:</strong> Vốn FDI giải ngân tiếp tục tăng, khẳng định niềm tin của nhà đầu tư quốc tế vào triển vọng kinh tế Việt Nam.</div>
+                        </li>
+                    </ul>
+                </div>
+                <div class="card p-6">
+                    <h3 class="text-xl font-semibold mb-4">Tiến trình Phát triển Khung pháp lý</h3>
+                    <div class="relative border-l-2 border-blue-200 ml-4 pl-8 py-4">
+                        <div class="mb-8 relative">
+                            <div class="absolute -left-[42px] top-1.5 w-4 h-4 bg-blue-500 rounded-full"></div>
+                            <h4 class="font-bold text-blue-800">Nghị định 153/2020/NĐ-CP</h4>
+                            <p class="text-sm text-gray-600">Thúc đẩy tăng trưởng TPDN bùng nổ nhưng bộc lộ rủi ro về chất lượng phát hành và bảo vệ nhà đầu tư.</p>
+                        </div>
+                        <div class="relative">
+                            <div class="absolute -left-[42px] top-1.5 w-4 h-4 bg-green-500 rounded-full"></div>
+                            <h4 class="font-bold text-green-800">Nghị định 65/2022/NĐ-CP</h4>
+                            <p class="text-sm text-gray-600">Bước ngoặt thắt chặt quy định: tăng mệnh giá, yêu cầu công bố thông tin, xếp hạng tín nhiệm, định hình lại thị trường theo hướng minh bạch và bền vững.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="bidv-role" class="mt-16 scroll-mt-20">
+            <h2 class="text-3xl font-bold mb-2">Vai Trò Của Ngân hàng BIDV</h2>
+            <p class="text-lg text-gray-600 mb-8">
+                BIDV không chỉ là một người tham gia, mà còn là một trụ cột quan trọng, góp phần vào sự ổn định và phát triển bền vững của thị trường.
+            </p>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div class="card p-6 md:col-span-1">
+                     <h3 class="text-xl font-semibold mb-4">Nhà Đầu tư & Tạo lập Thị trường</h3>
+                     <p class="text-gray-700 mb-4">Là đơn vị nắm giữ danh mục TPCP lớn nhất trong khối NHTM Nhà nước (~131.5K tỷ đồng), BIDV đóng vai trò quan trọng trong việc đảm bảo thanh khoản và ổn định cho thị trường.</p>
+                      <div class="chart-container h-64 max-h-[280px]"><canvas id="bidvGovtBondHoldingChart"></canvas></div>
+                      <p class="text-xs text-center text-gray-500 mt-2">Tỷ trọng nắm giữ TPCP đến ngày đáo hạn (HTM) của BIDV.</p>
+                </div>
+                <div class="card p-6 md:col-span-2">
+                     <h3 class="text-xl font-semibold mb-4">Nhà Phát hành & Tiên phong Tài chính Xanh</h3>
+                     <p class="text-gray-700 mb-6">BIDV tích cực phát hành trái phiếu để tăng vốn cấp 2 và là ngân hàng tiên phong tại Việt Nam phát hành thành công trái phiếu xanh và bền vững theo chuẩn quốc tế, dẫn dắt xu hướng phát triển bền vững.</p>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+                            <p class="font-bold text-green-800 text-2xl">2,500 tỷ</p>
+                            <p class="text-green-700 font-semibold">Trái phiếu Xanh (2023)</p>
+                            <p class="text-sm text-gray-600">Tài trợ cho các dự án vì môi trường.</p>
+                        </div>
+                         <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                            <p class="font-bold text-blue-800 text-2xl">3,000 tỷ</p>
+                            <p class="text-blue-700 font-semibold">Trái phiếu Bền vững (2024)</p>
+                             <p class="text-sm text-gray-600">Tuân thủ nguyên tắc của ICMA.</p>
+                        </div>
+                    </div>
+                     <p class="text-gray-700 mt-6">Ngân hàng cũng có kế hoạch phát hành tới <strong>23,000 tỷ đồng</strong> trái phiếu riêng lẻ trong năm 2025 để tiếp tục củng cố năng lực tài chính.</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="conclusion" class="mt-16 scroll-mt-20">
+            <h2 class="text-3xl font-bold mb-2">Kết Luận & Khuyến Nghị</h2>
+            <p class="text-lg text-gray-600 mb-8">
+                Thị trường đang trưởng thành hơn nhưng vẫn còn thách thức. Cần tiếp tục hoàn thiện pháp lý, đa dạng hóa thị trường và nâng cao năng lực của các bên tham gia.
+            </p>
+             <div class="bg-white rounded-lg shadow p-6 md:p-8">
+                <div id="accordion-parent">
+                    <div class="accordion-item border-b">
+                        <button class="accordion-header w-full text-left py-4 font-semibold text-lg flex justify-between items-center">
+                            <span>Đối với Nhà hoạch định Chính sách</span>
+                            <svg class="w-6 h-6 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                        </button>
+                        <div class="accordion-content hidden pb-4 text-gray-600">
+                           <ul class="list-disc list-inside space-y-2">
+                                <li>Tiếp tục hoàn thiện khung pháp lý, cân bằng giữa huy động vốn và bảo vệ nhà đầu tư.</li>
+                                <li>Khuyến khích đa dạng hóa nhà phát hành ngoài BĐS/Ngân hàng để giảm rủi ro tập trung.</li>
+                                <li>Xây dựng hệ thống phân loại xanh quốc gia (green taxonomy) để thúc đẩy tài chính bền vững.</li>
+                           </ul>
+                        </div>
+                    </div>
+                    <div class="accordion-item border-b">
+                         <button class="accordion-header w-full text-left py-4 font-semibold text-lg flex justify-between items-center">
+                            <span>Đối với Các bên Tham gia Thị trường</span>
+                            <svg class="w-6 h-6 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                        </button>
+                        <div class="accordion-content hidden pb-4 text-gray-600">
+                             <ul class="list-disc list-inside space-y-2">
+                                <li>Nhà đầu tư cần nâng cao năng lực thẩm định rủi ro tín dụng, không chỉ dựa vào lãi suất.</li>
+                                <li>Nhà phát hành và tổ chức tư vấn cần tuân thủ nghiêm ngặt quy định về công bố thông tin.</li>
+                                <li>Đa dạng hóa danh mục đầu tư để giảm thiểu rủi ro.</li>
+                           </ul>
+                        </div>
+                    </div>
+                    <div class="accordion-item">
+                         <button class="accordion-header w-full text-left py-4 font-semibold text-lg flex justify-between items-center">
+                            <span>Đối với BIDV</span>
+                             <svg class="w-6 h-6 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                        </button>
+                        <div class="accordion-content hidden pb-4 text-gray-600">
+                            <ul class="list-disc list-inside space-y-2">
+                                <li>Tiếp tục vai trò tiên phong trong tài chính xanh và bền vững.</li>
+                                <li>Củng cố vị thế nhà tạo lập thị trường, góp phần ổn định và tăng thanh khoản.</li>
+                                <li>Đẩy mạnh dịch vụ tư vấn, hỗ trợ các doanh nghiệp chất lượng cao thuộc nhiều lĩnh vực.</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="bg-gray-800 text-white mt-16">
+        <div class="container mx-auto py-6 px-4 sm:px-6 lg:px-8 text-center text-sm">
+            <p>&copy; 2025 - Ứng dụng Phân tích Tương tác Thị trường Trái phiếu Việt Nam.</p>
+            <p class="text-gray-400 mt-1">Dữ liệu dựa trên báo cáo phân tích giai đoạn 2020-2025. Đây là sản phẩm trực quan hóa, không phải là khuyến nghị đầu tư.</p>
+        </div>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            
+            const mobileMenuButton = document.getElementById('mobile-menu-button');
+            const mobileMenu = document.getElementById('mobile-menu');
+            mobileMenuButton.addEventListener('click', () => {
+                mobileMenu.classList.toggle('hidden');
+            });
+
+            const govContent = document.getElementById('gov-content');
+            const corpContent = document.getElementById('corp-content');
+            const btnGov = document.getElementById('btn-gov');
+            const btnCorp = document.getElementById('btn-corp');
+
+            btnGov.addEventListener('click', () => {
+                govContent.classList.remove('hidden');
+                corpContent.classList.add('hidden');
+                btnGov.classList.add('active');
+                btnCorp.classList.remove('active');
+            });
+
+            btnCorp.addEventListener('click', () => {
+                govContent.classList.add('hidden');
+                corpContent.classList.remove('hidden');
+                btnGov.classList.remove('active');
+                btnCorp.classList.add('active');
+            });
+
+            document.querySelectorAll('.accordion-header').forEach(button => {
+                button.addEventListener('click', () => {
+                    const content = button.nextElementSibling;
+                    const icon = button.querySelector('svg');
+                    content.classList.toggle('hidden');
+                    icon.classList.toggle('rotate-180');
+                    
+                    document.querySelectorAll('.accordion-content').forEach(item => {
+                        if (item !== content) {
+                            item.classList.add('hidden');
+                            item.previousElementSibling.querySelector('svg').classList.remove('rotate-180');
+                        }
+                    });
+                });
+            });
+
+            const smoothScrollLinks = document.querySelectorAll('a[href^="#"]');
+            smoothScrollLinks.forEach(link => {
+                link.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    let targetId = this.getAttribute('href');
+                    let targetElement = document.querySelector(targetId);
+                    if (targetElement) {
+                        targetElement.scrollIntoView({
+                            behavior: 'smooth',
+                            block: 'start'
+                        });
+                        if(mobileMenu.classList.contains('hidden') === false){
+                            mobileMenu.classList.add('hidden');
+                        }
+                    }
+                });
+            });
+
+
+            const commonChartOptions = {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                    },
+                    tooltip: {
+                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                        titleFont: {
+                            size: 14,
+                            weight: 'bold',
+                        },
+                        bodyFont: {
+                            size: 12,
+                        },
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.dataset.label || '';
+                                if (label) {
+                                    label += ': ';
+                                }
+                                if (context.parsed.y !== null) {
+                                    label += new Intl.NumberFormat('vi-VN').format(context.parsed.y) + ' tỷ VND';
+                                }
+                                return label;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                           callback: function(value, index, values) {
+                                return new Intl.NumberFormat('vi-VN', { notation: 'compact', compactDisplay: 'short' }).format(value);
+                            }
+                        }
+                    }
+                }
+            };
+            
+            new Chart(document.getElementById('govIssuanceChart'), {
+                type: 'bar',
+                data: {
+                    labels: ['2020', '2021', '2022', '2023', '2024'],
+                    datasets: [{
+                        label: 'Khối lượng phát hành (Tỷ VND)',
+                        data: [323953, 318213, 214722, 298476, 330376],
+                        backgroundColor: '#198754',
+                        borderColor: '#198754',
+                        borderWidth: 1
+                    }]
+                },
+                options: commonChartOptions
+            });
+
+            new Chart(document.getElementById('govYieldChart'), {
+                type: 'line',
+                data: {
+                    labels: ['2021', '2022', '2023', '2024', 'T5/2025'],
+                    datasets: [
+                        {
+                            label: 'Lợi suất 5 năm (%)',
+                            data: [null, null, null, null, 2.511],
+                            borderColor: '#0dcaf0',
+                            backgroundColor: '#0dcaf0',
+                            fill: false,
+                            tension: 0.1
+                        },
+                        {
+                            label: 'Lợi suất 10 năm (%)',
+                            data: [2.08, 2.89, null, 2.58, 3.144],
+                            borderColor: '#0d6efd',
+                            backgroundColor: '#0d6efd',
+                            fill: false,
+                            tension: 0.1
+                        },
+                        {
+                            label: 'Lợi suất 15 năm (%)',
+                            data: [2.33, 3.17, null, null, null],
+                            borderColor: '#6f42c1',
+                            backgroundColor: '#6f42c1',
+                            fill: false,
+                            tension: 0.1
+                        }
+                    ]
+                },
+                options: {
+                    ...commonChartOptions,
+                     plugins: {
+                        ...commonChartOptions.plugins,
+                        tooltip: {
+                             ...commonChartOptions.plugins.tooltip,
+                             callbacks: {
+                                label: function(context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    if (context.parsed.y !== null) {
+                                        label += context.parsed.y + '%';
+                                    }
+                                    return label;
+                                }
+                            }
+                        }
+                     },
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            ticks: {
+                                callback: function(value, index, values) {
+                                    return value + '%';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            new Chart(document.getElementById('corpIssuanceChart'), {
+                type: 'bar',
+                data: {
+                    labels: ['2020', '2021', '2022', '2023', '2024'],
+                    datasets: [{
+                        label: 'Khối lượng phát hành (Tỷ VND)',
+                        data: [462575, 742743, 269486, 338853, 466518],
+                        backgroundColor: '#0d6efd',
+                        borderColor: '#0d6efd',
+                        borderWidth: 1
+                    }]
+                },
+                options: commonChartOptions
+            });
+
+            new Chart(document.getElementById('corpInterestRateChart'), {
+                type: 'line',
+                data: {
+                    labels: ['2020', '2021', '2022', '2023', 'T4/2025'],
+                    datasets: [
+                        {
+                            label: 'Lãi suất bình quân TPDN (%)',
+                            data: [9.34, 7.96, 8.05, 10.1, null],
+                            borderColor: '#6c757d',
+                            backgroundColor: '#6c757d',
+                            tension: 0.1
+                        },
+                        {
+                            label: 'Lãi suất ngành Ngân hàng (%)',
+                            data: [null, null, 5.6, null, 5.5],
+                            borderColor: '#0d6efd',
+                            backgroundColor: '#0d6efd',
+                            tension: 0.1
+                        },
+                         {
+                            label: 'Lãi suất ngành Bất động sản (%)',
+                            data: [null, null, 10.04, null, 10.7],
+                            borderColor: '#dc3545',
+                            backgroundColor: '#dc3545',
+                            tension: 0.1
+                        }
+                    ]
+                },
+                 options: {
+                    ...commonChartOptions,
+                     plugins: {
+                        ...commonChartOptions.plugins,
+                        tooltip: {
+                             ...commonChartOptions.plugins.tooltip,
+                             callbacks: {
+                                label: function(context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    if (context.parsed.y !== null) {
+                                        label += context.parsed.y + '%';
+                                    }
+                                    return label;
+                                }
+                            }
+                        }
+                     },
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            ticks: {
+                                callback: function(value, index, values) {
+                                    return value + '%';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+             new Chart(document.getElementById('corpIndustryChart'), {
+                type: 'doughnut',
+                data: {
+                    labels: ['Ngân hàng', 'Bất động sản', 'Ngành khác'],
+                    datasets: [{
+                        label: 'Cơ cấu theo ngành',
+                        data: [69, 20, 11],
+                        backgroundColor: ['#0d6efd', '#dc3545', '#ffc107'],
+                        hoverOffset: 4
+                    }]
+                },
+                options: {
+                     responsive: true,
+                     maintainAspectRatio: false,
+                     plugins: {
+                         legend: {
+                             position: 'bottom',
+                         },
+                         tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `${context.label}: ${context.raw}%`;
+                                }
+                            }
+                        }
+                     }
+                }
+            });
+
+             new Chart(document.getElementById('corpPublicPrivateChart'), {
+                type: 'doughnut',
+                data: {
+                    labels: ['Phát hành Công khai', 'Phát hành Riêng lẻ'],
+                    datasets: [{
+                        label: 'Phát hành TPDN Q1/2025',
+                        data: [88.4, 11.6],
+                        backgroundColor: ['#198754', '#6c757d'],
+                        hoverOffset: 4
+                    }]
+                },
+                options: {
+                     responsive: true,
+                     maintainAspectRatio: false,
+                     plugins: {
+                         legend: {
+                             position: 'bottom',
+                         },
+                          tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `${context.label}: ${context.raw}%`;
+                                }
+                            }
+                        }
+                     }
+                }
+            });
+
+             new Chart(document.getElementById('bidvGovtBondHoldingChart'), {
+                type: 'bar',
+                data: {
+                    labels: ['2020-22', '2023', 'Hiện tại'],
+                    datasets: [{
+                        label: 'Tỷ trọng HTM (%)',
+                        data: [50, 62, 80],
+                        backgroundColor: [
+                            'rgba(13, 110, 253, 0.5)',
+                            'rgba(13, 110, 253, 0.7)',
+                            'rgba(13, 110, 253, 1)',
+                        ],
+                        borderColor: '#0d6efd',
+                        borderWidth: 1
+                    }]
+                },
+                 options: {
+                    ...commonChartOptions,
+                    indexAxis: 'y',
+                     plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                             callbacks: {
+                                label: function(context) {
+                                    return `Tỷ trọng HTM: ${context.parsed.x}%`;
+                                }
+                            }
+                        }
+                     },
+                    scales: {
+                        x: {
+                            max: 100,
+                            ticks: {
+                                callback: function(value) {
+                                    return value + "%"
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+        });
+    </script>
+</body>
+</html>
