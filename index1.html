@@ -782,10 +782,13 @@
         /**
          * Handles the Strava OAuth callback, exchanging code for tokens.
          */
+    /**
+         * Handles the Strava OAuth callback, exchanging code for tokens via Edge Function.
+         */
         async function handleStravaCallback() {
             const urlParams = new URLSearchParams(window.location.search);
             const code = urlParams.get('code');
-            const stateParam = urlParams.get('state');
+            const stateParam = urlParams.get('state'); // Contains runnerCredentialId, clientId, redirectUri
             const errorParam = urlParams.get('error');
 
             if (errorParam) {
@@ -798,80 +801,57 @@
             if (code && stateParam) {
                 authStatus.textContent = 'Đang xử lý kết nối Strava...';
                 let parsedState;
+                let runnerCredentialId;
                 try {
                     parsedState = JSON.parse(decodeURIComponent(stateParam));
-                    if (!parsedState.credentialId || !parsedState.clientId || !parsedState.redirectUri) {
-                        throw new Error('Thiếu thông tin trong tham số "state".');
+                    runnerCredentialId = parsedState.credentialId;
+                    if (!runnerCredentialId) {
+                        throw new Error('Thiếu thông tin runnerCredentialId trong tham số "state".');
                     }
                 } catch (e) {
-                    console.error('Lỗi giải mã tham số "state":', e);
-                    showAlert('Lỗi khi xử lý kết nối Strava: Thông tin phiên không hợp lệ.');
+                    console.error('Lỗi giải mã tham số "state" hoặc thiếu runnerCredentialId:', e);
+                    showAlert('Lỗi khi xử lý kết nối Strava: Thông tin phiên không hợp lệ hoặc thiếu Runner ID.');
                     window.history.replaceState({}, document.title, window.location.pathname);
                     return;
                 }
 
                 try {
-                    // Fetch client_secret and refresh_token from Supabase for the credentialId
-                    const { data: credData, error: credError } = await supabaseClientInstance
-                        .from('runner_credentials')
-                        .select('client_secret, runner_name') // Fetch runner_name here
-                        .eq('id', parsedState.credentialId)
-                        .single();
-
-                    if (credError || !credData) {
-                        throw new Error(`Không tìm thấy thông tin đăng nhập cho runner ID: ${parsedState.credentialId}.`);
-                    }
-
-                    const response = await fetch('https://www.strava.com/oauth/token', {
+                    // GỌI EDGE FUNCTION để trao đổi mã lấy token
+                    console.log(`[Client] Calling strava-oauth-callback Edge Function for runnerCredentialId: ${runnerCredentialId}`);
+                    const response = await fetch(STRAVA_OAUTH_CALLBACK_URL, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
-                            client_id: parsedState.clientId,
-                            client_secret: credData.client_secret,
                             code: code,
-                            grant_type: 'authorization_code',
-                            redirect_uri: parsedState.redirectUri
-                        })
+                            runnerCredentialId: runnerCredentialId
+                        }),
                     });
 
-                    if (!response.ok) {
-                        const errorData = await response.json();
-                        throw new Error(`Trao đổi mã thất bại: ${errorData.message || response.statusText}`);
+                    const result = await response.json();
+
+                    if (response.ok && result.success) {
+                        // Lưu các token và athlete info từ phản hồi của Edge Function vào localStorage
+                        localStorage.setItem('strava_access_token', result.access_token);
+                        localStorage.setItem('strava_refresh_token', result.refresh_token);
+                        localStorage.setItem('strava_expires_at', result.expires_at); // expires_at đã là mili giây từ EF
+                        localStorage.setItem('strava_athlete_id', result.athlete_id);
+                        localStorage.setItem('strava_runner_name', result.runner_name); 
+                        localStorage.setItem('strava_runner_credential_id', result.runnerCredentialId); 
+                        localStorage.setItem('strava_authenticated', 'true'); 
+
+                        showAlert('Đăng nhập Strava thành công! Bạn có thể tải dữ liệu hoạt động ngay bây giờ.');
+                        window.history.replaceState({}, document.title, window.location.pathname); // Clean URL
+                        checkAuthState(); // Update UI
+                    } else {
+                        console.error('[Client] Error from Edge Function:', result.error);
+                        showAlert(`Lỗi đăng nhập Strava: ${result.error || 'Không xác định'}`);
+                        clearStravaSession();
+                        checkAuthState();
+                        window.history.replaceState({}, document.title, window.location.pathname); // Clean URL
                     }
-
-                    const data = await response.json();
-                    
-                    // Store tokens and athlete info in localStorage
-                    localStorage.setItem('strava_access_token', data.access_token);
-                    localStorage.setItem('strava_refresh_token', data.refresh_token);
-                    localStorage.setItem('strava_expires_at', data.expires_at * 1000);
-                    localStorage.setItem('strava_athlete_id', data.athlete.id);
-                    localStorage.setItem('strava_runner_name', credData.runner_name); // Use runner_name from Supabase
-                    localStorage.setItem('strava_runner_credential_id', parsedState.credentialId); // Store the credential ID
-                    localStorage.setItem('strava_authenticated', 'true'); // Mark as authenticated
-
-                    // Update runner_credentials table with the athlete_id (and potentially updated tokens)
-                    const { error: updateCredError } = await supabaseClientInstance
-                        .from('runner_credentials')
-                        .update({ 
-                            athlete_id: data.athlete.id,
-                            // Optionally update refresh_token if Strava reissues it
-                            // refresh_token: data.refresh_token 
-                        })
-                        .eq('id', parsedState.credentialId);
-                    
-                    if (updateCredError) {
-                        console.error('Error updating runner_credentials with athlete_id:', updateCredError.message);
-                        showAlert('Lỗi khi lưu Athlete ID vào cơ sở dữ liệu. Vui lòng kiểm tra console.');
-                    }
-
-
-                    showAlert('Đăng nhập Strava thành công! Bạn có thể tải dữ liệu hoạt động ngay bây giờ.');
-                    window.history.replaceState({}, document.title, window.location.pathname); // Clean URL
-                    checkAuthState(); // Update UI
                 } catch (err) {
-                    console.error('Lỗi khi xử lý Strava callback:', err);
-                    showAlert(`Lỗi đăng nhập Strava: ${err.message}`);
+                    console.error('Lỗi khi gọi Edge Function strava-oauth-callback:', err);
+                    showAlert(`Lỗi mạng hoặc máy chủ khi xử lý đăng nhập Strava: ${err.message}`);
                     clearStravaSession();
                     checkAuthState();
                     window.history.replaceState({}, document.title, window.location.pathname); // Clean URL
@@ -880,7 +860,6 @@
                 console.log('Không có mã ủy quyền hoặc tham số "state" trong URL. Không có hành động nào được thực hiện.');
             }
         }
-
 
         // --- Data Fetching & Management ---
 
