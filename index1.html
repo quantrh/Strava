@@ -780,9 +780,6 @@
         });
 
         /**
-         * Handles the Strava OAuth callback, exchanging code for tokens.
-         */
-    /**
          * Handles the Strava OAuth callback, exchanging code for tokens via Edge Function.
          */
         async function handleStravaCallback() {
@@ -861,6 +858,7 @@
             }
         }
 
+
         // --- Data Fetching & Management ---
 
         /**
@@ -880,16 +878,15 @@
             const activitiesTableUserId = currentAthleteId; 
             
             console.log('Fetching activities:');
-            console.log('  currentRunnerCredentialId (Supabase Credential ID):', currentRunnerCredentialId);
-            console.log('  currentAthleteId (Strava Athlete ID used for activities table):', activitiesTableUserId);
+            console.log('  currentRunnerCredentialId (Supabase Credential ID to send):', currentRunnerCredentialId);
+            console.log('  currentAthleteId (Strava Athlete ID - for local logging):', currentAthleteId); 
 
             try {
                 const response = await fetch(FETCH_ACTIVITIES_API_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ 
-                        stravaAthleteId: currentAthleteId, // Pass Strava athlete ID to Edge Function for fetching from Strava
-                        supabaseUserId: activitiesTableUserId, // Pass this as the ID for storing activities in Supabase
+                        runnerCredentialId: currentRunnerCredentialId, // Gửi ID của runner credential
                         limit: activitiesLimit 
                     }),
                 });
@@ -923,12 +920,7 @@
             recentActivitiesList.innerHTML = ''; // Clear previous list
 
             const activitiesTableUserId = currentAthleteId; // Use Strava Athlete ID for activities table
-            if (!activitiesTableUserId) {
-                showAlert('Lỗi: Không tìm thấy Strava Athlete ID để tải hoạt động. Vui lòng đăng nhập lại.');
-                recentActivitiesStatus.textContent = 'Thiếu Strava Athlete ID.';
-                return;
-            }
-
+           
             console.log('Loading recent activities:');
             console.log('  Querying Supabase for activities.user_id (Strava Athlete ID):', activitiesTableUserId);
 
@@ -995,12 +987,7 @@
             document.getElementById('bubble-chart-container').innerHTML = '<p class="text-gray-500 text-center">Đang tải dữ liệu thống kê...</p>';
 
             const activitiesTableUserId = currentAthleteId; // Use Strava Athlete ID for activities table
-            if (!activitiesTableUserId) {
-                showAlert('Lỗi: Không tìm thấy Strava Athlete ID để xem thống kê. Vui lòng đăng nhập lại.');
-                chartStatus.textContent = 'Thiếu Strava Athlete ID.';
-                return;
-            }
-
+            
             console.log('Loading stats:');
             console.log('  Querying Supabase for activities.user_id (Strava Athlete ID):', activitiesTableUserId);
 
