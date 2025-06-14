@@ -174,7 +174,7 @@
         }
     </style>
 </head>
-<body class="min-h-screen flex flex-col">
+<body>
     <header class="bg-bidv-green p-4 shadow-md">
         <div class="container flex justify-between items-center">
             <div class="flex items-center space-x-4">
@@ -352,6 +352,18 @@
         </div>
     </div>
 
+    <!-- Weekly Activities Modal -->
+    <div id="weekly-activities-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-button" id="close-weekly-activities-modal-btn">&times;</span>
+            <h3 id="weekly-activities-title" class="text-2xl font-bold mb-4 text-gray-800">Hoạt động trong tuần:</h3>
+            <ul id="weekly-activities-list" class="space-y-2 text-sm">
+                <!-- Activities will be loaded here -->
+            </ul>
+            <p id="weekly-activities-status" class="mt-4 text-sm text-gray-600"></p>
+        </div>
+    </div>
+
     <div id="custom-alert" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
         <div class="bg-white p-6 rounded-lg shadow-xl max-w-sm w-full text-center">
             <p id="alert-message" class="mb-4 text-lg"></p>
@@ -380,6 +392,8 @@
         const STRAVA_OAUTH_CALLBACK_URL = 'https://rmbsxccrwrktbjlnezpu.supabase.co/functions/v1/strava-oauth-callback';
         const FETCH_ACTIVITIES_API_URL = 'https://rmbsxccrwrktbjlnezpu.supabase.co/functions/v1/fetch-strava-activities';
         const GET_STATS_API_URL = 'https://rmbsxccrwrktbjlnezpu.supabase.co/functions/v1/get-user-activities';
+        // New Edge Function URL for AI analysis
+        const ANALYZE_ACTIVITIES_FUNCTION_URL = 'https://rmbsxccrwrktbjlnezpu.supabase.co/functions/v1/analyze-activities-with-gemini'; 
 
 
         // Global variables to store user status and activity data
@@ -402,7 +416,7 @@
         const currentAppUserEmail = document.getElementById('current-app-user-email');
         const authForm = document.getElementById('auth-form');
         const authEmailInput = document.getElementById('auth-email');
-        const authPasswordInput = document.getElementById('auth-password'); // FIXED THIS LINE
+        const authPasswordInput = document.getElementById('auth-password'); 
         const signupBtn = document.getElementById('signup-btn');
         const signinBtn = document.getElementById('signin-btn');
         const guestLoginBtn = document.getElementById('guest-login-btn');
@@ -445,6 +459,13 @@
         const recentActivitiesList = document.getElementById('recent-activities');
         const recentActivitiesStatus = document.getElementById('recent-activities-status');
         const statsSection = document.getElementById('stats-section');
+
+        // New DOM elements for weekly activities modal
+        const weeklyActivitiesModal = document.getElementById('weekly-activities-modal');
+        const closeWeeklyActivitiesModalBtn = document.getElementById('close-weekly-activities-modal-btn');
+        const weeklyActivitiesTitle = document.getElementById('weekly-activities-title');
+        const weeklyActivitiesList = document.getElementById('weekly-activities-list');
+        const weeklyActivitiesStatus = document.getElementById('weekly-activities-status');
 
 
         // --- Supabase App Authentication Functions ---
@@ -793,7 +814,7 @@
         async function checkStravaAuthState() {
             currentRunnerCredentialId = localStorage.getItem('strava_runner_credential_id'); 
             isAuthenticated = localStorage.getItem('strava_authenticated') === 'true';
-            currentAthleteId = localStorage.getItem('strava_athlete_id'); // Strava athlete ID (number) for activities.user_id
+            currentAthleteId = localStorage.getItem('strava_athlete_id'); // Strava athlete ID for API calls and for activities.user_id
             currentRunnerName = localStorage.getItem('strava_runner_name'); // Runner name (string)
 
             console.log('checkStravaAuthState - Kiểm tra trạng thái xác thực Strava...');
@@ -1195,62 +1216,71 @@
             return [h, m, s].map(v => v < 10 ? "0" + v : v).filter((v, i) => v !== "00" || i > 0).join(":");
         }
 
-        // --- Statistics and visualization of results ---
-        viewStatsBtn.addEventListener('click', async () => {
-            if (!currentAppUserId || !isAuthenticated || !currentRunnerCredentialId || !currentAthleteId) {
-                showAlert('Vui lòng đăng nhập ứng dụng và kết nối với Strava trước khi thực hiện chức năng này.');
-                return;
-            }
+        /**
+         * Fetches activities for a specific week from Supabase and displays them in a modal.
+         * @param {string} weekString - The ISO week string (e.g., "YYYY-WW").
+         * @param {number} athleteId - The Strava athlete ID associated with the activities.
+         */
+        async function fetchActivitiesForWeek(weekString, athleteId) {
+            weeklyActivitiesStatus.textContent = 'Đang tải hoạt động cho tuần này...';
+            weeklyActivitiesList.innerHTML = ''; // Clear previous list
 
-            const chartStatus = document.getElementById('chart-status');
-            chartStatus.textContent = 'Đang tải dữ liệu thống kê...';
-            document.getElementById('bubble-chart-container').innerHTML = '<p class="text-gray-500 text-center">Đang tải dữ liệu thống kê...</p>';
+            // Calculate start and end dates for the given ISO week
+            const [yearStr, weekNumStr] = weekString.split('-W');
+            const year = parseInt(yearStr);
+            const weekNum = parseInt(weekNumStr);
 
-            console.log('Loading stats:');
-            // Gửi runnerCredentialId tới Edge Function để nó tự tìm athleteId
-            console.log('  Sending runnerCredentialId to Edge Function for stats:', currentRunnerCredentialId); 
+            // Get the first day of the year
+            const jan1 = new Date(year, 0, 1);
+            // Get the day of the week for Jan 1 (0 for Sunday, 1 for Monday, etc.)
+            const dayOfWeekJan1 = jan1.getDay();
+            // Calculate the first Thursday of the year (ISO week 1 always contains the first Thursday)
+            const firstThursday = new Date(year, 0, 1 + (4 - dayOfWeekJan1 + 7) % 7);
+
+            // Calculate the start date of the target week (Monday of that week)
+            const startDate = new Date(firstThursday.getTime() + (weekNum - 1) * 7 * 24 * 60 * 60 * 1000);
+            startDate.setDate(startDate.getDate() - (startDate.getDay() + 6) % 7); // Go back to Monday
+
+            // Calculate the end date of the target week (Sunday of that week)
+            const endDate = new Date(startDate);
+            endDate.setDate(endDate.getDate() + 7); // Go to the beginning of the next week
 
             try {
-                const response = await fetch(GET_STATS_API_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ userId: currentRunnerCredentialId }), // Truyền RunnerCredentialId
-                });
+                const { data, error } = await supabaseClientInstance
+                    .from('activities')
+                    .select('*')
+                    .eq('user_id', athleteId)
+                    .gte('start_date', startDate.toISOString())
+                    .lt('start_date', endDate.toISOString())
+                    .order('start_date', { ascending: false });
 
-                const result = await response.json();
+                if (error) throw error;
 
-                if (response.ok && result.success) {
-                    chartStatus.textContent = 'Đã tải dữ liệu thống kê thành công.';
-                    weeklyStatsData = result.weeklyStats; // Store data globally
-                    if (weeklyStatsData && weeklyStatsData.length > 0) {
-                        renderBubbleChart(weeklyStatsData); // Draw chart
-                    } else {
-                        document.getElementById('bubble-chart-container').innerHTML = '<p class="text-gray-500 text-center">Không có dữ liệu chạy bộ để tạo biểu đồ thống kê.</p>';
-                        chartStatus.textContent = 'Không có dữ liệu chạy bộ để tạo biểu đồ thống kê.';
-                    }
+                if (data && data.length > 0) {
+                    data.forEach(activity => {
+                        const li = document.createElement('li');
+                        li.className = 'border-b last:border-b-0 py-2';
+                        li.innerHTML = `
+                            <p class="font-semibold">${activity.name} (${activity.type})</p>
+                            <p>Ngày: ${new Date(activity.start_date).toLocaleDateString('vi-VN')}</p>
+                            <p>Quãng đường: ${(activity.distance / 1000).toFixed(2)} km</p>
+                            <p>Thời gian: ${formatDuration(activity.moving_time)}</p>
+                        `;
+                        weeklyActivitiesList.appendChild(li);
+                    });
+                    weeklyActivitiesStatus.textContent = `Đã tải ${data.length} hoạt động cho tuần ${weekString}.`;
                 } else {
-                    chartStatus.textContent = `Lỗi khi tải thống kê: ${result.error || 'Không xác định'}`;
-                    showAlert(`Lỗi khi tải thống kê: ${result.error || 'Không xác định'}`);
+                    weeklyActivitiesList.innerHTML = '<li class="text-gray-500">Không tìm thấy hoạt động nào cho tuần này.</li>';
+                    weeklyActivitiesStatus.textContent = `Không có hoạt động nào cho tuần ${weekString}.`;
                 }
+                weeklyActivitiesModal.style.display = 'flex'; // Show modal
             } catch (error) {
-                console.error('Lỗi khi tải thống kê:', error);
-                chartStatus.textContent = 'Lỗi mạng hoặc máy chủ khi tải thống kê.';
-                showAlert('Lỗi mạng hoặc máy chủ khi tải thống kê.');
+                console.error('Lỗi khi tải hoạt động theo tuần từ Supabase:', error.message);
+                weeklyActivitiesStatus.textContent = `Lỗi: ${error.message}`;
+                showAlert(`Lỗi khi tải hoạt động theo tuần: ${error.message}`);
             }
-        });
-
-        // Helper function to convert ISO week string (YYYY-WW) to a Date object
-        function getDateFromISOWeek(yearWeek) {
-            const [yearStr, weekStr] = yearWeek.split('-W');
-            const year = parseInt(yearStr);
-            const week = parseInt(weekStr);
-
-            const jan1 = new Date(year, 0, 1);
-            const dayOfWeekJan1 = jan1.getDay();
-            const firstThursday = new Date(year, 0, 1 + (4 - dayOfWeekJan1 + 7) % 7);
-            const date = new Date(firstThursday.getTime() + (week - 1) * 7 * 24 * 60 * 60 * 1000);
-            return date;
         }
+
 
         // Function to draw the bubble chart
         function renderBubbleChart(data) {
@@ -1266,7 +1296,7 @@
                 monthlyDataMap.get(monthKey).weeks.push(d);
             });
 
-            const monthlyData = Array.from(monthlyDataMap.values()).sort((a, b) => b.month.localeCompare(a.month));
+            const monthlyData = Array.from(monthlyDataMap.values()).sort((a, b) => b.month.localeCompare(a.month)); // Sort months descending
 
             const container = document.getElementById('bubble-chart-container');
             container.innerHTML = ''; 
@@ -1350,15 +1380,18 @@
                     .on("mouseover", function(event, d) {
                         d3.select(this).attr("stroke", "orange").attr("stroke-width", 3);
                         tooltip.style("opacity", 1)
-                            .html(`Tuần: ${d.week}<br>
-                                   Quãng đường: ${(d.totalDistance / 1000).toFixed(2)} km<br>
-                                   Thời gian: ${formatDuration(d.totalTime)}`)
+                            .html(`Tuần: ${d.week.split('-W')[1]}<br>Quãng đường: ${(d.totalDistance / 1000).toFixed(2)} km<br>Thời gian: ${formatDuration(d.totalTime)}`)
                             .style("left", (event.pageX + 10) + "px")
                             .style("top", (event.pageY - 28) + "px");
                     })
                     .on("mouseout", function() {
                         d3.select(this).attr("stroke", "#fff").attr("stroke-width", 2);
                         tooltip.style("opacity", 0);
+                    })
+                    .on("click", function(event, d) {
+                        // Pass athleteId from current session for fetching specific activities
+                        fetchActivitiesForWeek(d.week, currentAthleteId); 
+                        weeklyActivitiesTitle.textContent = `Hoạt động trong tuần ${d.week.split('-W')[1]} (${d.week.split('-W')[0]}):`;
                     });
 
                 monthGroup.selectAll(".bubble-text")
@@ -1367,7 +1400,7 @@
                     .attr("class", "bubble-text")
                     .attr("x", d => d.cx)
                     .attr("y", d => d.cy)
-                    .text(d => d.r > (width < 768 ? 15 : 25) ? d.week.split('-W')[1] : '')
+                    .text(d => d.r > (width < 768 ? 15 : 25) ? `${(d.totalDistance / 1000).toFixed(1)}km` : '') // Display KM on bubble
                     .attr("dy", "0.35em")
                     .attr("fill", "white")
                     .attr("pointer-events", "none");
@@ -1407,6 +1440,15 @@
             console.log('  activitiesTableUserId (Strava Athlete ID):', activitiesTableUserId);
 
             try {
+                // Get current Supabase Auth session to pass access token securely
+                const { data: { session }, error: sessionError } = await supabaseClientInstance.auth.getSession();
+                if (sessionError || !session?.access_token) {
+                    showAlert('Lỗi: Không tìm thấy phiên đăng nhập. Vui lòng đăng nhập lại.');
+                    llmAnalysisContent.innerHTML = '<p class="text-red-500">Lỗi xác thực: Không tìm thấy phiên đăng nhập.</p>';
+                    llmAnalysisStatus.textContent = '';
+                    return;
+                }
+
                 // Fetch recent activities from Supabase to send to LLM
                 // Sử dụng supabaseClientInstance để đảm bảo RLS được áp dụng
                 const { data: recentActivitiesFromDB, error: fetchError } = await supabaseClientInstance
@@ -1423,43 +1465,38 @@
                     return;
                 }
 
-                // Prepare activity data to send to LLM
-                const activitiesForLLM = recentActivitiesFromDB.map(activity => ({
+                // Prepare activity data to send to Edge Function
+                const activitiesForEdgeFunction = recentActivitiesFromDB.map(activity => ({
                     name: activity.name,
                     distance_km: (activity.distance / 1000).toFixed(2),
                     moving_time_seconds: activity.moving_time,
                     start_date: new Date(activity.start_date).toISOString().split('T')[0]
                 }));
 
-                // Prompt for the LLM
-                const prompt = `Phân tích dữ liệu hoạt động chạy bộ sau đây và cung cấp cái nhìn sâu sắc, xu hướng, hoặc đề xuất cá nhân hóa.
-                Dữ liệu hoạt động: ${JSON.stringify(activitiesForLLM)}`;
-
-                const payload = {
-                    contents: [{ role: "user", parts: [{ text: prompt }] }],
-                };
-
                 llmAnalysisStatus.textContent = 'Đang gọi AI để phân tích...';
 
-                const apiKey = ""; // Canvas will automatically provide the API key
-                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
-
-                const response = await fetch(apiUrl, {
+                // Call the Supabase Edge Function to analyze activities
+                const response = await fetch(ANALYZE_ACTIVITIES_FUNCTION_URL, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${session.access_token}` // Pass Supabase Auth token
+                    },
+                    body: JSON.stringify({
+                        activities: activitiesForEdgeFunction, // Send raw activities data
+                        runnerCredentialId: currentRunnerCredentialId // Pass runnerCredentialId for context/verification if needed in EF
+                    })
                 });
 
                 const result = await response.json();
 
-                if (result.candidates && result.candidates.length > 0 &&
-                    result.candidates[0].content && result.candidates[0].content.parts &&
-                    result.candidates[0].content.parts.length > 0) {
-                    const analysisText = result.candidates[0].content.parts[0].text;
+                if (response.ok && result.success) { // Check for success from Edge Function's response
+                    const analysisText = result.analysis; // Edge Function should return an 'analysis' field
                     llmAnalysisContent.innerHTML = markdownToHtml(analysisText);
                     llmAnalysisStatus.textContent = 'Phân tích hoàn tất!';
                 } else {
-                    llmAnalysisContent.innerHTML = '<p class="text-red-500">Không thể nhận được phân tích từ AI.</p>';
+                    console.error('Error from Edge Function:', result.error);
+                    llmAnalysisContent.innerHTML = `<p class="text-red-500">Không thể nhận được phân tích từ AI: ${result.error || 'Lỗi không xác định từ Edge Function'}</p>`;
                     llmAnalysisStatus.textContent = 'Lỗi phân tích AI.';
                 }
             } catch (error) {
@@ -1505,6 +1542,9 @@
                 checkStravaAuthState();
                 showAlert('Đã đăng xuất Strava.');
             });
+
+            // Set up event listener for weekly activities modal close button
+            closeWeeklyActivitiesModalBtn.addEventListener('click', () => weeklyActivitiesModal.style.display = 'none');
 
             // Handle initial Strava OAuth callback if any
             await handleStravaCallback(); 
