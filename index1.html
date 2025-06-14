@@ -1284,6 +1284,8 @@
 
         // Function to draw the bubble chart
         function renderBubbleChart(data) {
+            console.log('renderBubbleChart: Dữ liệu đầu vào:', data); // Log the input data
+
             const monthlyDataMap = new Map();
 
             data.forEach(d => {
@@ -1303,6 +1305,7 @@
 
             if (!monthlyData || monthlyData.length === 0) {
                 container.innerHTML = '<p class="text-gray-500">Không có dữ liệu thống kê để hiển thị biểu đồ.</p>';
+                console.log('renderBubbleChart: Không có dữ liệu hàng tháng để vẽ biểu đồ.');
                 return;
             }
 
@@ -1312,6 +1315,14 @@
 
             const totalSvgContentHeight = (monthlyData.length * monthBandHeight) + topPaddingForChart;
             const svgHeight = Math.max(container.clientHeight, totalSvgContentHeight);
+
+            console.log(`renderBubbleChart: Kích thước SVG - Width: ${width}, Height: ${svgHeight}`);
+            if (width <= 0 || svgHeight <= 0) {
+                 console.error('Lỗi renderBubbleChart: Kích thước biểu đồ không hợp lệ. Width hoặc Height <= 0.');
+                 container.innerHTML = '<p class="text-red-500">Lỗi: Kích thước biểu đồ không hợp lệ. Vui lòng thử lại hoặc đảm bảo khung chứa hiển thị.</p>';
+                 return;
+            }
+
 
             const svg = d3.select(container)
                 .append("svg")
@@ -1323,15 +1334,21 @@
             const maxDistance = d3.max(data, d => d.totalDistance);
             const minDistance = d3.min(data, d => d.totalDistance);
 
+            console.log(`renderBubbleChart: Quãng đường Min: ${minDistance}, Max: ${maxDistance}`);
+            
+            // Handle case where maxDistance might be 0 or undefined (e.g., no activities or all 0 distance)
+            // Ensure domain is valid for scaleSqrt. If maxDistance is 0, then the domain becomes [0,0] which is handled by d3.
+            // If min and max are the same (e.g., all activities have same distance), it still works.
             const maxRadius = width < 768 ? 30 : 60;
             const minRadius = width < 768 ? 8 : 15;
 
             const radiusScale = d3.scaleSqrt()
-                .domain([0, maxDistance])
+                .domain([0, maxDistance || 1]) // Use 1 as fallback to prevent domain from being [0,0] if maxDistance is 0
                 .range([minRadius, maxRadius]);
 
             const colorScale = d3.scaleSequential(d3.interpolateViridis)
-                .domain([maxDistance, minDistance]);
+                .domain([maxDistance || 1, minDistance || 0]); // Use 1 as fallback for max, 0 for min
+
 
             const bubbleHorizontalPadding = width < 768 ? 10 : 20;
             const bubbleVerticalOffset = monthBandHeight / 2;
@@ -1366,6 +1383,8 @@
                     currentX += (r * 2) + bubbleHorizontalPadding;
                     return { ...d, r, cx, cy: bubbleVerticalOffset + (width < 768 ? 20 : 30) };
                 });
+
+                console.log('renderBubbleChart: positionedWeeks cho tháng', monthObj.month, ':', positionedWeeks);
 
                 monthGroup.selectAll(".bubble")
                     .data(positionedWeeks)
