@@ -355,11 +355,11 @@
 
 
         // Global variables to store user status and activity data
-        let currentUserId = null; // This will now store the Supabase runner_credentials.id (UUID)
+        let currentRunnerCredentialId = null; // This will store the Supabase runner_credentials.id (UUID)
         let isAuthenticated = false;
         let userActivities = []; // New variable to store all loaded activities
         let weeklyStatsData = []; // Store weekly stats data globally
-        let currentAthleteId = null; // Stores Strava athlete ID for API calls but not as main "user ID" for Supabase table
+        let currentAthleteId = null; // Stores Strava athlete ID for API calls and for activities.user_id
         let currentRunnerName = null; // Stores the name of the currently logged-in runner
 
         // Initialize Supabase client instance
@@ -441,6 +441,7 @@
                                 <p class="text-sm text-gray-600">Client Secret: <span class="font-mono">${maskedSecret}</span></p>
                                 <p class="text-sm text-gray-600">Refresh Token: <span class="font-mono">${maskedRefresh}</span></p>
                                 <p class="text-sm text-gray-600">Redirect URI: <span class="font-mono">${maskedRedirectUri}</span></p>
+                                ${cred.athlete_id ? `<p class="text-sm text-gray-600">Athlete ID: <span class="font-mono">${cred.athlete_id}</span></p>` : ''}
                             </div>
                             <div class="flex flex-row gap-2 mt-2 sm:mt-0">
                                 <button class="btn-secondary btn-edit" data-id="${cred.id}">Sửa</button>
@@ -456,6 +457,7 @@
                         option.dataset.clientSecret = cred.client_secret; // Store client secret for OAuth flow
                         option.dataset.refreshToken = cred.refresh_token; // Store refresh token for OAuth flow
                         option.dataset.redirectUri = cred.redirect_uri; // Store redirect URI
+                        option.dataset.athleteId = cred.athlete_id || ''; // Store athlete ID
                         runnerSelect.appendChild(option);
                     });
                     
@@ -544,6 +546,7 @@
                 client_secret: clientSecret,
                 refresh_token: refreshToken,
                 redirect_uri: redirectUri
+                // athlete_id will be set during OAuth callback
             };
 
             try {
@@ -588,7 +591,7 @@
 
                 showAlert('Xóa thông tin runner thành công!');
                 // If the deleted runner was the current logged-in one, log out
-                if (currentUserId === id) {
+                if (currentRunnerCredentialId === id) {
                     clearStravaSession();
                     checkAuthState();
                 }
@@ -606,19 +609,19 @@
          * Checks the current Strava authentication status and updates the UI.
          */
         async function checkAuthState() {
-            // currentUserId now stores the Supabase runner_credentials.id (UUID)
-            currentUserId = localStorage.getItem('strava_runner_credential_id'); 
+            // currentRunnerCredentialId stores the Supabase runner_credentials.id (UUID)
+            currentRunnerCredentialId = localStorage.getItem('strava_runner_credential_id'); 
             isAuthenticated = localStorage.getItem('strava_authenticated') === 'true';
-            currentAthleteId = localStorage.getItem('strava_athlete_id'); // Strava athlete ID (number)
+            currentAthleteId = localStorage.getItem('strava_athlete_id'); // Strava athlete ID (number) for activities.user_id
             currentRunnerName = localStorage.getItem('strava_runner_name'); // Runner name (string)
 
             console.log('checkAuthState - Kiểm tra trạng thái xác thực...');
             console.log('  isAuthenticated:', isAuthenticated);
-            console.log('  currentUserId (Credential ID):', currentUserId);
+            console.log('  currentRunnerCredentialId (Credential ID):', currentRunnerCredentialId);
             console.log('  currentAthleteId (Strava ID):', currentAthleteId);
             console.log('  currentRunnerName:', currentRunnerName);
 
-            if (isAuthenticated && currentUserId && currentAthleteId && currentRunnerName) {
+            if (isAuthenticated && currentRunnerCredentialId && currentAthleteId && currentRunnerName) {
                 const expiresAt = localStorage.getItem('strava_expires_at');
                 const refreshToken = localStorage.getItem('strava_refresh_token');
 
@@ -632,16 +635,16 @@
                     disconnectStravaBtn.classList.remove('hidden');
                     dataSection.classList.remove('hidden');
                     statsSection.classList.remove('hidden');
-                    userInfo.textContent = `Chào mừng, Runner: ${currentRunnerName} (ID: ${currentUserId.substring(0, 8)}...)`; // Show truncated ID
+                    userInfo.textContent = `Chào mừng, Runner: ${currentRunnerName} (Strava ID: ${currentAthleteId})`; 
                     
                     // Select the logged-in runner in the dropdown
-                    runnerSelect.value = currentUserId;
+                    runnerSelect.value = currentRunnerCredentialId;
 
                 } else {
                     console.log('  Token đã hết hạn hoặc không có. Đang thử làm mới...');
                     authStatus.textContent = 'Token đã hết hạn, đang làm mới...';
                     try {
-                        const success = await refreshTokenCall(refreshToken, currentUserId); // Pass credential ID
+                        const success = await refreshTokenCall(refreshToken, currentRunnerCredentialId); // Pass credential ID
                         if (success) {
                             showAlert('Token đã được làm mới thành công!');
                             checkAuthState(); // Re-check state after refresh
@@ -683,7 +686,6 @@
             localStorage.removeItem('strava_athlete_id');
             localStorage.removeItem('strava_runner_name');
             localStorage.removeItem('strava_runner_credential_id'); // Clear the credential ID used for login
-            // Note: Does NOT remove runner credentials from Supabase
         }
 
         /**
@@ -726,6 +728,12 @@
                 localStorage.setItem('strava_access_token', data.access_token);
                 localStorage.setItem('strava_refresh_token', data.refresh_token);
                 localStorage.setItem('strava_expires_at', data.expires_at * 1000);
+                // Also update the athlete_id in runner_credentials if it changed or wasn't set
+                await supabaseClientInstance
+                    .from('runner_credentials')
+                    .update({ athlete_id: data.athlete.id })
+                    .eq('id', credentialId);
+
                 return true;
             } catch (error) {
                 console.error('Lỗi khi làm mới token:', error.message);
@@ -806,7 +814,7 @@
                     // Fetch client_secret and refresh_token from Supabase for the credentialId
                     const { data: credData, error: credError } = await supabaseClientInstance
                         .from('runner_credentials')
-                        .select('client_secret, refresh_token, runner_name')
+                        .select('client_secret, runner_name') // Fetch runner_name here
                         .eq('id', parsedState.credentialId)
                         .single();
 
@@ -842,6 +850,22 @@
                     localStorage.setItem('strava_runner_credential_id', parsedState.credentialId); // Store the credential ID
                     localStorage.setItem('strava_authenticated', 'true'); // Mark as authenticated
 
+                    // Update runner_credentials table with the athlete_id (and potentially updated tokens)
+                    const { error: updateCredError } = await supabaseClientInstance
+                        .from('runner_credentials')
+                        .update({ 
+                            athlete_id: data.athlete.id,
+                            // Optionally update refresh_token if Strava reissues it
+                            // refresh_token: data.refresh_token 
+                        })
+                        .eq('id', parsedState.credentialId);
+                    
+                    if (updateCredError) {
+                        console.error('Error updating runner_credentials with athlete_id:', updateCredError.message);
+                        showAlert('Lỗi khi lưu Athlete ID vào cơ sở dữ liệu. Vui lòng kiểm tra console.');
+                    }
+
+
                     showAlert('Đăng nhập Strava thành công! Bạn có thể tải dữ liệu hoạt động ngay bây giờ.');
                     window.history.replaceState({}, document.title, window.location.pathname); // Clean URL
                     checkAuthState(); // Update UI
@@ -864,7 +888,7 @@
          * Fetches activities from Strava API and saves them to Supabase.
          */
         fetchActivitiesBtn.addEventListener('click', async () => {
-            if (!isAuthenticated || !currentUserId || !currentAthleteId) {
+            if (!isAuthenticated || !currentRunnerCredentialId || !currentAthleteId) {
                 showAlert('Vui lòng đăng nhập với Strava trước khi thực hiện chức năng này.');
                 return;
             }
@@ -873,19 +897,20 @@
             dataStatus.textContent = 'Đang tải dữ liệu hoạt động từ Strava...';
 
             const activitiesLimit = parseInt(activitiesLimitInput.value, 10) || 60;
-            const supabaseUserId = currentUserId; 
+            // The user_id for the activities table will be the Strava Athlete ID
+            const activitiesTableUserId = currentAthleteId; 
             
             console.log('Fetching activities:');
-            console.log('  currentUserId (Supabase Credential ID):', supabaseUserId);
-            console.log('  currentAthleteId (Strava Athlete ID):', currentAthleteId);
+            console.log('  currentRunnerCredentialId (Supabase Credential ID):', currentRunnerCredentialId);
+            console.log('  currentAthleteId (Strava Athlete ID used for activities table):', activitiesTableUserId);
 
             try {
                 const response = await fetch(FETCH_ACTIVITIES_API_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ 
-                        stravaAthleteId: currentAthleteId, // Pass Strava athlete ID to Edge Function
-                        supabaseUserId: supabaseUserId, // Pass Supabase credential ID (UUID)
+                        stravaAthleteId: currentAthleteId, // Pass Strava athlete ID to Edge Function for fetching from Strava
+                        supabaseUserId: activitiesTableUserId, // Pass this as the ID for storing activities in Supabase
                         limit: activitiesLimit 
                     }),
                 });
@@ -910,7 +935,7 @@
          * Loads recent activities from Supabase and displays them.
          */
         loadRecentActivitiesBtn.addEventListener('click', async () => {
-            if (!isAuthenticated || !currentUserId || !currentAthleteId) {
+            if (!isAuthenticated || !currentRunnerCredentialId || !currentAthleteId) {
                 showAlert('Vui lòng đăng nhập với Strava trước khi thực hiện chức năng này.');
                 return;
             }
@@ -918,15 +943,15 @@
             recentActivitiesStatus.textContent = 'Đang tải hoạt động gần đây...';
             recentActivitiesList.innerHTML = ''; // Clear previous list
 
-            const supabaseUserId = currentUserId; // This is the Supabase credential ID (UUID)
-            if (!supabaseUserId) {
-                showAlert('Lỗi: Không tìm thấy Runner ID để tải hoạt động. Vui lòng đăng nhập lại.');
-                recentActivitiesStatus.textContent = 'Thiếu Runner ID.';
+            const activitiesTableUserId = currentAthleteId; // Use Strava Athlete ID for activities table
+            if (!activitiesTableUserId) {
+                showAlert('Lỗi: Không tìm thấy Strava Athlete ID để tải hoạt động. Vui lòng đăng nhập lại.');
+                recentActivitiesStatus.textContent = 'Thiếu Strava Athlete ID.';
                 return;
             }
 
             console.log('Loading recent activities:');
-            console.log('  Querying Supabase for user_id:', supabaseUserId);
+            console.log('  Querying Supabase for activities.user_id (Strava Athlete ID):', activitiesTableUserId);
 
             const numActivitiesToDisplay = parseInt(numRecentActivitiesInput.value, 10) || 10;
 
@@ -934,7 +959,7 @@
                 const { data, error } = await supabaseClientInstance
                     .from('activities')
                     .select('*')
-                    .eq('user_id', supabaseUserId) // Filter by the Supabase credential ID (UUID)
+                    .eq('user_id', activitiesTableUserId) // Filter by Strava Athlete ID
                     .order('start_date', { ascending: false })
                     .limit(numActivitiesToDisplay);
 
@@ -943,9 +968,8 @@
                 console.log('Data returned from Supabase for recent activities:', data); // Log the raw data
 
                 if (data && data.length > 0) {
-                    // Temporarily remove .filter(activity => activity.type === 'Run') for debugging
-                    // const runningActivities = data.filter(activity => activity.type === 'Run');
-                    const activitiesToDisplay = data; // Display all fetched activities for now
+                    // Display all fetched activities for now (removed .filter(activity => activity.type === 'Run'))
+                    const activitiesToDisplay = data; 
                     userActivities = activitiesToDisplay; // Store all fetched activities for LLM analysis
 
                     activitiesToDisplay.forEach(activity => {
@@ -982,7 +1006,7 @@
 
         // --- Statistics and visualization of results ---
         viewStatsBtn.addEventListener('click', async () => {
-            if (!isAuthenticated || !currentUserId || !currentAthleteId) {
+            if (!isAuthenticated || !currentRunnerCredentialId || !currentAthleteId) {
                 showAlert('Vui lòng đăng nhập với Strava trước khi thực hiện chức năng này.');
                 return;
             }
@@ -991,21 +1015,21 @@
             chartStatus.textContent = 'Đang tải dữ liệu thống kê...';
             document.getElementById('bubble-chart-container').innerHTML = '<p class="text-gray-500 text-center">Đang tải dữ liệu thống kê...</p>';
 
-            const supabaseUserId = currentUserId; // This is the Supabase credential ID (UUID)
-            if (!supabaseUserId) {
-                showAlert('Lỗi: Không tìm thấy Runner ID để xem thống kê. Vui lòng đăng nhập lại.');
-                chartStatus.textContent = 'Thiếu Runner ID.';
+            const activitiesTableUserId = currentAthleteId; // Use Strava Athlete ID for activities table
+            if (!activitiesTableUserId) {
+                showAlert('Lỗi: Không tìm thấy Strava Athlete ID để xem thống kê. Vui lòng đăng nhập lại.');
+                chartStatus.textContent = 'Thiếu Strava Athlete ID.';
                 return;
             }
 
             console.log('Loading stats:');
-            console.log('  currentUserId (Supabase Credential ID):', supabaseUserId);
+            console.log('  Querying Supabase for activities.user_id (Strava Athlete ID):', activitiesTableUserId);
 
             try {
                 const response = await fetch(GET_STATS_API_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ userId: supabaseUserId }), // Pass Supabase credential ID
+                    body: JSON.stringify({ userId: activitiesTableUserId }), // Pass Strava Athlete ID
                 });
 
                 const result = await response.json();
@@ -1179,7 +1203,7 @@
 
         // --- LLM activity analysis feature ---
         analyzeActivitiesBtn.addEventListener('click', async () => {
-            if (!isAuthenticated || !currentUserId || !currentAthleteId) {
+            if (!isAuthenticated || !currentRunnerCredentialId || !currentAthleteId) {
                 showAlert('Vui lòng đăng nhập với Strava trước khi thực hiện chức năng này.');
                 return;
             }
@@ -1192,18 +1216,17 @@
             llmAnalysisContent.innerHTML = '<p class="text-gray-500">Đang phân tích hoạt động của bạn... <span class="loader"></span></p>';
             llmAnalysisStatus.textContent = '';
 
-            const supabaseUserId = currentUserId; 
-            // Removed redundant check for !supabaseUserId here. It's already done by isAuthenticated && currentUserId above.
+            const activitiesTableUserId = currentAthleteId; 
 
             console.log('Analyzing activities:');
-            console.log('  currentUserId (Supabase Credential ID):', supabaseUserId);
+            console.log('  activitiesTableUserId (Strava Athlete ID):', activitiesTableUserId);
 
             try {
                 // Fetch recent activities from Supabase to send to LLM
                 const { data: recentActivitiesFromDB, error: fetchError } = await supabaseClientInstance
                     .from('activities')
                     .select('*')
-                    .eq('user_id', supabaseUserId)
+                    .eq('user_id', activitiesTableUserId)
                     .order('start_date', { ascending: false })
                     .limit(50); // Limit activities for LLM analysis to avoid large payloads
 
@@ -1275,6 +1298,14 @@
             cancelModalBtn.addEventListener('click', () => credentialModal.style.display = 'none');
             credentialForm.addEventListener('submit', saveCredential);
             
+            // Set up event listener for disconnect button
+            disconnectStravaBtn.addEventListener('click', () => {
+                clearStravaSession();
+                checkAuthState();
+                showAlert('Đã đăng xuất Strava.');
+            });
+
+
             // Initial load of credentials and check auth state
             await displayCredentials(); // Must load credentials first to populate runnerSelect
             await handleStravaCallback(); // Process any OAuth callback that might be in the URL
