@@ -650,7 +650,7 @@
                         }
                     } catch (err) {
                         console.error('Lỗi làm mới token:', err);
-                        showAlert(`Lỗi làm mới token: ${err.message}`);
+                        showAlert(`Lỗi làm mới token: ${err.message}. Vui lòng đăng nhập lại.`);
                         clearStravaSession();
                         checkAuthState();
                     }
@@ -842,7 +842,7 @@
                     localStorage.setItem('strava_runner_credential_id', parsedState.credentialId); // Store the credential ID
                     localStorage.setItem('strava_authenticated', 'true'); // Mark as authenticated
 
-                    showAlert('Đăng nhập Strava thành công!');
+                    showAlert('Đăng nhập Strava thành công! Bạn có thể tải dữ liệu hoạt động ngay bây giờ.');
                     window.history.replaceState({}, document.title, window.location.pathname); // Clean URL
                     checkAuthState(); // Update UI
                 } catch (err) {
@@ -865,7 +865,7 @@
          */
         fetchActivitiesBtn.addEventListener('click', async () => {
             if (!isAuthenticated || !currentUserId || !currentAthleteId) {
-                showAlert('Vui lòng đăng nhập với Strava trước.');
+                showAlert('Vui lòng đăng nhập với Strava trước khi thực hiện chức năng này.');
                 return;
             }
 
@@ -873,8 +873,11 @@
             dataStatus.textContent = 'Đang tải dữ liệu hoạt động từ Strava...';
 
             const activitiesLimit = parseInt(activitiesLimitInput.value, 10) || 60;
-            // currentUserId is now the Supabase credential ID (UUID)
             const supabaseUserId = currentUserId; 
+            
+            console.log('Fetching activities:');
+            console.log('  currentUserId (Supabase Credential ID):', supabaseUserId);
+            console.log('  currentAthleteId (Strava Athlete ID):', currentAthleteId);
 
             try {
                 const response = await fetch(FETCH_ACTIVITIES_API_URL, {
@@ -908,7 +911,7 @@
          */
         loadRecentActivitiesBtn.addEventListener('click', async () => {
             if (!isAuthenticated || !currentUserId || !currentAthleteId) {
-                showAlert('Vui lòng đăng nhập với Strava trước.');
+                showAlert('Vui lòng đăng nhập với Strava trước khi thực hiện chức năng này.');
                 return;
             }
 
@@ -922,6 +925,9 @@
                 return;
             }
 
+            console.log('Loading recent activities:');
+            console.log('  Querying Supabase for user_id:', supabaseUserId);
+
             const numActivitiesToDisplay = parseInt(numRecentActivitiesInput.value, 10) || 10;
 
             try {
@@ -933,25 +939,29 @@
                     .limit(numActivitiesToDisplay);
 
                 if (error) throw error;
+                
+                console.log('Data returned from Supabase for recent activities:', data); // Log the raw data
 
                 if (data && data.length > 0) {
-                    const runningActivities = data.filter(activity => activity.type === 'Run');
-                    userActivities = runningActivities; // Store for LLM analysis
+                    // Temporarily remove .filter(activity => activity.type === 'Run') for debugging
+                    // const runningActivities = data.filter(activity => activity.type === 'Run');
+                    const activitiesToDisplay = data; // Display all fetched activities for now
+                    userActivities = activitiesToDisplay; // Store all fetched activities for LLM analysis
 
-                    runningActivities.forEach(activity => {
+                    activitiesToDisplay.forEach(activity => {
                         const li = document.createElement('li');
                         li.className = 'border-b last:border-b-0 py-2';
                         li.innerHTML = `
-                            <p class="font-semibold">${activity.name}</p>
+                            <p class="font-semibold">${activity.name} (${activity.type})</p>
                             <p>Ngày: ${new Date(activity.start_date).toLocaleDateString('vi-VN')}</p>
                             <p>Quãng đường: ${(activity.distance / 1000).toFixed(2)} km</p>
                             <p>Thời gian: ${formatDuration(activity.moving_time)}</p>
                         `;
                         recentActivitiesList.appendChild(li);
                     });
-                    recentActivitiesStatus.textContent = `Đã tải ${runningActivities.length} hoạt động gần đây.`;
+                    recentActivitiesStatus.textContent = `Đã tải ${activitiesToDisplay.length} hoạt động gần đây.`;
                 } else {
-                    recentActivitiesList.innerHTML = '<li class="text-gray-500">Không tìm thấy hoạt động chạy nào gần đây cho runner này.</li>';
+                    recentActivitiesList.innerHTML = '<li class="text-gray-500">Không tìm thấy hoạt động nào gần đây cho runner này.</li>';
                     recentActivitiesStatus.textContent = 'Không có hoạt động nào để hiển thị.';
                     userActivities = []; // Clear activities if none found
                 }
@@ -973,7 +983,7 @@
         // --- Statistics and visualization of results ---
         viewStatsBtn.addEventListener('click', async () => {
             if (!isAuthenticated || !currentUserId || !currentAthleteId) {
-                showAlert('Vui lòng đăng nhập với Strava trước.');
+                showAlert('Vui lòng đăng nhập với Strava trước khi thực hiện chức năng này.');
                 return;
             }
 
@@ -987,6 +997,9 @@
                 chartStatus.textContent = 'Thiếu Runner ID.';
                 return;
             }
+
+            console.log('Loading stats:');
+            console.log('  currentUserId (Supabase Credential ID):', supabaseUserId);
 
             try {
                 const response = await fetch(GET_STATS_API_URL, {
@@ -1167,7 +1180,7 @@
         // --- LLM activity analysis feature ---
         analyzeActivitiesBtn.addEventListener('click', async () => {
             if (!isAuthenticated || !currentUserId || !currentAthleteId) {
-                showAlert('Vui lòng đăng nhập với Strava trước.');
+                showAlert('Vui lòng đăng nhập với Strava trước khi thực hiện chức năng này.');
                 return;
             }
 
@@ -1179,12 +1192,11 @@
             llmAnalysisContent.innerHTML = '<p class="text-gray-500">Đang phân tích hoạt động của bạn... <span class="loader"></span></p>';
             llmAnalysisStatus.textContent = '';
 
-            const supabaseUserId = currentUserId; // This is the Supabase credential ID (UUID)
-            if (!supabaseUserId) {
-                showAlert('Lỗi: Không tìm thấy Runner ID để phân tích hoạt động. Vui lòng đăng nhập lại.');
-                llmAnalysisContent.innerHTML = '<p class="text-gray-500">Thiếu Runner ID.</p>';
-                return;
-            }
+            const supabaseUserId = currentUserId; 
+            // Removed redundant check for !supabaseUserId here. It's already done by isAuthenticated && currentUserId above.
+
+            console.log('Analyzing activities:');
+            console.log('  currentUserId (Supabase Credential ID):', supabaseUserId);
 
             try {
                 // Fetch recent activities from Supabase to send to LLM
