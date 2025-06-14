@@ -907,7 +907,7 @@
             }
         });
 
-        /**
+       /**
          * Loads recent activities from Supabase and displays them.
          */
         loadRecentActivitiesBtn.addEventListener('click', async () => {
@@ -919,7 +919,8 @@
             recentActivitiesStatus.textContent = 'Đang tải hoạt động gần đây...';
             recentActivitiesList.innerHTML = ''; // Clear previous list
 
-            const activitiesTableUserId = currentAthleteId; // Use Strava Athlete ID for activities table
+            // SỬ DỤNG currentAthleteId (BIGINT) để truy vấn bảng activities
+            const activitiesTableUserId = currentAthleteId; 
            
             console.log('Loading recent activities:');
             console.log('  Querying Supabase for activities.user_id (Strava Athlete ID):', activitiesTableUserId);
@@ -939,9 +940,8 @@
                 console.log('Data returned from Supabase for recent activities:', data); // Log the raw data
 
                 if (data && data.length > 0) {
-                    // Display all fetched activities for now (removed .filter(activity => activity.type === 'Run'))
                     const activitiesToDisplay = data; 
-                    userActivities = activitiesToDisplay; // Store all fetched activities for LLM analysis
+                    userActivities = activitiesToDisplay;
 
                     activitiesToDisplay.forEach(activity => {
                         const li = document.createElement('li');
@@ -958,7 +958,7 @@
                 } else {
                     recentActivitiesList.innerHTML = '<li class="text-gray-500">Không tìm thấy hoạt động nào gần đây cho runner này.</li>';
                     recentActivitiesStatus.textContent = 'Không có hoạt động nào để hiển thị.';
-                    userActivities = []; // Clear activities if none found
+                    userActivities = [];
                 }
             } catch (error) {
                 console.error('Lỗi khi tải hoạt động gần đây từ Supabase:', error);
