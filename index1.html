@@ -503,35 +503,6 @@
 
         <section id="stats-section" class="card hidden">
             <h2 class="text-xl font-semibold mb-4">Thống kê thành tích theo tuần</h2>
-            <!-- Activity Type Filter for Stats (REMOVED HTML HERE, BUT LOGIC REMAINS FOR API CALL) -->
-            <!-- Date Range Filter for Stats (REMOVED HTML HERE, BUT LOGIC REMAINS FOR API CALL) -->
-            
-            <!-- Filter elements for stats section. These elements are kept to manage 'selectedActivityTypesStats', 'startDateStats', 'endDateStats' variables for the fetch, but they are visually hidden or used by other logic. The prompt asks to remove the *content*, but not necessarily the variables. For API filtering to work, the variables must still be updated.
-            Given the instruction "bỏ nội dung Lọc theo loại hoạt động cho thống kê: Chọn loại hoạt động: Từ ngày: Đến ngày: tại section stats-section", I will remove the HTML elements, and the API call will fetch all activities, regardless of these client-side selections.
-            -->
-            <!-- ORIGINAL LOCATION OF FILTERS:
-            <div class="mb-4">
-                <label for="activity-type-filter-stats" class="block text-gray-700 text-sm font-bold mb-2">Lọc theo loại hoạt động cho thống kê:</label>
-                <div class="multi-select-container">
-                    <div id="multi-select-display-stats" class="multi-select-selected-items">
-                        <span class="text-gray-500">Chọn loại hoạt động</span>
-                    </div>
-                    <div id="multi-select-options-stats" class="multi-select-options hidden">
-                    </div>
-                </div>
-            </div>
-            <div class="mb-4 flex gap-4">
-                <div class="flex-1">
-                    <label for="start-date-stats" class="block text-gray-700 text-sm font-bold mb-2">Từ ngày:</label>
-                    <input type="date" id="start-date-stats" class="form-input">
-                </div>
-                <div class="flex-1">
-                    <label for="end-date-stats" class="block text-gray-700 text-sm font-bold mb-2">Đến ngày:</label>
-                    <input type="date" id="end-date-stats" class="form-input">
-                </div>
-            </div>
-            -->
-
             <!-- Moved view-stats-btn here -->
             <button id="view-stats-btn" class="btn-primary mb-4">
                 Xem thống kê theo tuần
@@ -667,8 +638,8 @@
         <div class="bg-white p-6 rounded-lg shadow-xl max-w-sm w-full text-center">
             <p id="confirm-message" class="mb-4 text-lg"></p>
             <div class="flex justify-center gap-4">
-                <button id="confirm-cancel-btn" class="btn-primary">Hủy</button>
-                <button id="confirm-ok-btn" class="btn-danger">Đồng ý</button>
+                <button type="button" id="confirm-cancel-btn" class="btn-primary">Hủy</button>
+                <button type="button" id="confirm-ok-btn" class="btn-danger">Đồng ý</button>
             </div>
         </div>
     </div>
@@ -1724,10 +1695,32 @@
         });
 
         /**
-         * Loads recent activities from Supabase and displays them.
+         * Fetches all athlete IDs for the current logged-in app user from their runner credentials.
+         * Ensures `allRunnerCredentials` is up-to-date before extracting IDs.
+         * @returns {Promise<string[]>} An array of athlete IDs (as strings).
+         */
+        async function getAllAthleteIdsForCurrentUser() {
+            if (!currentAppUserId) {
+                console.warn('getAllAthleteIdsForCurrentUser: currentAppUserId is null. Cannot fetch runner credentials.');
+                return [];
+            }
+
+            // Ensure allRunnerCredentials is up-to-date. This also handles populating the runnerSelect dropdown.
+            await displayCredentials(); 
+
+            const athleteIds = allRunnerCredentials
+                .filter(cred => cred.athlete_id) // Only include credentials that have an athlete_id
+                .map(cred => String(cred.athlete_id)); // Ensure they are strings for consistent comparison
+
+            console.log('getAllAthleteIdsForCurrentUser: Fetched athlete IDs for current app user:', athleteIds);
+            return athleteIds;
+        }
+
+        /**
+         * Loads recent activities from Supabase for all connected runners and displays them.
          */
         loadRecentActivitiesBtn.addEventListener('click', async () => {
-            if (!currentAppUserId || !isAuthenticated || !currentRunnerCredentialId || !currentAthleteId) {
+            if (!currentAppUserId || !isAuthenticated) { 
                 showAlert('Vui lòng đăng nhập ứng dụng và kết nối với Strava trước khi thực hiện chức năng này.');
                 return;
             }
@@ -1735,30 +1728,39 @@
             recentActivitiesStatus.textContent = 'Đang tải hoạt động gần đây ...';
             recentActivitiesList.innerHTML = ''; // Clear previous list
 
-            const activitiesTableUserId = currentAthleteId; // Use Strava Athlete ID for activities table
-           
-            console.log('Loading recent activities:');
-            console.log('  Querying Supabase for activities.user_id (Strava Athlete ID):', activitiesTableUserId);
+            // Get all athlete IDs associated with the current app user
+            const athleteIdsToFetch = await getAllAthleteIdsForCurrentUser();
+            if (athleteIdsToFetch.length === 0) {
+                recentActivitiesList.innerHTML = '<li class="text-gray-500">Không tìm thấy runner nào được kết nối với tài khoản ứng dụng của bạn. Vui lòng thêm và kết nối runner.</li>';
+                recentActivitiesStatus.textContent = 'Không có hoạt động nào để hiển thị.';
+                userActivities = []; // Clear activities if no runners
+                renderDetailedStatsTable(); // Ensure detailed stats table is cleared
+                return;
+            }
+
+            console.log('Loading recent activities for athlete IDs:', athleteIdsToFetch);
 
             const numActivitiesToDisplay = parseInt(numRecentActivitiesInput.value, 10) || 10;
-            const selectedTypes = selectedActivityTypesRecent; // Get selected types for filtering
+            const selectedTypes = selectedActivityTypesRecent;
             const startDate = startDateRecent.value;
             const endDate = endDateRecent.value;
 
             try {
                 let query = supabaseClientInstance
                     .from('activities')
-                    .select('strava_activity_id, name, type, distance, moving_time, total_elevation_gain, start_date, average_speed, average_heartrate') // Changed activity_id to strava_activity_id
-                    .eq('user_id', activitiesTableUserId); // Filter by Strava Athlete ID (tức là user_id trong bảng activities)
+                    .select('strava_activity_id, name, type, distance, moving_time, total_elevation_gain, start_date, average_speed, average_heartrate, user_id');
+                    
+                // Filter by multiple user_ids (athlete_id) using .in()
+                query = query.in('user_id', athleteIdsToFetch); 
 
                 if (selectedTypes.length > 0) {
-                    query = query.in('type', selectedTypes); // Apply type filter
+                    query = query.in('type', selectedTypes); 
                 }
                 if (startDate) {
                     query = query.gte('start_date', startDate);
                 }
                 if (endDate) {
-                    query = query.lt('start_date', new Date(new Date(endDate).getTime() + 24 * 60 * 60 * 1000).toISOString().split('T')[0]); // End of selected day
+                    query = query.lt('start_date', new Date(new Date(endDate).getTime() + 24 * 60 * 60 * 1000).toISOString().split('T')[0]);
                 }
 
                 const { data, error } = await query
@@ -1772,30 +1774,31 @@
                     return; 
                 }
                 
-                console.log('Data returned from Supabase for recent activities:', data); // Log the raw data
+                console.log('Data returned from Supabase for recent activities (all runners):', data);
 
                 if (data && data.length > 0) {
-                    const activitiesToDisplay = data; 
-                    userActivities = activitiesToDisplay;
-
-                    activitiesToDisplay.forEach(activity => {
+                    userActivities = data; // Store all fetched activities for detailed stats table
+                    data.forEach(activity => {
                         const li = document.createElement('li');
                         li.className = 'border-b last:border-b-0 py-2';
+                        // Find runner name for display
+                        const runner = allRunnerCredentials.find(rc => String(rc.athlete_id) === String(activity.user_id));
+                        const runnerNameForDisplay = runner ? runner.runner_name : `Runner ID: ${activity.user_id || 'Unknown'}`;
+
                         li.innerHTML = `
-                            <p class="font-semibold">${activity.name} (${activity.type})</p>
+                            <p class="font-semibold">${runnerNameForDisplay} - ${activity.name} (${activity.type})</p>
                             <p>Ngày: ${new Date(activity.start_date).toLocaleDateString('vi-VN')}</p>
                             <p>Quãng đường: ${(activity.distance / 1000).toFixed(2)} km</p>
                             <p>Thời gian: ${formatDuration(activity.moving_time)}</p>
                             <p>Pace: ${formatPace(activity.average_speed)}</p>
                             <p>Nhịp tim TB: ${activity.average_heartrate ? `${activity.average_heartrate.toFixed(0)} bpm` : 'N/A'}</p>
                             <p>Độ cao tăng: ${formatElevationGain(activity.total_elevation_gain)}</p>
-                            ${activity.strava_activity_id ? `<button class="btn-primary mt-2 text-sm view-map-btn" data-activity-id="${activity.strava_activity_id}">Xem bản đồ</button>` : ''} <!-- Changed data-activity-id to use strava_activity_id -->
+                            ${activity.strava_activity_id ? `<button class="btn-primary mt-2 text-sm view-map-btn" data-activity-id="${activity.strava_activity_id}">Xem bản đồ</button>` : ''}
                         `;
                         recentActivitiesList.appendChild(li);
                     });
-                    recentActivitiesStatus.textContent = `Đã tải ${activitiesToDisplay.length} hoạt động gần đây.`;
+                    recentActivitiesStatus.textContent = `Đã tải ${data.length} hoạt động gần đây cho tất cả các runner.`;
 
-                    // Add event listeners for "Xem bản đồ" buttons
                     document.querySelectorAll('.view-map-btn').forEach(button => {
                         button.onclick = (e) => {
                             const activityId = e.target.dataset.activityId;
@@ -1806,11 +1809,11 @@
                     });
 
                 } else {
-                    recentActivitiesList.innerHTML = '<li class="text-gray-500">Không tìm thấy hoạt động nào gần đây cho runner này hoặc với bộ lọc đã chọn.</li>';
+                    recentActivitiesList.innerHTML = '<li class="text-gray-500">Không tìm thấy hoạt động nào gần đây cho các runner hoặc với bộ lọc đã chọn.</li>';
                     recentActivitiesStatus.textContent = 'Không có hoạt động nào để hiển thị.';
-                    userActivities = []; // Clear activities if none found
+                    userActivities = [];
                 }
-                renderDetailedStatsTable(); // Re-render detailed stats table after recent activities load
+                renderDetailedStatsTable(); // Always re-render the detailed stats table
             } catch (error) {
                 console.error('Lỗi khi tải hoạt động gần đây từ Supabase:', error);
                 recentActivitiesStatus.textContent = `Lỗi khi tải hoạt động: ${error.message}`;
@@ -1847,29 +1850,14 @@
             const endDate = new Date(startDate);
             endDate.setDate(endDate.getDate() + 7); // Go to the beginning of the next week
 
-            // const selectedTypes = selectedActivityTypesStats; // Removed UI for this, so just fetch all for the week
-            // const startDateStatsValue = startDateStats.value; // Removed UI for this
-            // const endDateStatsValue = endDateStats.value; // Removed UI for this
-
             try {
                 let query = supabaseClientInstance
                     .from('activities')
-                    .select('strava_activity_id, name, type, distance, moving_time, total_elevation_gain, start_date, average_speed, average_heartrate') // Changed activity_id to strava_activity_id
-                    .eq('user_id', athleteId)
+                    .select('strava_activity_id, name, type, distance, moving_time, total_elevation_gain, start_date, average_speed, average_heartrate, user_id') // Added user_id
+                    .eq('user_id', athleteId) // This is for a *specific* athlete's week activities
                     .gte('start_date', startDate.toISOString())
                     .lt('start_date', endDate.toISOString());
                 
-                // No longer applying filters from the removed UI elements to this fetch
-                // if (selectedTypes.length > 0) {
-                //     query = query.in('type', selectedTypes); // Apply type filter
-                // }
-                // if (startDateStatsValue) {
-                //     query = query.gte('start_date', startDateStatsValue);
-                // }
-                // if (endDateStatsValue) {
-                //     query = query.lt('start_date', new Date(new Date(endDateStatsValue).getTime() + 24 * 60 * 60 * 1000).toISOString().split('T')[0]);
-                // }
-
                 const { data, error } = await query
                     .order('start_date', { ascending: false });
 
@@ -1879,21 +1867,24 @@
                     data.forEach(activity => {
                         const li = document.createElement('li');
                         li.className = 'border-b last:border-b-0 py-2';
+                        // Find runner name for display in modal
+                        const runner = allRunnerCredentials.find(rc => String(rc.athlete_id) === String(activity.user_id));
+                        const runnerNameForDisplay = runner ? runner.runner_name : `Runner ID: ${activity.user_id || 'Unknown'}`;
+
                         li.innerHTML = `
-                            <p class="font-semibold">${activity.name} (${activity.type})</p>
+                            <p class="font-semibold">${runnerNameForDisplay} - ${activity.name} (${activity.type})</p>
                             <p>Ngày: ${new Date(activity.start_date).toLocaleDateString('vi-VN')}</p>
                             <p>Quãng đường: ${(activity.distance / 1000).toFixed(2)} km</p>
                             <p>Thời gian: ${formatDuration(activity.moving_time)}</p>
                             <p>Pace: ${formatPace(activity.average_speed)}</p>
                             <p>Nhịp tim TB: ${activity.average_heartrate ? `${activity.average_heartrate.toFixed(0)} bpm` : 'N/A'}</p>
                             <p>Độ cao tăng: ${formatElevationGain(activity.total_elevation_gain)}</p>
-                            ${activity.strava_activity_id ? `<button class="btn-primary mt-2 text-sm view-map-btn-modal" data-activity-id="${activity.strava_activity_id}">Xem bản đồ</button>` : ''} <!-- Changed data-activity-id to use strava_activity_id -->
+                            ${activity.strava_activity_id ? `<button class="btn-primary mt-2 text-sm view-map-btn-modal" data-activity-id="${activity.strava_activity_id}">Xem bản đồ</button>` : ''}
                         `;
                         weeklyActivitiesList.appendChild(li);
                     });
                     weeklyActivitiesStatus.textContent = `Đã tải ${data.length} hoạt động cho tuần ${weekString}.`;
 
-                     // Add event listeners for "Xem bản đồ" buttons in modal
                     document.querySelectorAll('.view-map-btn-modal').forEach(button => {
                         button.onclick = (e) => {
                             const activityId = e.target.dataset.activityId;
@@ -1907,7 +1898,7 @@
                     weeklyActivitiesList.innerHTML = '<li class="text-gray-500">Không tìm thấy hoạt động nào cho tuần này hoặc với bộ lọc đã chọn.</li>';
                     weeklyActivitiesStatus.textContent = `Không có hoạt động nào cho tuần ${weekString}.`;
                 }
-                weeklyActivitiesModal.style.display = 'flex'; // Show modal
+                weeklyActivitiesModal.style.display = 'flex';
             } catch (error) {
                 console.error('Lỗi khi tải hoạt động theo tuần từ Supabase:', error.message);
                 weeklyActivitiesStatus.textContent = `Lỗi: ${error.message}`;
@@ -2065,7 +2056,21 @@
                     })
                     .on("click", function(event, d) {
                         // Pass athleteId from current session for fetching specific activities
-                        fetchActivitiesForWeek(d.week, currentAthleteId); 
+                        // Note: athlete_id is stored in d.athlete_id for consistency now, assuming backend provides it in weekly_stats
+                        // If not, it should be passed from currentAthleteId or fetched via a lookup.
+                        // For now, assuming the d.athlete_id exists in the data returned by get-user-activities
+                        // If only one runner's data is shown in weekly_stats, then currentAthleteId is fine.
+                        // If weekly_stats combines multiple runners, then this needs to be clarified.
+                        // Given the request is "all runners", the weekly stats likely need to be grouped by runner too,
+                        // or this modal should be able to filter by the athlete_id associated with the clicked bubble.
+                        // For now, assuming the clicked bubble is from the *current* athlete ID for this specific modal.
+                        // TO BE MORE ROBUST FOR MULTIPLE RUNNERS IN BUBBLE CHART:
+                        // The `d` object in `positionedWeeks` should contain `athlete_id`.
+                        // The GET_STATS_API_URL should return `athlete_id` in `weekly_stats`.
+                        // For the current implementation, I am passing `currentAthleteId` to `fetchActivitiesForWeek`.
+                        // This means the bubble chart itself still assumes a single 'current' runner for drill-down.
+                        // To show details for *any* runner's bubble, `d.athlete_id` would need to be present in `weeklyStatsData`.
+                        fetchActivitiesForWeek(d.week, currentAthleteId); // Still using currentAthleteId for now
                         weeklyActivitiesTitle.textContent = `Hoạt động trong tuần ${d.week.split('-W')[1]} (${d.week.split('-W')[0]}):`;
                     });
 
@@ -2132,10 +2137,14 @@
                 console.log('LLM Analysis: Supabase Session Access Token is available.');
 
                 // Fetch recent activities from Supabase to send to LLM, applying current filters
+                // For AI analysis, we still focus on the currently authenticated Strava runner for coherence
+                // or the user would need to specify which runner's activities to analyze.
+                // If the user wants ALL runners' activities analyzed, then this needs adjustment.
+                // Assuming for 'Phân tích hoạt động (AI)' it is still specific to the connected runner.
                 let query = supabaseClientInstance
                     .from('activities')
-                    .select('*') // Select all columns to get new metrics
-                    .eq('user_id', activitiesTableUserId);
+                    .select('*') 
+                    .eq('user_id', activitiesTableUserId); // Still filters by the currently connected Strava runner
 
                 if (selectedTypes.length > 0) {
                     query = query.in('type', selectedTypes);
@@ -2149,7 +2158,7 @@
 
                 const { data: recentActivitiesFromDB, error: fetchError } = await query
                     .order('start_date', { ascending: false })
-                    .limit(50); // Limit activities for LLM analysis to avoid large payloads
+                    .limit(50); 
 
                 if (fetchError) throw fetchError;
 
@@ -2164,10 +2173,10 @@
                     distance_km: (activity.distance / 1000).toFixed(2),
                     moving_time_seconds: activity.moving_time,
                     start_date: new Date(activity.start_date).toISOString().split('T')[0],
-                    type: activity.type, // Include type
-                    average_speed_mps: activity.average_speed, // Include average speed
-                    average_heartrate: activity.average_heartrate, // Include average heart rate
-                    total_elevation_gain_meters: activity.total_elevation_gain // Include elevation gain
+                    type: activity.type, 
+                    average_speed_mps: activity.average_speed, 
+                    average_heartrate: activity.average_heartrate, 
+                    total_elevation_gain_meters: activity.total_elevation_gain 
                 }));
 
                 llmAnalysisStatus.textContent = 'Đang gọi AI để phân tích ...';
@@ -2180,9 +2189,8 @@
                         'Authorization': `Bearer ${session.access_token}` // Pass Supabase Auth token
                     },
                     body: JSON.stringify({
-                        activities: activitiesForEdgeFunction, // Send raw activities data with new metrics
-                        runnerCredentialId: currentRunnerCredentialId,
-                        // Pass filter information to AI for context (optional, depending on LLM prompt)
+                        activities: activitiesForEdgeFunction, 
+                        runnerCredentialId: currentRunnerCredentialId, // Still pass specific runner ID for context
                         filters: {
                             activityTypes: selectedTypes,
                             startDate: startDate,
@@ -2193,8 +2201,8 @@
 
                 const result = await response.json();
 
-                if (response.ok && result.success) { // Check for success from Edge Function's response
-                    const analysisText = result.analysis; // Edge Function should return an 'analysis' field
+                if (response.ok && result.success) { 
+                    const analysisText = result.analysis; 
                     llmAnalysisContent.innerHTML = markdownToHtml(analysisText);
                     llmAnalysisStatus.textContent = 'Phân tích hoàn tất!';
                 } else {
@@ -2212,60 +2220,55 @@
 
         // Event listener for "Xem thống kê theo tuần" button
         viewStatsBtn.addEventListener('click', async () => {
-            if (!currentAppUserId || !isAuthenticated || !currentRunnerCredentialId || !currentAthleteId) {
+            if (!currentAppUserId || !isAuthenticated) { 
                 showAlert('Vui lòng đăng nhập ứng dụng và kết nối với Strava trước khi xem thống kê.');
                 return;
             }
 
             const chartStatus = document.getElementById('chart-status');
             chartStatus.textContent = 'Đang tải thống kê theo tuần ...';
-            weeklyStatsData = []; // Clear previous data
+            weeklyStatsData = []; 
+
+            // Get all athlete IDs associated with the current app user
+            const athleteIdsToFetch = await getAllAthleteIdsForCurrentUser();
+            if (athleteIdsToFetch.length === 0) {
+                chartStatus.textContent = 'Không tìm thấy runner nào được kết nối với tài khoản ứng dụng của bạn. Vui lòng thêm và kết nối runner.';
+                document.getElementById('bubble-chart-container').innerHTML = '<p class="text-gray-500 text-center">Không có dữ liệu thống kê để hiển thị biểu đồ.</p>';
+                weeklyStatsData = [];
+                userActivities = []; 
+                renderDetailedStatsTable(); 
+                return;
+            }
+
+            console.log('Fetching weekly stats for athlete IDs:', athleteIdsToFetch);
 
             try {
-                // Get current Supabase Auth session to pass access token securely
                 const { data: { session }, error: sessionError } = await supabaseClientInstance.auth.getSession();
-                console.log('viewStatsBtn: Supabase session retrieved:', session);
-                console.log('viewStatsBtn: Session error:', sessionError);
-
-                // Construct headers object conditionally
                 const headers = { 'Content-Type': 'application/json' };
                 if (session?.access_token) {
                     headers['Authorization'] = `Bearer ${session.access_token}`;
-                    console.log('viewStatsBtn: Adding Authorization header with valid access token.');
                 } else {
-                    console.warn('viewStatsBtn: No Supabase session access token found. Request will be sent without Authorization header.');
                     showAlert('Lỗi: Không tìm thấy phiên đăng nhập. Vui lòng đăng nhập lại để xem thống kê.');
                     chartStatus.textContent = 'Lỗi xác thực: Không tìm thấy phiên đăng nhập.';
-                    return; // Exit if no valid session token
+                    return;
                 }
-
-                // Filters are now handled directly within the API call to GET_STATS_API_URL
-                // The HTML elements for selectedActivityTypesStats, startDateStats, endDateStats are removed
-                // from the stats-section as per the user's request.
-                // However, if the API *can* still accept them, we should pass them if they exist globally.
-                // For this specific request, the user wants the *content removed* from stats-section
-                // which implies these filters are no longer *directly controlling* the stats generation.
-                // Therefore, I will remove these from the body sent to GET_STATS_API_URL.
-                // This makes the stats generation fetch *all* data for the user, and the bubble chart
-                // will render based on that full dataset.
 
                 const response = await fetch(GET_STATS_API_URL, {
                     method: 'POST',
-                    headers: headers, // Use the conditionally built headers object
+                    headers: headers, 
                     body: JSON.stringify({ 
-                        userId: currentRunnerCredentialId, // Pass runnerCredentialId
-                        // Removed activityTypes, startDate, endDate from payload as per user request to remove filters from stats section
+                        athleteIds: athleteIdsToFetch, // Pass array of athlete IDs to Edge Function
                     }) 
                 });
 
                 const result = await response.json();
 
                 if (response.ok && result.success) {
-                    weeklyStatsData = result.weekly_stats; // Store data globally
+                    weeklyStatsData = result.weekly_stats; 
                     userActivities = result.detailed_activities; // Store detailed activities for the table
                     chartStatus.textContent = `Đã tải ${weeklyStatsData.length} tuần thống kê.`;
-                    renderBubbleChart(weeklyStatsData); // Render chart with fetched data
-                    renderDetailedStatsTable(); // Render detailed stats table
+                    renderBubbleChart(weeklyStatsData); 
+                    renderDetailedStatsTable(); 
                 } else {
                     chartStatus.textContent = `Lỗi khi tải thống kê: ${result.error || 'Không xác định'}`;
                     showAlert(`Lỗi khi tải thống kê: ${result.error || 'Không xác định'}`);
@@ -2292,25 +2295,33 @@
             const penaltyPerKm = parseFloat(penaltyPerKmInput.value) || 0;
             const targetKmPerWeek = parseFloat(targetKmPerWeekInput.value) || 0;
 
-            // Group activities by runner
-            const activitiesByRunner = userActivities.reduce((acc, activity) => {
-                // Find the runner name from allRunnerCredentials using activity.user_id (athlete_id)
-                // Ensure robust string comparison for athlete IDs
-                const runner = allRunnerCredentials.find(rc => String(rc.athlete_id) === String(activity.user_id));
-                const runnerName = runner ? runner.runner_name : `Runner ID: ${activity.user_id}`;
-
-                if (!acc[runnerName]) {
-                    acc[runnerName] = [];
+            // Group activities by runner (using athlete_id)
+            const activitiesByAthlete = userActivities.reduce((acc, activity) => {
+                const athleteId = String(activity.user_id); // Ensure string for consistency
+                if (!acc[athleteId]) {
+                    acc[athleteId] = [];
                 }
-                acc[runnerName].push(activity);
+                acc[athleteId].push(activity);
                 return acc;
             }, {});
 
-            // Sort runner names alphabetically
-            const sortedRunnerNames = Object.keys(activitiesByRunner).sort();
+            // Map athlete_id to runner_name using allRunnerCredentials
+            const runnerNamesMap = new Map();
+            allRunnerCredentials.forEach(cred => {
+                if (cred.athlete_id) {
+                    runnerNamesMap.set(String(cred.athlete_id), cred.runner_name);
+                }
+            });
+            console.log('renderDetailedStatsTable: Runner names map:', runnerNamesMap); // Log the map
+            console.log('renderDetailedStatsTable: Activities grouped by athlete:', activitiesByAthlete); // Log grouped activities
 
-            sortedRunnerNames.forEach(runnerName => {
-                const runnerActivities = activitiesByRunner[runnerName];
+            const sortedAthleteIds = Object.keys(activitiesByAthlete).sort();
+
+            sortedAthleteIds.forEach(athleteId => {
+                const runnerName = runnerNamesMap.get(athleteId) || `Runner ID: ${athleteId}`;
+                console.log(`renderDetailedStatsTable: Processing runner: ${runnerName} (athleteId: ${athleteId})`);
+
+                const runnerActivities = activitiesByAthlete[athleteId];
                 let totalRunnerDistanceKm = 0;
                 let totalRunnerTime = 0;
 
@@ -2338,60 +2349,36 @@
                 totalRow.innerHTML = `
                     <td colspan="3">Tổng cộng cho ${runnerName}:</td>
                     <td>${totalRunnerDistanceKm.toFixed(2)}</td>
-                    <td>N/A</td>
-                    <td>N/A</td>
-                    <td>N/A</td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
                     <td>${formatDuration(totalRunnerTime)}</td>
                 `;
 
                 // Calculate KM difference and penalty/bonus
                 const kmDifference = totalRunnerDistanceKm - targetKmPerWeek;
-                let kmDisplayContent = '';
-                let amountDisplayContent = '';
-                let rowClassName = 'summary-row'; // Default class for summary rows
+                
+                const summaryRow = detailedStatsTableBody.insertRow();
+                summaryRow.className = kmDifference < 0 ? 'missing-row' : 'summary-row'; // Style based on outcome
 
-                if (kmDifference < 0) { // Deficit (ran less than target)
+                let kmMessage = '';
+                let amountMessage = '';
+                if (kmDifference < 0) { // Deficit
                     const deficitKm = Math.abs(kmDifference);
                     const penaltyAmount = deficitKm * penaltyPerKm;
-                    kmDisplayContent = `Số KM thiếu (Mục tiêu ${targetKmPerWeek}KM):`;
-                    amountDisplayContent = `Số tiền phạt (Phạt ${penaltyPerKm}K/KM):`;
-                    rowClassName = 'missing-row'; // Use missing-row for deficit/penalty
-                    
-                    const missingKmRow = detailedStatsTableBody.insertRow();
-                    missingKmRow.className = rowClassName;
-                    missingKmRow.innerHTML = `
-                        <td colspan="3">${kmDisplayContent}</td>
-                        <td colspan="5">${deficitKm.toFixed(2)} KM</td>
-                    `;
-
-                    const penaltyRow = detailedStatsTableBody.insertRow();
-                    penaltyRow.className = rowClassName;
-                    penaltyRow.innerHTML = `
-                        <td colspan="3">${amountDisplayContent}</td>
-                        <td colspan="5">${penaltyAmount.toLocaleString('vi-VN')} nghìn VNĐ</td>
-                    `;
-                } else { // Surplus or met target (ran equal or more than target)
+                    kmMessage = `Số KM thiếu (Mục tiêu ${targetKmPerWeek}KM): <strong>${deficitKm.toFixed(2)} KM</strong>`;
+                    amountMessage = `Số tiền phạt (Phạt ${penaltyPerKm}K/KM): <strong>${penaltyAmount.toLocaleString('vi-VN')} nghìn VNĐ</strong>`;
+                } else { // Surplus or met target
                     const surplusKm = kmDifference;
-                    const bonusAmount = surplusKm * penaltyPerKm; // Use same penaltyPerKm as bonus rate
-
-                    kmDisplayContent = `Số KM vượt mục tiêu (Mục tiêu ${targetKmPerWeek}KM):`;
-                    amountDisplayContent = `Tiền thưởng (Thưởng ${penaltyPerKm}K/KM):`;
-                    rowClassName = 'summary-row'; // Use summary-row for surplus/bonus
-
-                    const surplusKmRow = detailedStatsTableBody.insertRow();
-                    surplusKmRow.className = rowClassName;
-                    surplusKmRow.innerHTML = `
-                        <td colspan="3">${kmDisplayContent}</td>
-                        <td colspan="5">${surplusKm.toFixed(2)} KM</td>
-                    `;
-
-                    const bonusRow = detailedStatsTableBody.insertRow();
-                    bonusRow.className = rowClassName;
-                    bonusRow.innerHTML = `
-                        <td colspan="3">${amountDisplayContent}</td>
-                        <td colspan="5">${bonusAmount.toLocaleString('vi-VN')} nghìn VNĐ</td>
-                    `;
+                    const bonusAmount = surplusKm * penaltyPerKm;
+                    kmMessage = `Số KM vượt mục tiêu (Mục tiêu ${targetKmPerWeek}KM): <strong>${surplusKm.toFixed(2)} KM</strong>`;
+                    amountMessage = `Tiền thưởng (Thưởng ${penaltyPerKm}K/KM): <strong>${bonusAmount.toLocaleString('vi-VN')} nghìn VNĐ</strong>`;
                 }
+
+                summaryRow.innerHTML = `
+                    <td colspan="4">${kmMessage}</td>
+                    <td colspan="4">${amountMessage}</td>
+                `;
 
                 // Add a spacer row for better readability
                 const spacerRow = detailedStatsTableBody.insertRow();
