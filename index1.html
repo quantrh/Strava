@@ -96,7 +96,6 @@
             @apply bg-blue-100 font-semibold;
         }
 
-
         .card {
             background-color: white;
             border-radius: 0.75rem;
@@ -207,6 +206,98 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
+
+        /* Collapsible Section Styles */
+        .collapsible-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            padding-bottom: 1rem;
+            margin-bottom: 1rem;
+            border-bottom: 1px solid #eee;
+        }
+
+        .collapsible-header h2 {
+            margin-bottom: 0;
+        }
+
+        .collapsible-content {
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+            max-height: 1000px; /* Large enough to show content */
+        }
+
+        .collapsible-content.collapsed {
+            max-height: 0;
+        }
+
+        .toggle-icon {
+            transition: transform 0.3s ease-out;
+        }
+
+        .toggle-icon.rotate {
+            transform: rotate(90deg);
+        }
+
+        /* Table styles */
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+        .data-table th, .data-table td {
+            border: 1px solid #e2e8f0;
+            padding: 0.75rem;
+            text-align: left;
+        }
+        .data-table th {
+            background-color: var(--bidv-green);
+            color: white;
+            font-weight: bold;
+            font-size: 0.875rem;
+            text-transform: uppercase;
+        }
+        .data-table tbody tr:nth-child(even) {
+            background-color: #f8fafc;
+        }
+        .data-table tbody tr:hover {
+            background-color: #f0f2f5;
+        }
+        .data-table .total-row {
+            background-color: #e0f2f1; /* Light green for total rows */
+            font-weight: bold;
+        }
+        .data-table .summary-row {
+            background-color: #d1e7dd; /* Slightly darker green for summary */
+            font-weight: bold;
+        }
+        .data-table .missing-row {
+            background-color: #fee2e2; /* Light red for missing info */
+            color: #ef4444;
+            font-weight: bold;
+        }
+
+        /* Date picker styles */
+        input[type="date"]::-webkit-calendar-picker-indicator {
+            background: transparent;
+            bottom: 0;
+            color: transparent;
+            cursor: pointer;
+            height: auto;
+            left: 0;
+            position: absolute;
+            right: 0;
+            top: 0;
+            width: auto;
+        }
+        input[type="date"] {
+            position: relative;
+        }
+        input[type="date"]::-webkit-inner-spin-button,
+        input[type="date"]::-webkit-clear-button {
+            display: none;
+        }
     </style>
 </head>
 <body>
@@ -225,69 +316,84 @@
     <main class="flex-grow container py-8">
         <!-- Application Authentication Section (Supabase Auth) -->
         <section id="app-auth-section" class="card mb-8">
-            <h2 class="text-xl font-semibold mb-4">Đăng nhập/Đăng ký Ứng dụng</h2>
-            <div id="logged-out-view">
-                <form id="auth-form" class="space-y-4 mb-4">
-                    <div>
-                        <label for="auth-email" class="block text-gray-700 text-sm font-bold mb-2">Email:</label>
-                        <input type="email" id="auth-email" class="form-input" placeholder="example@email.com" required>
-                    </div>
-                    <div>
-                        <label for="auth-password" class="block text-gray-700 text-sm font-bold mb-2">Mật khẩu:</label>
-                        <input type="password" id="auth-password" class="form-input" placeholder="Mật khẩu của bạn" required>
-                    </div>
-                    <div class="flex justify-end gap-2">
-                        <button type="submit" id="signup-btn" class="btn-secondary">Đăng ký</button>
-                        <button type="submit" id="signin-btn" class="btn-primary">Đăng nhập</button>
-                    </div>
-                </form>
-                <div class="text-center">
-                    <p class="text-sm text-gray-600 mb-2">Hoặc:</p>
-                    <button id="guest-login-btn" class="btn-secondary">Tiếp tục với tư cách Khách</button>
-                </div>
-                <div id="auth-message" class="mt-4 text-sm text-center text-red-500"></div>
+            <div class="collapsible-header" data-target="app-auth-content">
+                <h2 class="text-xl font-semibold">Đăng nhập/Đăng ký Ứng dụng</h2>
+                <svg class="toggle-icon w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
             </div>
-            <div id="logged-in-view" class="hidden text-center">
-                <p class="mb-4 text-lg font-medium">Chào mừng, <span id="current-app-user-email"></span>!</p>
-                <button id="signout-btn" class="btn-danger">Đăng xuất Ứng dụng</button>
+            <div id="app-auth-content" class="collapsible-content">
+                <div id="logged-out-view">
+                    <form id="auth-form" class="space-y-4 mb-4">
+                        <div>
+                            <label for="auth-email" class="block text-gray-700 text-sm font-bold mb-2">Email:</label>
+                            <input type="email" id="auth-email" class="form-input" placeholder="example@email.com" required>
+                        </div>
+                        <div>
+                            <label for="auth-password" class="block text-gray-700 text-sm font-bold mb-2">Mật khẩu:</label>
+                            <input type="password" id="auth-password" class="form-input" placeholder="Mật khẩu của bạn" required>
+                        </div>
+                        <div class="flex justify-end gap-2">
+                            <button type="submit" id="signup-btn" class="btn-secondary">Đăng ký</button>
+                            <button type="submit" id="signin-btn" class="btn-primary">Đăng nhập</button>
+                        </div>
+                    </form>
+                    <div class="text-center">
+                        <p class="text-sm text-gray-600 mb-2">Hoặc:</p>
+                        <button id="guest-login-btn" class="btn-secondary">Tiếp tục với tư cách Khách</button>
+                    </div>
+                    <div id="auth-message" class="mt-4 text-sm text-center text-red-500"></div>
+                </div>
+                <div id="logged-in-view" class="hidden text-center">
+                    <p class="mb-4 text-lg font-medium">Chào mừng, <span id="current-app-user-email"></span>!</p>
+                    <button id="signout-btn" class="btn-danger">Đăng xuất Ứng dụng</button>
+                </div>
             </div>
         </section>
 
         <!-- Credential Management Section -->
-        <div class="card mb-8 hidden" id="credential-management-section">
-            <h2 class="text-xl font-semibold mb-4 flex justify-between items-center">
-                Quản lý Runner (Thông tin đăng nhập Strava)
-                <button id="add-credential-btn" class="btn-primary">Thêm Runner mới</button>
-            </h2>
-            <div id="credentials-list" class="space-y-4">
-                <!-- Credentials will be loaded here -->
-                <p class="text-gray-500 text-center" id="no-credentials-message">Không có runner nào được lưu.</p>
+        <section class="card mb-8 hidden" id="credential-management-section">
+            <div class="collapsible-header" data-target="credential-management-content">
+                <h2 class="text-xl font-semibold">Quản lý Runner (Thông tin đăng nhập Strava)</h2>
+                <div class="flex items-center gap-2">
+                    <button id="add-credential-btn" class="btn-primary text-sm px-3 py-1">Thêm Runner mới</button>
+                    <svg class="toggle-icon w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                </div>
             </div>
-            <p id="loading-credentials" class="text-gray-500 text-center hidden">Đang tải thông tin runner...</p>
-            <p id="error-credentials" class="text-red-500 text-center hidden">Lỗi khi tải thông tin runner.</p>
-        </div>
+            <div id="credential-management-content" class="collapsible-content">
+                <div id="credentials-list" class="space-y-4">
+                    <!-- Credentials will be loaded here -->
+                    <p class="text-gray-500 text-center" id="no-credentials-message">Không có runner nào được lưu.</p>
+                </div>
+                <p id="loading-credentials" class="text-gray-500 text-center hidden">Đang tải thông tin runner...</p>
+                <p id="error-credentials" class="text-red-500 text-center hidden">Lỗi khi tải thông tin runner.</p>
+            </div>
+        </section>
 
         <!-- Strava Login Section (Adjusted) -->
         <section id="strava-auth-section" class="card mb-8 text-center hidden">
-            <h2 class="text-xl font-semibold mb-4">Kết nối tài khoản Strava của bạn</h2>
-            <p class="mb-6">Để theo dõi thành tích chạy bộ, vui lòng chọn một runner và kết nối với Strava.</p>
-            
-            <div class="mb-4">
-                <label for="runner-select" class="block text-gray-700 text-sm font-bold mb-2">Chọn Runner để đăng nhập:</label>
-                <select id="runner-select" class="form-input">
-                    <option value="">-- Chọn Runner --</option>
-                </select>
-                <p class="text-xs text-gray-500 mt-1">Chọn runner đã thêm ở trên để kết nối với Strava.</p>
+            <div class="collapsible-header" data-target="strava-auth-content">
+                <h2 class="text-xl font-semibold">Kết nối tài khoản Strava của bạn</h2>
+                <svg class="toggle-icon w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
             </div>
+            <div id="strava-auth-content" class="collapsible-content">
+                <p class="mb-6">Để theo dõi thành tích chạy bộ, vui lòng chọn một runner và kết nối với Strava.</p>
+                
+                <div class="mb-4">
+                    <label for="runner-select" class="block text-gray-700 text-sm font-bold mb-2">Chọn Runner để đăng nhập:</label>
+                    <select id="runner-select" class="form-input">
+                        <option value="">-- Chọn Runner --</option>
+                    </select>
+                    <p class="text-xs text-gray-500 mt-1">Chọn runner đã thêm ở trên để kết nối với Strava.</p>
+                </div>
 
-            <button id="connect-strava-btn" class="btn-primary">
-                Đăng nhập với Strava
-            </button>
-            <button id="disconnect-strava-btn" class="btn-secondary hidden ml-4">
-                Đăng xuất Strava
-            </button>
-            <div id="auth-status" class="mt-4 text-sm text-gray-600"></div>
-            <p id="current-runner-display" class="mt-2 text-center text-sm text-gray-600 hidden">Đang đăng nhập với: <span class="font-semibold" id="current-runner-name"></span></p>
+                <button id="connect-strava-btn" class="btn-primary">
+                    Đăng nhập với Strava
+                </button>
+                <button id="disconnect-strava-btn" class="btn-secondary hidden ml-4">
+                    Đăng xuất Strava
+                </button>
+                <div id="auth-status" class="mt-4 text-sm text-gray-600"></div>
+                <p id="current-runner-display" class="mt-2 text-center text-sm text-gray-600 hidden">Đang đăng nhập với: <span class="font-semibold" id="current-runner-name"></span></p>
+            </div>
         </section>
 
         <!-- Activity Data & Visualization Section -->
@@ -309,6 +415,18 @@
                     <div id="multi-select-options-recent" class="multi-select-options hidden">
                         <!-- Options will be populated by JS -->
                     </div>
+                </div>
+            </div>
+
+            <!-- Date Range Filter for Recent Activities -->
+            <div class="mb-4 flex gap-4">
+                <div class="flex-1">
+                    <label for="start-date-recent" class="block text-gray-700 text-sm font-bold mb-2">Từ ngày:</label>
+                    <input type="date" id="start-date-recent" class="form-input">
+                </div>
+                <div class="flex-1">
+                    <label for="end-date-recent" class="block text-gray-700 text-sm font-bold mb-2">Đến ngày:</label>
+                    <input type="date" id="end-date-recent" class="form-input">
                 </div>
             </div>
 
@@ -364,11 +482,111 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Date Range Filter for Stats -->
+            <div class="mb-4 flex gap-4">
+                <div class="flex-1">
+                    <label for="start-date-stats" class="block text-gray-700 text-sm font-bold mb-2">Từ ngày:</label>
+                    <input type="date" id="start-date-stats" class="form-input">
+                </div>
+                <div class="flex-1">
+                    <label for="end-date-stats" class="block text-gray-700 text-sm font-bold mb-2">Đến ngày:</label>
+                    <input type="date" id="end-date-stats" class="form-input">
+                </div>
+            </div>
+
             <div id="bubble-chart-container">
                 <p class="text-gray-500 text-center">Nhấn "Xem thống kê theo tuần" để hiển thị biểu đồ.</p>
             </div>
             <div id="chart-status" class="mt-4 text-sm text-gray-600"></div>
+
+            <h3 class="text-xl font-semibold mt-8 mb-4">Thống kê chi tiết & Tiền phạt/Thưởng</h3>
+            <div class="mb-4 flex gap-4 items-end">
+                <div class="flex-1">
+                    <label for="penalty-per-km" class="block text-gray-700 text-sm font-bold mb-2">Số tiền phạt 1KM (nghìn VNĐ):</label>
+                    <input type="number" id="penalty-per-km" class="form-input" value="30" min="0" step="1">
+                </div>
+                <div class="flex-1">
+                    <label for="target-km-per-week" class="block text-gray-700 text-sm font-bold mb-2">Số KM một tuần (KM):</label>
+                    <input type="number" id="target-km-per-week" class="form-input" value="25" min="0" step="1">
+                </div>
+            </div>
+            <div id="detailed-stats-table-container" class="overflow-x-auto">
+                <table id="detailed-stats-table" class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Tên Runner</th>
+                            <th>Ngày chạy</th>
+                            <th>Loại hoạt động</th>
+                            <th>Quãng đường (KM)</th>
+                            <th>Pace</th>
+                            <th>Nhịp tim TB</th>
+                            <th>Độ cao tăng</th>
+                            <th>Thời gian chạy</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Detailed activities and summary rows will be inserted here -->
+                    </tbody>
+                </table>
+                <p id="detailed-stats-status" class="mt-4 text-sm text-gray-600 text-center">Chưa có dữ liệu để hiển thị.</p>
+            </div>
         </section>
+
+        <!-- Instruction Section -->
+        <section id="instruction-section" class="card mb-8">
+            <div class="collapsible-header" data-target="instruction-content">
+                <h2 class="text-xl font-semibold">Hướng dẫn sử dụng ứng dụng</h2>
+                <svg class="toggle-icon w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+            </div>
+            <div id="instruction-content" class="collapsible-content">
+                <div class="space-y-4 text-gray-700 max-h-96 overflow-y-auto pr-2">
+                    <p>Chào mừng bạn đến với Ứng dụng Quản lý Thành tích Chạy bộ - FOR RUNNER LOVER!</p>
+                    <h3 class="font-bold text-lg text-bidv-green">1. Đăng nhập/Đăng ký Ứng dụng:</h3>
+                    <ul class="list-disc ml-6 space-y-1">
+                        <li>Bạn có thể đăng ký tài khoản mới bằng Email và Mật khẩu.</li>
+                        <li>Đăng nhập nếu đã có tài khoản.</li>
+                        <li>Hoặc chọn "Tiếp tục với tư cách Khách" để sử dụng các chức năng cơ bản mà không cần đăng ký.</li>
+                    </ul>
+                    <h3 class="font-bold text-lg text-bidv-green">2. Quản lý Runner (Thông tin đăng nhập Strava):</h3>
+                    <ul class="list-disc ml-6 space-y-1">
+                        <li>Sau khi đăng nhập ứng dụng, bạn có thể thêm thông tin đăng nhập Strava (Client ID, Client Secret, Refresh Token) cho các Runner khác nhau (ví dụ: tài khoản cá nhân, tài khoản của bạn bè/gia đình).</li>
+                        <li>Nhấn "Thêm Runner mới" để mở cửa sổ nhập thông tin.</li>
+                        <li>Bạn có thể sửa hoặc xóa thông tin Runner đã lưu.</li>
+                        <li>Lưu ý: "Redirect URI" là cố định và không cần thay đổi.</li>
+                    </ul>
+                    <h3 class="font-bold text-lg text-bidv-green">3. Kết nối tài khoản Strava của bạn:</h3>
+                    <ul class="list-disc ml-6 space-y-1">
+                        <li>Chọn một Runner từ danh sách bạn đã thêm.</li>
+                        <li>Nhấn "Đăng nhập với Strava" để được chuyển hướng đến trang ủy quyền của Strava. Vui lòng cấp quyền `activity:read_all`.</li>
+                        <li>Sau khi cấp quyền, bạn sẽ được chuyển hướng về ứng dụng và tài khoản Strava của Runner đã chọn sẽ được kết nối.</li>
+                        <li>Sử dụng "Đăng xuất Strava" để ngắt kết nối.</li>
+                    </ul>
+                    <h3 class="font-bold text-lg text-bidv-green">4. Dữ liệu thành tích chạy bộ:</h3>
+                    <ul class="list-disc ml-6 space-y-1">
+                        <li><strong>Tải/Cập nhật dữ liệu từ Strava:</strong> Tải các hoạt động chạy bộ từ tài khoản Strava đang kết nối về cơ sở dữ liệu của ứng dụng. Bạn có thể giới hạn số lượng hoạt động muốn tải.</li>
+                        <li><strong>Lọc theo loại hoạt động:</strong> Chọn một hoặc nhiều loại hoạt động (ví dụ: Run, Ride, Swim) để lọc dữ liệu hiển thị.</li>
+                        <li><strong>Lọc theo thời gian "Từ ngày đến ngày":</strong> Chọn khoảng thời gian để lọc các hoạt động.</li>
+                        <li><strong>Các hoạt động gần đây:</strong> Hiển thị danh sách các hoạt động gần đây nhất đã được tải về, có thể tùy chỉnh số lượng hiển thị.</li>
+                        <li><strong>Phân tích hoạt động (AI):</strong> Sử dụng AI để phân tích các hoạt động gần đây của bạn, đưa ra cái nhìn tổng quan về hiệu suất. Phân tích này sẽ tính đến các bộ lọc hiện có.</li>
+                    </ul>
+                    <h3 class="font-bold text-lg text-bidv-green">5. Thống kê thành tích theo tuần:</h3>
+                    <ul class="list-disc ml-6 space-y-1">
+                        <li>Hiển thị biểu đồ bong bóng thống kê tổng quãng đường chạy theo tuần. Kích thước bong bóng tương ứng với quãng đường.</li>
+                        <li>Click vào bong bóng để xem chi tiết các hoạt động trong tuần đó.</li>
+                        <li>Biểu đồ cũng có thể được lọc theo loại hoạt động và khoảng thời gian.</li>
+                    </ul>
+                    <h3 class="font-bold text-lg text-bidv-green">6. Thống kê chi tiết & Tiền phạt/Thưởng:</h3>
+                    <ul class="list-disc ml-6 space-y-1">
+                        <li>Khu vực này cho phép bạn theo dõi chi tiết từng hoạt động và tính toán các khoản "tiền phạt" nếu không đạt mục tiêu KM hàng tuần.</li>
+                        <li>Nhập "Số tiền phạt 1KM" và "Số KM một tuần" theo mục tiêu của bạn.</li>
+                        <li>Bảng sẽ tự động cập nhật để hiển thị thông tin chi tiết từng hoạt động đã lọc và tính toán tổng kết cho từng runner, bao gồm số KM thiếu và số tiền thiếu.</li>
+                    </ul>
+                    <p class="mt-4">Chúc bạn có những trải nghiệm tuyệt vời với ứng dụng!</p>
+                </div>
+            </div>
+        </section>
+
     </main>
 
     <footer class="bg-bidv-green text-white p-4 text-center text-sm">
@@ -415,12 +633,14 @@
 
     <!-- Weekly Activities Modal -->
     <div id="weekly-activities-modal" class="modal">
-        <div class="modal-content">
+        <div class="modal-content" style="max-width: 700px;">
             <span class="close-button" id="close-weekly-activities-modal-btn">&times;</span>
             <h3 id="weekly-activities-title" class="text-2xl font-bold mb-4 text-gray-800">Hoạt động trong tuần:</h3>
-            <ul id="weekly-activities-list" class="space-y-2 text-sm">
-                <!-- Activities will be loaded here -->
-            </ul>
+            <div class="max-h-96 overflow-y-auto border rounded-md p-2">
+                <ul id="weekly-activities-list" class="space-y-2 text-sm">
+                    <!-- Activities will be loaded here -->
+                </ul>
+            </div>
             <p id="weekly-activities-status" class="mt-4 text-sm text-gray-600"></p>
         </div>
     </div>
@@ -504,8 +724,17 @@
         let currentAthleteId = null; // Stores Strava athlete ID for API calls and for activities.user_id
         let currentRunnerName = null; // Stores the name of the currently logged-in runner
         let currentAppUserId = null; // Stores Supabase Auth user ID (UUID)
-        const ALL_ACTIVITY_TYPES = ['Run', 'Walk', 'Ride', 'Swim', 'Hike', 'NordicSki', 'AlpineSki', 'Workout', 'Yoga', 'WeightTraining', 'Elliptical', 'StairStepper', 'Rowing', 'Crossfit', 'Canoeing', 'Kayaking', 'StandUpPaddling', 'VirtualRide', 'VirtualRun', 'Wheelchair', 'Handcycle', 'RollerSki', 'IceSkate', 'Snowboard', 'Snowshoe', 'BackcountrySki', 'EMountainBikeRide', 'EBikeRide', 'MountainBikeRide', 'GravelRide', 'Velomobile', 'Kitesurf', 'Windsurf', 'RockClimbing', 'Alpinism', 'Badminton', 'Squash', 'TableTennis', 'Tennis', 'Volleyball', 'Surfing', 'Pilates', 'Golf', 'WaterSport', 'Soccer', 'Basketball'];
+        const ALL_ACTIVITY_TYPES = [
+            'Run', 'Walk', 'Ride', 'Swim', 'Hike', 'NordicSki', 'AlpineSki', 'Workout', 'Yoga', 
+            'WeightTraining', 'Elliptical', 'StairStepper', 'Rowing', 'Crossfit', 'Canoeing', 
+            'Kayaking', 'StandUpPaddling', 'VirtualRide', 'VirtualRun', 'Wheelchair', 'Handcycle', 
+            'RollerSki', 'IceSkate', 'Snowboard', 'Snowshoe', 'BackcountrySki', 'EMountainBikeRide', 
+            'EBikeRide', 'MountainBikeRide', 'GravelRide', 'Velomobile', 'Kitesurf', 'Windsurf', 
+            'RockClimbing', 'Alpinism', 'Badminton', 'Squash', 'TableTennis', 'Tennis', 'Volleyball', 
+            'Surfing', 'Pilates', 'Golf', 'WaterSport', 'Soccer', 'Basketball'
+        ].sort(); // Sort activity types alphabetically
 
+        let allRunnerCredentials = []; // Store all fetched runner credentials
 
         // Initialize Supabase client instance
         let supabaseClientInstance;
@@ -578,8 +807,47 @@
         let selectedActivityTypesRecent = [];
         let selectedActivityTypesStats = [];
 
+        // Date filter elements
+        const startDateRecent = document.getElementById('start-date-recent');
+        const endDateRecent = document.getElementById('end-date-recent');
+        const startDateStats = document.getElementById('start-date-stats');
+        const endDateStats = document.getElementById('end-date-stats');
+
+        // New elements for detailed stats table
+        const penaltyPerKmInput = document.getElementById('penalty-per-km');
+        const targetKmPerWeekInput = document.getElementById('target-km-per-week');
+        const detailedStatsTableBody = document.querySelector('#detailed-stats-table tbody');
+        const detailedStatsStatus = document.getElementById('detailed-stats-status');
+
+        // Collapsible elements
+        const appAuthContent = document.getElementById('app-auth-content');
+        const credentialManagementContent = document.getElementById('credential-management-content');
+        const stravaAuthContent = document.getElementById('strava-auth-content');
+        const instructionSection = document.getElementById('instruction-section');
+        const instructionContent = document.getElementById('instruction-content');
+
 
         // --- Helper functions for UI and data transformation ---
+
+        /**
+         * Toggles the collapsible state of a section.
+         * @param {HTMLElement} contentElement - The content div to collapse/expand.
+         * @param {HTMLElement} toggleIcon - The icon to rotate.
+         * @param {boolean} [collapse=true] - Force collapse or expand. If undefined, toggles.
+         */
+        function toggleCollapsible(contentElement, toggleIcon, collapse) {
+            const isCollapsed = contentElement.classList.contains('collapsed');
+            if (collapse === true && !isCollapsed) {
+                contentElement.classList.add('collapsed');
+                toggleIcon.classList.remove('rotate');
+            } else if (collapse === false && isCollapsed) {
+                contentElement.classList.remove('collapsed');
+                toggleIcon.classList.add('rotate');
+            } else if (collapse === undefined) { // Toggle
+                contentElement.classList.toggle('collapsed');
+                toggleIcon.classList.toggle('rotate');
+            }
+        }
 
         /**
          * Populates the multi-select filter dropdowns.
@@ -639,6 +907,7 @@
                 selectedTypesArray.splice(index, 1); // Remove if already exists
             } else {
                 selectedTypesArray.push(type); // Add if not exists
+                selectedTypesArray.sort(); // Keep sorted alphabetically
             }
             updateMultiSelectDisplay(displayElement, selectedTypesArray, optionsContainer);
         }
@@ -724,6 +993,9 @@
          * @param {Object|null} user - The Supabase user object or null if logged out.
          */
         async function updateAppAuthUI(user) {
+            const appAuthHeader = appAuthSection.querySelector('.collapsible-header');
+            const appAuthToggleIcon = appAuthHeader.querySelector('.toggle-icon');
+
             if (user) {
                 currentAppUserId = user.id;
                 appUserStatus.textContent = `Đã đăng nhập: ${user.email || 'Khách'}`;
@@ -735,7 +1007,11 @@
                 credentialManagementSection.classList.remove('hidden');
                 stravaAuthSection.classList.remove('hidden');
                 dataSection.classList.remove('hidden');
-                statsSection.classList.remove('hidden'); // Also show stats section
+                statsSection.classList.remove('hidden');
+                instructionSection.classList.remove('hidden'); // Show instruction section
+
+                // Collapse app auth section if logged in
+                toggleCollapsible(appAuthContent, appAuthToggleIcon, true); 
 
                 // Re-fetch credentials and check Strava auth state after app user is authenticated
                 await displayCredentials();
@@ -747,11 +1023,15 @@
                 loggedOutView.classList.remove('hidden');
                 loggedInView.classList.add('hidden');
 
+                // Expand app auth section if logged out
+                toggleCollapsible(appAuthContent, appAuthToggleIcon, false);
+
                 // Hide sections dependent on app authentication
                 credentialManagementSection.classList.add('hidden');
                 stravaAuthSection.classList.add('hidden');
                 dataSection.classList.add('hidden');
-                statsSection.classList.add('hidden'); // Hide stats section
+                statsSection.classList.add('hidden');
+                instructionSection.classList.add('hidden'); // Hide instruction section
 
                 clearStravaSession(); // Clear Strava session if app user logs out
                 await displayCredentials(); // Clear credentials list
@@ -840,6 +1120,8 @@
                 noCredentialsMessage.classList.remove('hidden');
                 runnerSelect.innerHTML = '<option value="">-- Chọn Runner --</option>';
                 loadingCredentials.classList.add('hidden');
+                // Ensure the credential section is expanded if no credentials
+                toggleCollapsible(credentialManagementContent, credentialManagementSection.querySelector('.toggle-icon'), false);
                 return;
             }
 
@@ -860,25 +1142,26 @@
                 if (error) throw error;
 
                 console.log('displayCredentials: Fetched data from Supabase:', data); 
+                allRunnerCredentials = data; // Store fetched credentials globally to avoid re-fetching
 
                 if (data.length === 0) {
                     noCredentialsMessage.classList.remove('hidden');
+                    // Expand credential section if no credentials
+                    toggleCollapsible(credentialManagementContent, credentialManagementSection.querySelector('.toggle-icon'), false);
                 } else {
                     noCredentialsMessage.classList.add('hidden');
-                    data.forEach(cred => {
-                        const maskedSecret = '*'.repeat(cred.client_secret.length);
-                        const maskedRefresh = '*'.repeat(cred.refresh_token.length);
-                        const maskedRedirectUri = cred.redirect_uri ? '*'.repeat(cred.redirect_uri.length) : 'N/A';
+                    // Collapse credential section if credentials exist
+                    toggleCollapsible(credentialManagementContent, credentialManagementSection.querySelector('.toggle-icon'), true);
 
+                    data.forEach(cred => {
+                        // Display credential details (only once per credential)
                         const credDiv = document.createElement('div');
                         credDiv.className = 'bg-gray-50 p-4 rounded-lg border border-gray-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3';
                         credDiv.innerHTML = `
                             <div>
                                 <p class="text-lg font-semibold text-gray-800">${cred.runner_name}</p>
-                                <p class="text-sm text-gray-600">Client ID: <span class="font-mono">${cred.client_id}</span></p>
-                                <p class="text-sm text-gray-600">Client Secret: <span class="font-mono">${maskedSecret}</span></p>
-                                <p class="text-sm text-gray-600">Refresh Token: <span class="font-mono">${maskedRefresh}</span></p>
-                                <p class="text-sm text-gray-600">Redirect URI: <span class="font-mono">${maskedRedirectUri}</span></p>
+                                <p class="text-sm text-gray-600">Client ID: <span class="font-mono">${cred.client_id.substring(0, 4)}...${cred.client_id.substring(cred.client_id.length - 4)}</span></p>
+                                <p class="text-sm text-gray-600">Refresh Token: <span class="font-mono">${cred.refresh_token.substring(0, 4)}...${cred.refresh_token.substring(cred.refresh_token.length - 4)}</span></p>
                                 ${cred.athlete_id ? `<p class="text-sm text-gray-600">Athlete ID: <span class="font-mono">${cred.athlete_id}</span></p>` : ''}
                             </div>
                             <div class="flex flex-row gap-2 mt-2 sm:mt-0">
@@ -888,6 +1171,7 @@
                         `;
                         credentialsList.appendChild(credDiv);
 
+                        // Populate runner select dropdown
                         const option = document.createElement('option');
                         option.value = cred.id; // Use the Supabase credential ID as the value
                         option.textContent = cred.runner_name;
@@ -1075,6 +1359,10 @@
             console.log('  currentAthleteId (Strava ID):', currentAthleteId);
             console.log('  currentRunnerName:', currentRunnerName);
 
+            const stravaAuthHeader = stravaAuthSection.querySelector('.collapsible-header');
+            const stravaAuthToggleIcon = stravaAuthHeader.querySelector('.toggle-icon');
+
+
             if (isAuthenticated && currentRunnerCredentialId && currentAthleteId && currentRunnerName) {
                 const expiresAt = localStorage.getItem('strava_expires_at');
                 const refreshToken = localStorage.getItem('strava_refresh_token');
@@ -1093,6 +1381,9 @@
                     
                     // Select the logged-in runner in the dropdown
                     runnerSelect.value = currentRunnerCredentialId;
+
+                    // Collapse strava auth section if connected
+                    toggleCollapsible(stravaAuthContent, stravaAuthToggleIcon, true);
 
                 } else {
                     console.log('  Token Strava đã hết hạn hoặc không có. Đang thử làm mới ...');
@@ -1125,6 +1416,11 @@
                 // Reset content if not authenticated
                 recentActivitiesList.innerHTML = '<li class="text-gray-500">Nhấn "Tải hoạt động gần đây" để xem.</li>';
                 document.getElementById('bubble-chart-container').innerHTML = '<p class="text-gray-500 text-center">Nhấn "Xem thống kê theo tuần" để hiển thị biểu đồ.</p>';
+                detailedStatsTableBody.innerHTML = '';
+                detailedStatsStatus.textContent = 'Chưa có dữ liệu để hiển thị.';
+
+                // Expand strava auth section if not connected
+                toggleCollapsible(stravaAuthContent, stravaAuthToggleIcon, false);
             }
         }
 
@@ -1426,6 +1722,8 @@
 
             const numActivitiesToDisplay = parseInt(numRecentActivitiesInput.value, 10) || 10;
             const selectedTypes = selectedActivityTypesRecent; // Get selected types for filtering
+            const startDate = startDateRecent.value;
+            const endDate = endDateRecent.value;
 
             try {
                 let query = supabaseClientInstance
@@ -1435,6 +1733,12 @@
 
                 if (selectedTypes.length > 0) {
                     query = query.in('type', selectedTypes); // Apply type filter
+                }
+                if (startDate) {
+                    query = query.gte('start_date', startDate);
+                }
+                if (endDate) {
+                    query = query.lt('start_date', new Date(new Date(endDate).getTime() + 24 * 60 * 60 * 1000).toISOString().split('T')[0]); // End of selected day
                 }
 
                 const { data, error } = await query
@@ -1486,6 +1790,7 @@
                     recentActivitiesStatus.textContent = 'Không có hoạt động nào để hiển thị.';
                     userActivities = []; // Clear activities if none found
                 }
+                renderDetailedStatsTable(); // Re-render detailed stats table after recent activities load
             } catch (error) {
                 console.error('Lỗi khi tải hoạt động gần đây từ Supabase:', error);
                 recentActivitiesStatus.textContent = `Lỗi khi tải hoạt động: ${error.message}`;
@@ -1601,12 +1906,14 @@
 
             data.forEach(d => {
                 const dateInWeek = getDateFromISOWeek(d.week);
-                const monthKey = dateInWeek.getFullYear() + '-' + String(dateInWeek.getMonth() + 1).padStart(2, '0');
+                const monthYear = dateInWeek.getFullYear() + '-' + String(dateInWeek.getMonth() + 1).padStart(2, '0');
+                const monthTotalDistance = d.totalDistance; // This will be summed later
 
-                if (!monthlyDataMap.has(monthKey)) {
-                    monthlyDataMap.set(monthKey, { month: monthKey, weeks: [] });
+                if (!monthlyDataMap.has(monthYear)) {
+                    monthlyDataMap.set(monthYear, { month: monthYear, weeks: [], totalMonthlyDistance: 0 });
                 }
-                monthlyDataMap.get(monthKey).weeks.push(d);
+                monthlyDataMap.get(monthYear).weeks.push(d);
+                monthlyDataMap.get(monthYear).totalMonthlyDistance += d.totalDistance;
             });
 
             const monthlyData = Array.from(monthlyDataMap.values()).sort((a, b) => b.month.localeCompare(a.month)); // Sort months descending
@@ -1644,13 +1951,10 @@
 
             const maxDistance = d3.max(data, d => d.totalDistance);
             const minDistance = d3.min(data, d => d.totalDistance);
-            const maxElevationGain = d3.max(data, d => d.totalElevationGain || 0);
+            // const maxElevationGain = d3.max(data, d => d.totalElevationGain || 0); // Not used in bubble size/color
 
             console.log(`renderBubbleChart: Quãng đường Min: ${minDistance}, Max: ${maxDistance}`);
             
-            // Handle case where maxDistance might be 0 or undefined (e.g., no activities or all 0 distance)
-            // Ensure domain is valid for scaleSqrt. If maxDistance is 0, then the domain becomes [0,0] which is handled by d3.
-            // If min and max are the same (e.g., all activities have same distance), it still works.
             const maxRadius = width < 768 ? 30 : 60;
             const minRadius = width < 768 ? 8 : 15;
 
@@ -1677,13 +1981,16 @@
                 const monthGroup = svg.append("g")
                     .attr("transform", `translate(0, ${currentYOffset})`);
 
+                const monthDisplay = `Tháng ${monthObj.month.substring(5)}/${monthObj.month.substring(0, 4)}`;
+                const totalMonthlyKm = (monthObj.totalMonthlyDistance / 1000).toFixed(1);
+
                 monthGroup.append("text")
                     .attr("x", 20)
                     .attr("y", 25)
                     .attr("font-size", width < 768 ? "1rem" : "1.2rem")
                     .attr("font-weight", "bold")
                     .attr("fill", "#555")
-                    .text(`Tháng ${monthObj.month.substring(5)}/${monthObj.month.substring(0, 4)}`);
+                    .text(`${monthDisplay} (${totalMonthlyKm}KM)`); // Updated text here
 
                 monthObj.weeks.sort((a, b) => a.week.localeCompare(b.week));
 
@@ -1774,9 +2081,15 @@
             llmAnalysisStatus.textContent = '';
 
             const activitiesTableUserId = currentAthleteId; 
+            const selectedTypes = selectedActivityTypesRecent; // Apply recent activities filter to AI analysis
+            const startDate = startDateRecent.value;
+            const endDate = endDateRecent.value;
 
             console.log('Analyzing activities:');
             console.log('  activitiesTableUserId (Strava Athlete ID):', activitiesTableUserId);
+            console.log('  Selected Types for AI analysis:', selectedTypes);
+            console.log('  Start Date for AI analysis:', startDate);
+            console.log('  End Date for AI analysis:', endDate);
 
             try {
                 // Get current Supabase Auth session to pass access token securely
@@ -1789,19 +2102,30 @@
                 }
                 console.log('LLM Analysis: Supabase Session Access Token is available.');
 
-                // Fetch recent activities from Supabase to send to LLM
-                // Sử dụng supabaseClientInstance để đảm bảo RLS được áp dụng
-                const { data: recentActivitiesFromDB, error: fetchError } = await supabaseClientInstance
+                // Fetch recent activities from Supabase to send to LLM, applying current filters
+                let query = supabaseClientInstance
                     .from('activities')
                     .select('*') // Select all columns to get new metrics
-                    .eq('user_id', activitiesTableUserId)
+                    .eq('user_id', activitiesTableUserId);
+
+                if (selectedTypes.length > 0) {
+                    query = query.in('type', selectedTypes);
+                }
+                if (startDate) {
+                    query = query.gte('start_date', startDate);
+                }
+                if (endDate) {
+                    query = query.lt('start_date', new Date(new Date(endDate).getTime() + 24 * 60 * 60 * 1000).toISOString().split('T')[0]);
+                }
+
+                const { data: recentActivitiesFromDB, error: fetchError } = await query
                     .order('start_date', { ascending: false })
                     .limit(50); // Limit activities for LLM analysis to avoid large payloads
 
                 if (fetchError) throw fetchError;
 
                 if (!recentActivitiesFromDB || recentActivitiesFromDB.length === 0) {
-                    llmAnalysisContent.innerHTML = '<p class="text-gray-500">Không có hoạt động nào trong cơ sở dữ liệu để phân tích. Vui lòng tải dữ liệu từ Strava trước.</p>';
+                    llmAnalysisContent.innerHTML = '<p class="text-gray-500">Không có hoạt động nào trong cơ sở dữ liệu để phân tích với các bộ lọc đã chọn. Vui lòng tải dữ liệu từ Strava hoặc điều chỉnh bộ lọc.</p>';
                     return;
                 }
 
@@ -1828,7 +2152,13 @@
                     },
                     body: JSON.stringify({
                         activities: activitiesForEdgeFunction, // Send raw activities data with new metrics
-                        runnerCredentialId: currentRunnerCredentialId 
+                        runnerCredentialId: currentRunnerCredentialId,
+                        // Pass filter information to AI for context (optional, depending on LLM prompt)
+                        filters: {
+                            activityTypes: selectedTypes,
+                            startDate: startDate,
+                            endDate: endDate
+                        }
                     })
                 });
 
@@ -1881,7 +2211,11 @@
                 }
 
                 const selectedTypes = selectedActivityTypesStats; // Get selected types for stats filtering
+                const startDate = startDateStats.value;
+                const endDate = endDateStats.value;
                 console.log('viewStatsBtn: Selected activity types for stats:', selectedTypes);
+                console.log('viewStatsBtn: Start Date for stats:', startDate);
+                console.log('viewStatsBtn: End Date for stats:', endDate);
 
 
                 const response = await fetch(GET_STATS_API_URL, {
@@ -1889,7 +2223,9 @@
                     headers: headers, // Use the conditionally built headers object
                     body: JSON.stringify({ 
                         userId: currentRunnerCredentialId, // Pass runnerCredentialId
-                        activityTypes: selectedTypes.length > 0 ? selectedTypes : undefined // Pass selected types, or undefined if none
+                        activityTypes: selectedTypes.length > 0 ? selectedTypes : undefined, // Pass selected types, or undefined if none
+                        startDate: startDate,
+                        endDate: endDate
                     }) 
                 });
 
@@ -1897,8 +2233,10 @@
 
                 if (response.ok && result.success) {
                     weeklyStatsData = result.weekly_stats; // Store data globally
+                    userActivities = result.detailed_activities; // Store detailed activities for the table
                     chartStatus.textContent = `Đã tải ${weeklyStatsData.length} tuần thống kê.`;
                     renderBubbleChart(weeklyStatsData); // Render chart with fetched data
+                    renderDetailedStatsTable(); // Render detailed stats table
                 } else {
                     chartStatus.textContent = `Lỗi khi tải thống kê: ${result.error || 'Không xác định'}`;
                     showAlert(`Lỗi khi tải thống kê: ${result.error || 'Không xác định'}`);
@@ -1909,6 +2247,96 @@
                 showAlert('Lỗi mạng hoặc máy chủ khi tải thống kê.');
             }
         });
+
+        /**
+         * Renders the detailed statistics table based on userActivities.
+         */
+        function renderDetailedStatsTable() {
+            detailedStatsTableBody.innerHTML = '';
+            detailedStatsStatus.textContent = '';
+
+            if (!userActivities || userActivities.length === 0) {
+                detailedStatsStatus.textContent = 'Chưa có dữ liệu để hiển thị.';
+                return;
+            }
+
+            const penaltyPerKm = parseFloat(penaltyPerKmInput.value) || 0;
+            const targetKmPerWeek = parseFloat(targetKmPerWeekInput.value) || 0;
+
+            // Group activities by runner
+            const activitiesByRunner = userActivities.reduce((acc, activity) => {
+                // Find the runner name from allRunnerCredentials using activity.user_id (athlete_id)
+                const runner = allRunnerCredentials.find(rc => rc.athlete_id == activity.user_id);
+                const runnerName = runner ? runner.runner_name : `Runner ID: ${activity.user_id}`;
+
+                if (!acc[runnerName]) {
+                    acc[runnerName] = [];
+                }
+                acc[runnerName].push(activity);
+                return acc;
+            }, {});
+
+            // Sort runner names alphabetically
+            const sortedRunnerNames = Object.keys(activitiesByRunner).sort();
+
+            sortedRunnerNames.forEach(runnerName => {
+                const runnerActivities = activitiesByRunner[runnerName];
+                let totalRunnerDistanceKm = 0;
+                let totalRunnerTime = 0;
+
+                runnerActivities.forEach(activity => {
+                    const distanceKm = (activity.distance / 1000);
+                    totalRunnerDistanceKm += distanceKm;
+                    totalRunnerTime += activity.moving_time;
+
+                    const row = detailedStatsTableBody.insertRow();
+                    row.innerHTML = `
+                        <td>${runnerName}</td>
+                        <td>${new Date(activity.start_date).toLocaleDateString('vi-VN')}</td>
+                        <td>${activity.type}</td>
+                        <td>${distanceKm.toFixed(2)}</td>
+                        <td>${formatPace(activity.average_speed)}</td>
+                        <td>${activity.average_heartrate ? `${activity.average_heartrate.toFixed(0)}` : 'N/A'}</td>
+                        <td>${formatElevationGain(activity.total_elevation_gain)}</td>
+                        <td>${formatDuration(activity.moving_time)}</td>
+                    `;
+                });
+
+                // Add total row for the runner
+                const totalRow = detailedStatsTableBody.insertRow();
+                totalRow.className = 'total-row';
+                totalRow.innerHTML = `
+                    <td colspan="3">Tổng cộng cho ${runnerName}:</td>
+                    <td>${totalRunnerDistanceKm.toFixed(2)}</td>
+                    <td>N/A</td>
+                    <td>N/A</td>
+                    <td>N/A</td>
+                    <td>${formatDuration(totalRunnerTime)}</td>
+                `;
+
+                // Calculate missing KM and penalty/bonus
+                const missingKm = Math.max(0, targetKmPerWeek - totalRunnerDistanceKm);
+                const penaltyAmount = missingKm * penaltyPerKm;
+
+                const missingKmRow = detailedStatsTableBody.insertRow();
+                missingKmRow.className = 'missing-row';
+                missingKmRow.innerHTML = `
+                    <td colspan="3">Số KM thiếu (Mục tiêu ${targetKmPerWeek}KM):</td>
+                    <td colspan="5">${missingKm.toFixed(2)} KM</td>
+                `;
+
+                const penaltyRow = detailedStatsTableBody.insertRow();
+                penaltyRow.className = 'missing-row';
+                penaltyRow.innerHTML = `
+                    <td colspan="3">Số tiền thiếu (Phạt ${penaltyPerKm}K/KM):</td>
+                    <td colspan="5">${penaltyAmount.toLocaleString('vi-VN')} nghìn VNĐ</td>
+                `;
+
+                // Add a spacer row for better readability
+                const spacerRow = detailedStatsTableBody.insertRow();
+                spacerRow.innerHTML = `<td colspan="8" class="h-4 bg-gray-100"></td>`;
+            });
+        }
 
 
         // When the page loads
@@ -1969,6 +2397,29 @@
             populateActivityTypeFilters();
             updateMultiSelectDisplay(multiSelectDisplayRecent, selectedActivityTypesRecent, multiSelectOptionsRecent);
             updateMultiSelectDisplay(multiSelectDisplayStats, selectedActivityTypesStats, multiSelectOptionsStats);
+
+            // Add event listeners for collapsible headers
+            document.querySelectorAll('.collapsible-header').forEach(header => {
+                header.addEventListener('click', () => {
+                    const targetId = header.dataset.target;
+                    const contentElement = document.getElementById(targetId);
+                    const toggleIcon = header.querySelector('.toggle-icon');
+                    toggleCollapsible(contentElement, toggleIcon);
+                });
+            });
+
+            // Add event listeners for detailed stats table inputs
+            penaltyPerKmInput.addEventListener('input', renderDetailedStatsTable);
+            targetKmPerWeekInput.addEventListener('input', renderDetailedStatsTable);
+
+            // Add event listeners for date filters to trigger activity reload
+            startDateRecent.addEventListener('change', loadRecentActivitiesBtn.click);
+            endDateRecent.addEventListener('change', loadRecentActivitiesBtn.click);
+            startDateStats.addEventListener('change', viewStatsBtn.click);
+            endDateStats.addEventListener('change', viewStatsBtn.click);
+
+            // Initial collapse instruction section
+            toggleCollapsible(instructionContent, instructionSection.querySelector('.toggle-icon'), true);
         };
     </script>
 </body>
