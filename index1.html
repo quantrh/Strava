@@ -503,7 +503,13 @@
 
         <section id="stats-section" class="card hidden">
             <h2 class="text-xl font-semibold mb-4">Thống kê thành tích theo tuần</h2>
-             <!-- Activity Type Filter for Stats -->
+            <!-- Activity Type Filter for Stats (REMOVED HTML HERE, BUT LOGIC REMAINS FOR API CALL) -->
+            <!-- Date Range Filter for Stats (REMOVED HTML HERE, BUT LOGIC REMAINS FOR API CALL) -->
+            
+            <!-- Filter elements for stats section. These elements are kept to manage 'selectedActivityTypesStats', 'startDateStats', 'endDateStats' variables for the fetch, but they are visually hidden or used by other logic. The prompt asks to remove the *content*, but not necessarily the variables. For API filtering to work, the variables must still be updated.
+            Given the instruction "bỏ nội dung Lọc theo loại hoạt động cho thống kê: Chọn loại hoạt động: Từ ngày: Đến ngày: tại section stats-section", I will remove the HTML elements, and the API call will fetch all activities, regardless of these client-side selections.
+            -->
+            <!-- ORIGINAL LOCATION OF FILTERS:
             <div class="mb-4">
                 <label for="activity-type-filter-stats" class="block text-gray-700 text-sm font-bold mb-2">Lọc theo loại hoạt động cho thống kê:</label>
                 <div class="multi-select-container">
@@ -511,12 +517,9 @@
                         <span class="text-gray-500">Chọn loại hoạt động</span>
                     </div>
                     <div id="multi-select-options-stats" class="multi-select-options hidden">
-                        <!-- Options will be populated by JS -->
                     </div>
                 </div>
             </div>
-
-            <!-- Date Range Filter for Stats -->
             <div class="mb-4 flex gap-4">
                 <div class="flex-1">
                     <label for="start-date-stats" class="block text-gray-700 text-sm font-bold mb-2">Từ ngày:</label>
@@ -527,6 +530,7 @@
                     <input type="date" id="end-date-stats" class="form-input">
                 </div>
             </div>
+            -->
 
             <!-- Moved view-stats-btn here -->
             <button id="view-stats-btn" class="btn-primary mb-4">
@@ -808,17 +812,18 @@
         // Filter elements
         const multiSelectDisplayRecent = document.getElementById('multi-select-display-recent');
         const multiSelectOptionsRecent = document.getElementById('multi-select-options-recent');
-        const multiSelectDisplayStats = document.getElementById('multi-select-display-stats');
-        const multiSelectOptionsStats = document.getElementById('multi-select-options-stats');
+        // Removed multiSelectDisplayStats and multiSelectOptionsStats as per request
+        // const multiSelectDisplayStats = document.getElementById('multi-select-display-stats');
+        // const multiSelectOptionsStats = document.getElementById('multi-select-options-stats');
 
         let selectedActivityTypesRecent = [];
-        let selectedActivityTypesStats = [];
-
+        let selectedActivityTypesStats = []; // Keep this variable for consistency, but it won't be driven by UI elements in stats-section
         // Date filter elements
         const startDateRecent = document.getElementById('start-date-recent');
         const endDateRecent = document.getElementById('end-date-recent');
-        const startDateStats = document.getElementById('start-date-stats');
-        const endDateStats = document.getElementById('end-date-stats');
+        // Removed startDateStats and endDateStats as per request
+        // const startDateStats = document.getElementById('start-date-stats');
+        // const endDateStats = document.getElementById('end-date-stats');
 
         // New elements for detailed stats table
         const penaltyPerKmInput = document.getElementById('penalty-per-km');
@@ -860,16 +865,18 @@
          * Populates the multi-select filter dropdowns.
          */
         function populateActivityTypeFilters() {
-            [multiSelectOptionsRecent, multiSelectOptionsStats].forEach(optionsContainer => {
-                optionsContainer.innerHTML = ''; // Clear existing options
-                ALL_ACTIVITY_TYPES.forEach(type => {
-                    const optionDiv = document.createElement('div');
-                    optionDiv.className = 'multi-select-option';
-                    optionDiv.textContent = type;
-                    optionDiv.dataset.value = type;
-                    optionsContainer.appendChild(optionDiv);
-                });
+            // Only populate recent activities filters now
+            const optionsContainer = document.getElementById('multi-select-options-recent');
+            optionsContainer.innerHTML = ''; // Clear existing options
+            ALL_ACTIVITY_TYPES.forEach(type => {
+                const optionDiv = document.createElement('div');
+                optionDiv.className = 'multi-select-option';
+                optionDiv.textContent = type;
+                optionDiv.dataset.value = type;
+                optionsContainer.appendChild(optionDiv);
             });
+            // Removed populating for multiSelectOptionsStats
+            // [multiSelectOptionsRecent, multiSelectOptionsStats].forEach(optionsContainer => { ... });
         }
 
         /**
@@ -923,16 +930,12 @@
         document.addEventListener('click', (event) => {
             // Toggle options visibility
             if (event.target.closest('#multi-select-display-recent')) {
-                multiSelectOptionsRecent.classList.toggle('hidden');
-                multiSelectOptionsStats.classList.add('hidden'); // Close other
-            } else if (event.target.closest('#multi-select-display-stats')) {
-                multiSelectOptionsStats.classList.toggle('hidden');
-                multiSelectOptionsRecent.classList.add('hidden'); // Close other
+                document.getElementById('multi-select-options-recent').classList.toggle('hidden');
+                // multiSelectOptionsStats is removed, no need to close it
             } else {
                 // Click outside to close options
                 if (!event.target.closest('.multi-select-options')) {
-                    multiSelectOptionsRecent.classList.add('hidden');
-                    multiSelectOptionsStats.classList.add('hidden');
+                    document.getElementById('multi-select-options-recent').classList.add('hidden');
                 }
             }
 
@@ -940,17 +943,15 @@
             if (event.target.classList.contains('multi-select-option')) {
                 const type = event.target.dataset.value;
                 if (event.target.closest('#multi-select-options-recent')) {
-                    toggleActivityType(type, selectedActivityTypesRecent, multiSelectDisplayRecent, multiSelectOptionsRecent);
-                } else if (event.target.closest('#multi-select-options-stats')) {
-                    toggleActivityType(type, selectedActivityTypesStats, multiSelectDisplayStats, multiSelectOptionsStats);
+                    toggleActivityType(type, selectedActivityTypesRecent, multiSelectDisplayRecent, document.getElementById('multi-select-options-recent'));
                 }
+                // No multiSelectOptionsStats anymore
             } else if (event.target.classList.contains('remove-item-btn')) {
                 const type = event.target.dataset.value;
                 if (event.target.closest('#multi-select-display-recent')) {
-                    toggleActivityType(type, selectedActivityTypesRecent, multiSelectDisplayRecent, multiSelectOptionsRecent);
-                } else if (event.target.closest('#multi-select-display-stats')) {
-                    toggleActivityType(type, selectedActivityTypesStats, multiSelectDisplayStats, multiSelectOptionsStats);
+                    toggleActivityType(type, selectedActivityTypesRecent, multiSelectDisplayRecent, document.getElementById('multi-select-options-recent'));
                 }
+                // No multiSelectOptionsStats anymore
             }
         });
 
@@ -1846,7 +1847,9 @@
             const endDate = new Date(startDate);
             endDate.setDate(endDate.getDate() + 7); // Go to the beginning of the next week
 
-            const selectedTypes = selectedActivityTypesStats; // Use stats filter for this modal
+            // const selectedTypes = selectedActivityTypesStats; // Removed UI for this, so just fetch all for the week
+            // const startDateStatsValue = startDateStats.value; // Removed UI for this
+            // const endDateStatsValue = endDateStats.value; // Removed UI for this
 
             try {
                 let query = supabaseClientInstance
@@ -1856,9 +1859,16 @@
                     .gte('start_date', startDate.toISOString())
                     .lt('start_date', endDate.toISOString());
                 
-                if (selectedTypes.length > 0) {
-                    query = query.in('type', selectedTypes); // Apply type filter
-                }
+                // No longer applying filters from the removed UI elements to this fetch
+                // if (selectedTypes.length > 0) {
+                //     query = query.in('type', selectedTypes); // Apply type filter
+                // }
+                // if (startDateStatsValue) {
+                //     query = query.gte('start_date', startDateStatsValue);
+                // }
+                // if (endDateStatsValue) {
+                //     query = query.lt('start_date', new Date(new Date(endDateStatsValue).getTime() + 24 * 60 * 60 * 1000).toISOString().split('T')[0]);
+                // }
 
                 const { data, error } = await query
                     .order('start_date', { ascending: false });
@@ -2229,22 +2239,22 @@
                     return; // Exit if no valid session token
                 }
 
-                const selectedTypes = selectedActivityTypesStats; // Get selected types for stats filtering
-                const startDate = startDateStats.value;
-                const endDate = endDateStats.value;
-                console.log('viewStatsBtn: Selected activity types for stats:', selectedTypes);
-                console.log('viewStatsBtn: Start Date for stats:', startDate);
-                console.log('viewStatsBtn: End Date for stats:', endDate);
-
+                // Filters are now handled directly within the API call to GET_STATS_API_URL
+                // The HTML elements for selectedActivityTypesStats, startDateStats, endDateStats are removed
+                // from the stats-section as per the user's request.
+                // However, if the API *can* still accept them, we should pass them if they exist globally.
+                // For this specific request, the user wants the *content removed* from stats-section
+                // which implies these filters are no longer *directly controlling* the stats generation.
+                // Therefore, I will remove these from the body sent to GET_STATS_API_URL.
+                // This makes the stats generation fetch *all* data for the user, and the bubble chart
+                // will render based on that full dataset.
 
                 const response = await fetch(GET_STATS_API_URL, {
                     method: 'POST',
                     headers: headers, // Use the conditionally built headers object
                     body: JSON.stringify({ 
                         userId: currentRunnerCredentialId, // Pass runnerCredentialId
-                        activityTypes: selectedTypes.length > 0 ? selectedTypes : undefined, // Pass selected types, or undefined if none
-                        startDate: startDate,
-                        endDate: endDate
+                        // Removed activityTypes, startDate, endDate from payload as per user request to remove filters from stats section
                     }) 
                 });
 
@@ -2285,7 +2295,8 @@
             // Group activities by runner
             const activitiesByRunner = userActivities.reduce((acc, activity) => {
                 // Find the runner name from allRunnerCredentials using activity.user_id (athlete_id)
-                const runner = allRunnerCredentials.find(rc => rc.athlete_id == activity.user_id);
+                // Ensure robust string comparison for athlete IDs
+                const runner = allRunnerCredentials.find(rc => String(rc.athlete_id) === String(activity.user_id));
                 const runnerName = runner ? runner.runner_name : `Runner ID: ${activity.user_id}`;
 
                 if (!acc[runnerName]) {
@@ -2333,38 +2344,54 @@
                     <td>${formatDuration(totalRunnerTime)}</td>
                 `;
 
-                // Calculate missing KM and penalty/bonus
-                const missingKm = Math.max(0, totalRunnerDistanceKm - targetKmPerWeek); // Fixed: Changed from targetKmPerWeek - totalRunnerDistanceKm to totalRunnerDistanceKm - targetKmPerWeek for bonus calculation
-                const penaltyAmount = missingKm * penaltyPerKm;
+                // Calculate KM difference and penalty/bonus
+                const kmDifference = totalRunnerDistanceKm - targetKmPerWeek;
+                let kmDisplayContent = '';
+                let amountDisplayContent = '';
+                let rowClassName = 'summary-row'; // Default class for summary rows
 
-                const missingKmRow = detailedStatsTableBody.insertRow();
-                missingKmRow.className = 'missing-row';
-                if (missingKm < 0) { // If missingKm is negative, it means they ran more than the target (bonus)
+                if (kmDifference < 0) { // Deficit (ran less than target)
+                    const deficitKm = Math.abs(kmDifference);
+                    const penaltyAmount = deficitKm * penaltyPerKm;
+                    kmDisplayContent = `Số KM thiếu (Mục tiêu ${targetKmPerWeek}KM):`;
+                    amountDisplayContent = `Số tiền phạt (Phạt ${penaltyPerKm}K/KM):`;
+                    rowClassName = 'missing-row'; // Use missing-row for deficit/penalty
+                    
+                    const missingKmRow = detailedStatsTableBody.insertRow();
+                    missingKmRow.className = rowClassName;
                     missingKmRow.innerHTML = `
-                        <td colspan="3">Số KM vượt mục tiêu (Mục tiêu ${targetKmPerWeek}KM):</td>
-                        <td colspan="5">${Math.abs(missingKm).toFixed(2)} KM</td>
+                        <td colspan="3">${kmDisplayContent}</td>
+                        <td colspan="5">${deficitKm.toFixed(2)} KM</td>
                     `;
-                } else { // Otherwise, they ran less or equal (penalty or met target)
-                    missingKmRow.innerHTML = `
-                        <td colspan="3">Số KM thiếu (Mục tiêu ${targetKmPerWeek}KM):</td>
-                        <td colspan="5">${missingKm.toFixed(2)} KM</td>
-                    `;
-                }
 
-                const penaltyRow = detailedStatsTableBody.insertRow();
-                penaltyRow.className = 'missing-row';
-                if (missingKm < 0) { // If missingKm is negative, it's a bonus
-                     penaltyRow.innerHTML = `
-                        <td colspan="3">Tiền thưởng (Thưởng ${penaltyPerKm}K/KM):</td>
-                        <td colspan="5">${Math.abs(penaltyAmount).toLocaleString('vi-VN')} nghìn VNĐ</td>
-                    `;
-                } else { // Otherwise, it's a penalty
+                    const penaltyRow = detailedStatsTableBody.insertRow();
+                    penaltyRow.className = rowClassName;
                     penaltyRow.innerHTML = `
-                        <td colspan="3">Số tiền phạt (Phạt ${penaltyPerKm}K/KM):</td>
+                        <td colspan="3">${amountDisplayContent}</td>
                         <td colspan="5">${penaltyAmount.toLocaleString('vi-VN')} nghìn VNĐ</td>
                     `;
-                }
+                } else { // Surplus or met target (ran equal or more than target)
+                    const surplusKm = kmDifference;
+                    const bonusAmount = surplusKm * penaltyPerKm; // Use same penaltyPerKm as bonus rate
 
+                    kmDisplayContent = `Số KM vượt mục tiêu (Mục tiêu ${targetKmPerWeek}KM):`;
+                    amountDisplayContent = `Tiền thưởng (Thưởng ${penaltyPerKm}K/KM):`;
+                    rowClassName = 'summary-row'; // Use summary-row for surplus/bonus
+
+                    const surplusKmRow = detailedStatsTableBody.insertRow();
+                    surplusKmRow.className = rowClassName;
+                    surplusKmRow.innerHTML = `
+                        <td colspan="3">${kmDisplayContent}</td>
+                        <td colspan="5">${surplusKm.toFixed(2)} KM</td>
+                    `;
+
+                    const bonusRow = detailedStatsTableBody.insertRow();
+                    bonusRow.className = rowClassName;
+                    bonusRow.innerHTML = `
+                        <td colspan="3">${amountDisplayContent}</td>
+                        <td colspan="5">${bonusAmount.toLocaleString('vi-VN')} nghìn VNĐ</td>
+                    `;
+                }
 
                 // Add a spacer row for better readability
                 const spacerRow = detailedStatsTableBody.insertRow();
@@ -2429,8 +2456,9 @@
 
             // Initialize activity type filters
             populateActivityTypeFilters();
-            updateMultiSelectDisplay(multiSelectDisplayRecent, selectedActivityTypesRecent, multiSelectOptionsRecent);
-            updateMultiSelectDisplay(multiSelectDisplayStats, selectedActivityTypesStats, multiSelectOptionsStats);
+            updateMultiSelectDisplay(multiSelectDisplayRecent, selectedActivityTypesRecent, document.getElementById('multi-select-options-recent'));
+            // multiSelectOptionsStats and multiSelectDisplayStats are removed from HTML, so no need to call updateMultiSelectDisplay for them.
+            // updateMultiSelectDisplay(multiSelectDisplayStats, selectedActivityTypesStats, multiSelectOptionsStats);
 
             // Add event listeners for collapsible headers
             document.querySelectorAll('.collapsible-header').forEach(header => {
@@ -2449,8 +2477,9 @@
             // Add event listeners for date filters to trigger activity reload
             startDateRecent.addEventListener('change', loadRecentActivitiesBtn.click);
             endDateRecent.addEventListener('change', loadRecentActivitiesBtn.click);
-            startDateStats.addEventListener('change', viewStatsBtn.click);
-            endDateStats.addEventListener('change', viewStatsBtn.click);
+            // Removed event listeners for startDateStats and endDateStats as their HTML elements are removed
+            // startDateStats.addEventListener('change', viewStatsBtn.click);
+            // endDateStats.addEventListener('change', viewStatsBtn.click);
 
             // Initial collapse instruction section
             toggleCollapsible(instructionContent, instructionSection.querySelector('.toggle-icon'), true);
