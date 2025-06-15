@@ -2236,7 +2236,7 @@
             const chartStatus = document.getElementById('chart-status');
             chartStatus.textContent = 'Đang tải thống kê theo tuần ...';
             weeklyStatsData = []; 
-            userActivities = []; // Clear detailed activities as well
+            // userActivities = []; // KEPT THIS LINE TO ENSURE detailed_activities IS CLEARED FOR THE NEXT TIME loadRecentActivitiesBtn IS CLICKED
 
             // Get all runner credentials for the current app user
             await displayCredentials(); // Ensure allRunnerCredentials is up-to-date
@@ -2246,8 +2246,8 @@
                 chartStatus.textContent = 'Không tìm thấy runner nào được kết nối với tài khoản Strava. Vui lòng thêm và kết nối runner.';
                 document.getElementById('bubble-chart-container').innerHTML = '<p class="text-gray-500 text-center">Không có dữ liệu thống kê để hiển thị biểu đồ.</p>';
                 weeklyStatsData = [];
-                userActivities = []; 
-                renderDetailedStatsTable(); 
+                // userActivities = []; // No need to clear here if not re-rendering detailed stats
+                renderDetailedStatsTable(); // Ensure detailed stats table is cleared IF NO RUNNERS are found initially
                 return;
             }
 
@@ -2308,13 +2308,12 @@
                 // Aggregate all results
                 allResults.forEach(res => {
                     weeklyStatsData.push(...res.weeklyStats);
-                    userActivities.push(...res.detailedActivities);
+                    // userActivities.push(...res.detailedActivities); // REMOVED THIS LINE
                 });
 
                 chartStatus.textContent = `Đã tải thống kê cho ${runnersToFetch.length} runner. Tổng cộng ${weeklyStatsData.length} tuần.`;
                 renderBubbleChart(weeklyStatsData); 
-                renderDetailedStatsTable(); 
-
+                // renderDetailedStatsTable(); // REMOVED THIS LINE
             } catch (error) {
                 console.error('Lỗi chung khi tải thống kê theo tuần:', error);
                 chartStatus.textContent = 'Lỗi mạng hoặc máy chủ khi tải thống kê.';
@@ -2547,7 +2546,6 @@
                 if (weeklyStatsData.length > 0) { // Only re-render if data already exists
                     renderBubbleChart(weeklyStatsData);
                 }
-                // Removed renderDetailedStatsTable() here as it should not filter by this dropdown.
             });
 
             // Initial collapse instruction section
