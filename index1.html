@@ -760,11 +760,11 @@
         const modalTitle = document.getElementById('modal-title');
         const credentialForm = document.getElementById('credential-form');
         const runnerNameInput = document.getElementById('runner-name');
-        const clientIdInput = document = document.getElementById('client-id');
-        const clientSecretInput = document = document.getElementById('client-secret');
-        const refreshTokenInput = document = document.getElementById('refresh-token');
-        const redirectUriInput = document = document.getElementById('redirect-uri');
-        const credentialIdInput = document = document.getElementById('credential-id');
+        const clientIdInput = document.getElementById('client-id');
+        const clientSecretInput = document.getElementById('client-secret');
+        const refreshTokenInput = document.getElementById('refresh-token');
+        const redirectUriInput = document.getElementById('redirect-uri');
+        const credentialIdInput = document.getElementById('credential-id');
         const runnerSelect = document.getElementById('runner-select');
         const connectStravaBtn = document.getElementById('connect-strava-btn');
         const disconnectStravaBtn = document.getElementById('disconnect-strava-btn');
@@ -1930,6 +1930,7 @@
             console.log('renderBubbleChart: Dữ liệu đầu vào:', data); // Log the input data
 
             const monthlyDataMap = new Map();
+            // IMPORTANT: The filtering by selectedRunnerIdForStats should apply here for the bubble chart.
             const filteredData = selectedRunnerIdForStats ? 
                                 data.filter(d => String(d.athlete_id) === selectedRunnerIdForStats) : 
                                 data;
@@ -2265,13 +2266,18 @@
 
                 // Fetch stats for each runner individually
                 const fetchPromises = runnersToFetch.map(async (runner) => {
+                    const runnerId = runner.id; // Get the ID
+                    if (!runnerId) { // Explicit check for null/undefined/empty string
+                        console.error(`Skipping fetch for runner ${runner.runner_name || 'Unknown'} due to missing or invalid credential ID.`);
+                        return { weeklyStats: [], detailedActivities: [] }; // Skip this runner
+                    }
+                    const payload = { runnerCredentialId: runnerId };
+                    console.log(`[viewStatsBtn] Sending payload to ${GET_STATS_API_URL}:`, payload); // Added logging here
                     try {
                         const response = await fetch(GET_STATS_API_URL, {
                             method: 'POST',
                             headers: headers, 
-                            body: JSON.stringify({ 
-                                runnerCredentialId: runner.id, // Pass single runnerCredentialId
-                            }) 
+                            body: JSON.stringify(payload) // Use the validated payload
                         });
 
                         const result = await response.json();
@@ -2286,12 +2292,12 @@
                                 detailedActivities: result.detailed_activities 
                             };
                         } else {
-                            console.error(`Lỗi khi tải thống kê cho ${runner.runner_name}:`, result.error || 'Không xác định');
+                            console.error(`Lỗi khi tải thống kê cho ${runner.runner_name} (credential ID: ${runnerId}):`, result.error || 'Không xác định');
                             showAlert(`Lỗi khi tải thống kê cho ${runner.runner_name}: ${result.error || 'Không xác định'}`);
                             return { weeklyStats: [], detailedActivities: [] }; // Return empty on error
                         }
                     } catch (error) {
-                        console.error(`Lỗi mạng/máy chủ khi tải thống kê cho ${runner.runner_name}:`, error);
+                        console.error(`Lỗi mạng/máy chủ khi tải thống kê cho ${runner.runner_name} (credential ID: ${runnerId}):`, error);
                         showAlert(`Lỗi mạng/máy chủ khi tải thống kê cho ${runner.runner_name}: ${error.message}`);
                         return { weeklyStats: [], detailedActivities: [] }; // Return empty on error
                     }
@@ -2323,13 +2329,13 @@
             detailedStatsTableBody.innerHTML = '';
             detailedStatsStatus.textContent = '';
 
-            // Filter activities based on selectedRunnerIdForStats
-            const filteredActivities = selectedRunnerIdForStats ?
-                                     userActivities.filter(activity => String(activity.user_id) === selectedRunnerIdForStats) :
-                                     userActivities;
+            // The userActivities array already contains activities filtered by the "Recent Activities" section,
+            // which covers all relevant runners for the current app user and general date/type filters.
+            // This table should display all activities in userActivities, not filter by the runner-stats-filter.
+            const activitiesToDisplay = userActivities;
 
-            if (!filteredActivities || filteredActivities.length === 0) {
-                detailedStatsStatus.textContent = 'Chưa có dữ liệu để hiển thị cho Runner đã chọn.';
+            if (!activitiesToDisplay || activitiesToDisplay.length === 0) {
+                detailedStatsStatus.textContent = 'Chưa có dữ liệu để hiển thị.';
                 return;
             }
 
@@ -2337,7 +2343,7 @@
             const targetKmPerWeek = parseFloat(targetKmPerWeekInput.value) || 0;
 
             // Group activities by runner (using athlete_id) - but now on filtered data
-            const activitiesByAthlete = filteredActivities.reduce((acc, activity) => {
+            const activitiesByAthlete = activitiesToDisplay.reduce((acc, activity) => {
                 const athleteId = String(activity.user_id); // Ensure string for consistency
                 if (!acc[athleteId]) {
                     acc[athleteId] = [];
@@ -2540,8 +2546,8 @@
                 selectedRunnerIdForStats = runnerStatsFilter.value;
                 if (weeklyStatsData.length > 0) { // Only re-render if data already exists
                     renderBubbleChart(weeklyStatsData);
-                    renderDetailedStatsTable();
                 }
+                // Removed renderDetailedStatsTable() here as it should not filter by this dropdown.
             });
 
             // Initial collapse instruction section
