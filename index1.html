@@ -364,10 +364,21 @@
         </div>
     </div>
 
+    <!-- Custom Alert/Confirm Modals -->
     <div id="custom-alert" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
         <div class="bg-white p-6 rounded-lg shadow-xl max-w-sm w-full text-center">
             <p id="alert-message" class="mb-4 text-lg"></p>
             <button id="alert-ok-btn" class="btn-primary">OK</button>
+        </div>
+    </div>
+
+    <div id="custom-confirm-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white p-6 rounded-lg shadow-xl max-w-sm w-full text-center">
+            <p id="confirm-message" class="mb-4 text-lg"></p>
+            <div class="flex justify-center gap-4">
+                <button id="confirm-cancel-btn" class="btn-secondary">Hủy</button>
+                <button id="confirm-ok-btn" class="btn-danger">Đồng ý</button>
+            </div>
         </div>
     </div>
 
@@ -384,6 +395,34 @@
             alertOkBtn.onclick = () => {
                 customAlert.classList.add('hidden');
             };
+        }
+
+        // Function to display custom confirm dialog instead of window.confirm()
+        function showConfirm(message) {
+            return new Promise((resolve) => {
+                const customConfirm = document.getElementById('custom-confirm-modal');
+                const confirmMessage = document.getElementById('confirm-message');
+                const confirmOkBtn = document.getElementById('confirm-ok-btn');
+                const confirmCancelBtn = document.getElementById('confirm-cancel-btn');
+
+                confirmMessage.textContent = message;
+                customConfirm.classList.remove('hidden');
+
+                const cleanup = () => {
+                    customConfirm.classList.add('hidden');
+                    confirmOkBtn.onclick = null;
+                    confirmCancelBtn.onclick = null;
+                };
+
+                confirmOkBtn.onclick = () => {
+                    cleanup();
+                    resolve(true);
+                };
+                confirmCancelBtn.onclick = () => {
+                    cleanup();
+                    resolve(false);
+                };
+            });
         }
 
         // Your Supabase configuration
@@ -586,7 +625,7 @@
          */
         async function displayCredentials() {
             if (!currentAppUserId) {
-                console.log('App user not authenticated, cannot display credentials.');
+                console.log('App user not authenticated, cannot display credentials. Clearing list.');
                 credentialsList.innerHTML = '';
                 noCredentialsMessage.classList.remove('hidden');
                 runnerSelect.innerHTML = '<option value="">-- Chọn Runner --</option>';
@@ -594,21 +633,23 @@
                 return;
             }
 
+            console.log('displayCredentials: Attempting to fetch credentials for user:', currentAppUserId); 
             loadingCredentials.classList.remove('hidden');
             errorCredentials.classList.add('hidden');
-            credentialsList.innerHTML = '';
+            credentialsList.innerHTML = ''; // Ensure list is cleared before populating
             noCredentialsMessage.classList.add('hidden');
             runnerSelect.innerHTML = '<option value="">-- Chọn Runner --</option>'; // Clear existing options
 
             try {
-                // Fetch credentials owned by the currently authenticated app user
                 const { data, error } = await supabaseClientInstance
                     .from('runner_credentials')
                     .select('*')
-                    .eq('owner_uid', currentAppUserId) 
+                    .eq('owner_uid', currentAppUserId)
                     .order('runner_name', { ascending: true });
 
                 if (error) throw error;
+
+                console.log('displayCredentials: Fetched data from Supabase:', data); 
 
                 if (data.length === 0) {
                     noCredentialsMessage.classList.remove('hidden');
@@ -653,7 +694,7 @@
                     });
                     document.querySelectorAll('.btn-delete').forEach(button => {
                         button.onclick = async (e) => {
-                            const confirmed = window.confirm('Bạn có chắc chắn muốn xóa thông tin đăng nhập này không?'); 
+                            const confirmed = await showConfirm('Bạn có chắc chắn muốn xóa thông tin đăng nhập này không?'); // Using custom confirm
                             if (confirmed) {
                                 await deleteCredential(e.target.dataset.id);
                             }
@@ -669,6 +710,7 @@
             }
             finally {
                 loadingCredentials.classList.add('hidden');
+                console.log('displayCredentials: Finished rendering.'); 
             }
         }
 
@@ -1281,6 +1323,17 @@
             }
         }
 
+        // Helper function to get Date from ISO week string (YYYY-WW)
+        function getDateFromISOWeek(w) {
+            const [year, weekNum] = w.split('-W').map(Number);
+            const jan1 = new Date(year, 0, 1);
+            const days = (weekNum - 1) * 7;
+            const targetDate = new Date(jan1.getFullYear(), 0, jan1.getDate() + days);
+            // Adjust to Monday of the ISO week
+            targetDate.setDate(targetDate.getDate() - (targetDate.getDay() + 6) % 7);
+            return targetDate;
+        }
+
 
         // Function to draw the bubble chart
         function renderBubbleChart(data) {
@@ -1304,7 +1357,7 @@
             container.innerHTML = ''; 
 
             if (!monthlyData || monthlyData.length === 0) {
-                container.innerHTML = '<p class="text-gray-500">Không có dữ liệu thống kê để hiển thị biểu đồ.</p>';
+                container.innerHTML = '<p class="text-gray-500 text-center">Không có dữ liệu thống kê để hiển thị biểu đồ. Vui lòng tải dữ liệu từ Strava trước.</p>'; // More specific message
                 console.log('renderBubbleChart: Không có dữ liệu hàng tháng để vẽ biểu đồ.');
                 return;
             }
@@ -1518,12 +1571,52 @@
                     llmAnalysisContent.innerHTML = `<p class="text-red-500">Không thể nhận được phân tích từ AI: ${result.error || 'Lỗi không xác định từ Edge Function'}</p>`;
                     llmAnalysisStatus.textContent = 'Lỗi phân tích AI.';
                 }
-            } catch (error) {
+            }
+            catch (error) {
                 console.error('Error during LLM analysis:', error);
                 llmAnalysisContent.innerHTML = '<p class="text-red-500">Đã xảy ra lỗi trong quá trình phân tích AI.</p>';
                 llmAnalysisStatus.textContent = `Lỗi: ${error.message}`;
             }
         });
+
+        // Event listener for "Xem thống kê theo tuần" button
+        viewStatsBtn.addEventListener('click', async () => {
+            if (!currentAppUserId || !isAuthenticated || !currentAthleteId) {
+                showAlert('Vui lòng đăng nhập ứng dụng và kết nối với Strava trước khi xem thống kê.');
+                return;
+            }
+
+            const chartStatus = document.getElementById('chart-status');
+            chartStatus.textContent = 'Đang tải thống kê theo tuần...';
+            weeklyStatsData = []; // Clear previous data
+
+            try {
+                const response = await fetch(GET_STATS_API_URL, {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${supabaseClientInstance.auth.currentSession.access_token}` // Authenticate with Supabase JWT
+                    },
+                    body: JSON.stringify({ athleteId: currentAthleteId })
+                });
+
+                const result = await response.json();
+
+                if (response.ok && result.success) {
+                    weeklyStatsData = result.weekly_stats; // Store data globally
+                    chartStatus.textContent = `Đã tải ${weeklyStatsData.length} tuần thống kê.`;
+                    renderBubbleChart(weeklyStatsData); // Render chart with fetched data
+                } else {
+                    chartStatus.textContent = `Lỗi khi tải thống kê: ${result.error || 'Không xác định'}`;
+                    showAlert(`Lỗi khi tải thống kê: ${result.error || 'Không xác định'}`);
+                }
+            } catch (error) {
+                console.error('Lỗi khi tải thống kê theo tuần:', error);
+                chartStatus.textContent = 'Lỗi mạng hoặc máy chủ khi tải thống kê.';
+                showAlert('Lỗi mạng hoặc máy chủ khi tải thống kê.');
+            }
+        });
+
 
         // When the page loads
         window.onload = async () => {
