@@ -996,7 +996,8 @@
                 toggleCollapsible(appAuthContent, appAuthToggleIcon, true); 
 
                 // Re-fetch credentials and check Strava auth state after app user is authenticated
-                await displayCredentials();
+                await fetchAndSetRunnerCredentials(); // Fetch data
+                await renderCredentialsUI(); // Render UI from fetched data
                 await checkStravaAuthState();
                 populateRunnerStatsFilter(); // Populate runner stats filter on app auth change
 
@@ -1018,7 +1019,8 @@
                 instructionSection.classList.add('hidden'); // Hide instruction section
 
                 clearStravaSession(); // Clear Strava session if app user logs out
-                await displayCredentials(); // Clear credentials list
+                await fetchAndSetRunnerCredentials(); // Clear global state data
+                await renderCredentialsUI(); // Clear credentials list UI
                 checkStravaAuthState(); // Reset Strava UI
                 populateRunnerStatsFilter(); // Clear runner stats filter
             }
@@ -1095,101 +1097,91 @@
         // --- Credential Management Functions ---
 
         /**
-         * Fetches and displays runner credentials from Supabase for the current Supabase authenticated user.
-         * Populates the credentials list and the runner selection dropdown.
+         * Fetches runner credentials from Supabase and updates the global `allRunnerCredentials` array.
          */
-        async function displayCredentials() {
+        async function fetchAndSetRunnerCredentials() {
             if (!currentAppUserId) {
-                console.log('App user not authenticated, cannot display credentials. Clearing list.');
-                credentialsList.innerHTML = '';
-                noCredentialsMessage.classList.remove('hidden');
-                runnerSelect.innerHTML = '<option value="">-- Chọn Runner --</option>';
-                loadingCredentials.classList.add('hidden');
-                // Ensure the credential section is expanded if no credentials
-                toggleCollapsible(credentialManagementContent, credentialManagementSection.querySelector('.toggle-icon'), false);
+                allRunnerCredentials = []; // Clear global state if no app user
+                console.log('fetchAndSetRunnerCredentials: Không có người dùng ứng dụng, đang xóa thông tin đăng nhập.');
                 return;
             }
-
-            console.log('displayCredentials: Attempting to fetch credentials for user:', currentAppUserId); 
-            loadingCredentials.classList.remove('hidden');
-            errorCredentials.classList.add('hidden');
-            credentialsList.innerHTML = ''; // Ensure list is cleared before populating
-            noCredentialsMessage.classList.add('hidden');
-            runnerSelect.innerHTML = '<option value="">-- Chọn Runner --</option>'; // Clear existing options
-
+            console.log('fetchAndSetRunnerCredentials: Đang cố gắng lấy thông tin đăng nhập cho người dùng:', currentAppUserId);
+            loadingCredentials.classList.remove('hidden'); // Show loading state
+            errorCredentials.classList.add('hidden'); // Hide previous errors
             try {
                 const { data, error } = await supabaseClientInstance
                     .from('runner_credentials')
                     .select('*')
                     .eq('owner_uid', currentAppUserId)
                     .order('runner_name', { ascending: true });
-
                 if (error) throw error;
-
-                console.log('displayCredentials: Fetched data from Supabase:', data); 
-                allRunnerCredentials = data; // Store fetched credentials globally to avoid re-fetching
-
-                if (data.length === 0) {
-                    noCredentialsMessage.classList.remove('hidden');
-                    // Expand credential section if no credentials
-                    toggleCollapsible(credentialManagementContent, credentialManagementSection.querySelector('.toggle-icon'), false);
-                } else {
-                    noCredentialsMessage.classList.add('hidden');
-                    // Collapse credential section if credentials exist
-                    toggleCollapsible(credentialManagementContent, credentialManagementSection.querySelector('.toggle-icon'), true);
-
-                    data.forEach(cred => {
-                        // Display credential details (only once per credential)
-                        const credDiv = document.createElement('div');
-                        credDiv.className = 'bg-gray-50 p-4 rounded-lg border border-gray-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3';
-                        credDiv.innerHTML = `
-                            <div>
-                                <p class="text-lg font-semibold text-gray-800">${cred.runner_name}</p>
-                                <p class="text-sm text-gray-600">Client ID: <span class="font-mono">${cred.client_id.substring(0, 4)}...${cred.client_id.substring(cred.client_id.length - 4)}</span></p>
-                                <p class="text-sm text-gray-600">Refresh Token: <span class="font-mono">${cred.refresh_token.substring(0, 4)}...${cred.refresh_token.substring(cred.refresh_token.length - 4)}</span></p>
-                                ${cred.athlete_id ? `<p class="text-sm text-gray-600">Athlete ID: <span class="font-mono">${cred.athlete_id}</span></p>` : ''}
-                            </div>
-                            <div class="flex flex-row gap-2 mt-2 sm:mt-0">
-                                <button class="btn-primary btn-edit" data-id="${cred.id}">Sửa</button>
-                                <button class="btn-danger btn-delete" data-id="${cred.id}">Xóa</button>
-                            </div>
-                        `;
-                        credentialsList.appendChild(credDiv);
-
-                        // Populate runner select dropdown
-                        const option = document.createElement('option');
-                        option.value = cred.id; // Use the Supabase credential ID as the value
-                        option.textContent = cred.runner_name;
-                        option.dataset.clientId = cred.client_id; // Store client ID for OAuth flow
-                        option.dataset.clientSecret = cred.client_secret; // Store client secret for OAuth flow
-                        option.dataset.refreshToken = cred.refresh_token; // Store refresh token for OAuth flow
-                        option.dataset.redirectUri = cred.redirect_uri; // Store redirect URI
-                        option.dataset.athleteId = cred.athlete_id || ''; // Store athlete ID
-                        runnerSelect.appendChild(option);
-                    });
-                    
-                    document.querySelectorAll('.btn-edit').forEach(button => {
-                        button.onclick = (e) => openCredentialModal(e.target.dataset.id);
-                    });
-                    document.querySelectorAll('.btn-delete').forEach(button => {
-                        button.onclick = async (e) => {
-                            const confirmed = await showConfirm('Bạn có chắc chắn muốn xóa thông tin đăng nhập này không?'); // Using custom confirm
-                            if (confirmed) {
-                                await deleteCredential(e.target.dataset.id);
-                            }
-                        };
-                    });
-                }
-            }
-            catch (error) {
-                console.error('Lỗi khi lấy thông tin đăng nhập runner:', error.message);
+                allRunnerCredentials = data; // Update global variable
+                console.log('fetchAndSetRunnerCredentials: Đã lấy thành công', data.length, 'thông tin đăng nhập.');
+            } catch (error) {
+                console.error('Lỗi khi tải thông tin đăng nhập runner:', error.message);
                 errorCredentials.textContent = `Lỗi: ${error.message}`;
                 errorCredentials.classList.remove('hidden');
                 showAlert(`Lỗi khi tải thông tin runner: ${error.message}`);
+                allRunnerCredentials = []; // Clear on error too
+            } finally {
+                loadingCredentials.classList.add('hidden'); // Hide loading state
             }
-            finally {
-                loadingCredentials.classList.add('hidden');
-                console.log('displayCredentials: Finished rendering.'); 
+        }
+
+        /**
+         * Renders the runner credentials from the global `allRunnerCredentials` array into the UI.
+         */
+        async function renderCredentialsUI() {
+            credentialsList.innerHTML = ''; // Always clear before rendering
+            noCredentialsMessage.classList.add('hidden');
+            runnerSelect.innerHTML = '<option value="">-- Chọn Runner --</option>'; // Clear existing options
+
+            if (allRunnerCredentials.length === 0) {
+                noCredentialsMessage.classList.remove('hidden');
+                toggleCollapsible(credentialManagementContent, credentialManagementSection.querySelector('.toggle-icon'), false);
+            } else {
+                noCredentialsMessage.classList.add('hidden');
+                toggleCollapsible(credentialManagementContent, credentialManagementSection.querySelector('.toggle-icon'), true);
+
+                allRunnerCredentials.forEach(cred => {
+                    const credDiv = document.createElement('div');
+                    credDiv.className = 'bg-gray-50 p-4 rounded-lg border border-gray-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3';
+                    credDiv.innerHTML = `
+                        <div>
+                            <p class="text-lg font-semibold text-gray-800">${cred.runner_name}</p>
+                            <p class="text-sm text-gray-600">Client ID: <span class="font-mono">${cred.client_id.substring(0, 4)}...${cred.client_id.substring(cred.client_id.length - 4)}</span></p>
+                            <p class="text-sm text-gray-600">Refresh Token: <span class="font-mono">${cred.refresh_token.substring(0, 4)}...${cred.refresh_token.substring(cred.refresh_token.length - 4)}</span></p>
+                            ${cred.athlete_id ? `<p class="text-sm text-gray-600">Athlete ID: <span class="font-mono">${cred.athlete_id}</span></p>` : ''}
+                        </div>
+                        <div class="flex flex-row gap-2 mt-2 sm:mt-0">
+                            <button class="btn-primary btn-edit" data-id="${cred.id}">Sửa</button>
+                            <button class="btn-danger btn-delete" data-id="${cred.id}">Xóa</button>
+                        </div>
+                    `;
+                    credentialsList.appendChild(credDiv);
+
+                    const option = document.createElement('option');
+                    option.value = cred.id; // Use the Supabase credential ID as the value
+                    option.textContent = cred.runner_name;
+                    option.dataset.clientId = cred.client_id; // Store client ID for OAuth flow
+                    option.dataset.clientSecret = cred.client_secret; // Store client secret for OAuth flow
+                    option.dataset.refreshToken = cred.refresh_token; // Store refresh token for OAuth flow
+                    option.dataset.redirectUri = cred.redirect_uri; // Store redirect URI
+                    option.dataset.athleteId = cred.athlete_id || ''; // Store athlete ID
+                    runnerSelect.appendChild(option);
+                });
+                
+                document.querySelectorAll('.btn-edit').forEach(button => {
+                    button.onclick = (e) => openCredentialModal(e.target.dataset.id);
+                });
+                document.querySelectorAll('.btn-delete').forEach(button => {
+                    button.onclick = async (e) => {
+                        const confirmed = await showConfirm('Bạn có chắc chắn muốn xóa thông tin đăng nhập này không?'); // Using custom confirm
+                        if (confirmed) {
+                            await deleteCredential(e.target.dataset.id);
+                        }
+                    };
+                });
             }
         }
 
@@ -1288,7 +1280,8 @@
                 if (error) throw error;
 
                 credentialModal.style.display = 'none';
-                await displayCredentials(); // Refresh the list and dropdown
+                await fetchAndSetRunnerCredentials(); // Refresh the list data
+                await renderCredentialsUI(); // Refresh the list UI
                 populateRunnerStatsFilter(); // Refresh runner stats filter as well
             } catch (error) {
                 console.error('Lỗi khi lưu thông tin đăng nhập runner:', error.message);
@@ -1320,7 +1313,8 @@
                     clearStravaSession();
                     checkStravaAuthState(); // Reset Strava auth UI
                 }
-                await displayCredentials(); // Refresh the list and dropdown
+                await fetchAndSetRunnerCredentials(); // Refresh the list data
+                await renderCredentialsUI(); // Refresh the list UI
                 populateRunnerStatsFilter(); // Refresh runner stats filter as well
             } catch (error) {
                 console.error('Lỗi khi xóa thông tin đăng nhập runner:', error.message);
@@ -1353,7 +1347,8 @@
             if (isAuthenticated && currentRunnerCredentialId && currentAthleteId && currentRunnerName) {
                 // Ensure allRunnerCredentials is fresh as we are about to use it for mapping
                 // This call is crucial here to ensure allRunnerCredentials contains the latest athlete_id
-                await displayCredentials(); // ADDED THIS LINE HERE
+                await fetchAndSetRunnerCredentials(); // Fetch data
+                await renderCredentialsUI(); // Render UI from fetched data
 
                 const expiresAt = localStorage.getItem('strava_expires_at');
                 const refreshToken = localStorage.getItem('strava_refresh_token');
@@ -1384,8 +1379,6 @@
                         const success = await refreshTokenCall(refreshToken, currentRunnerCredentialId);
                         if (success) {
                             showAlert('Token Strava đã được làm mới thành công!');
-                            // displayCredentials() is implicitly called again by the recursive checkStravaAuthState()
-                            // which hits the "Token valid" block. So no need to call it here.
                             checkStravaAuthState(); // Re-check state after refresh
                         } else {
                             throw new Error('Làm mới token Strava thất bại. Vui lòng đăng nhập lại.');
@@ -1400,8 +1393,8 @@
             } else {
                 console.log('  Chưa đăng nhập Strava hoặc thiếu thông tin phiên.');
                 clearStravaSession(); // Ensure all related items are cleared
-                // Ensure allRunnerCredentials is fresh/cleared when not authenticated
-                await displayCredentials(); // ADDED THIS LINE HERE for consistency when logging out/not logged in
+                await fetchAndSetRunnerCredentials(); // Clear global state data
+                await renderCredentialsUI(); // Clear credentials list UI for consistency when logging out/not logged in
                 authStatus.textContent = 'Vui lòng chọn Runner và đăng nhập với Strava.';
                 currentRunnerDisplay.classList.add('hidden');
                 connectStravaBtn.classList.remove('hidden');
@@ -1712,7 +1705,7 @@
             }
 
             // Ensure allRunnerCredentials is up-to-date. This also handles populating the runnerSelect dropdown.
-            await displayCredentials(); 
+            await fetchAndSetRunnerCredentials(); // ONLY FETCH, DO NOT RENDER UI HERE
 
             const athleteIds = allRunnerCredentials
                 .filter(cred => cred.athlete_id) // Only include credentials that have an athlete_id
@@ -2121,6 +2114,10 @@
             llmAnalysisSection.classList.remove('hidden');
             llmAnalysisContent.innerHTML = '<p class="text-gray-500">Đang phân tích hoạt động của bạn... <span class="loader"></span></p>';
             llmAnalysisStatus.textContent = '';
+            
+            // Auto-scroll to the AI analysis section
+            llmAnalysisSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
 
             const activitiesTableUserId = currentAthleteId; 
             const selectedTypes = selectedActivityTypesRecent; // Apply recent activities filter to AI analysis
@@ -2239,7 +2236,7 @@
             // userActivities = []; // KEPT THIS LINE TO ENSURE detailed_activities IS CLEARED FOR THE NEXT TIME loadRecentActivitiesBtn IS CLICKED
 
             // Get all runner credentials for the current app user
-            await displayCredentials(); // Ensure allRunnerCredentials is up-to-date
+            await fetchAndSetRunnerCredentials(); // Ensure allRunnerCredentials is up-to-date
             const runnersToFetch = allRunnerCredentials.filter(cred => cred.athlete_id);
 
             if (runnersToFetch.length === 0) {
