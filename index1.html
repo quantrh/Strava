@@ -859,7 +859,7 @@
             currentAthleteId = localStorage.getItem('strava_athlete_id'); // Strava athlete ID for API calls and for activities.user_id
             currentRunnerName = localStorage.getItem('strava_runner_name'); // Runner name (string)
 
-            console.log('checkStravaAuthState - Kiểm tra trạng thái xác thực Strava...');
+            console.log('checkStravaAuthState - Kiểm tra trạng thái xác thực Strava ...');
             console.log('  isAuthenticated (Strava):', isAuthenticated);
             console.log('  currentRunnerCredentialId (Credential ID):', currentRunnerCredentialId);
             console.log('  currentAthleteId (Strava ID):', currentAthleteId);
@@ -885,8 +885,8 @@
                     runnerSelect.value = currentRunnerCredentialId;
 
                 } else {
-                    console.log('  Token Strava đã hết hạn hoặc không có. Đang thử làm mới...');
-                    authStatus.textContent = 'Token Strava đã hết hạn, đang làm mới...';
+                    console.log('  Token Strava đã hết hạn hoặc không có. Đang thử làm mới ...');
+                    authStatus.textContent = 'Token Strava đã hết hạn, đang làm mới ...';
                     try {
                         const success = await refreshTokenCall(refreshToken, currentRunnerCredentialId); // Pass credential ID
                         if (success) {
@@ -942,7 +942,7 @@
          * @returns {Promise<boolean>} True if refresh successful, false otherwise.
          */
         async function refreshTokenCall(refreshToken, credentialId) {
-            console.log('refreshTokenCall - Đang gọi API làm mới token...');
+            console.log('refreshTokenCall - Đang gọi API làm mới token ...');
             try {
                 // Fetch client_id and client_secret for the given credentialId from Supabase
                 const { data: credData, error: credError } = await supabaseClientInstance
@@ -1053,7 +1053,7 @@
             }
 
             if (code) { // Only check for code, stateParam might be null/missing on redirect sometimes or for old sessions
-                authStatus.textContent = 'Đang xử lý kết nối Strava...';
+                authStatus.textContent = 'Đang xử lý kết nối Strava ...';
                 let runnerCredentialId = null;
 
                 if (stateParam) {
@@ -1149,7 +1149,7 @@
             }
 
             const dataStatus = document.getElementById('data-status');
-            dataStatus.textContent = 'Đang tải dữ liệu hoạt động từ Strava...';
+            dataStatus.textContent = 'Đang tải dữ liệu hoạt động từ Strava ...';
 
             const activitiesLimit = parseInt(activitiesLimitInput.value, 10) || 60;
             
@@ -1192,7 +1192,7 @@
                 return;
             }
 
-            recentActivitiesStatus.textContent = 'Đang tải hoạt động gần đây...';
+            recentActivitiesStatus.textContent = 'Đang tải hoạt động gần đây ...';
             recentActivitiesList.innerHTML = ''; // Clear previous list
 
             const activitiesTableUserId = currentAthleteId; // Use Strava Athlete ID for activities table
@@ -1264,7 +1264,7 @@
          * @param {number} athleteId - The Strava athlete ID associated with the activities.
          */
         async function fetchActivitiesForWeek(weekString, athleteId) {
-            weeklyActivitiesStatus.textContent = 'Đang tải hoạt động cho tuần này...';
+            weeklyActivitiesStatus.textContent = 'Đang tải hoạt động cho tuần này ...';
             weeklyActivitiesList.innerHTML = ''; // Clear previous list
 
             // Calculate start and end dates for the given ISO week
@@ -1520,6 +1520,7 @@
                     llmAnalysisStatus.textContent = '';
                     return;
                 }
+                console.log('LLM Analysis: Supabase Session Access Token is available.');
 
                 // Fetch recent activities from Supabase to send to LLM
                 // Sử dụng supabaseClientInstance để đảm bảo RLS được áp dụng
@@ -1545,7 +1546,7 @@
                     start_date: new Date(activity.start_date).toISOString().split('T')[0]
                 }));
 
-                llmAnalysisStatus.textContent = 'Đang gọi AI để phân tích...';
+                llmAnalysisStatus.textContent = 'Đang gọi AI để phân tích ...';
 
                 // Call the Supabase Edge Function to analyze activities
                 const response = await fetch(ANALYZE_ACTIVITIES_FUNCTION_URL, {
@@ -1587,15 +1588,27 @@
             }
 
             const chartStatus = document.getElementById('chart-status');
-            chartStatus.textContent = 'Đang tải thống kê theo tuần...';
+            chartStatus.textContent = 'Đang tải thống kê theo tuần ...';
             weeklyStatsData = []; // Clear previous data
 
             try {
+                // Get current Supabase Auth session to pass access token securely
+                const { data: { session }, error: sessionError } = await supabaseClientInstance.auth.getSession();
+                console.log('viewStatsBtn: Supabase session retrieved:', session);
+                console.log('viewStatsBtn: Session error:', sessionError);
+
+                if (sessionError || !session?.access_token) {
+                    showAlert('Lỗi: Không tìm thấy phiên đăng nhập. Vui lòng đăng nhập lại.');
+                    chartStatus.textContent = 'Lỗi xác thực: Không tìm thấy phiên đăng nhập.';
+                    return;
+                }
+                console.log('viewStatsBtn: Supabase Session Access Token is available.');
+
                 const response = await fetch(GET_STATS_API_URL, {
                     method: 'POST',
                     headers: { 
                         'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${supabaseClientInstance.auth.currentSession.access_token}` // Authenticate with Supabase JWT
+                        'Authorization': `Bearer ${session.access_token}` // Use access_token from fetched session
                     },
                     body: JSON.stringify({ athleteId: currentAthleteId })
                 });
