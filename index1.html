@@ -468,6 +468,41 @@
 
         </section>
 
+        <!-- New Detailed Stats Section -->
+        <section id="detailed-stats-section" class="card hidden mb-8">
+            <h3 class="text-xl font-semibold mb-4">Thống kê chi tiết & Tiền phạt/Thưởng</h3>
+            <div class="mb-4 flex gap-4 items-end">
+                <div class="flex-1">
+                    <label for="penalty-per-km" class="block text-gray-700 text-sm font-bold mb-2">Số tiền phạt 1KM (nghìn VNĐ):</label>
+                    <input type="number" id="penalty-per-km" class="form-input" value="30" min="0" step="1">
+                </div>
+                <div class="flex-1">
+                    <label for="target-km-per-week" class="block text-gray-700 text-sm font-bold mb-2">Số KM một tuần (KM):</label>
+                    <input type="number" id="target-km-per-week" class="form-input" value="25" min="0" step="1">
+                </div>
+            </div>
+            <div id="detailed-stats-table-container" class="overflow-x-auto">
+                <table id="detailed-stats-table" class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Tên Runner</th>
+                            <th>Ngày chạy</th>
+                            <th>Loại hoạt động</th>
+                            <th>Quãng đường (KM)</th>
+                            <th>Pace</th>
+                            <th>Nhịp tim TB</th>
+                            <th>Độ cao tăng</th>
+                            <th>Thời gian chạy</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Detailed activities and summary rows will be inserted here -->
+                    </tbody>
+                </table>
+                <p id="detailed-stats-status" class="mt-4 text-sm text-gray-600 text-center">Chưa có dữ liệu để hiển thị.</p>
+            </div>
+        </section>
+
         <section id="stats-section" class="card hidden">
             <h2 class="text-xl font-semibold mb-4">Thống kê thành tích theo tuần</h2>
              <!-- Activity Type Filter for Stats -->
@@ -499,38 +534,6 @@
                 <p class="text-gray-500 text-center">Nhấn "Xem thống kê theo tuần" để hiển thị biểu đồ.</p>
             </div>
             <div id="chart-status" class="mt-4 text-sm text-gray-600"></div>
-
-            <h3 class="text-xl font-semibold mt-8 mb-4">Thống kê chi tiết & Tiền phạt/Thưởng</h3>
-            <div class="mb-4 flex gap-4 items-end">
-                <div class="flex-1">
-                    <label for="penalty-per-km" class="block text-gray-700 text-sm font-bold mb-2">Số tiền phạt 1KM (nghìn VNĐ):</label>
-                    <input type="number" id="penalty-per-km" class="form-input" value="30" min="0" step="1">
-                </div>
-                <div class="flex-1">
-                    <label for="target-km-per-week" class="block text-gray-700 text-sm font-bold mb-2">Số KM một tuần (KM):</label>
-                    <input type="number" id="target-km-per-week" class="form-input" value="25" min="0" step="1">
-                </div>
-            </div>
-            <div id="detailed-stats-table-container" class="overflow-x-auto">
-                <table id="detailed-stats-table" class="data-table">
-                    <thead>
-                        <tr>
-                            <th>Tên Runner</th>
-                            <th>Ngày chạy</th>
-                            <th>Loại hoạt động</th>
-                            <th>Quãng đường (KM)</th>
-                            <th>Pace</th>
-                            <th>Nhịp tim TB</th>
-                            <th>Độ cao tăng</th>
-                            <th>Thời gian chạy</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <!-- Detailed activities and summary rows will be inserted here -->
-                    </tbody>
-                </table>
-                <p id="detailed-stats-status" class="mt-4 text-sm text-gray-600 text-center">Chưa có dữ liệu để hiển thị.</p>
-            </div>
         </section>
 
         <!-- Instruction Section -->
@@ -683,7 +686,7 @@
             return new Promise((resolve) => {
                 const customConfirm = document.getElementById('custom-confirm-modal');
                 const confirmMessage = document.getElementById('confirm-message');
-                const confirmOkBtn = document.getElementById('confirm-ok-btn');
+                const confirmOkBtn = document = document.getElementById('confirm-ok-btn'); // Fixed typo: document = document.getElementById
                 const confirmCancelBtn = document.getElementById('confirm-cancel-btn');
 
                 confirmMessage.textContent = message;
@@ -756,6 +759,7 @@
 
         const credentialManagementSection = document.getElementById('credential-management-section');
         const stravaAuthSection = document.getElementById('strava-auth-section');
+        const detailedStatsSection = document.getElementById('detailed-stats-section'); // New DOM element
 
         const addCredentialBtn = document.getElementById('add-credential-btn');
         const credentialsList = document.getElementById('credentials-list');
@@ -1008,6 +1012,7 @@
                 stravaAuthSection.classList.remove('hidden');
                 dataSection.classList.remove('hidden');
                 statsSection.classList.remove('hidden');
+                detailedStatsSection.classList.remove('hidden'); // Show new detailed stats section
                 instructionSection.classList.remove('hidden'); // Show instruction section
 
                 // Collapse app auth section if logged in
@@ -1031,6 +1036,7 @@
                 stravaAuthSection.classList.add('hidden');
                 dataSection.classList.add('hidden');
                 statsSection.classList.add('hidden');
+                detailedStatsSection.classList.add('hidden'); // Hide new detailed stats section
                 instructionSection.classList.add('hidden'); // Hide instruction section
 
                 clearStravaSession(); // Clear Strava session if app user logs out
@@ -1377,6 +1383,7 @@
                     disconnectStravaBtn.classList.remove('hidden');
                     dataSection.classList.remove('hidden');
                     statsSection.classList.remove('hidden');
+                    detailedStatsSection.classList.remove('hidden'); // Show new detailed stats section
                     userInfo.textContent = `Chào mừng, Runner: ${currentRunnerName} (Strava ID: ${currentAthleteId})`; 
                     
                     // Select the logged-in runner in the dropdown
@@ -1412,6 +1419,7 @@
                 disconnectStravaBtn.classList.add('hidden');
                 dataSection.classList.add('hidden');
                 statsSection.classList.add('hidden');
+                detailedStatsSection.classList.add('hidden'); // Hide new detailed stats section
                 userInfo.textContent = ''; // Clear user info
                 // Reset content if not authenticated
                 recentActivitiesList.innerHTML = '<li class="text-gray-500">Nhấn "Tải hoạt động gần đây" để xem.</li>';
