@@ -1582,7 +1582,7 @@
 
         // Event listener for "Xem thống kê theo tuần" button
         viewStatsBtn.addEventListener('click', async () => {
-            if (!currentAppUserId || !isAuthenticated || !currentAthleteId) {
+            if (!currentAppUserId || !isAuthenticated || !currentRunnerCredentialId || !currentAthleteId) {
                 showAlert('Vui lòng đăng nhập ứng dụng và kết nối với Strava trước khi xem thống kê.');
                 return;
             }
@@ -1597,20 +1597,23 @@
                 console.log('viewStatsBtn: Supabase session retrieved:', session);
                 console.log('viewStatsBtn: Session error:', sessionError);
 
-                if (sessionError || !session?.access_token) {
-                    showAlert('Lỗi: Không tìm thấy phiên đăng nhập. Vui lòng đăng nhập lại.');
+                // Construct headers object conditionally
+                const headers = { 'Content-Type': 'application/json' };
+                if (session?.access_token) {
+                    headers['Authorization'] = `Bearer ${session.access_token}`;
+                    console.log('viewStatsBtn: Adding Authorization header with valid access token.');
+                } else {
+                    console.warn('viewStatsBtn: No Supabase session access token found. Request will be sent without Authorization header.');
+                    showAlert('Lỗi: Không tìm thấy phiên đăng nhập. Vui lòng đăng nhập lại để xem thống kê.');
                     chartStatus.textContent = 'Lỗi xác thực: Không tìm thấy phiên đăng nhập.';
-                    return;
+                    return; // Exit if no valid session token
                 }
-                console.log('viewStatsBtn: Supabase Session Access Token is available.');
 
                 const response = await fetch(GET_STATS_API_URL, {
                     method: 'POST',
-                    headers: { 
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${session.access_token}` // Use access_token from fetched session
-                    },
-                    body: JSON.stringify({ athleteId: currentAthleteId })
+                    headers: headers, // Use the conditionally built headers object
+                    // HERE IS THE CHANGE: Send runnerCredentialId with key 'userId'
+                    body: JSON.stringify({ userId: currentRunnerCredentialId }) 
                 });
 
                 const result = await response.json();
