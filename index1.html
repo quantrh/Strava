@@ -686,7 +686,7 @@
             return new Promise((resolve) => {
                 const customConfirm = document.getElementById('custom-confirm-modal');
                 const confirmMessage = document.getElementById('confirm-message');
-                const confirmOkBtn = document = document.getElementById('confirm-ok-btn'); // Fixed typo: document = document.getElementById
+                const confirmOkBtn = document.getElementById('confirm-ok-btn'); // Fixed typo: document = document.getElementById
                 const confirmCancelBtn = document.getElementById('confirm-cancel-btn');
 
                 confirmMessage.textContent = message;
@@ -1370,6 +1370,10 @@
 
 
             if (isAuthenticated && currentRunnerCredentialId && currentAthleteId && currentRunnerName) {
+                // Ensure allRunnerCredentials is fresh as we are about to use it for mapping
+                // This call is crucial here to ensure allRunnerCredentials contains the latest athlete_id
+                await displayCredentials(); // ADDED THIS LINE HERE
+
                 const expiresAt = localStorage.getItem('strava_expires_at');
                 const refreshToken = localStorage.getItem('strava_refresh_token');
 
@@ -1396,9 +1400,11 @@
                     console.log('  Token Strava đã hết hạn hoặc không có. Đang thử làm mới ...');
                     authStatus.textContent = 'Token Strava đã hết hạn, đang làm mới ...';
                     try {
-                        const success = await refreshTokenCall(refreshToken, currentRunnerCredentialId); // Pass credential ID
+                        const success = await refreshTokenCall(refreshToken, currentRunnerCredentialId);
                         if (success) {
                             showAlert('Token Strava đã được làm mới thành công!');
+                            // displayCredentials() is implicitly called again by the recursive checkStravaAuthState()
+                            // which hits the "Token valid" block. So no need to call it here.
                             checkStravaAuthState(); // Re-check state after refresh
                         } else {
                             throw new Error('Làm mới token Strava thất bại. Vui lòng đăng nhập lại.');
@@ -1413,6 +1419,8 @@
             } else {
                 console.log('  Chưa đăng nhập Strava hoặc thiếu thông tin phiên.');
                 clearStravaSession(); // Ensure all related items are cleared
+                // Ensure allRunnerCredentials is fresh/cleared when not authenticated
+                await displayCredentials(); // ADDED THIS LINE HERE for consistency when logging out/not logged in
                 authStatus.textContent = 'Vui lòng chọn Runner và đăng nhập với Strava.';
                 currentRunnerDisplay.classList.add('hidden');
                 connectStravaBtn.classList.remove('hidden');
