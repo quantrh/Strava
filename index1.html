@@ -1112,9 +1112,7 @@
                 const { data, error } = await supabaseClientInstance
                     .from('runner_credentials')
                     .select('*')
-             /**       .eq('owner_uid', currentAppUserId)
-             */
-                    .order('runner_name', { ascending: true });
+                   .order('runner_name', { ascending: true });
                 if (error) throw error;
                 allRunnerCredentials = data; // Update global variable
                 console.log('fetchAndSetRunnerCredentials: Đã lấy thành công', data.length, 'thông tin đăng nhập.');
@@ -1205,8 +1203,6 @@
                         .from('runner_credentials')
                         .select('*')
                         .eq('id', id)
-               /**         .eq('owner_uid', currentAppUserId) // Verify ownership
-                */
                         .single();
 
                     if (error) throw error;
@@ -1267,8 +1263,7 @@
                     const { error: updateError } = await supabaseClientInstance
                         .from('runner_credentials')
                         .update(newCredential)
-                        .eq('id', id)
-                        .eq('owner_uid', currentAppUserId); // Đảm bảo chỉ cập nhật của chính mình
+                        .eq('id', id);
                     error = updateError;
                     showAlert('Cập nhật thông tin runner thành công!');
                 } else {
@@ -1304,8 +1299,8 @@
                 const { error } = await supabaseClientInstance
                     .from('runner_credentials')
                     .delete()
-                    .eq('id', id)
-                    .eq('owner_uid', currentAppUserId); // Đảm bảo chỉ xóa của chính mình
+                    .eq('id', id);
+            
 
                 if (error) throw error;
 
@@ -1447,7 +1442,7 @@
                     .from('runner_credentials')
                     .select('client_id, client_secret')
                     .eq('id', credentialId)
-                    .eq('owner_uid', currentAppUserId) // Đảm bảo chỉ làm mới của chính mình
+            
                     .single();
 
                 if (credError || !credData) {
