@@ -420,7 +420,7 @@
             <p id="user-info" class="mb-4 text-lg font-medium"></p>
             <div class="mb-4">
                 <label for="activities-limit" class="block text-gray-700 text-sm font-bold mb-2">Số lượng hoạt động muốn tải từ Strava (mặc định 60):</label>
-                <input type="number" id="activities-limit" class="form-input" value="60" min="1" step="1">
+                <input type="number" id="activities-limit" class="form-input" value="60" min="1" step="1" max="200">
             </div>
 
             <div class="flex flex-wrap gap-4 mb-6">
@@ -431,6 +431,23 @@
                     ✨ Phân tích hoạt động (AI)
                 </button>
             </div>
+            
+            <!-- New section for "Download Strava hộ" -->
+            <div class="mt-6 border-t pt-4">
+                <h3 class="text-lg font-semibold mb-3">Tải dữ liệu Strava cho các Runner khác</h3>
+                <div class="mb-4">
+                    <label for="download-runner-select" class="block text-gray-700 text-sm font-bold mb-2">Chọn Runner để tải hộ:</label>
+                    <select id="download-runner-select" class="form-input">
+                        <option value="">-- Chọn Runner --</option>
+                    </select>
+                    <p class="text-xs text-gray-500 mt-1">Chọn một Runner đã thêm để tải các hoạt động Strava của họ.</p>
+                </div>
+                <button id="download-activities-for-other-btn" class="btn-primary">
+                    Download Strava hộ
+                </button>
+                <div id="download-for-other-status" class="mt-4 text-sm text-gray-600"></div>
+            </div>
+
             <div id="data-status" class="mt-4 text-sm text-gray-600"></div>
 
             <div id="activities-list-section" class="mt-6 border-t pt-4">
@@ -841,6 +858,11 @@
         // New DOM element for runner stats filter
         const runnerStatsFilter = document.getElementById('runner-stats-filter');
 
+        // New DOM elements for "Download Strava hộ" feature
+        const downloadRunnerSelect = document.getElementById('download-runner-select');
+        const downloadActivitiesForOtherBtn = document.getElementById('download-activities-for-other-btn');
+        const downloadForOtherStatus = document.getElementById('download-for-other-status');
+
 
         // --- Helper functions for UI and data transformation ---
 
@@ -863,14 +885,14 @@
             if (shouldCollapse) {
                 contentElement.classList.add('collapsed');
                 if (toggleIcon.tagName === 'SVG') {
-                    toggleIcon.classList.remove('rotate');
+                    toggleIcon.classList.remove('rotate'); // For SVG (main sections)
                 } else { // Assume it's a text element (span) for the detailed stats table
                     toggleIcon.textContent = '▶'; // Right-pointing triangle
                 }
             } else {
                 contentElement.classList.remove('collapsed');
                 if (toggleIcon.tagName === 'SVG') {
-                    toggleIcon.classList.add('rotate');
+                    toggleIcon.classList.add('rotate'); // For SVG (main sections)
                 } else { // Assume it's a text element (span) for the detailed stats table
                     toggleIcon.textContent = '▼'; // Down-pointing triangle
                 }
@@ -1036,6 +1058,7 @@
                 await renderCredentialsUI(); // Render UI from fetched data
                 await checkStravaAuthState();
                 populateRunnerStatsFilter(); // Populate runner stats filter on app auth change
+                populateDownloadRunnerSelect(); // Populate the new download runner select
 
             } else {
                 currentAppUserId = null;
@@ -1059,6 +1082,7 @@
                 await renderCredentialsUI(); // Clear credentials list UI
                 checkStravaAuthState(); // Reset Strava UI
                 populateRunnerStatsFilter(); // Clear runner stats filter
+                populateDownloadRunnerSelect(); // Clear the new download runner select
             }
         }
 
@@ -1170,6 +1194,7 @@
             credentialsList.innerHTML = ''; // Always clear before rendering
             noCredentialsMessage.classList.add('hidden');
             runnerSelect.innerHTML = '<option value="">-- Chọn Runner --</option>'; // Clear existing options
+            downloadRunnerSelect.innerHTML = '<option value="">-- Chọn Runner --</option>'; // Clear for new select
 
             if (allRunnerCredentials.length === 0) {
                 noCredentialsMessage.classList.remove('hidden');
@@ -1203,7 +1228,8 @@
                     option.dataset.refreshToken = cred.refresh_token; // Store refresh token for OAuth flow
                     option.dataset.redirectUri = cred.redirect_uri; // Store redirect URI
                     option.dataset.athleteId = cred.athlete_id || ''; // Store athlete ID
-                    runnerSelect.appendChild(option);
+                    runnerSelect.appendChild(option.cloneNode(true)); // Clone for runnerSelect
+                    downloadRunnerSelect.appendChild(option); // Add to downloadRunnerSelect
                 });
                 
                 document.querySelectorAll('.btn-edit').forEach(button => {
@@ -1316,6 +1342,7 @@
                 await fetchAndSetRunnerCredentials(); // Refresh the list data
                 await renderCredentialsUI(); // Refresh the list UI
                 populateRunnerStatsFilter(); // Refresh runner stats filter as well
+                populateDownloadRunnerSelect(); // Refresh the new download runner select
             } catch (error) {
                 console.error('Lỗi khi lưu thông tin đăng nhập runner:', error.message);
                 showAlert(`Lỗi khi lưu thông tin runner: ${error.message}`);
@@ -1348,6 +1375,7 @@
                 await fetchAndSetRunnerCredentials(); // Refresh the list data
                 await renderCredentialsUI(); // Refresh the list UI
                 populateRunnerStatsFilter(); // Refresh runner stats filter as well
+                populateDownloadRunnerSelect(); // Refresh the new download runner select
             } catch (error) {
                 console.error('Lỗi khi xóa thông tin đăng nhập runner:', error.message);
                 showAlert(`Lỗi khi xóa thông tin runner: ${error.message}`);
@@ -1673,7 +1701,7 @@
         // --- Data Fetching & Management ---
 
         /**
-         * Fetches activities from Strava API and saves them to Supabase.
+         * Handles the main "Tải/Cập nhật dữ liệu từ Strava" button click.
          */
         fetchActivitiesBtn.addEventListener('click', async () => {
             if (!currentAppUserId || !isAuthenticated || !currentRunnerCredentialId || !currentAthleteId) {
@@ -1684,7 +1712,14 @@
             const dataStatus = document.getElementById('data-status');
             dataStatus.textContent = 'Đang tải dữ liệu hoạt động từ Strava ...';
 
-            const activitiesLimit = parseInt(activitiesLimitInput.value, 10) || 60;
+            const activitiesLimit = parseInt(activitiesLimitInput.value, 10);
+
+            // Validation for activities-limit
+            if (isNaN(activitiesLimit) || activitiesLimit <= 0 || activitiesLimit > 200) {
+                showAlert('Vui lòng nhập số lượng hoạt động hợp lệ (1-200). Strava chỉ hỗ trợ tải tối đa 200 hoạt động.');
+                dataStatus.textContent = '';
+                return;
+            }
             
             console.log('Fetching activities:');
             console.log('  currentRunnerCredentialId (Supabase Credential ID to send):', currentRunnerCredentialId);
@@ -1718,9 +1753,6 @@
                     showAlert(`Đã tải và lưu ${result.count} hoạt động thành công!`);
                     // Optionally, reload recent activities and stats after fetching new data
                     await loadRecentActivitiesBtn.click(); 
-                    // No need to click viewStatsBtn here, as renderDetailedStatsTable is called after loadRecentActivitiesBtn.click
-                    // and viewStatsBtn handler itself fetches data
-                    // await viewStatsBtn.click(); 
                 } else {
                     dataStatus.textContent = `Lỗi khi tải hoạt động: ${result.error || 'Không xác định'}`;
                     showAlert(`Lỗi khi tải hoạt động: ${result.error || 'Không xác định'}`);
@@ -1731,6 +1763,87 @@
                 showAlert('Lỗi mạng hoặc máy chủ khi tải hoạt động.');
             }
         });
+
+        /**
+         * Handles the new "Download Strava hộ" button click.
+         */
+        downloadActivitiesForOtherBtn.addEventListener('click', async () => {
+            if (!currentAppUserId) {
+                showAlert('Vui lòng đăng nhập ứng dụng để sử dụng chức năng này.');
+                return;
+            }
+
+            const selectedOption = downloadRunnerSelect.options[downloadRunnerSelect.selectedIndex];
+            if (!selectedOption || !selectedOption.value) {
+                showAlert('Vui lòng chọn một Runner từ danh sách để tải hộ.');
+                return;
+            }
+
+            const runnerToDownloadId = selectedOption.value; // This is the Supabase credential ID
+            const runnerToDownloadName = selectedOption.textContent;
+
+            const activitiesLimit = parseInt(activitiesLimitInput.value, 10);
+            if (isNaN(activitiesLimit) || activitiesLimit <= 0 || activitiesLimit > 200) {
+                showAlert('Vui lòng nhập số lượng hoạt động hợp lệ (1-200) trong ô giới hạn hoạt động. Strava chỉ hỗ trợ tải tối đa 200 hoạt động.');
+                return;
+            }
+
+            downloadForOtherStatus.textContent = `Đang tải dữ liệu hoạt động cho ${runnerToDownloadName} từ Strava ...`;
+
+            try {
+                const { data: { session }, error: sessionError } = await supabaseClientInstance.auth.getSession();
+                if (sessionError || !session?.access_token) {
+                    showAlert('Lỗi: Không tìm thấy phiên đăng nhập Supabase. Vui lòng đăng nhập lại.');
+                    downloadForOtherStatus.textContent = 'Lỗi xác thực: Không tìm thấy phiên đăng nhập.';
+                    return;
+                }
+
+                console.log(`[Download hộ] Calling fetch-strava-activities for runner: ${runnerToDownloadName} (Credential ID: ${runnerToDownloadId})`);
+
+                const response = await fetch(FETCH_ACTIVITIES_API_URL, {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${session.access_token}` // Pass Supabase Auth token
+                    },
+                    body: JSON.stringify({ 
+                        runnerCredentialId: runnerToDownloadId, // Use the selected runner's credential ID
+                        limit: activitiesLimit 
+                    }),
+                });
+
+                const result = await response.json();
+
+                if (response.ok && result.success) {
+                    downloadForOtherStatus.textContent = `Đã tải và lưu ${result.count} hoạt động cho ${runnerToDownloadName} thành công!`;
+                    showAlert(`Đã tải và lưu ${result.count} hoạt động cho ${runnerToDownloadName} thành công!`);
+                    // After downloading, we might want to refresh the recent activities display for the *current* user
+                    // if the newly downloaded activities are relevant to them (e.g., in multi-runner views).
+                    // For now, just show the status.
+                } else {
+                    downloadForOtherStatus.textContent = `Lỗi khi tải hoạt động cho ${runnerToDownloadName}: ${result.error || 'Không xác định'}`;
+                    showAlert(`Lỗi khi tải hoạt động cho ${runnerToDownloadName}: ${result.error || 'Không xác định'}`);
+                }
+            } catch (error) {
+                console.error(`Lỗi khi tải hoạt động cho ${runnerToDownloadName}:`, error);
+                downloadForOtherStatus.textContent = 'Lỗi mạng hoặc máy chủ khi tải hoạt động.';
+                showAlert('Lỗi mạng hoặc máy chủ khi tải hoạt động.');
+            }
+        });
+
+        /**
+         * Populates the dropdown for "Download Strava hộ" with all saved runner credentials.
+         */
+        function populateDownloadRunnerSelect() {
+            downloadRunnerSelect.innerHTML = '<option value="">-- Chọn Runner --</option>'; // Clear existing options
+            allRunnerCredentials.forEach(cred => {
+                const option = document.createElement('option');
+                option.value = cred.id; // Use the Supabase credential ID as the value
+                option.textContent = cred.runner_name;
+                downloadRunnerSelect.appendChild(option);
+            });
+        }
+
 
         /**
          * Fetches all athlete IDs for the current logged-in app user from their runner credentials.
@@ -1795,10 +1908,11 @@
                     query = query.in('type', selectedTypes); 
                 }
                 if (startDate) {
-                    query = query.gte('start_date', startDate);
+                    query = query.gte('start_date', startDate); // Start date inclusive
                 }
                 if (endDate) {
-                    query = query.lt('start_date', new Date(new Date(endDate).getTime() + 24 * 60 * 60 * 1000).toISOString().split('T')[0]);
+                    // End date inclusive: Filter for dates less than or equal to the selected end date
+                    query = query.lte('start_date', endDate); 
                 }
 
                 const { data, error } = await query
@@ -2197,7 +2311,8 @@
                     query = query.gte('start_date', startDate);
                 }
                 if (endDate) {
-                    query = query.lt('start_date', new Date(new Date(endDate).getTime() + 24 * 60 * 60 * 1000).toISOString().split('T')[0]);
+                    // End date inclusive: Filter for dates less than or equal to the selected end date
+                    query = query.lte('start_date', endDate); 
                 }
 
                 const { data: recentActivitiesFromDB, error: fetchError } = await query
@@ -2646,8 +2761,8 @@
             });
 
             // Add event listeners for detailed stats table inputs
-            penaltyPerKmGt10Input.addEventListener('input', renderDetailedStatsTable); // Updated
-            penaltyPerKmLte10Input.addEventListener('input', renderDetailedStatsTable); // Added
+            penaltyPerKmGt10Input.addEventListener('input', renderDetailedStatsTable); 
+            penaltyPerKmLte10Input.addEventListener('input', renderDetailedStatsTable); 
             targetKmPerWeekInput.addEventListener('input', renderDetailedStatsTable);
 
             // Add event listeners for date filters to trigger activity reload
@@ -2661,6 +2776,9 @@
                     renderBubbleChart(weeklyStatsData);
                 }
             });
+
+            // Add event listener for the new "Download Strava hộ" button
+            downloadActivitiesForOtherBtn.addEventListener('click', downloadActivitiesForOtherBtn.onclick); // Attach event listener
 
             // Initial collapse instruction section
             toggleCollapsible(instructionContent, instructionSection.querySelector('.toggle-icon'), true);
