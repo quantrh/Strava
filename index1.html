@@ -2337,9 +2337,27 @@
             // Auto-scroll to the AI analysis section
             llmAnalysisSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
 
+            // Get all athlete IDs associated with the current app user (potential candidates for analysis)
+            const allPossibleAthleteIds = await getAllAthleteIdsForCurrentUser(); // This fetches all registered runners.
 
-            // NEW: Fetch all athlete IDs for the current app user to analyze all their activities
-            const athleteIdsToAnalyze = await getAllAthleteIdsForCurrentUser();
+            // Get selected runner from the recent activities filter dropdown
+            const selectedRunnerId = runnerRecentActivitiesFilter.value; // 'all' or specific athlete_id
+            let athleteIdsToAnalyze = [];
+
+            if (selectedRunnerId === 'all') {
+                athleteIdsToAnalyze = allPossibleAthleteIds; // Analyze all if 'all' is selected
+            } else {
+                // Ensure the selected runner is actually one of the current user's connected runners
+                if (allPossibleAthleteIds.includes(selectedRunnerId)) {
+                    athleteIdsToAnalyze = [selectedRunnerId]; // Only analyze the selected specific runner
+                } else {
+                    showAlert('Runner đã chọn để phân tích không hợp lệ hoặc chưa được kết nối.');
+                    llmAnalysisContent.innerHTML = '<p class="text-gray-500">Không có runner nào được chọn để phân tích. Vui lòng chọn một runner hợp lệ.</p>';
+                    llmAnalysisStatus.textContent = '';
+                    return;
+                }
+            }
+
             if (athleteIdsToAnalyze.length === 0) {
                 llmAnalysisContent.innerHTML = '<p class="text-gray-500">Không có runner nào được kết nối với tài khoản ứng dụng của bạn để phân tích. Vui lòng thêm và kết nối runner.</p>';
                 llmAnalysisStatus.textContent = '';
@@ -2351,7 +2369,7 @@
             const endDate = endDateRecent.value;
 
             console.log('Analyzing activities:');
-            console.log('  Athlete IDs for AI analysis:', athleteIdsToAnalyze);
+            console.log('  Athlete IDs for AI analysis (after filter):', athleteIdsToAnalyze);
             console.log('  Selected Types for AI analysis:', selectedTypes);
             console.log('  Start Date for AI analysis:', startDate);
             console.log('  End Date for AI analysis:', endDate);
@@ -2367,11 +2385,11 @@
                 }
                 console.log('LLM Analysis: Supabase Session Access Token is available.');
 
-                // Fetch activities from Supabase for ALL relevant runners and filters
+                // Fetch activities from Supabase for the *filtered* relevant runners and other filters
                 let query = supabaseClientInstance
                     .from('activities')
-                    .select('*') 
-                    .in('user_id', athleteIdsToAnalyze); // Filter by ALL athlete IDs for current app user
+                    .select('*')
+                    .in('user_id', athleteIdsToAnalyze); // Filter by the specific athlete IDs for AI analysis
 
                 if (selectedTypes.length > 0) {
                     query = query.in('type', selectedTypes);
@@ -2381,7 +2399,7 @@
                 }
                 if (endDate) {
                     // End date inclusive: Filter for dates less than or equal to the selected end date
-                    query = query.lte('start_date', endDate); 
+                    query = query.lte('start_date', endDate);
                 }
 
                 const { data: activitiesForAnalysis, error: fetchError } = await query
@@ -2401,9 +2419,9 @@
                     distance_km: (activity.distance / 1000).toFixed(2),
                     moving_time_seconds: activity.moving_time,
                     start_date: new Date(activity.start_date).toISOString().split('T')[0],
-                    type: activity.type, 
-                    average_speed_mps: activity.average_speed, 
-                    average_heartrate: activity.average_heartrate, 
+                    type: activity.type,
+                    average_speed_mps: activity.average_speed,
+                    average_heartrate: activity.average_heartrate,
                     total_elevation_gain_meters: activity.total_elevation_gain,
                     runner_athlete_id: String(activity.user_id) // Include athlete ID for context in AI analysis
                 }));
@@ -2413,14 +2431,13 @@
                 // Call the Supabase Edge Function to analyze activities
                 const response = await fetch(ANALYZE_ACTIVITIES_FUNCTION_URL, {
                     method: 'POST',
-                    headers: { 
+                    headers: {
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${session.access_token}` // Pass Supabase Auth token
                     },
                     body: JSON.stringify({
-                        activities: activitiesForEdgeFunction, 
-                        // runnerCredentialId: currentRunnerCredentialId, // Not needed for ALL analysis
-                        allRunnerAthleteIds: athleteIdsToAnalyze, // Pass all athlete IDs for context
+                        activities: activitiesForEdgeFunction,
+                        allRunnerAthleteIds: athleteIdsToAnalyze, // Pass the *filtered* athlete IDs for context in AI analysis
                         filters: {
                             activityTypes: selectedTypes,
                             startDate: startDate,
