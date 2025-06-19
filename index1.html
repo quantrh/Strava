@@ -224,12 +224,14 @@
 
         .collapsible-content {
             overflow: hidden;
-            transition: max-height 0.3s ease-out;
-            max-height: 1000px; /* Large enough to show content */
+            /* Transition will apply to max-height for divs, but for tbody we'll use display none/table-row-group */
+            transition: max-height 0.3s ease-out; 
+            max-height: 1000px; /* Large enough to show content for divs */
         }
 
         .collapsible-content.collapsed {
-            max-height: 0;
+            max-height: 0; /* For div collapsibles */
+            display: none; /* Force hide for tbody elements */
         }
 
         .toggle-icon {
@@ -277,6 +279,22 @@
             color: #ef4444;
             font-weight: bold;
         }
+        /* Style for the tbody containing summary and total, make it look like a cohesive row */
+        .data-table .runner-summary-group {
+             border-bottom: 2px solid var(--bidv-green); /* Visual separator */
+        }
+        /* No border between total and summary row within the same tbody */
+        .data-table .runner-summary-group .total-row td,
+        .data-table .runner-summary-group .summary-row td {
+            border-bottom: none;
+        }
+        .data-table .runner-summary-group .summary-row td {
+            border-top: none;
+        }
+        .data-table .runner-summary-group .total-row {
+            border-bottom: 1px solid #e2e8f0; /* Add a subtle line between total and summary */
+        }
+
 
         /* Date picker styles */
         input[type="date"]::-webkit-calendar-picker-indicator {
@@ -494,9 +512,8 @@
                             <th>Thời gian chạy</th>
                         </tr>
                     </thead>
-                    <tbody>
-                        <!-- Detailed activities and summary rows will be inserted here -->
-                    </tbody>
+                    <!-- The tbodies for each runner will be inserted here dynamically by JS -->
+                    <tbody></tbody> <!-- This empty tbody will be selected by JS and filled with content -->
                 </table>
                 <p id="detailed-stats-status" class="mt-4 text-sm text-gray-600 text-center">Chưa có dữ liệu để hiển thị.</p>
             </div>
@@ -805,7 +822,8 @@
         // New elements for detailed stats table
         const penaltyPerKmInput = document.getElementById('penalty-per-km');
         const targetKmPerWeekInput = document.getElementById('target-km-per-week');
-        const detailedStatsTableBody = document.querySelector('#detailed-stats-table tbody');
+        // const detailedStatsTableBody = document.querySelector('#detailed-stats-table tbody'); // REMOVED: will append tbodies directly to table
+        const detailedStatsTable = document.getElementById('detailed-stats-table'); // NEW: reference to the whole table
         const detailedStatsStatus = document.getElementById('detailed-stats-status');
 
         // Collapsible elements
@@ -823,19 +841,20 @@
 
         /**
          * Toggles the collapsible state of a section.
-         * @param {HTMLElement} contentElement - The content div to collapse/expand.
+         * @param {HTMLElement} contentElement - The content div/tbody to collapse/expand.
          * @param {HTMLElement} toggleIcon - The icon to rotate.
-         * @param {boolean} [collapse=true] - Force collapse or expand. If undefined, toggles.
+         * @param {boolean} [forceCollapse] - If true, force collapse. If false, force expand. If undefined, toggles.
          */
-        function toggleCollapsible(contentElement, toggleIcon, collapse) {
+        function toggleCollapsible(contentElement, toggleIcon, forceCollapse) {
             const isCollapsed = contentElement.classList.contains('collapsed');
-            if (collapse === true && !isCollapsed) {
+
+            if (forceCollapse === true && !isCollapsed) {
                 contentElement.classList.add('collapsed');
                 toggleIcon.classList.remove('rotate');
-            } else if (collapse === false && isCollapsed) {
+            } else if (forceCollapse === false && isCollapsed) {
                 contentElement.classList.remove('collapsed');
                 toggleIcon.classList.add('rotate');
-            } else if (collapse === undefined) { // Toggle
+            } else if (forceCollapse === undefined) { // Toggle
                 contentElement.classList.toggle('collapsed');
                 toggleIcon.classList.toggle('rotate');
             }
@@ -1301,7 +1320,6 @@
                     .delete()
                     .eq('id', id);
             
-
                 if (error) throw error;
 
                 showAlert('Xóa thông tin runner thành công!');
@@ -1403,7 +1421,13 @@
                 // Reset content if not authenticated
                 recentActivitiesContainer.innerHTML = '<div class="card p-4 text-gray-500 text-center col-span-full">Nhấn "Tải hoạt động gần đây" để xem.</div>';
                 document.getElementById('bubble-chart-container').innerHTML = '<p class="text-gray-500 text-center">Nhấn "Xem thống kê theo tuần" để hiển thị biểu đồ.</p>';
-                detailedStatsTableBody.innerHTML = '';
+                // detailedStatsTableBody.innerHTML = ''; // REMOVED: Managed by renderDetailedStatsTable now
+                const table = document.getElementById('detailed-stats-table');
+                Array.from(table.children).forEach(child => {
+                    if (child.tagName === 'TBODY' && child !== table.querySelector('thead + tbody')) { // Keep the first empty tbody for the `renderDetailedStatsTable` to fill
+                        child.remove();
+                    }
+                });
                 detailedStatsStatus.textContent = 'Chưa có dữ liệu để hiển thị.';
 
                 // Expand strava auth section if not connected
@@ -1442,7 +1466,6 @@
                     .from('runner_credentials')
                     .select('client_id, client_secret')
                     .eq('id', credentialId)
-            
                     .single();
 
                 if (credError || !credData) {
@@ -1678,7 +1701,9 @@
                     showAlert(`Đã tải và lưu ${result.count} hoạt động thành công!`);
                     // Optionally, reload recent activities and stats after fetching new data
                     await loadRecentActivitiesBtn.click(); 
-                    await viewStatsBtn.click();
+                    // No need to click viewStatsBtn here, as renderDetailedStatsTable is called after loadRecentActivitiesBtn.click
+                    // and viewStatsBtn handler itself fetches data
+                    // await viewStatsBtn.click(); 
                 } else {
                     dataStatus.textContent = `Lỗi khi tải hoạt động: ${result.error || 'Không xác định'}`;
                     showAlert(`Lỗi khi tải hoạt động: ${result.error || 'Không xác định'}`);
@@ -2319,12 +2344,32 @@
          * Renders the detailed statistics table based on userActivities.
          */
         function renderDetailedStatsTable() {
-            detailedStatsTableBody.innerHTML = '';
+            // Clear all tbodies except the first (which is the thead, though named tbody for some reason in the original HTML)
+            // The initial HTML for the detailed stats table has <thead> and an empty <tbody>.
+            // We need to clear the *content* of the first tbody and append new tbodies directly to the table.
+            const table = document.getElementById('detailed-stats-table');
+            const initialTbody = table.querySelector('thead + tbody'); // Selects the tbody immediately following the thead
+
+            // Remove all dynamically created tbodies (these will have class 'runner-summary-group' or 'collapsible-content')
+            // Also, remove the initial empty tbody if it exists and we're recreating everything.
+            // A safer approach is to remove all tbodies, then re-create the main tbody if needed, or simply append.
+            // Given the HTML structure, the easiest is to remove all TBODY elements *after* the THEAD,
+            // then append new structured TBODY elements.
+
+            // Remove all TBODY elements that are not the initial one or the first one (if used as container)
+            // A simple clear of the innerHTML of the container table element will also work if we reconstruct it.
+            // Let's clear all existing tbodies and rebuild.
+            let currentTbody = table.lastElementChild;
+            while (currentTbody && currentTbody.tagName === 'TBODY') {
+                table.removeChild(currentTbody);
+                currentTbody = table.lastElementChild;
+            }
+
+            // Re-add an empty tbody placeholder if you want to keep the original structure,
+            // but for this dynamic table, directly appending is fine.
+
             detailedStatsStatus.textContent = '';
 
-            // The userActivities array already contains activities filtered by the "Recent Activities" section,
-            // which covers all relevant runners for the current app user and general date/type filters.
-            // This table should display all activities in userActivities, not filter by the runner-stats-filter.
             const activitiesToDisplay = userActivities;
 
             if (!activitiesToDisplay || activitiesToDisplay.length === 0) {
@@ -2370,45 +2415,43 @@
                 let totalRunnerDistanceKm = 0;
                 let totalRunnerTime = 0;
 
-                // Sort activities by date for better readability within each runner's section
-                runnerActivities.sort((a, b) => new Date(b.start_date) - new Date(a.start_date));
-
+                // Calculate totals first
                 runnerActivities.forEach(activity => {
-                    const distanceKm = (activity.distance / 1000);
-                    totalRunnerDistanceKm += distanceKm;
+                    totalRunnerDistanceKm += (activity.distance / 1000);
                     totalRunnerTime += activity.moving_time;
-
-                    const row = detailedStatsTableBody.insertRow();
-                    row.innerHTML = `
-                        <td>${runnerName}</td>
-                        <td>${new Date(activity.start_date).toLocaleDateString('vi-VN')}</td>
-                        <td>${activity.type}</td>
-                        <td>${distanceKm.toFixed(2)}</td>
-                        <td>${formatPace(activity.average_speed)}</td>
-                        <td>${activity.average_heartrate ? `${activity.average_heartrate.toFixed(0)}` : 'N/A'}</td>
-                        <td>${formatElevationGain(activity.total_elevation_gain)}</td>
-                        <td>${formatDuration(activity.moving_time)}</td>
-                    `;
                 });
 
-                // Add total row for the runner
-                const totalRow = detailedStatsTableBody.insertRow();
+                // --- Create a tbody for summary (always visible) ---
+                const summaryTbody = document.createElement('tbody');
+                summaryTbody.className = 'runner-summary-group'; // Add a class for styling if needed
+
+                // Add Total Row
+                const totalRow = summaryTbody.insertRow();
                 totalRow.className = 'total-row';
                 totalRow.innerHTML = `
-                    <td colspan="3">Tổng cộng cho ${runnerName}:</td>
+                    <td colspan="3" class="font-bold text-lg text-bidv-green">
+                        Tổng cộng cho ${runnerName}
+                        <span class="toggle-icon detailed-stats-toggle-icon ml-2 cursor-pointer" data-target-id="detailed-activities-for-${athleteId}">&#9658;</span>
+                    </td>
                     <td>${totalRunnerDistanceKm.toFixed(2)}</td>
                     <td></td>
                     <td></td>
                     <td></td>
                     <td>${formatDuration(totalRunnerTime)}</td>
                 `;
+                // Add click listener for the toggle icon *after* it's in the DOM
+                const toggleIcon = totalRow.querySelector('.detailed-stats-toggle-icon');
+                if (toggleIcon) {
+                    toggleIcon.addEventListener('click', () => {
+                        const targetId = toggleIcon.dataset.targetId;
+                        const contentElement = document.getElementById(targetId);
+                        toggleCollapsible(contentElement, toggleIcon);
+                    });
+                }
 
                 // Calculate KM difference and penalty/bonus
                 const kmDifference = totalRunnerDistanceKm - targetKmPerWeek;
                 
-                const summaryRow = detailedStatsTableBody.insertRow();
-                summaryRow.className = kmDifference < 0 ? 'missing-row' : 'summary-row'; // Style based on outcome
-
                 let kmMessage = '';
                 let amountMessage = '';
                 if (kmDifference < 0) { // Deficit
@@ -2423,15 +2466,55 @@
                     amountMessage = `Tiền thưởng (Thưởng ${penaltyPerKm}K/KM): <strong>${bonusAmount.toLocaleString('vi-VN')} nghìn VNĐ</strong>`;
                 }
 
+                // Add Summary Row
+                const summaryRow = summaryTbody.insertRow();
+                summaryRow.className = kmDifference < 0 ? 'missing-row' : 'summary-row'; // Style based on outcome
                 summaryRow.innerHTML = `
                     <td colspan="4">${kmMessage}</td>
                     <td colspan="4">${amountMessage}</td>
                 `;
 
-                // Add a spacer row for better readability
-                const spacerRow = detailedStatsTableBody.insertRow();
-                spacerRow.innerHTML = `<td colspan="8" class="h-4 bg-gray-100"></td>`;
+                // Append the summary tbody to the table
+                table.appendChild(summaryTbody);
+
+
+                // --- Create a tbody for detailed activities (collapsible) ---
+                const detailedActivitiesTbody = document.createElement('tbody');
+                detailedActivitiesTbody.id = `detailed-activities-for-${athleteId}`;
+                detailedActivitiesTbody.className = 'collapsible-content'; // Reuse existing collapsible-content class
+                detailedActivitiesTbody.classList.add('collapsed'); // Initially collapsed
+
+                // Sort activities by date for better readability within each runner's section
+                runnerActivities.sort((a, b) => new Date(b.start_date) - new Date(a.start_date));
+
+                runnerActivities.forEach(activity => {
+                    const distanceKm = (activity.distance / 1000);
+                    const row = detailedActivitiesTbody.insertRow();
+                    row.innerHTML = `
+                        <td></td> <!-- Empty cell for runner name, as it's in the summary -->
+                        <td>${new Date(activity.start_date).toLocaleDateString('vi-VN')}</td>
+                        <td>${activity.type}</td>
+                        <td>${distanceKm.toFixed(2)}</td>
+                        <td>${formatPace(activity.average_speed)}</td>
+                        <td>${activity.average_heartrate ? `${activity.average_heartrate.toFixed(0)}` : 'N/A'}</td>
+                        <td>${formatElevationGain(activity.total_elevation_gain)}</td>
+                        <td>${formatDuration(activity.moving_time)}</td>
+                    `;
+                });
+                
+                // Append the detailed activities tbody to the table
+                table.appendChild(detailedActivitiesTbody);
+
+                // Add a spacer tbody for better readability
+                const spacerTbody = document.createElement('tbody');
+                spacerTbody.innerHTML = `<tr class="h-4 bg-gray-100"><td colspan="8"></td></tr>`;
+                table.appendChild(spacerTbody);
             });
+
+            detailedStatsStatus.textContent = '';
+            if (sortedAthleteIds.length === 0) {
+                detailedStatsStatus.textContent = 'Chưa có dữ liệu để hiển thị.';
+            }
         }
 
         /**
