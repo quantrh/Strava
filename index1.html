@@ -490,8 +490,12 @@
             <h3 class="text-xl font-semibold mb-4">Thống kê chi tiết & Tiền phạt/Thưởng</h3>
             <div class="mb-4 flex gap-4 items-end">
                 <div class="flex-1">
-                    <label for="penalty-per-km" class="block text-gray-700 text-sm font-bold mb-2">Số tiền phạt 1KM (nghìn VNĐ):</label>
-                    <input type="number" id="penalty-per-km" class="form-input" value="30" min="0" step="1">
+                    <label for="penalty-per-km-gt10" class="block text-gray-700 text-sm font-bold mb-2">Số tiền nộp cho 1KM (nghìn VNĐ) khi thiếu > 10KM:</label>
+                    <input type="number" id="penalty-per-km-gt10" class="form-input" value="30" min="0" step="1">
+                </div>
+                <div class="flex-1">
+                    <label for="penalty-per-km-lte10" class="block text-gray-700 text-sm font-bold mb-2">Số tiền nộp cho 1KM (nghìn VNĐ) khi thiếu <= 10KM:</label>
+                    <input type="number" id="penalty-per-km-lte10" class="form-input" value="20" min="0" step="1">
                 </div>
                 <div class="flex-1">
                     <label for="target-km-per-week" class="block text-gray-700 text-sm font-bold mb-2">Số KM một tuần (KM):</label>
@@ -820,7 +824,8 @@
         const endDateRecent = document.getElementById('end-date-recent');
 
         // New elements for detailed stats table
-        const penaltyPerKmInput = document.getElementById('penalty-per-km');
+        const penaltyPerKmGt10Input = document.getElementById('penalty-per-km-gt10'); // Changed ID
+        const penaltyPerKmLte10Input = document.getElementById('penalty-per-km-lte10'); // New input
         const targetKmPerWeekInput = document.getElementById('target-km-per-week');
         // const detailedStatsTableBody = document.querySelector('#detailed-stats-table tbody'); // REMOVED: will append tbodies directly to table
         const detailedStatsTable = document.getElementById('detailed-stats-table'); // NEW: reference to the whole table
@@ -842,21 +847,33 @@
         /**
          * Toggles the collapsible state of a section.
          * @param {HTMLElement} contentElement - The content div/tbody to collapse/expand.
-         * @param {HTMLElement} toggleIcon - The icon to rotate.
+         * @param {HTMLElement} toggleIcon - The icon element (SVG or span with text).
          * @param {boolean} [forceCollapse] - If true, force collapse. If false, force expand. If undefined, toggles.
          */
         function toggleCollapsible(contentElement, toggleIcon, forceCollapse) {
             const isCollapsed = contentElement.classList.contains('collapsed');
 
-            if (forceCollapse === true && !isCollapsed) {
+            let shouldCollapse;
+            if (forceCollapse !== undefined) {
+                shouldCollapse = forceCollapse;
+            } else {
+                shouldCollapse = !isCollapsed;
+            }
+
+            if (shouldCollapse) {
                 contentElement.classList.add('collapsed');
-                toggleIcon.classList.remove('rotate');
-            } else if (forceCollapse === false && isCollapsed) {
+                if (toggleIcon.tagName === 'SVG') {
+                    toggleIcon.classList.remove('rotate');
+                } else { // Assume it's a text element (span) for the detailed stats table
+                    toggleIcon.textContent = '▶'; // Right-pointing triangle
+                }
+            } else {
                 contentElement.classList.remove('collapsed');
-                toggleIcon.classList.add('rotate');
-            } else if (forceCollapse === undefined) { // Toggle
-                contentElement.classList.toggle('collapsed');
-                toggleIcon.classList.toggle('rotate');
+                if (toggleIcon.tagName === 'SVG') {
+                    toggleIcon.classList.add('rotate');
+                } else { // Assume it's a text element (span) for the detailed stats table
+                    toggleIcon.textContent = '▼'; // Down-pointing triangle
+                }
             }
         }
 
@@ -2377,7 +2394,9 @@
                 return;
             }
 
-            const penaltyPerKm = parseFloat(penaltyPerKmInput.value) || 0;
+            // Get values from new input fields
+            const penaltyPerKmGt10 = parseFloat(penaltyPerKmGt10Input.value) || 0;
+            const penaltyPerKmLte10 = parseFloat(penaltyPerKmLte10Input.value) || 0;
             const targetKmPerWeek = parseFloat(targetKmPerWeekInput.value) || 0;
 
             // Group activities by runner (using athlete_id) - but now on filtered data
@@ -2428,10 +2447,11 @@
                 // Add Total Row
                 const totalRow = summaryTbody.insertRow();
                 totalRow.className = 'total-row';
+                // Initial state of the arrow is right-pointing
                 totalRow.innerHTML = `
                     <td colspan="3" class="font-bold text-lg text-bidv-green">
                         Tổng cộng cho ${runnerName}
-                        <span class="toggle-icon detailed-stats-toggle-icon ml-2 cursor-pointer" data-target-id="detailed-activities-for-${athleteId}">&#9658;</span>
+                        <span class="toggle-icon detailed-stats-toggle-icon ml-2 cursor-pointer" data-target-id="detailed-activities-for-${athleteId}">▶</span>
                     </td>
                     <td>${totalRunnerDistanceKm.toFixed(2)}</td>
                     <td></td>
@@ -2456,14 +2476,20 @@
                 let amountMessage = '';
                 if (kmDifference < 0) { // Deficit
                     const deficitKm = Math.abs(kmDifference);
-                    const penaltyAmount = deficitKm * penaltyPerKm;
+                    let penaltyRate = 0;
+                    if (deficitKm <= 10) {
+                        penaltyRate = penaltyPerKmLte10;
+                    } else {
+                        penaltyRate = penaltyPerKmGt10;
+                    }
+                    const penaltyAmount = deficitKm * penaltyRate;
                     kmMessage = `Số KM thiếu (Mục tiêu ${targetKmPerWeek}KM): <strong>${deficitKm.toFixed(2)} KM</strong>`;
-                    amountMessage = `Số tiền phạt (Phạt ${penaltyPerKm}K/KM): <strong>${penaltyAmount.toLocaleString('vi-VN')} nghìn VNĐ</strong>`;
+                    amountMessage = `Số tiền phạt (Phạt ${penaltyRate}K/KM): <strong>${penaltyAmount.toLocaleString('vi-VN')} nghìn VNĐ</strong>`;
                 } else { // Surplus or met target
                     const surplusKm = kmDifference;
-                    const bonusAmount = surplusKm * penaltyPerKm;
+                    const bonusAmount = surplusKm * (penaltyPerKmGt10 || 0); // Use the base penalty rate for bonus
                     kmMessage = `Số KM vượt mục tiêu (Mục tiêu ${targetKmPerWeek}KM): <strong>${surplusKm.toFixed(2)} KM</strong>`;
-                    amountMessage = `Tiền thưởng (Thưởng ${penaltyPerKm}K/KM): <strong>${bonusAmount.toLocaleString('vi-VN')} nghìn VNĐ</strong>`;
+                    amountMessage = `Tiền thưởng (Thưởng ${(penaltyPerKmGt10 || 0)}K/KM): <strong>${bonusAmount.toLocaleString('vi-VN')} nghìn VNĐ</strong>`;
                 }
 
                 // Add Summary Row
@@ -2588,6 +2614,16 @@
             // No direct call to displayCredentials() or checkStravaAuthState() here anymore
             // as onAuthStateChange will trigger updateAppAuthUI which calls them.
 
+            // Auto-fill date filters
+            const today = new Date();
+            const endDate = today.toISOString().split('T')[0]; // YYYY-MM-DD
+            endDateRecent.value = endDate;
+
+            const sevenDaysAgo = new Date(today);
+            sevenDaysAgo.setDate(today.getDate() - 7);
+            const startDate = sevenDaysAgo.toISOString().split('T')[0]; // YYYY-MM-DD
+            startDateRecent.value = startDate;
+
             // Add resize event listener to redraw the chart
             window.addEventListener('resize', () => {
                 if (weeklyStatsData && weeklyStatsData.length > 0) {
@@ -2610,7 +2646,8 @@
             });
 
             // Add event listeners for detailed stats table inputs
-            penaltyPerKmInput.addEventListener('input', renderDetailedStatsTable);
+            penaltyPerKmGt10Input.addEventListener('input', renderDetailedStatsTable); // Updated
+            penaltyPerKmLte10Input.addEventListener('input', renderDetailedStatsTable); // Added
             targetKmPerWeekInput.addEventListener('input', renderDetailedStatsTable);
 
             // Add event listeners for date filters to trigger activity reload
@@ -2627,6 +2664,9 @@
 
             // Initial collapse instruction section
             toggleCollapsible(instructionContent, instructionSection.querySelector('.toggle-icon'), true);
+
+            // Trigger initial load of recent activities and detailed stats after all setup
+            loadRecentActivitiesBtn.click();
         };
     </script>
 </body>
