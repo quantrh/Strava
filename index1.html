@@ -887,6 +887,11 @@
         const downloadActivitiesForOtherBtn = document.getElementById('download-activities-for-other-btn');
         const downloadForOtherStatus = document.getElementById('download-for-other-status');
 
+        // LLM analysis DOM elements
+        const llmAnalysisSection = document.getElementById('llm-analysis-section');
+        const llmAnalysisContent = document.getElementById('llm-analysis-content');
+        const llmAnalysisStatus = document.getElementById('llm-analysis-status');
+
 
         // --- Helper functions for UI and data transformation ---
 
@@ -1073,6 +1078,7 @@
                 statsSection.classList.remove('hidden');
                 detailedStatsSection.classList.remove('hidden'); // Show new detailed stats section
                 instructionSection.classList.remove('hidden'); // Show instruction section
+                llmAnalysisSection.classList.remove('hidden'); // Show LLM analysis section
 
                 // Collapse app auth section if logged in
                 toggleCollapsible(appAuthContent, appAuthToggleIcon, true); 
@@ -1101,6 +1107,7 @@
                 statsSection.classList.add('hidden');
                 detailedStatsSection.classList.add('hidden'); // Hide new detailed stats section
                 instructionSection.classList.add('hidden'); // Hide instruction section
+                llmAnalysisSection.classList.add('hidden'); // Hide LLM analysis section
 
                 clearStravaSession(); // Clear Strava session if app user logs out
                 await fetchAndSetRunnerCredentials(); // Clear global state data
@@ -1462,6 +1469,7 @@
                     statsSection.classList.remove('hidden');
                     detailedStatsSection.classList.remove('hidden'); // Show new detailed stats section
                     instructionSection.classList.remove('hidden'); // Show instruction section
+                    llmAnalysisSection.classList.remove('hidden'); // Show LLM analysis section
                     userInfo.textContent = `Chào mừng, Runner: ${currentRunnerName} (Strava ID: ${currentAthleteId})`; 
                     
                     // Select the logged-in runner in the dropdown
@@ -1502,6 +1510,7 @@
                 statsSection.classList.add('hidden');
                 detailedStatsSection.classList.add('hidden'); // Hide new detailed stats section
                 instructionSection.classList.add('hidden'); // Hide instruction section
+                llmAnalysisSection.classList.add('hidden'); // Hide LLM analysis section
                 userInfo.textContent = ''; // Clear user info
                 // Reset content if not authenticated
                 recentActivitiesContainer.innerHTML = '<div class="card p-4 text-gray-500 text-center col-span-full">Nhấn "Tải hoạt động gần đây" để xem.</div>';
@@ -2684,6 +2693,91 @@
                 currentYOffset += monthBandHeight;
             });
         }
+
+        /**
+         * Handles the "Analyze Activities (AI)" button click.
+         * Sends `userActivities` to the AI analysis Edge Function and displays the result.
+         */
+        analyzeActivitiesBtn.addEventListener('click', async () => {
+            if (!currentAppUserId) {
+                showAlert('Vui lòng đăng nhập ứng dụng để sử dụng chức năng phân tích AI.');
+                return;
+            }
+            if (userActivities.length === 0) {
+                showAlert('Không có hoạt động nào để phân tích. Vui lòng tải hoạt động từ Strava trước.');
+                return;
+            }
+
+            llmAnalysisSection.classList.remove('hidden'); // Ensure the section is visible
+            llmAnalysisContent.innerHTML = '<div class="loader"></div> Đang phân tích hoạt động của bạn với AI...'; // Show loading spinner
+            llmAnalysisStatus.textContent = ''; // Clear previous status
+
+            try {
+                const { data: { session }, error: sessionError } = await supabaseClientInstance.auth.getSession();
+                if (sessionError || !session?.access_token) {
+                    showAlert('Lỗi: Không tìm thấy phiên đăng nhập. Vui lòng đăng nhập lại để phân tích AI.');
+                    llmAnalysisContent.innerHTML = '<p class="text-red-500">Lỗi xác thực: Không tìm thấy phiên đăng nhập.</p>';
+                    return;
+                }
+
+                // Prepare activities for LLM. Only send necessary fields to reduce payload size.
+                const activitiesForLLM = userActivities.map(activity => ({
+                    id: activity.strava_activity_id,
+                    name: activity.name,
+                    type: activity.type,
+                    distance_m: activity.distance,
+                    moving_time_s: activity.moving_time,
+                    elevation_gain_m: activity.total_elevation_gain,
+                    start_date: activity.start_date,
+                    average_speed_mps: activity.average_speed,
+                    average_heartrate_bpm: activity.average_heartrate,
+                    runner_id: activity.user_id // Keep runner_id for context
+                }));
+                
+                // Construct the prompt for the LLM
+                let chatHistory = [];
+                chatHistory.push({ 
+                    role: "user", 
+                    parts: [{ text: `Please analyze the following running activities and provide insights on performance, trends, and any notable observations. Categorize analysis by runner if multiple are present. Highlight strengths and areas for improvement. Activities: ${JSON.stringify(activitiesForLLM)}` }] 
+                });
+
+                const payload = { 
+                    contents: chatHistory 
+                };
+
+                const apiKey = ""; // Canvas will automatically provide the API key
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await response.json();
+
+                if (result.candidates && result.candidates.length > 0 &&
+                    result.candidates[0].content && result.candidates[0].content.parts &&
+                    result.candidates[0].content.parts.length > 0) {
+                    
+                    const text = result.candidates[0].content.parts[0].text;
+                    llmAnalysisContent.innerHTML = `<p>${text}</p>`; // Display AI analysis
+                    llmAnalysisStatus.textContent = 'Phân tích AI hoàn tất.';
+                } else {
+                    llmAnalysisContent.innerHTML = '<p class="text-red-500">Không thể nhận được phân tích từ AI. Vui lòng thử lại.</p>';
+                    llmAnalysisStatus.textContent = 'Lỗi khi nhận phân tích từ AI.';
+                    console.error('Unexpected AI response structure:', result);
+                }
+
+            } catch (error) {
+                console.error('Lỗi khi gọi API AI:', error);
+                llmAnalysisContent.innerHTML = `<p class="text-red-500">Lỗi mạng hoặc máy chủ khi phân tích AI: ${error.message}</p>`;
+                llmAnalysisStatus.textContent = 'Lỗi trong quá trình phân tích AI.';
+            } finally {
+                // Any cleanup if needed, but the content will be replaced anyway.
+            }
+        });
+
 
         // When the page loads
         window.onload = async () => {
