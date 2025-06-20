@@ -1929,127 +1929,156 @@
         /**
          * Loads recent activities from Supabase for all connected runners and displays them.
          */
-        loadRecentActivitiesBtn.addEventListener('click', async () => {
-            if (!currentAppUserId) { // Only require app user to be logged in now
-                showAlert('Vui lòng đăng nhập ứng dụng để thực hiện chức năng này.');
-                return;
-            }
+       loadRecentActivitiesBtn.addEventListener('click', async () => {
+    if (!currentAppUserId) { // Only require app user to be logged in now
+        showAlert('Vui lòng đăng nhập ứng dụng để thực hiện chức năng này.');
+        return;
+    }
 
-            recentActivitiesStatus.textContent = 'Đang tải hoạt động gần đây ...';
-            recentActivitiesContainer.innerHTML = ''; // Clear previous list
+    recentActivitiesStatus.textContent = 'Đang tải hoạt động gần đây ...';
+    recentActivitiesContainer.innerHTML = ''; // Clear previous list
 
-            // Get all athlete IDs associated with the current app user
-            const athleteIdsToFetch = await getAllAthleteIdsForCurrentUser();
-            if (athleteIdsToFetch.length === 0) {
-                recentActivitiesContainer.innerHTML = '<div class="card p-4 text-gray-500 text-center col-span-full">Không tìm thấy runner nào được kết nối với tài khoản ứng dụng của bạn. Vui lòng thêm và kết nối runner.</div>';
-                recentActivitiesStatus.textContent = 'Không có hoạt động nào để hiển thị.';
-                userActivities = []; // Clear activities if no runners
-                renderDetailedStatsTable(); // Ensure detailed stats table is cleared
-                return;
-            }
+    // Get all athlete IDs associated with the current app user
+    const athleteIdsToFetch = await getAllAthleteIdsForCurrentUser();
+    if (athleteIdsToFetch.length === 0) {
+        recentActivitiesContainer.innerHTML = '<div class="card p-4 text-gray-500 text-center col-span-full">Không tìm thấy runner nào được kết nối với tài khoản ứng dụng của bạn. Vui lòng thêm và kết nối runner.</div>';
+        recentActivitiesStatus.textContent = 'Không có hoạt động nào để hiển thị.';
+        userActivities = []; // Clear activities if no runners
+        renderDetailedStatsTable(); // Ensure detailed stats table is cleared
+        return;
+    }
 
-            // NEW: Get selected runner from the new filter dropdown
-            const selectedRunnerId = runnerRecentActivitiesFilter.value; // 'all' or specific athlete_id
-            let actualAthleteIdsToFilter = [];
+    // Get selected runner from the new filter dropdown
+    const selectedRunnerId = runnerRecentActivitiesFilter.value; // 'all' or specific athlete_id
+    let actualAthleteIdsToFilter = [];
 
-            if (selectedRunnerId === 'all') {
-                actualAthleteIdsToFilter = athleteIdsToFetch; // Use all available athlete IDs
-            } else {
-                actualAthleteIdsToFilter = [selectedRunnerId]; // Use only the selected athlete ID
-            }
+    if (selectedRunnerId === 'all') {
+        actualAthleteIdsToFilter = athleteIdsToFetch; // Use all available athlete IDs
+    } else {
+        actualAthleteIdsToFilter = [selectedRunnerId]; // Use only the selected athlete ID
+    }
 
-            if (actualAthleteIdsToFilter.length === 0) {
-                recentActivitiesContainer.innerHTML = '<div class="card p-4 text-gray-500 text-center col-span-full">Không tìm thấy runner nào được kết nối với tài khoản ứng dụng của bạn hoặc runner đã chọn không có ID Strava.</div>';
-                recentActivitiesStatus.textContent = 'Không có hoạt động nào để hiển thị.';
-                userActivities = [];
-                renderDetailedStatsTable();
-                return;
-            }
+    if (actualAthleteIdsToFilter.length === 0) {
+        recentActivitiesContainer.innerHTML = '<div class="card p-4 text-gray-500 text-center col-span-full">Không tìm thấy runner nào được kết nối với tài khoản ứng dụng của bạn hoặc runner đã chọn không có ID Strava.</div>';
+        recentActivitiesStatus.textContent = 'Không có hoạt động nào để hiển thị.';
+        userActivities = [];
+        renderDetailedStatsTable();
+        return;
+    }
 
-            console.log('Loading recent activities for filtered athlete IDs:', actualAthleteIdsToFilter);
+    console.log('Loading recent activities for filtered athlete IDs:', actualAthleteIdsToFilter);
 
-            const numActivitiesToDisplay = parseInt(numRecentActivitiesInput.value, 10) || 10;
-            const selectedTypes = selectedActivityTypesRecent;
-            const startDate = startDateRecent.value;
-            const endDate = endDateRecent.value;
+    const numActivitiesToDisplay = parseInt(numRecentActivitiesInput.value, 10) || 10;
+    const selectedTypes = selectedActivityTypesRecent;
+    
+    // Lấy giá trị ngày bắt đầu và ngày kết thúc từ các input
+    const startDateInput = startDateRecent.value;
+    const endDateInput = endDateRecent.value;
 
-            try {
-                let query = supabaseClientInstance
-                    .from('activities')
-                    .select('strava_activity_id, name, type, distance, moving_time, total_elevation_gain, start_date, average_speed, average_heartrate, user_id');
-                    
-                // Filter by multiple user_ids (athlete_id) using .in() based on the selected runner filter
-                query = query.in('user_id', actualAthleteIdsToFilter); 
+    let filterStartDate = null;
+    let filterEndDate = null;
 
-                if (selectedTypes.length > 0) {
-                    query = query.in('type', selectedTypes); 
-                }
-                if (startDate) {
-                    query = query.gte('start_date', startDate); // Start date inclusive
-                }
-                if (endDate) {
-                    // End date inclusive: Filter for dates less than or equal to the selected end date
-                    query = query.lte('start_date', endDate); 
-                }
+    if (startDateInput) {
+        // Tạo đối tượng Date từ chuỗi ngày (YYYY-MM-DD).
+        // Đối tượng này sẽ đại diện cho 00:00:00 của ngày đó trong múi giờ cục bộ của người dùng.
+        const localStartDate = new Date(startDateInput);
+        // Chuyển đổi nó sang chuỗi ISO UTC. Ví dụ: nếu múi giờ là UTC+7,
+        // ngày 2025-06-16 (local) sẽ trở thành 2025-06-15T17:00:00.000Z (UTC).
+        // Điều này đảm bảo chúng ta lấy được các hoạt động diễn ra sớm vào buổi sáng của ngày đó (theo giờ địa phương)
+        // nhưng có thể thuộc ngày trước đó theo UTC.
+        filterStartDate = localStartDate.toISOString();
+    }
 
-                const { data, error } = await query
-                    .order('start_date', { ascending: false })
-                    .limit(numActivitiesToDisplay);
+    if (endDateInput) {
+        // Tạo đối tượng Date cho ngày sau ngày kết thúc đã chọn (00:00:00 của ngày hôm sau)
+        // trong múi giờ cục bộ của người dùng.
+        const localEndDate = new Date(endDateInput);
+        localEndDate.setDate(localEndDate.getDate() + 1); // Cộng thêm 1 ngày
+        // Chuyển đổi ngày này sang chuỗi ISO UTC.
+        // Ví dụ: nếu ngày kết thúc là 2025-06-20 (local), sau khi cộng 1 ngày là 2025-06-21.
+        // Chuyển đổi thành ISO UTC sẽ là 2025-06-20T17:00:00.000Z (UTC+7).
+        // Sử dụng toán tử 'lt' (less than) với giá trị này sẽ bao gồm tất cả các hoạt động
+        // đến hết ngày 2025-06-20 theo giờ địa phương.
+        filterEndDate = localEndDate.toISOString();
+    }
 
-                if (error) {
-                    console.error('Lỗi khi tải hoạt động gần đây từ Supabase:', error);
-                    recentActivitiesStatus.textContent = `Lỗi khi tải hoạt động: ${error.message}`;
-                    showAlert(`Lỗi khi tải hoạt động gần đây: ${error.message}`);
-                    return; 
-                }
-                
-                console.log('Data returned from Supabase for recent activities (all runners):', data);
+    try {
+        let query = supabaseClientInstance
+            .from('activities')
+            .select('strava_activity_id, name, type, distance, moving_time, total_elevation_gain, start_date, average_speed, average_heartrate, user_id');
+            
+        // Filter by multiple user_ids (athlete_id) using .in() based on the selected runner filter
+        query = query.in('user_id', actualAthleteIdsToFilter); 
 
-                if (data && data.length > 0) {
-                    userActivities = data; // Store all fetched activities for detailed stats table
-                    data.forEach(activity => {
-                        const activityCard = document.createElement('div');
-                        activityCard.className = 'card p-4 text-sm space-y-1 border border-gray-200 rounded-lg shadow-sm'; // Added card styling
-                        // Find runner name for display
-                        const runner = allRunnerCredentials.find(rc => String(rc.athlete_id) === String(activity.user_id));
-                        const runnerNameForDisplay = runner ? runner.runner_name : `Runner ID: ${activity.user_id || 'Unknown'}`;
+        if (selectedTypes.length > 0) {
+            query = query.in('type', selectedTypes); 
+        }
+        // Áp dụng bộ lọc ngày tháng đã được điều chỉnh múi giờ
+        if (filterStartDate) {
+            query = query.gte('start_date', filterStartDate); // Start date inclusive (>=)
+        }
+        if (filterEndDate) {
+            query = query.lt('start_date', filterEndDate); // End date exclusive (<)
+        }
 
-                        activityCard.innerHTML = `
-                            <p class="font-semibold text-base text-bidv-green">${runnerNameForDisplay}</p>
-                            <p class="font-semibold">${activity.name} (${activity.type})</p>
-                            <p>Ngày: ${new Date(activity.start_date).toLocaleDateString('vi-VN')}</p>
-                            <p>Quãng đường: ${(activity.distance / 1000).toFixed(2)} km</p>
-                            <p>Thời gian: ${formatDuration(activity.moving_time)}</p>
-                            <p>Pace: ${formatPace(activity.average_speed)}</p>
-                            <p>Nhịp tim TB: ${activity.average_heartrate ? `${activity.average_heartrate.toFixed(0)} bpm` : 'N/A'}</p>
-                            <p>Độ cao tăng: ${formatElevationGain(activity.total_elevation_gain)}</p>
-                            ${activity.strava_activity_id ? `<button class="btn-primary mt-2 text-sm px-3 py-1 view-map-btn" data-activity-id="${activity.strava_activity_id}">Xem bản đồ</button>` : ''}
-                        `;
-                        recentActivitiesContainer.appendChild(activityCard);
-                    });
-                    recentActivitiesStatus.textContent = `Đã tải ${data.length} hoạt động gần đây cho các runner đã chọn.`;
+        const { data, error } = await query
+            .order('start_date', { ascending: false })
+            .limit(numActivitiesToDisplay);
 
-                    document.querySelectorAll('.view-map-btn').forEach(button => {
-                        button.onclick = (e) => {
-                            const activityId = e.target.dataset.activityId;
-                            if (activityId) {
-                                window.open(`https://www.strava.com/activities/${activityId}`, '_blank');
-                            }
-                        };
-                    });
+        if (error) {
+            console.error('Lỗi khi tải hoạt động gần đây từ Supabase:', error);
+            recentActivitiesStatus.textContent = `Lỗi khi tải hoạt động: ${error.message}`;
+            showAlert(`Lỗi khi tải hoạt động gần đây: ${error.message}`);
+            return; 
+        }
+        
+        console.log('Data returned from Supabase for recent activities (all runners):', data);
 
-                } else {
-                    recentActivitiesContainer.innerHTML = '<div class="card p-4 text-gray-500 text-center col-span-full">Không tìm thấy hoạt động nào gần đây cho các runner hoặc với bộ lọc đã chọn.</div>';
-                    recentActivitiesStatus.textContent = 'Không có hoạt động nào để hiển thị.';
-                    userActivities = [];
-                }
-                renderDetailedStatsTable(); // Always re-render the detailed stats table
-            } catch (error) {
-                console.error('Lỗi khi tải hoạt động gần đây từ Supabase:', error);
-                recentActivitiesStatus.textContent = `Lỗi khi tải hoạt động: ${error.message}`;
-                showAlert(`Lỗi khi tải hoạt động gần đây: ${error.message}`);
-            }
-        });
+        if (data && data.length > 0) {
+            userActivities = data; // Store all fetched activities for detailed stats table
+            data.forEach(activity => {
+                const activityCard = document.createElement('div');
+                activityCard.className = 'card p-4 text-sm space-y-1 border border-gray-200 rounded-lg shadow-sm'; // Added card styling
+                // Find runner name for display
+                const runner = allRunnerCredentials.find(rc => String(rc.athlete_id) === String(activity.user_id));
+                const runnerNameForDisplay = runner ? runner.runner_name : `Runner ID: ${activity.user_id || 'Unknown'}`;
+
+                activityCard.innerHTML = `
+                    <p class="font-semibold text-base text-bidv-green">${runnerNameForDisplay}</p>
+                    <p class="font-semibold">${activity.name} (${activity.type})</p>
+                    <p>Ngày: ${new Date(activity.start_date).toLocaleDateString('vi-VN')}</p>
+                    <p>Quãng đường: ${(activity.distance / 1000).toFixed(2)} km</p>
+                    <p>Thời gian: ${formatDuration(activity.moving_time)}</p>
+                    <p>Pace: ${formatPace(activity.average_speed)}</p>
+                    <p>Nhịp tim TB: ${activity.average_heartrate ? `${activity.average_heartrate.toFixed(0)} bpm` : 'N/A'}</p>
+                    <p>Độ cao tăng: ${formatElevationGain(activity.total_elevation_gain)}</p>
+                    ${activity.strava_activity_id ? `<button class="btn-primary mt-2 text-sm px-3 py-1 view-map-btn" data-activity-id="${activity.strava_activity_id}">Xem bản đồ</button>` : ''}
+                `;
+                recentActivitiesContainer.appendChild(activityCard);
+            });
+            recentActivitiesStatus.textContent = `Đã tải ${data.length} hoạt động gần đây cho các runner đã chọn.`;
+
+            document.querySelectorAll('.view-map-btn').forEach(button => {
+                button.onclick = (e) => {
+                    const activityId = e.target.dataset.activityId;
+                    if (activityId) {
+                        window.open(`https://www.strava.com/activities/${activityId}`, '_blank');
+                    }
+                };
+            });
+
+        } else {
+            recentActivitiesContainer.innerHTML = '<div class="card p-4 text-gray-500 text-center col-span-full">Không tìm thấy hoạt động nào gần đây cho các runner hoặc với bộ lọc đã chọn.</div>';
+            recentActivitiesStatus.textContent = 'Không có hoạt động nào để hiển thị.';
+            userActivities = [];
+        }
+        renderDetailedStatsTable(); // Always re-render the detailed stats table
+    } catch (error) {
+        console.error('Lỗi khi tải hoạt động gần đây từ Supabase:', error);
+        recentActivitiesStatus.textContent = `Lỗi khi tải hoạt động: ${error.message}`;
+        showAlert(`Lỗi khi tải hoạt động gần đây: ${error.message}`);
+    }
+});
 
         /**
          * Fetches activities for a specific week from Supabase and displays them in a modal.
