@@ -2399,6 +2399,291 @@
             }
         }
 
+        /**
+         * Converts an ISO week string (YYYY-WNN) to a Date object, representing the start of that week (Monday).
+         * @param {string} w - The ISO week string (e.g., "2023-W01").
+         * @returns {Date} A Date object for the Monday of the given ISO week.
+         */
+        function getDateFromISOWeek(w) {
+            const year = parseInt(w.substring(0, 4), 10);
+            const week = parseInt(w.substring(6), 10);
+            const date = new Date(year, 0, 1 + (week - 1) * 7); // Start of year + (week - 1) weeks
+            date.setDate(date.getDate() + (1 - date.getDay() + (date.getDay() === 0 ? -6 : 1))); // Adjust to Monday
+            return date;
+        }
+
+        /**
+         * Fetches and displays detailed activities for a specific week and athlete ID.
+         * @param {string} isoWeek - The ISO week string (e.g., "2023-W01").
+         * @param {string} athleteId - The Strava athlete ID.
+         */
+        async function fetchActivitiesForWeek(isoWeek, athleteId) {
+            weeklyActivitiesList.innerHTML = ''; // Clear previous list
+            weeklyActivitiesStatus.textContent = 'Đang tải hoạt động cho tuần này...';
+            weeklyActivitiesModal.style.display = 'flex'; // Show the modal
+
+            try {
+                // Find the runner's credential ID based on their athlete_id
+                const runner = allRunnerCredentials.find(rc => String(rc.athlete_id) === String(athleteId));
+                if (!runner) {
+                    weeklyActivitiesStatus.textContent = 'Không tìm thấy thông tin runner.';
+                    showAlert('Không tìm thấy thông tin runner cho Athlete ID này.');
+                    return;
+                }
+
+                const { data: { session }, error: sessionError } = await supabaseClientInstance.auth.getSession();
+                const headers = { 'Content-Type': 'application/json' };
+                if (session?.access_token) {
+                    headers['Authorization'] = `Bearer ${session.access_token}`;
+                } else {
+                    weeklyActivitiesStatus.textContent = 'Lỗi xác thực: Vui lòng đăng nhập lại.';
+                    showAlert('Lỗi: Không tìm thấy phiên đăng nhập. Vui lòng đăng nhập lại để xem chi tiết hoạt động.');
+                    return;
+                }
+
+                const payload = { 
+                    runnerCredentialId: runner.id, // Use the credential ID to fetch activities
+                    isoWeek: isoWeek // Pass the ISO week for filtering
+                };
+
+                const response = await fetch(GET_STATS_API_URL, { // Reuse the GET_STATS_API_URL as it can filter by week
+                    method: 'POST',
+                    headers: headers,
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await response.json();
+
+                if (response.ok && result.success && result.detailed_activities) {
+                    const activitiesInWeek = result.detailed_activities.filter(act => 
+                        String(act.user_id) === String(athleteId) && 
+                        getISOWeekString(new Date(act.start_date)) === isoWeek
+                    );
+
+                    if (activitiesInWeek.length > 0) {
+                        activitiesInWeek.sort((a, b) => new Date(b.start_date) - new Date(a.start_date)); // Sort by date descending
+                        activitiesInWeek.forEach(activity => {
+                            const li = document.createElement('li');
+                            li.className = 'border-b last:border-b-0 py-2';
+                            li.innerHTML = `
+                                <p class="font-semibold">${activity.name} (${activity.type})</p>
+                                <p class="text-sm text-gray-600">Ngày: ${new Date(activity.start_date).toLocaleDateString('vi-VN')}</p>
+                                <p class="text-sm text-gray-600">Quãng đường: ${(activity.distance / 1000).toFixed(2)} km</p>
+                                <p class="text-sm text-gray-600">Thời gian: ${formatDuration(activity.moving_time)}</p>
+                                <p class="text-sm text-gray-600">Pace: ${formatPace(activity.average_speed)}</p>
+                                ${activity.strava_activity_id ? `<button class="btn-primary mt-2 text-xs px-2 py-1 view-map-btn" data-activity-id="${activity.strava_activity_id}">Xem bản đồ</button>` : ''}
+                            `;
+                            weeklyActivitiesList.appendChild(li);
+                        });
+                        weeklyActivitiesStatus.textContent = `Đã tải ${activitiesInWeek.length} hoạt động cho tuần này.`;
+                        document.querySelectorAll('#weekly-activities-modal .view-map-btn').forEach(button => {
+                            button.onclick = (e) => {
+                                const activityId = e.target.dataset.activityId;
+                                if (activityId) {
+                                    window.open(`https://www.strava.com/activities/${activityId}`, '_blank');
+                                }
+                            };
+                        });
+                    } else {
+                        weeklyActivitiesStatus.textContent = 'Không tìm thấy hoạt động nào cho tuần này.';
+                    }
+                } else {
+                    console.error('Lỗi khi tải hoạt động chi tiết cho tuần:', result.error || 'Không xác định');
+                    weeklyActivitiesStatus.textContent = `Lỗi: ${result.error || 'Không xác định'}`;
+                    showAlert(`Lỗi khi tải hoạt động chi tiết: ${result.error || 'Không xác định'}`);
+                }
+            } catch (error) {
+                console.error('Lỗi mạng hoặc máy chủ khi tải hoạt động chi tiết:', error);
+                weeklyActivitiesStatus.textContent = 'Lỗi mạng hoặc máy chủ khi tải hoạt động.';
+                showAlert(`Lỗi mạng hoặc máy chủ khi tải hoạt động: ${error.message}`);
+            }
+        }
+
+        /**
+         * Helper to get ISO week string (YYYY-WNN) from a Date object.
+         * Used for filtering and grouping.
+         * @param {Date} d - The Date object.
+         * @returns {string} ISO week string.
+         */
+        function getISOWeekString(d) {
+            d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+            d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
+            const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+            const weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+            return `${d.getUTCFullYear()}-W${String(weekNo).padStart(2, '0')}`;
+        }
+        
+        // Function to draw the bubble chart
+        function renderBubbleChart(data) {
+            console.log('renderBubbleChart: Dữ liệu đầu vào:', data); // Log the input data
+
+            const monthlyDataMap = new Map();
+            // IMPORTANT: The filtering by selectedRunnerIdForStats should apply here for the bubble chart.
+            const filteredData = selectedRunnerIdForStats ? 
+                                    data.filter(d => String(d.athlete_id) === selectedRunnerIdForStats) : 
+                                    data;
+
+            if (filteredData.length === 0) {
+                document.getElementById('bubble-chart-container').innerHTML = '<p class="text-gray-500 text-center">Không có dữ liệu thống kê để hiển thị biểu đồ cho Runner đã chọn.</p>';
+                console.log('renderBubbleChart: Không có dữ liệu hàng tháng để vẽ biểu đồ cho Runner đã chọn.');
+                return;
+            }
+
+            filteredData.forEach(d => {
+                const dateInWeek = getDateFromISOWeek(d.week);
+                const monthYear = dateInWeek.getFullYear() + '-' + String(dateInWeek.getMonth() + 1).padStart(2, '0');
+                const monthTotalDistance = d.totalDistance; // This will be summed later
+
+                if (!monthlyDataMap.has(monthYear)) {
+                    monthlyDataMap.set(monthYear, { month: monthYear, weeks: [], totalMonthlyDistance: 0 });
+                }
+                monthlyDataMap.get(monthYear).weeks.push(d);
+                monthlyDataMap.get(monthYear).totalMonthlyDistance += d.totalDistance;
+            });
+
+            const monthlyData = Array.from(monthlyDataMap.values()).sort((a, b) => b.month.localeCompare(a.month)); // Sort months descending
+
+            const container = document.getElementById('bubble-chart-container');
+            container.innerHTML = '';  // Clear previous SVG
+
+            if (!monthlyData || monthlyData.length === 0) {
+                container.innerHTML = '<p class="text-gray-500 text-center">Không có dữ liệu thống kê để hiển thị biểu đồ. Vui lòng tải dữ liệu từ Strava hoặc chọn bộ lọc khác.</p>'; // More specific message
+                console.log('renderBubbleChart: Không có dữ liệu hàng tháng để vẽ biểu đồ.');
+                return;
+            }
+
+            const width = container.clientWidth;
+            const monthBandHeight = width < 768 ? 120 : 180;
+            const topPaddingForChart = width < 768 ? 70 : 100;
+
+            const totalSvgContentHeight = (monthlyData.length * monthBandHeight) + topPaddingForChart;
+            const svgHeight = Math.max(container.clientHeight, totalSvgContentHeight);
+
+            console.log(`renderBubbleChart: Kích thước SVG - Width: ${width}, Height: ${svgHeight}`);
+            if (width <= 0 || svgHeight <= 0) {
+                console.error('Lỗi renderBubbleChart: Kích thước biểu đồ không hợp lệ. Width hoặc Height <= 0.');
+                container.innerHTML = '<p class="text-red-500">Lỗi: Kích thước biểu đồ không hợp lệ. Vui lòng thử lại hoặc đảm bảo khung chứa hiển thị.</p>';
+                return;
+            }
+
+
+            const svg = d3.select(container)
+                .append("svg")
+                .attr("width", width)
+                .attr("height", svgHeight)
+                .attr("viewBox", `0 0 ${width} ${svgHeight}`)
+                .attr("preserveAspectRatio", "xMidYMid meet");
+
+            const maxDistance = d3.max(filteredData, d => d.totalDistance); // Use filteredData for maxDistance
+            const minDistance = d3.min(filteredData, d => d.totalDistance); // Use filteredData for minDistance
+            // const maxElevationGain = d3.max(data, d => d.totalElevationGain || 0); // Not used in bubble size/color
+
+            console.log(`renderBubbleChart: Quãng đường Min: ${minDistance}, Max: ${maxDistance}`);
+            
+            const maxRadius = width < 768 ? 30 : 60;
+            const minRadius = width < 768 ? 8 : 15;
+
+            const radiusScale = d3.scaleSqrt()
+                .domain([0, maxDistance || 1]) // Use 1 as fallback to prevent domain from being [0,0] if maxDistance is 0
+                .range([minRadius, maxRadius]);
+
+            const colorScale = d3.scaleSequential(d3.interpolateViridis)
+                .domain([maxDistance || 1, minDistance || 0]); // Use 1 as fallback for max, 0 for min
+
+
+            const bubbleHorizontalPadding = width < 768 ? 10 : 20;
+            const bubbleVerticalOffset = monthBandHeight / 2;
+
+            let currentYOffset = topPaddingForChart;
+
+            let tooltip = d3.select("body").select(".tooltip");
+            if (tooltip.empty()) {
+                tooltip = d3.select("body").append("div")
+                    .attr("class", "tooltip");
+            }
+
+            monthlyData.forEach((monthObj) => {
+                const monthGroup = svg.append("g")
+                    .attr("transform", `translate(0, ${currentYOffset})`);
+
+                const monthDisplay = `Tháng ${monthObj.month.substring(5)}/${monthObj.month.substring(0, 4)}`;
+                const totalMonthlyKm = (monthObj.totalMonthlyDistance / 1000).toFixed(1);
+
+                monthGroup.append("text")
+                    .attr("x", 20)
+                    .attr("y", 25)
+                    .attr("font-size", width < 768 ? "1rem" : "1.2rem")
+                    .attr("font-weight", "bold")
+                    .attr("fill", "#555")
+                    .text(`${monthDisplay} (${totalMonthlyKm}KM)`); // Updated text here
+
+                monthObj.weeks.sort((a, b) => a.week.localeCompare(b.week));
+
+                let currentX = 20;
+
+                const positionedWeeks = monthObj.weeks.map(d => {
+                    const r = radiusScale(d.totalDistance);
+                    const cx = currentX + r;
+                    currentX += (r * 2) + bubbleHorizontalPadding;
+                    return { ...d, r, cx, cy: bubbleVerticalOffset + (width < 768 ? 20 : 30) };
+                });
+
+                console.log('renderBubbleChart: positionedWeeks cho tháng', monthObj.month, ':', positionedWeeks);
+
+                monthGroup.selectAll(".bubble")
+                    .data(positionedWeeks)
+                    .enter().append("circle")
+                    .attr("class", "bubble")
+                    .attr("cx", d => d.cx)
+                    .attr("cy", d => d.cy)
+                    .attr("r", d => d.r)
+                    .attr("fill", d => colorScale(d.totalDistance))
+                    .attr("stroke", "#fff")
+                    .attr("stroke-width", 2)
+                    .on("mouseover", function(event, d) {
+                        d3.select(this).attr("stroke", "orange").attr("stroke-width", 3);
+                        // Calculate average pace for the week
+                        const avgPace = d.totalTime && d.totalDistance ? formatPace(d.totalDistance / d.totalTime) : 'N/A';
+
+                        // Get runner name for tooltip
+                        const runner = allRunnerCredentials.find(rc => String(rc.athlete_id) === String(d.athlete_id));
+                        const runnerNameForTooltip = runner ? runner.runner_name : `Runner ID: ${d.athlete_id || 'Unknown'}`;
+
+                        tooltip.style("opacity", 1)
+                            .html(`<strong>${runnerNameForTooltip}</strong><br>
+                                    Tuần: ${d.week.split('-W')[1]}<br>
+                                    Hoạt động: ${d.activityCount}<br>
+                                    Quãng đường: ${(d.totalDistance / 1000).toFixed(2)} km<br>
+                                    Thời gian: ${formatDuration(d.totalTime)}<br>
+                                    Pace TB: ${avgPace}<br>
+                                    Độ cao tăng TB: ${d.totalElevationGain ? formatElevationGain(d.totalElevationGain / d.activityCount) : 'N/A'}`)
+                            .style("left", (event.pageX + 10) + "px")
+                            .style("top", (event.pageY - 28) + "px");
+                    })
+                    .on("mouseout", function() {
+                        d3.select(this).attr("stroke", "#fff").attr("stroke-width", 2);
+                        tooltip.style("opacity", 0);
+                    })
+                    .on("click", function(event, d) {
+                        // Pass athleteId from the clicked bubble data for fetching specific activities
+                        fetchActivitiesForWeek(d.week, d.athlete_id); 
+                        weeklyActivitiesTitle.textContent = `Hoạt động của ${allRunnerCredentials.find(rc => String(rc.athlete_id) === String(d.athlete_id))?.runner_name || `Runner ID: ${d.athlete_id}`} trong tuần ${d.week.split('-W')[1]} (${d.week.split('-W')[0]}):`;
+                    });
+
+                monthGroup.selectAll(".bubble-text")
+                    .data(positionedWeeks)
+                    .enter().append("text")
+                    .attr("class", "bubble-text")
+                    .attr("x", d => d.cx)
+                    .attr("y", d => d.cy)
+                    .text(d => d.r > (width < 768 ? 15 : 25) ? `${(d.totalDistance / 1000).toFixed(1)}km` : '') // Display KM on bubble
+                    .attr("dy", "0.35em")
+                    .attr("fill", "white")
+                    .attr("pointer-events", "none");
+
+                currentYOffset += monthBandHeight;
+            });
+        }
 
         // When the page loads
         window.onload = async () => {
