@@ -1038,8 +1038,12 @@
          */
         function formatPace(metersPerSecond) {
             if (typeof metersPerSecond !== 'number' || isNaN(metersPerSecond) || metersPerSecond <= 0) return 'N/A';
-            const kmPerHour = (metersPerSecond * 3.6); // km/h
-            const minutesPerKm = 60 / kmPerHour; // min/km
+            // 1 m/s = 3.6 km/h
+            // Pace (min/km) = 60 / (speed in km/h)
+            // Pace (min/km) = 60 / (metersPerSecond * 3.6)
+            const kmPerHour = (metersPerSecond * 3.6); 
+            if (kmPerHour === 0) return 'N/A'; // Avoid division by zero
+            const minutesPerKm = 60 / kmPerHour; 
             const minutes = Math.floor(minutesPerKm);
             const seconds = Math.round((minutesPerKm - minutes) * 60);
             return `${minutes}:${String(seconds).padStart(2, '0')} /km`;
@@ -2770,6 +2774,16 @@
                     }
 
                     if (analysisContent) {
+                        // NEW: Convert speed units from m/s to min/km in the analysis content
+                        const msRegex = /(\d+\.?\d*)\s*m\/s/g;
+                        analysisContent = analysisContent.replace(msRegex, (match, value) => {
+                            const speedInMs = parseFloat(value);
+                            if (!isNaN(speedInMs)) {
+                                return formatPace(speedInMs); // Reusing the existing formatPace function
+                            }
+                            return match; // Return original match if conversion fails
+                        });
+
                         // Chuyển đổi nội dung Markdown sang HTML
                         llmAnalysisContent.innerHTML = marked.parse(analysisContent); 
                         llmAnalysisStatus.textContent = 'Phân tích AI hoàn tất.';
