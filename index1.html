@@ -432,21 +432,26 @@
                 </button>
             </div>
             
-            <!-- New section for "Download Strava hộ" -->
-            <div class="mt-6 border-t pt-4">
-                <h3 class="text-lg font-semibold mb-3">Tải dữ liệu Strava cho các Runner khác</h3>
-                <div class="mb-4">
-                    <label for="download-runner-select" class="block text-gray-700 text-sm font-bold mb-2">Chọn Runner để tải hộ:</label>
-                    <select id="download-runner-select" class="form-input">
-                        <option value="">-- Chọn Runner --</option>
-                    </select>
-                    <p class="text-xs text-gray-500 mt-1">Chọn một Runner đã thêm để tải các hoạt động Strava của họ.</p>
+            <!-- Collapsible section for "Download Strava hộ" -->
+            <section id="download-for-other-section" class="mt-6 border-t pt-4">
+                <div class="collapsible-header" data-target="download-for-other-content">
+                    <h3 class="text-lg font-semibold">Tải dữ liệu Strava cho các Runner khác</h3>
+                    <svg class="toggle-icon w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
                 </div>
-                <button id="download-activities-for-other-btn" class="btn-primary">
-                    Download Strava hộ
-                </button>
-                <div id="download-for-other-status" class="mt-4 text-sm text-gray-600"></div>
-            </div>
+                <div id="download-for-other-content" class="collapsible-content">
+                    <div class="mb-4">
+                        <label for="download-runner-select" class="block text-gray-700 text-sm font-bold mb-2">Chọn Runner để tải hộ:</label>
+                        <select id="download-runner-select" class="form-input">
+                            <option value="">-- Chọn Runner --</option>
+                        </select>
+                        <p class="text-xs text-gray-500 mt-1">Chọn một Runner đã thêm để tải các hoạt động Strava của họ.</p>
+                    </div>
+                    <button id="download-activities-for-other-btn" class="btn-primary">
+                        Download Strava hộ
+                    </button>
+                    <div id="download-for-other-status" class="mt-4 text-sm text-gray-600"></div>
+                </div>
+            </section>
 
             <div id="data-status" class="mt-4 text-sm text-gray-600"></div>
 
@@ -872,6 +877,8 @@
         const runnerStatsFilter = document.getElementById('runner-stats-filter');
 
         // New DOM elements for "Download Strava hộ" feature
+        const downloadForOtherSection = document.getElementById('download-for-other-section'); // Reference to the new collapsible section
+        const downloadForOtherContent = document.getElementById('download-for-other-content'); // Reference to the content within the new collapsible section
         const downloadRunnerSelect = document.getElementById('download-runner-select');
         const downloadActivitiesForOtherBtn = document.getElementById('download-activities-for-other-btn');
         const downloadForOtherStatus = document.getElementById('download-for-other-status');
@@ -1449,6 +1456,7 @@
                     dataSection.classList.remove('hidden');
                     statsSection.classList.remove('hidden');
                     detailedStatsSection.classList.remove('hidden'); // Show new detailed stats section
+                    instructionSection.classList.remove('hidden'); // Show instruction section
                     userInfo.textContent = `Chào mừng, Runner: ${currentRunnerName} (Strava ID: ${currentAthleteId})`; 
                     
                     // Select the logged-in runner in the dropdown
@@ -1487,17 +1495,20 @@
                 dataSection.classList.add('hidden');
                 statsSection.classList.add('hidden');
                 detailedStatsSection.classList.add('hidden'); // Hide new detailed stats section
+                instructionSection.classList.add('hidden'); // Hide instruction section
                 userInfo.textContent = ''; // Clear user info
                 // Reset content if not authenticated
                 recentActivitiesContainer.innerHTML = '<div class="card p-4 text-gray-500 text-center col-span-full">Nhấn "Tải hoạt động gần đây" để xem.</div>';
                 document.getElementById('bubble-chart-container').innerHTML = '<p class="text-gray-500 text-center">Nhấn "Xem thống kê theo tuần" để hiển thị biểu đồ.</p>';
-                // detailedStatsTableBody.innerHTML = ''; // REMOVED: Managed by renderDetailedStatsTable now
                 const table = document.getElementById('detailed-stats-table');
                 Array.from(table.children).forEach(child => {
-                    if (child.tagName === 'TBODY' && child !== table.querySelector('thead + tbody')) { // Keep the first empty tbody for the `renderDetailedStatsTable` to fill
-                        child.remove();
+                    if (child.tagName === 'TBODY') { // Remove all tbodies
+                        table.removeChild(child);
                     }
                 });
+                // Re-add a fresh tbody placeholder if needed, or rely on renderDetailedStatsTable to create new ones
+                const newTbody = document.createElement('tbody');
+                table.appendChild(newTbody);
                 detailedStatsStatus.textContent = 'Chưa có dữ liệu để hiển thị.';
 
                 // Expand strava auth section if not connected
@@ -2414,17 +2425,23 @@
                 }
 
                 // Prepare activity data to send to Edge Function, including new metrics
-                const activitiesForEdgeFunction = activitiesForAnalysis.map(activity => ({
-                    name: activity.name,
-                    distance_km: (activity.distance / 1000).toFixed(2),
-                    moving_time_seconds: activity.moving_time,
-                    start_date: new Date(activity.start_date).toISOString().split('T')[0],
-                    type: activity.type,
-                    average_speed_mps: activity.average_speed,
-                    average_heartrate: activity.average_heartrate,
-                    total_elevation_gain_meters: activity.total_elevation_gain,
-                    runner_athlete_id: String(activity.user_id) // Include athlete ID for context in AI analysis
-                }));
+                const activitiesForEdgeFunction = activitiesForAnalysis.map(activity => {
+                    // Calculate pace in min/km
+                    const paceMinPerKm = activity.average_speed ? formatPace(activity.average_speed) : 'N/A';
+
+                    return {
+                        name: activity.name,
+                        distance_km: (activity.distance / 1000).toFixed(2),
+                        moving_time_seconds: activity.moving_time,
+                        start_date: new Date(activity.start_date).toISOString().split('T')[0],
+                        type: activity.type,
+                        average_speed_mps: activity.average_speed, // Keep original for backend if needed
+                        pace_min_per_km: paceMinPerKm, // NEW: Pace in min/km
+                        average_heartrate: activity.average_heartrate,
+                        total_elevation_gain_meters: activity.total_elevation_gain,
+                        runner_athlete_id: String(activity.user_id) // Include athlete ID for context in AI analysis
+                    };
+                });
 
                 llmAnalysisStatus.textContent = 'Đang gọi AI để phân tích ...';
 
@@ -2485,7 +2502,6 @@
                 chartStatus.textContent = 'Không tìm thấy runner nào được kết nối với tài khoản Strava. Vui lòng thêm và kết nối runner.';
                 document.getElementById('bubble-chart-container').innerHTML = '<p class="text-gray-500 text-center">Không có dữ liệu thống kê để hiển thị biểu đồ.</p>';
                 weeklyStatsData = [];
-                // userActivities = []; // No need to clear here if not re-rendering detailed stats
                 renderDetailedStatsTable(); // Ensure detailed stats table is cleared IF NO RUNNERS are found initially
                 return;
             }
@@ -2547,12 +2563,10 @@
                 // Aggregate all results
                 allResults.forEach(res => {
                     weeklyStatsData.push(...res.weeklyStats);
-                    // userActivities.push(...res.detailedActivities); // REMOVED THIS LINE
                 });
 
                 chartStatus.textContent = `Đã tải thống kê cho ${runnersToFetch.length} runner. Tổng cộng ${weeklyStatsData.length} tuần.`;
                 renderBubbleChart(weeklyStatsData); 
-                // renderDetailedStatsTable(); // REMOVED THIS LINE
             } catch (error) {
                 console.error('Lỗi chung khi tải thống kê theo tuần:', error);
                 chartStatus.textContent = 'Lỗi mạng hoặc máy chủ khi tải thống kê.';
@@ -2853,6 +2867,9 @@
                     toggleCollapsible(contentElement, toggleIcon);
                 });
             });
+            // Initial collapse for "Download Strava hộ" section
+            toggleCollapsible(downloadForOtherContent, downloadForOtherSection.querySelector('.toggle-icon'), true);
+
 
             // Add event listeners for detailed stats table inputs
             penaltyPerKmGt10Input.addEventListener('input', renderDetailedStatsTable); 
