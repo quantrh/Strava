@@ -1339,7 +1339,7 @@
 
             const id = credentialIdInput.value;
             const runnerName = runnerNameInput.value.trim();
-            const clientId = clientIdInput.value.trim();
+            const clientId = clientId.value.trim();
             const clientSecret = clientSecretInput.value.trim();
             const refreshToken = refreshTokenInput.value.trim();
             // Redirect URI is now fixed and read-only, so get it directly from the input's value
@@ -2752,9 +2752,28 @@
 
                 const result = await response.json();
 
-                if (response.ok && result.success && result.analysis_text) {
-                    llmAnalysisContent.innerHTML = `<p>${result.analysis_text}</p>`; // Display AI analysis
-                    llmAnalysisStatus.textContent = 'Phân tích AI hoàn tất.';
+                if (response.ok && result.success) {
+                    let analysisContent = result.analysis; // CHANGE: Look for 'analysis' field
+                    // Attempt to parse if analysisContent is a stringified JSON object (as seen in the screenshot)
+                    if (typeof analysisContent === 'string') {
+                        try {
+                            const parsedAnalysis = JSON.parse(analysisContent);
+                            if (parsedAnalysis.analysis) {
+                                analysisContent = parsedAnalysis.analysis; // Get the nested 'analysis'
+                            }
+                        } catch (e) {
+                            // Not a JSON string, use as is.
+                            console.warn("Analysis content was a string but not a JSON object, using as-is.");
+                        }
+                    }
+
+                    if (analysisContent) {
+                        llmAnalysisContent.innerHTML = `<p>${analysisContent}</p>`; // Display AI analysis
+                        llmAnalysisStatus.textContent = 'Phân tích AI hoàn tất.';
+                    } else {
+                        llmAnalysisContent.innerHTML = `<p class="text-red-500">Không thể nhận được nội dung phân tích từ AI.</p>`;
+                        llmAnalysisStatus.textContent = 'Lỗi: Nội dung phân tích trống.';
+                    }
                 } else {
                     llmAnalysisContent.innerHTML = `<p class="text-red-500">Không thể nhận được phân tích từ AI. Lỗi: ${result.error || 'Không xác định'}. Vui lòng thử lại.</p>`;
                     llmAnalysisStatus.textContent = 'Lỗi khi nhận phân tích từ AI.';
