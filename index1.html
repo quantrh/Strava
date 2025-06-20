@@ -2712,6 +2712,9 @@
             llmAnalysisContent.innerHTML = '<div class="loader"></div> Đang phân tích hoạt động của bạn với AI...'; // Show loading spinner
             llmAnalysisStatus.textContent = ''; // Clear previous status
 
+            // Scroll to the AI analysis section
+            llmAnalysisSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
             try {
                 const { data: { session }, error: sessionError } = await supabaseClientInstance.auth.getSession();
                 if (sessionError || !session?.access_token) {
@@ -2734,43 +2737,32 @@
                     runner_id: activity.user_id // Keep runner_id for context
                 }));
                 
-                // Construct the prompt for the LLM
-                let chatHistory = [];
-                chatHistory.push({ 
-                    role: "user", 
-                    parts: [{ text: `Please analyze the following running activities and provide insights on performance, trends, and any notable observations. Categorize analysis by runner if multiple are present. Highlight strengths and areas for improvement. Activities: ${JSON.stringify(activitiesForLLM)}` }] 
-                });
-
-                const payload = { 
-                    contents: chatHistory 
-                };
-
-                const apiKey = ""; // Canvas will automatically provide the API key
-                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
-
-                const response = await fetch(apiUrl, {
+                // The prompt for the LLM will be sent to the Edge Function.
+                // The Edge Function will construct the chatHistory and call the Gemini API internally.
+                const response = await fetch(ANALYZE_ACTIVITIES_FUNCTION_URL, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${session.access_token}` // Pass Supabase Auth token for Edge Function auth
+                    },
+                    body: JSON.stringify({ 
+                        activities: activitiesForLLM // Send filtered activities to the Edge Function
+                    })
                 });
 
                 const result = await response.json();
 
-                if (result.candidates && result.candidates.length > 0 &&
-                    result.candidates[0].content && result.candidates[0].content.parts &&
-                    result.candidates[0].content.parts.length > 0) {
-                    
-                    const text = result.candidates[0].content.parts[0].text;
-                    llmAnalysisContent.innerHTML = `<p>${text}</p>`; // Display AI analysis
+                if (response.ok && result.success && result.analysis_text) {
+                    llmAnalysisContent.innerHTML = `<p>${result.analysis_text}</p>`; // Display AI analysis
                     llmAnalysisStatus.textContent = 'Phân tích AI hoàn tất.';
                 } else {
-                    llmAnalysisContent.innerHTML = '<p class="text-red-500">Không thể nhận được phân tích từ AI. Vui lòng thử lại.</p>';
+                    llmAnalysisContent.innerHTML = `<p class="text-red-500">Không thể nhận được phân tích từ AI. Lỗi: ${result.error || 'Không xác định'}. Vui lòng thử lại.</p>`;
                     llmAnalysisStatus.textContent = 'Lỗi khi nhận phân tích từ AI.';
-                    console.error('Unexpected AI response structure:', result);
+                    console.error('Lỗi từ Edge Function hoặc cấu trúc phản hồi AI không mong đợi:', result);
                 }
 
             } catch (error) {
-                console.error('Lỗi khi gọi API AI:', error);
+                console.error('Lỗi khi gọi Edge Function phân tích AI:', error);
                 llmAnalysisContent.innerHTML = `<p class="text-red-500">Lỗi mạng hoặc máy chủ khi phân tích AI: ${error.message}</p>`;
                 llmAnalysisStatus.textContent = 'Lỗi trong quá trình phân tích AI.';
             } finally {
