@@ -1972,33 +1972,46 @@
     const selectedTypes = selectedActivityTypesRecent;
     
     // Lấy giá trị ngày bắt đầu và ngày kết thúc từ các input
-    const startDateInput = startDateRecent.value;
-    const endDateInput = endDateRecent.value;
+    const startDateInput = startDateRecent.value; // Ví dụ: "2025-06-16"
+    const endDateInput = endDateRecent.value;     // Ví dụ: "2025-06-20"
 
     let filterStartDate = null;
     let filterEndDate = null;
 
     if (startDateInput) {
-        // Tạo đối tượng Date từ chuỗi ngày (YYYY-MM-DD).
-        // Đối tượng này sẽ đại diện cho 00:00:00 của ngày đó trong múi giờ cục bộ của người dùng.
-        const localStartDate = new Date(startDateInput);
-        // Chuyển đổi nó sang chuỗi ISO UTC. Ví dụ: nếu múi giờ là UTC+7,
-        // ngày 2025-06-16 (local) sẽ trở thành 2025-06-15T17:00:00.000Z (UTC).
-        // Điều này đảm bảo chúng ta lấy được các hoạt động diễn ra sớm vào buổi sáng của ngày đó (theo giờ địa phương)
-        // nhưng có thể thuộc ngày trước đó theo UTC.
+        // Tách chuỗi ngày thành năm, tháng, ngày
+        const parts = startDateInput.split('-');
+        const year = parseInt(parts[0]);
+        const month = parseInt(parts[1]) - 1; // Tháng trong JavaScript là 0-indexed (0-11)
+        const day = parseInt(parts[2]);
+
+        // Tạo đối tượng Date bằng cách truyền các thành phần (năm, tháng, ngày)
+        // Cách này đảm bảo đối tượng Date được tạo ra theo múi giờ cục bộ của người dùng.
+        const localStartDate = new Date(year, month, day);
+        
+        // Chuyển đổi ngày cục bộ này thành chuỗi ISO UTC để gửi đi.
+        // Ví dụ: 2025-06-16 00:00:00 (UTC+7) -> 2025-06-15T17:00:00.000Z (UTC)
         filterStartDate = localStartDate.toISOString();
     }
 
     if (endDateInput) {
-        // Tạo đối tượng Date cho ngày sau ngày kết thúc đã chọn (00:00:00 của ngày hôm sau)
-        // trong múi giờ cục bộ của người dùng.
-        const localEndDate = new Date(endDateInput);
-        localEndDate.setDate(localEndDate.getDate() + 1); // Cộng thêm 1 ngày
+        // Tách chuỗi ngày thành năm, tháng, ngày
+        const parts = endDateInput.split('-');
+        const year = parseInt(parts[0]);
+        const month = parseInt(parts[1]) - 1;
+        const day = parseInt(parts[2]);
+
+        // Tạo đối tượng Date cho ngày kết thúc (theo giờ cục bộ).
+        const localEndDate = new Date(year, month, day);
+        
+        // Cộng thêm 1 ngày để đảm bảo bao gồm toàn bộ ngày kết thúc theo giờ cục bộ.
+        // Ví dụ: 2025-06-20 (local) + 1 ngày = 2025-06-21 00:00:00 (local)
+        localEndDate.setDate(localEndDate.getDate() + 1); 
+        
         // Chuyển đổi ngày này sang chuỗi ISO UTC.
-        // Ví dụ: nếu ngày kết thúc là 2025-06-20 (local), sau khi cộng 1 ngày là 2025-06-21.
-        // Chuyển đổi thành ISO UTC sẽ là 2025-06-20T17:00:00.000Z (UTC+7).
-        // Sử dụng toán tử 'lt' (less than) với giá trị này sẽ bao gồm tất cả các hoạt động
-        // đến hết ngày 2025-06-20 theo giờ địa phương.
+        // Ví dụ: 2025-06-21 00:00:00 (UTC+7) -> 2025-06-20T17:00:00.000Z (UTC)
+        // Khi dùng toán tử 'lt' (<) với giá trị này, nó sẽ bao gồm tất cả các hoạt động
+        // có start_date (UTC) nhỏ hơn 2025-06-20T17:00:00.000Z, tức là toàn bộ ngày 2025-06-20 theo giờ địa phương.
         filterEndDate = localEndDate.toISOString();
     }
 
@@ -2079,6 +2092,7 @@
         showAlert(`Lỗi khi tải hoạt động gần đây: ${error.message}`);
     }
 });
+
 
         /**
          * Fetches activities for a specific week from Supabase and displays them in a modal.
