@@ -655,9 +655,58 @@
             <h3 id="modal-title" class="text-2xl font-bold mb-4 text-gray-800">Thêm thông tin đăng nhập Runner</h3>
             <form id="credential-form" class="space-y-4">
                 <div>
-                    <label for="runner-name" class="block text-gray-700 text-sm font-bold mb-2">Tên Runner:</label>
+                    <label for="runner-name" class="block text-gray-700 text-sm font-bold mb-2">Tên Runner (Duy nhất):</label>
                     <input type="text" id="runner-name" class="form-input" placeholder="Ví dụ: MyRunningAccount" required>
                 </div>
+                <!-- NEW FIELDS ADDED BELOW -->
+                <div>
+                    <label for="runner-full-name" class="block text-gray-700 text-sm font-bold mb-2">Họ và tên chính thức:</label>
+                    <input type="text" id="runner-full-name" class="form-input" placeholder="Ví dụ: Nguyễn Văn A">
+                </div>
+                <div>
+                    <label for="runner-phone-number" class="block text-gray-700 text-sm font-bold mb-2">Số điện thoại:</label>
+                    <input type="tel" id="runner-phone-number" class="form-input" placeholder="Ví dụ: 0912345678">
+                </div>
+                <div>
+                    <label for="runner-email" class="block text-gray-700 text-sm font-bold mb-2">Email Runner:</label>
+                    <input type="email" id="runner-email" class="form-input" placeholder="Ví dụ: runner@example.com" required>
+                </div>
+                <div>
+                    <label for="runner-date-of-birth" class="block text-gray-700 text-sm font-bold mb-2">Ngày sinh:</label>
+                    <input type="date" id="runner-date-of-birth" class="form-input">
+                </div>
+                <div>
+                    <label for="runner-weight-kg" class="block text-gray-700 text-sm font-bold mb-2">Cân nặng (kg):</label>
+                    <input type="number" id="runner-weight-kg" class="form-input" placeholder="Ví dụ: 65" min="1">
+                </div>
+                <div>
+                    <label for="runner-shirt-size" class="block text-gray-700 text-sm font-bold mb-2">Cỡ áo:</label>
+                    <select id="runner-shirt-size" class="form-input">
+                        <option value="">-- Chọn cỡ áo --</option>
+                        <option value="XS">XS</option>
+                        <option value="S">S</option>
+                        <option value="M">M</option>
+                        <option value="L">L</option>
+                        <option value="XL">XL</option>
+                        <option value="XXL">XXL</option>
+                        <option value="XXXL">XXXL</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="runner-team" class="block text-gray-700 text-sm font-bold mb-2">Đội chạy:</label>
+                    <input type="text" id="runner-team" class="form-input" placeholder="Ví dụ: BIDV Runners" required>
+                </div>
+                <div>
+                    <label for="runner-gender" class="block text-gray-700 text-sm font-bold mb-2">Giới tính:</label>
+                    <select id="runner-gender" class="form-input" required>
+                        <option value="">-- Chọn giới tính --</option>
+                        <option value="Nam">Nam</option>
+                        <option value="Nữ">Nữ</option>
+                        <option value="Khác">Khác</option>
+                    </select>
+                </div>
+                <!-- END NEW FIELDS -->
+
                 <!-- REMOVED: client-id, client-secret, refresh-token inputs -->
                 <!-- client_id, client_secret now come from ENV variables on Edge Function side -->
                 <!-- refresh_token will be obtained during OAuth flow -->
@@ -1309,21 +1358,27 @@
             redirectUriInput.value = APP_STRAVA_REDIRECT_URI; 
 
             if (id) {
-                modalTitle.textContent = 'Sửa tên Runner'; // Changed title for edit mode
+                modalTitle.textContent = 'Sửa thông tin Runner'; // Changed title for edit mode
                 try {
-                    // Fetch only credentials owned by the current app user for editing
+                    // Fetch all relevant columns for editing
                     const { data, error } = await supabaseClientInstance
                         .from('runner_credentials')
-                        .select('runner_name, id') // Only need runner_name and id for editing name
+                        .select('runner_name, id, full_name, phone_number, runner_email, date_of_birth, weight_kg, shirt_size, running_team, gender')
                         .eq('id', id)
                         .single();
 
                     if (error) throw error;
 
                     runnerNameInput.value = data.runner_name;
-                    // We only allow editing runner name in this modal
-                    // The client_id, client_secret, refresh_token fields are removed
-                    // redirectUriInput.value is fixed, no need to load from DB
+                    document.getElementById('runner-full-name').value = data.full_name || '';
+                    document.getElementById('runner-phone-number').value = data.phone_number || '';
+                    document.getElementById('runner-email').value = data.runner_email || '';
+                    document.getElementById('runner-date-of-birth').value = data.date_of_birth ? data.date_of_birth.split('T')[0] : ''; // Format for date input
+                    document.getElementById('runner-weight-kg').value = data.weight_kg || '';
+                    document.getElementById('runner-shirt-size').value = data.shirt_size || '';
+                    document.getElementById('runner-team').value = data.running_team || '';
+                    document.getElementById('runner-gender').value = data.gender || '';
+
                     credentialIdInput.value = data.id;
                     runnerNameInput.readOnly = false; // Make sure it's editable
                 } catch (error) {
@@ -1337,7 +1392,7 @@
         /**
          * Saves (adds or updates) runner credentials to Supabase.
          * For new runners, it initiates the Strava OAuth flow.
-         * For existing runners, it only updates the name.
+         * For existing runners, it only updates the name and other details.
          * @param {Event} event - Form submission event.
          */
         async function saveCredential(event) {
@@ -1353,22 +1408,49 @@
             const runnerName = runnerNameInput.value.trim();
             const redirectUri = redirectUriInput.value; // Use the fixed value
 
+            // Get new field values
+            const fullName = document.getElementById('runner-full-name').value.trim();
+            const phoneNumber = document.getElementById('runner-phone-number').value.trim();
+            const runnerEmail = document.getElementById('runner-email').value.trim();
+            const dateOfBirth = document.getElementById('runner-date-of-birth').value; // YYYY-MM-DD format
+            const weightKg = parseFloat(document.getElementById('runner-weight-kg').value);
+            const shirtSize = document.getElementById('runner-shirt-size').value;
+            const runningTeam = document.getElementById('runner-team').value.trim();
+            const gender = document.getElementById('runner-gender').value;
+
+
             if (!runnerName) {
-                showAlert('Vui lòng nhập tên Runner.');
+                showAlert('Vui lòng nhập Tên Runner.');
+                return;
+            }
+            // Validate new required fields
+            if (!runnerEmail || !gender || !runningTeam) {
+                showAlert('Vui lòng nhập đầy đủ Email Runner, Giới tính và Đội chạy.');
                 return;
             }
 
+
             try {
                 if (id) {
-                    // This is an EDIT operation (only runner_name can be edited via this modal)
+                    // This is an EDIT operation (update existing runner details)
                     const { error: updateError } = await supabaseClientInstance
                         .from('runner_credentials')
-                        .update({ runner_name: runnerName })
+                        .update({ 
+                            runner_name: runnerName, 
+                            full_name: fullName,
+                            phone_number: phoneNumber,
+                            runner_email: runnerEmail,
+                            date_of_birth: dateOfBirth || null, // Allow null if not provided
+                            weight_kg: isNaN(weightKg) ? null : weightKg, // Allow null if not a valid number
+                            shirt_size: shirtSize || null, // Allow null if not selected
+                            running_team: runningTeam,
+                            gender: gender,
+                        })
                         .eq('id', id)
                         .eq('owner_uid', currentAppUserId); // Ensure only owner can update
 
                     if (updateError) throw updateError;
-                    showAlert('Cập nhật tên runner thành công!');
+                    showAlert('Cập nhật thông tin runner thành công!');
 
                 } else {
                     // This is an ADD operation (new runner, initiate OAuth)
@@ -1380,6 +1462,14 @@
                             runner_name: runnerName,
                             owner_uid: currentAppUserId,
                             redirect_uri: redirectUri, // Save redirect_uri for consistent callback
+                            full_name: fullName,
+                            phone_number: phoneNumber,
+                            runner_email: runnerEmail,
+                            date_of_birth: dateOfBirth || null, 
+                            weight_kg: isNaN(weightKg) ? null : weightKg, 
+                            shirt_size: shirtSize || null, 
+                            running_team: runningTeam,
+                            gender: gender,
                             // access_token, refresh_token, athlete_id, expires_at will be null initially
                             // and populated by the strava-oauth-callback Edge Function
                         }])
