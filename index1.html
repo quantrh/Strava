@@ -763,7 +763,7 @@
 
         // Add the application's global Strava Client ID for OAuth flow
         // You MUST replace 'YOUR_APP_STRAVA_CLIENT_ID' with your actual application's Client ID
-        const APP_STRAVA_CLIENT_ID = '55949'; 
+        const APP_STRAVA_CLIENT_ID = 'YOUR_APP_STRAVA_CLIENT_ID'; 
         // The Redirect URI must match what you configured in your Strava API Application settings
         const APP_STRAVA_REDIRECT_URI = 'https://quantrh.github.io/Strava/index1.html';
 
@@ -1638,11 +1638,17 @@
             if (code) { // Only check for code, stateParam might be null/missing on redirect sometimes or for old sessions
                 authStatus.textContent = 'Đang xử lý kết nối Strava ...';
                 let runnerCredentialId = null;
+                let runnerNameFromState = null;
+                let ownerUidFromState = null;
 
                 if (stateParam) {
                     try {
                         const parsedState = JSON.parse(decodeURIComponent(stateParam));
                         runnerCredentialId = parsedState.credentialId;
+                        // For the initial OAuth, we don't send runnerName and ownerUid in state
+                        // Instead, we will rely on localStorage for pending info.
+                        // Or, ideally, the Edge Function would fetch these using runnerCredentialId
+                        // and the Supabase Auth JWT to verify ownership.
                         if (!runnerCredentialId) {
                             console.error('Thiếu thông tin runnerCredentialId trong tham số "state".');
                             // Continue to check localStorage as fallback if stateParam exists but is malformed
@@ -1656,6 +1662,7 @@
                 // Fallback to localStorage if runnerCredentialId is still null or not found in state
                 if (!runnerCredentialId) {
                     runnerCredentialId = localStorage.getItem('strava_runner_credential_id_pending');
+                    runnerNameFromState = localStorage.getItem('strava_runner_name_pending'); // Get pending name
                     if (!runnerCredentialId) {
                         console.error('Không tìm thấy runnerCredentialId trong state hoặc localStorage.');
                         showAlert('Lỗi: Thông tin phiên không hợp lệ hoặc thiếu Runner ID. Vui lòng đăng nhập lại Strava.');
@@ -1663,21 +1670,35 @@
                         return;
                     }
                 }
+                
+                // Get the current Supabase Auth user's UID (ownerUid)
+                const { data: { user }, error: authError } = await supabaseClientInstance.auth.getUser();
+                if (authError || !user) {
+                    showAlert('Lỗi: Không tìm thấy phiên đăng nhập ứng dụng. Vui lòng đăng nhập lại ứng dụng.');
+                    console.error('Không tìm thấy người dùng ứng dụng khi xử lý callback Strava:', authError);
+                    window.history.replaceState({}, document.title, window.location.pathname);
+                    return;
+                }
+                ownerUidFromState = user.id; // This is the ownerUid
 
                 try {
                     // GỌI EDGE FUNCTION để trao đổi mã lấy token
                     console.log(`[Client] Calling strava-oauth-callback Edge Function for runnerCredentialId: ${runnerCredentialId}`);
                     const response = await fetch(STRAVA_OAUTH_CALLBACK_URL, {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
+                        headers: { 
+                            'Content-Type': 'application/json',
+                            // Pass Supabase Auth token for Edge Function authorization
+                            'Authorization': `Bearer ${(await supabaseClientInstance.auth.getSession()).data.session?.access_token || ''}`
+                        },
                         body: JSON.stringify({
                             code: code,
                             runnerCredentialId: runnerCredentialId,
-                            // Send client_id and redirect_uri with the request to the Edge Function
-                            // This simplifies the Edge Function's logic, as it doesn't need to fetch them from DB
-                            // but still keeps client_secret on the server-side only.
                             client_id: APP_STRAVA_CLIENT_ID,
-                            redirect_uri: APP_STRAVA_REDIRECT_URI
+                            redirect_uri: APP_STRAVA_REDIRECT_URI,
+                            // Pass runnerName and ownerUid explicitly as requested by the error message
+                            runnerName: runnerNameFromState, 
+                            ownerUid: ownerUidFromState 
                         }),
                     });
 
