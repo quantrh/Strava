@@ -468,12 +468,21 @@
                     <input type="number" id="num-recent-activities" class="form-input" value="10" min="1" step="1">
                 </div>
                 
-                <!-- NEW: Dropdown for filtering recent activities by runner -->
+                <!-- Dropdown for filtering recent activities by runner -->
                 <div class="mb-4">
                     <label for="runner-recent-activities-filter" class="block text-gray-700 text-sm font-bold mb-2">Lọc hoạt động theo Runner:</label>
                     <select id="runner-recent-activities-filter" class="form-input">
                         <option value="all">Tất cả Runner</option>
                         <!-- Runner options will be populated by JS -->
+                    </select>
+                </div>
+
+                <!-- NEW: Dropdown for filtering recent activities by club -->
+                <div class="mb-4">
+                    <label for="club-recent-activities-filter" class="block text-gray-700 text-sm font-bold mb-2">Lọc hoạt động theo Câu lạc bộ:</label>
+                    <select id="club-recent-activities-filter" class="form-input">
+                        <option value="all">Tất cả Câu lạc bộ</option>
+                        <!-- Club options will be populated by JS -->
                     </select>
                 </div>
 
@@ -563,12 +572,21 @@
 
         <section id="stats-section" class="card hidden">
             <h2 class="text-xl font-semibold mb-4">Thống kê thành tích theo tuần</h2>
-            <!-- New Runner Filter for Stats Section -->
+            <!-- Runner Filter for Stats Section -->
             <div class="mb-4">
                 <label for="runner-stats-filter" class="block text-gray-700 text-sm font-bold mb-2">Chọn Runner để xem thống kê:</label>
                 <select id="runner-stats-filter" class="form-input">
                     <option value="">Tất cả Runner</option>
                     <!-- Options will be populated by JS -->
+                </select>
+            </div>
+
+            <!-- NEW: Club Filter for Stats Section -->
+            <div class="mb-4">
+                <label for="club-stats-filter" class="block text-gray-700 text-sm font-bold mb-2">Chọn Câu lạc bộ để xem thống kê:</label>
+                <select id="club-stats-filter" class="form-input">
+                    <option value="">Tất cả Câu lạc bộ</option>
+                    <!-- Club options will be populated by JS -->
                 </select>
             </div>
 
@@ -669,7 +687,7 @@
                 </div>
                 <div>
                     <label for="runner-email" class="block text-gray-700 text-sm font-bold mb-2">Email Runner:</label>
-                    <input type="email" id="runner-email" class="form-input" placeholder="Ví dụ: runner@example.com" required>
+                    <input type="email" id="runner-email" class="form-input border-red-500 focus:ring-red-500" placeholder="Ví dụ: runner@example.com" required>
                 </div>
                 <div>
                     <label for="runner-date-of-birth" class="block text-gray-700 text-sm font-bold mb-2">Ngày sinh:</label>
@@ -694,11 +712,14 @@
                 </div>
                 <div>
                     <label for="runner-team" class="block text-gray-700 text-sm font-bold mb-2">Đội chạy:</label>
-                    <input type="text" id="runner-team" class="form-input" placeholder="Ví dụ: BIDV Runners" required>
+                    <select id="runner-team" class="form-input border-red-500 focus:ring-red-500" required>
+                        <option value="">-- Chọn đội chạy --</option>
+                        <!-- Club options will be populated by JS -->
+                    </select>
                 </div>
                 <div>
                     <label for="runner-gender" class="block text-gray-700 text-sm font-bold mb-2">Giới tính:</label>
-                    <select id="runner-gender" class="form-input" required>
+                    <select id="runner-gender" class="form-input border-red-500 focus:ring-red-500" required>
                         <option value="">-- Chọn giới tính --</option>
                         <option value="Nam">Nam</option>
                         <option value="Nữ">Nữ</option>
@@ -836,6 +857,7 @@
         ].sort(); // Sort activity types alphabetically
 
         let allRunnerCredentials = []; // Store all fetched runner credentials for the current app user
+        let allClubs = []; // NEW: Store all fetched clubs
 
         // Initialize Supabase client instance
         let supabaseClientInstance;
@@ -904,13 +926,21 @@
         // Filter elements
         const multiSelectDisplayRecent = document.getElementById('multi-select-display-recent');
         const multiSelectOptionsRecent = document.getElementById('multi-select-options-recent');
-        // NEW: Runner filter for recent activities
+        // Runner filter for recent activities
         const runnerRecentActivitiesFilter = document.getElementById('runner-recent-activities-filter');
+
+        // NEW: Club filter DOM elements
+        const runnerTeamSelect = document.getElementById('runner-team'); // Select element in credential modal
+        const clubRecentActivitiesFilter = document.getElementById('club-recent-activities-filter');
+        const clubStatsFilter = document.getElementById('club-stats-filter');
 
         let selectedActivityTypesRecent = [];
         let selectedActivityTypesStats = []; 
-        let selectedRunnerIdForStats = ''; // New variable for stats runner filter
+        let selectedRunnerIdForStats = ''; // Variable for stats runner filter
+        let selectedClubIdForStats = ''; // NEW: Variable for stats club filter
         let selectedRunnerIdForRecentActivities = 'all'; // Default to 'all' for recent activities filter
+        let selectedClubNameForRecentActivities = 'all'; // NEW: Default to 'all' for recent activities club filter
+
 
         // Date filter elements
         const startDateRecent = document.getElementById('start-date-recent');
@@ -920,8 +950,7 @@
         const penaltyPerKmGt10Input = document.getElementById('penalty-per-km-gt10'); // Changed ID
         const penaltyPerKmLte10Input = document.getElementById('penalty-per-km-lte10'); // New input
         const targetKmPerWeekInput = document.getElementById('target-km-per-week');
-        // const detailedStatsTableBody = document.querySelector('#detailed-stats-table tbody'); // REMOVED: will append tbodies directly to table
-        const detailedStatsTable = document.getElementById('detailed-stats-table'); // NEW: reference to the whole table
+        const detailedStatsTable = document.getElementById('detailed-stats-table'); // Reference to the whole table
         const detailedStatsStatus = document.getElementById('detailed-stats-status');
 
         // Collapsible elements
@@ -931,10 +960,10 @@
         const instructionSection = document.getElementById('instruction-section');
         const instructionContent = document.getElementById('instruction-content');
 
-        // New DOM element for runner stats filter
+        // DOM element for runner stats filter
         const runnerStatsFilter = document.getElementById('runner-stats-filter');
 
-        // New DOM elements for "Download Strava hộ" feature
+        // DOM elements for "Download Strava hộ" feature
         const downloadForOtherSection = document.getElementById('download-for-other-section'); // Reference to the new collapsible section
         const downloadForOtherContent = document.getElementById('download-for-other-content'); // Reference to the content within the new collapsible section
         const downloadRunnerSelect = document.getElementById('download-runner-select');
@@ -1148,6 +1177,7 @@
                 populateRunnerStatsFilter(); // Populate runner stats filter on app auth change
                 populateDownloadRunnerSelect(); // Populate the new download runner select
                 populateRunnerRecentActivitiesFilter(); // NEW: Populate runner filter for recent activities
+                populateClubDropdowns(); // NEW: Populate club dropdowns after app auth and credential load
 
             } else {
                 currentAppUserId = null;
@@ -1174,6 +1204,7 @@
                 populateRunnerStatsFilter(); // Clear runner stats filter
                 populateDownloadRunnerSelect(); // Clear the new download runner select
                 populateRunnerRecentActivitiesFilter(); // NEW: Clear runner filter for recent activities
+                populateClubDropdowns(); // Clear club dropdowns
             }
         }
 
@@ -1357,6 +1388,10 @@
             // Set default redirect URI to the fixed value
             redirectUriInput.value = APP_STRAVA_REDIRECT_URI; 
 
+            // Populate clubs dropdown before setting value for edit mode
+            await fetchClubs(); // Ensure clubs are loaded
+            populateClubDropdowns(); // Populate the runnerTeamSelect
+
             if (id) {
                 modalTitle.textContent = 'Sửa thông tin Runner'; // Changed title for edit mode
                 try {
@@ -1376,7 +1411,7 @@
                     document.getElementById('runner-date-of-birth').value = data.date_of_birth ? data.date_of_birth.split('T')[0] : ''; // Format for date input
                     document.getElementById('runner-weight-kg').value = data.weight_kg || '';
                     document.getElementById('runner-shirt-size').value = data.shirt_size || '';
-                    document.getElementById('runner-team').value = data.running_team || '';
+                    runnerTeamSelect.value = data.running_team || ''; // Set value for the select
                     document.getElementById('runner-gender').value = data.gender || '';
 
                     credentialIdInput.value = data.id;
@@ -1412,10 +1447,10 @@
             const fullName = document.getElementById('runner-full-name').value.trim();
             const phoneNumber = document.getElementById('runner-phone-number').value.trim();
             const runnerEmail = document.getElementById('runner-email').value.trim();
-            const dateOfBirth = document.getElementById('runner-date-of-birth').value; // YYYY-MM-DD format
+            const dateOfBirth = document.getElementById('runner-date-of-birth').value; //YYYY-MM-DD format
             const weightKg = parseFloat(document.getElementById('runner-weight-kg').value);
             const shirtSize = document.getElementById('runner-shirt-size').value;
-            const runningTeam = document.getElementById('runner-team').value.trim();
+            const runningTeam = runnerTeamSelect.value; // Get value from the select dropdown
             const gender = document.getElementById('runner-gender').value;
 
 
@@ -1572,6 +1607,8 @@
                 // This call is crucial here to ensure allRunnerCredentials contains the latest athlete_id
                 await fetchAndSetRunnerCredentials(); // Fetch data
                 await renderCredentialsUI(); // Render UI from fetched data
+                await fetchClubs(); // Ensure clubs are also loaded for display if needed
+                populateClubDropdowns(); // Populate dropdowns for filters
 
                 const expiresAt = localStorage.getItem('strava_expires_at');
                 // Removed refresh_token check here as refresh logic is now solely handled by Edge Functions
@@ -1616,6 +1653,8 @@
                 clearStravaSession(); // Ensure all related items are cleared
                 await fetchAndSetRunnerCredentials(); // Clear global state data
                 await renderCredentialsUI(); // Clear credentials list UI for consistency when logging out/not logged in
+                await fetchClubs(); // Clear clubs
+                populateClubDropdowns(); // Clear club dropdowns
                 authStatus.textContent = 'Vui lòng chọn Runner và đăng nhập với Strava.';
                 currentRunnerDisplay.classList.add('hidden');
                 // connectStravaBtn.classList.remove('hidden'); // Shown with image now
@@ -2054,35 +2093,41 @@
             recentActivitiesStatus.textContent = 'Đang tải hoạt động gần đây ...';
             recentActivitiesContainer.innerHTML = ''; // Clear previous list
 
-            // Get all athlete IDs associated with the current app user
-            const athleteIdsToFetch = await getAllAthleteIdsForCurrentUser();
-            if (athleteIdsToFetch.length === 0) {
-                recentActivitiesContainer.innerHTML = '<div class="card p-4 text-gray-500 text-center col-span-full">Không tìm thấy runner nào được kết nối với tài khoản ứng dụng của bạn. Vui lòng thêm và kết nối runner.</div>';
-                recentActivitiesStatus.textContent = 'Không có hoạt động nào để hiển thị.';
-                userActivities = []; // Clear activities if no runners
-                renderDetailedStatsTable(); // Ensure detailed stats table is cleared
-                return;
+            // Get all athlete IDs associated with the current app user, filtered by selected club if any
+            let runnerCredentialsToFilter = allRunnerCredentials;
+            if (selectedClubNameForRecentActivities !== 'all') {
+                runnerCredentialsToFilter = allRunnerCredentials.filter(
+                    cred => cred.running_team === selectedClubNameForRecentActivities
+                );
             }
 
-            // Get selected runner from the new filter dropdown
+            // Apply runner-specific filter if selected
             const selectedRunnerId = runnerRecentActivitiesFilter.value; // 'all' or specific athlete_id
             let actualAthleteIdsToFilter = [];
 
             if (selectedRunnerId === 'all') {
-                actualAthleteIdsToFilter = athleteIdsToFetch; // Use all available athlete IDs
+                actualAthleteIdsToFilter = runnerCredentialsToFilter
+                    .filter(cred => cred.athlete_id)
+                    .map(cred => String(cred.athlete_id));
             } else {
-                actualAthleteIdsToFilter = [selectedRunnerId]; // Use only the selected athlete ID
+                const specificRunner = runnerCredentialsToFilter.find(cred => String(cred.athlete_id) === selectedRunnerId);
+                if (specificRunner) {
+                    actualAthleteIdsToFilter = [selectedRunnerId];
+                } else {
+                    // This case means a specific runner was selected, but they don't match the club filter
+                    actualAthleteIdsToFilter = [];
+                }
             }
 
             if (actualAthleteIdsToFilter.length === 0) {
-                recentActivitiesContainer.innerHTML = '<div class="card p-4 text-gray-500 text-center col-span-full">Không tìm thấy runner nào được kết nối với tài khoản ứng dụng của bạn hoặc runner đã chọn không có ID Strava.</div>';
+                recentActivitiesContainer.innerHTML = '<div class="card p-4 text-gray-500 text-center col-span-full">Không tìm thấy hoạt động nào phù hợp với các bộ lọc đã chọn. Vui lòng thêm và kết nối runner hoặc điều chỉnh bộ lọc.</div>';
                 recentActivitiesStatus.textContent = 'Không có hoạt động nào để hiển thị.';
-                userActivities = [];
-                renderDetailedStatsTable();
+                userActivities = []; // Clear activities if no runners match filters
+                renderDetailedStatsTable(); // Ensure detailed stats table is cleared
                 return;
             }
 
-            console.log('Loading recent activities for filtered athlete IDs:', actualAthleteIdsToFilter);
+            console.log('Loading recent activities for filtered athlete IDs:', actualAthleteIdsToFilter, 'and club:', selectedClubNameForRecentActivities);
 
             const numActivitiesToDisplay = parseInt(numRecentActivitiesInput.value, 10) || 10;
             const selectedTypes = selectedActivityTypesRecent;
@@ -2136,7 +2181,7 @@
                     .from('activities')
                     .select('strava_activity_id, name, type, distance, moving_time, total_elevation_gain, start_date, average_speed, average_heartrate, user_id');
                     
-                // Filter by multiple user_ids (athlete_id) using .in() based on the selected runner filter
+                // Filter by multiple user_ids (athlete_id) using .in() based on the selected runner and club filters
                 query = query.in('user_id', actualAthleteIdsToFilter); 
 
                 if (selectedTypes.length > 0) {
@@ -2168,12 +2213,14 @@
                     data.forEach(activity => {
                         const activityCard = document.createElement('div');
                         activityCard.className = 'card p-4 text-sm space-y-1 border border-gray-200 rounded-lg shadow-sm'; // Added card styling
-                        // Find runner name for display
+                        // Find runner name and club for display
                         const runner = allRunnerCredentials.find(rc => String(rc.athlete_id) === String(activity.user_id));
                         const runnerNameForDisplay = runner ? runner.runner_name : `Runner ID: ${activity.user_id || 'Unknown'}`;
+                        const runnerClubForDisplay = runner ? runner.running_team : 'N/A';
+
 
                         activityCard.innerHTML = `
-                            <p class="font-bold text-base text-bidv-green">${runnerNameForDisplay}</p>
+                            <p class="font-bold text-base text-bidv-green">${runnerNameForDisplay} <span class="text-gray-500 text-xs">(${runnerClubForDisplay})</span></p>
                             <p class="font-semibold">${activity.name} (${activity.type})</p>
                             <p>Ngày: ${new Date(activity.start_date).toLocaleDateString('vi-VN')}</p>
                             <p>Quãng đường: ${(activity.distance / 1000).toFixed(2)} km</p>
@@ -2220,19 +2267,29 @@
             chartStatus.textContent = 'Đang tải thống kê theo tuần ...';
             weeklyStatsData = []; 
 
-            // Get all runner credentials for the current app user
-            await fetchAndSetRunnerCredentials(); // Ensure allRunnerCredentials is up-to-date
-            const runnersToFetch = allRunnerCredentials.filter(cred => cred.athlete_id);
+            // Get all runner credentials for the current app user, filtered by selected club if any
+            let runnerCredentialsToFetch = allRunnerCredentials.filter(cred => cred.athlete_id); // Only include connected runners
+            if (selectedClubIdForStats !== '') { // If a specific club is selected
+                runnerCredentialsToFetch = runnerCredentialsToFetch.filter(
+                    cred => cred.running_team === selectedClubIdForStats
+                );
+            }
+            if (selectedRunnerIdForStats !== '') { // If a specific runner is selected (after club filter)
+                 runnerCredentialsToFetch = runnerCredentialsToFetch.filter(
+                    cred => String(cred.athlete_id) === selectedRunnerIdForStats
+                );
+            }
 
-            if (runnersToFetch.length === 0) {
-                chartStatus.textContent = 'Không tìm thấy runner nào được kết nối với tài khoản Strava. Vui lòng thêm và kết nối runner.';
+
+            if (runnerCredentialsToFetch.length === 0) {
+                chartStatus.textContent = 'Không tìm thấy runner nào được kết nối với tài khoản Strava hoặc phù hợp với bộ lọc. Vui lòng thêm và kết nối runner.';
                 document.getElementById('bubble-chart-container').innerHTML = '<p class="text-gray-500 text-center">Không có dữ liệu thống kê để hiển thị biểu đồ.</p>';
                 weeklyStatsData = [];
-                renderDetailedStatsTable(); // Ensure detailed stats table is cleared IF NO RUNNERS are found initially
+                renderDetailedStatsTable(); 
                 return;
             }
 
-            console.log('Fetching weekly stats for runners:', runnersToFetch.map(r => r.runner_name));
+            console.log('Fetching weekly stats for runners:', runnerCredentialsToFetch.map(r => r.runner_name), 'and club:', selectedClubIdForStats);
 
             try {
                 const { data: { session }, error: sessionError } = await supabaseClientInstance.auth.getSession();
@@ -2246,7 +2303,7 @@
                 }
 
                 // Fetch stats for each runner individually
-                const fetchPromises = runnersToFetch.map(async (runner) => {
+                const fetchPromises = runnerCredentialsToFetch.map(async (runner) => {
                     const runnerId = runner.id; // Get the ID
                     if (!runnerId) { // Explicit check for null/undefined/empty string
                         console.error(`Skipping fetch for runner ${runner.runner_name || 'Unknown'} due to missing or invalid credential ID.`);
@@ -2263,10 +2320,11 @@
 
                         const result = await response.json();
                         if (response.ok && result.success) {
-                            // Enrich weekly_stats with athlete_id before pushing
+                            // Enrich weekly_stats with athlete_id AND running_team before pushing
                             const enrichedWeeklyStats = result.weekly_stats.map(s => ({
                                 ...s,
-                                athlete_id: runner.athlete_id // Add athlete_id to each weekly stat entry
+                                athlete_id: runner.athlete_id, // Add athlete_id to each weekly stat entry
+                                running_team: runner.running_team // NEW: Add running_team for client-side filtering
                             }));
                             return { 
                                 weeklyStats: enrichedWeeklyStats, 
@@ -2291,7 +2349,7 @@
                     weeklyStatsData.push(...res.weeklyStats);
                 });
 
-                chartStatus.textContent = `Đã tải thống kê cho ${runnersToFetch.length} runner. Tổng cộng ${weeklyStatsData.length} tuần.`;
+                chartStatus.textContent = `Đã tải thống kê cho ${runnerCredentialsToFetch.length} runner. Tổng cộng ${weeklyStatsData.length} tuần.`;
                 renderBubbleChart(weeklyStatsData); 
             } catch (error) {
                 console.error('Lỗi chung khi tải thống kê theo tuần:', error);
@@ -2325,7 +2383,8 @@
 
             detailedStatsStatus.textContent = '';
 
-            const activitiesToDisplay = userActivities;
+            // userActivities should already be filtered by club if `loadRecentActivitiesBtn` was clicked with a club filter
+            const activitiesToDisplay = userActivities; 
 
             if (!activitiesToDisplay || activitiesToDisplay.length === 0) {
                 detailedStatsStatus.textContent = 'Chưa có dữ liệu để hiển thị.';
@@ -2347,26 +2406,30 @@
                 return acc;
             }, {});
 
-            // Map athlete_id to runner_name using allRunnerCredentials
-            const runnerNamesMap = new Map();
+            // Map athlete_id to runner_name and running_team using allRunnerCredentials
+            const runnerInfoMap = new Map();
             allRunnerCredentials.forEach(cred => {
                 if (cred.athlete_id) {
-                    runnerNamesMap.set(String(cred.athlete_id), cred.runner_name);
+                    runnerInfoMap.set(String(cred.athlete_id), {
+                        name: cred.runner_name,
+                        team: cred.running_team
+                    });
                 }
             });
-            console.log('renderDetailedStatsTable: Runner names map:', runnerNamesMap); // Log the map
-            console.log('renderDetailedStatsTable: Activities grouped by athlete (filtered):', activitiesByAthlete); // Log grouped activities
+            console.log('renderDetailedStatsTable: Runner info map:', runnerInfoMap); 
+            console.log('renderDetailedStatsTable: Activities grouped by athlete (filtered):', activitiesByAthlete); 
 
             const sortedAthleteIds = Object.keys(activitiesByAthlete).sort((a, b) => {
                 // Sort by runner name for consistent display
-                const nameA = runnerNamesMap.get(a) || `Runner ID: ${a}`;
-                const nameB = runnerNamesMap.get(b) || `Runner ID: ${b}`;
+                const nameA = runnerInfoMap.get(a)?.name || `Runner ID: ${a}`;
+                const nameB = runnerInfoMap.get(b)?.name || `Runner ID: ${b}`;
                 return nameA.localeCompare(nameB);
             });
 
             sortedAthleteIds.forEach(athleteId => {
-                const runnerName = runnerNamesMap.get(athleteId) || `Runner ID: ${athleteId}`;
-                console.log(`renderDetailedStatsTable: Processing runner: ${runnerName} (athleteId: ${athleteId})`);
+                const runnerName = runnerInfoMap.get(athleteId)?.name || `Runner ID: ${athleteId}`;
+                const runnerTeam = runnerInfoMap.get(athleteId)?.team || 'N/A';
+                console.log(`renderDetailedStatsTable: Processing runner: ${runnerName} (athleteId: ${athleteId}, team: ${runnerTeam})`);
 
                 const runnerActivities = activitiesByAthlete[athleteId];
                 let totalRunnerDistanceKm = 0;
@@ -2388,7 +2451,7 @@
                 // Initial state of the arrow is right-pointing
                 totalRow.innerHTML = `
                     <td colspan="3" class="font-bold text-lg text-bidv-green">
-                        Tổng cộng cho ${runnerName}
+                        Tổng cộng cho ${runnerName} <span class="text-gray-500 text-base">(${runnerTeam})</span>
                         <span class="toggle-icon detailed-stats-toggle-icon ml-2 cursor-pointer" data-target-id="detailed-activities-for-${athleteId}">▶</span>
                     </td>
                     <td>${totalRunnerDistanceKm.toFixed(2)}</td>
@@ -2482,11 +2545,95 @@
         }
 
         /**
+         * Fetches clubs from Supabase and updates the global `allClubs` array.
+         * @returns {Promise<Object[]>} Array of club objects.
+         */
+        async function fetchClubs() {
+            if (!supabaseClientInstance) {
+                console.error('Supabase client is not initialized for fetching clubs.');
+                return [];
+            }
+            try {
+                const { data, error } = await supabaseClientInstance
+                    .from('clubs')
+                    .select('*')
+                    .order('name', { ascending: true });
+                if (error) throw error;
+                allClubs = data;
+                console.log('Fetched clubs:', allClubs);
+                return allClubs;
+            } catch (error) {
+                console.error('Error fetching clubs:', error.message);
+                showAlert(`Lỗi khi tải danh sách câu lạc bộ: ${error.message}`);
+                allClubs = [];
+                return [];
+            }
+        }
+
+        /**
+         * Populates the club filter dropdowns and the runner-team select in the modal.
+         */
+        function populateClubDropdowns() {
+            // Populate runner-team select in credential modal
+            runnerTeamSelect.innerHTML = '<option value="">-- Chọn đội chạy --</option>';
+            allClubs.forEach(club => {
+                const option = document.createElement('option');
+                option.value = club.name; // Use club name as value
+                option.textContent = club.name;
+                runnerTeamSelect.appendChild(option);
+            });
+            // (Setting selected value for runnerTeamSelect happens in openCredentialModal)
+
+            // Populate club filter for recent activities
+            clubRecentActivitiesFilter.innerHTML = '<option value="all">Tất cả Câu lạc bộ</option>';
+            allClubs.forEach(club => {
+                const option = document.createElement('option');
+                option.value = club.name;
+                option.textContent = club.name;
+                clubRecentActivitiesFilter.appendChild(option);
+            });
+            // Try to restore previous selection, or default to 'all'
+            if (Array.from(clubRecentActivitiesFilter.options).some(opt => opt.value === selectedClubNameForRecentActivities)) {
+                clubRecentActivitiesFilter.value = selectedClubNameForRecentActivities;
+            } else {
+                selectedClubNameForRecentActivities = 'all';
+                clubRecentActivitiesFilter.value = 'all';
+            }
+
+
+            // Populate club filter for stats
+            clubStatsFilter.innerHTML = '<option value="">Tất cả Câu lạc bộ</option>'; // '' for 'all'
+            allClubs.forEach(club => {
+                const option = document.createElement('option');
+                option.value = club.name;
+                option.textContent = club.name;
+                clubStatsFilter.appendChild(option);
+            });
+            // Try to restore previous selection, or default to '' (all)
+            if (Array.from(clubStatsFilter.options).some(opt => opt.value === selectedClubIdForStats)) {
+                clubStatsFilter.value = selectedClubIdForStats;
+            } else {
+                selectedClubIdForStats = '';
+                clubStatsFilter.value = '';
+            }
+        }
+
+
+        /**
          * Populates the runner filter dropdown for the stats section.
          */
         function populateRunnerStatsFilter() {
             runnerStatsFilter.innerHTML = '<option value="">Tất cả Runner</option>'; // Always start with "All Runners" option
-            allRunnerCredentials.forEach(cred => {
+            
+            let filteredRunners = allRunnerCredentials;
+
+            // Apply club filter first, if one is selected
+            if (selectedClubIdForStats !== '') {
+                filteredRunners = filteredRunners.filter(cred => cred.running_team === selectedClubIdForStats);
+            }
+
+            // Now, filter by athlete_id and populate
+            filteredRunners.forEach(cred => {
                 if (cred.athlete_id) { // Only add if athlete_id is known (meaning Strava connected)
                     const option = document.createElement('option');
                     option.value = String(cred.athlete_id); // Use athlete_id as value for filtering
@@ -2623,14 +2770,22 @@
             console.log('renderBubbleChart: Dữ liệu đầu vào:', data); // Log the input data
 
             const monthlyDataMap = new Map();
-            // IMPORTANT: The filtering by selectedRunnerIdForStats should apply here for the bubble chart.
-            const filteredData = selectedRunnerIdForStats ? 
-                                    data.filter(d => String(d.athlete_id) === selectedRunnerIdForStats) : 
-                                    data;
+            // Filtering by selectedRunnerIdForStats and selectedClubIdForStats
+            let filteredData = data;
+            if (selectedRunnerIdForStats !== '') { 
+                filteredData = filteredData.filter(d => String(d.athlete_id) === selectedRunnerIdForStats);
+            }
+            if (selectedClubIdForStats !== '') {
+                // Find runner's club from allRunnerCredentials
+                filteredData = filteredData.filter(d => {
+                    const runner = allRunnerCredentials.find(rc => String(rc.athlete_id) === String(d.athlete_id));
+                    return runner && runner.running_team === selectedClubIdForStats;
+                });
+            }
 
             if (filteredData.length === 0) {
-                document.getElementById('bubble-chart-container').innerHTML = '<p class="text-gray-500 text-center">Không có dữ liệu thống kê để hiển thị biểu đồ cho Runner đã chọn.</p>';
-                console.log('renderBubbleChart: Không có dữ liệu hàng tháng để vẽ biểu đồ cho Runner đã chọn.');
+                document.getElementById('bubble-chart-container').innerHTML = '<p class="text-gray-500 text-center">Không có dữ liệu thống kê để hiển thị biểu đồ cho các bộ lọc đã chọn.</p>';
+                console.log('renderBubbleChart: Không có dữ liệu hàng tháng để vẽ biểu đồ cho các bộ lọc đã chọn.');
                 return;
             }
 
@@ -2966,9 +3121,15 @@
             // Initialize activity type filters
             populateActivityTypeFilters();
             updateMultiSelectDisplay(multiSelectDisplayRecent, selectedActivityTypesRecent, document.getElementById('multi-select-options-recent'));
+            
             // NEW: Add event listener for the runner recent activities filter
             runnerRecentActivitiesFilter.addEventListener('change', () => {
                 selectedRunnerIdForRecentActivities = runnerRecentActivitiesFilter.value;
+                loadRecentActivitiesBtn.click(); // Reload activities based on the new filter
+            });
+            // NEW: Add event listener for the club recent activities filter
+            clubRecentActivitiesFilter.addEventListener('change', () => {
+                selectedClubNameForRecentActivities = clubRecentActivitiesFilter.value;
                 loadRecentActivitiesBtn.click(); // Reload activities based on the new filter
             });
 
@@ -2995,9 +3156,18 @@
             startDateRecent.addEventListener('change', loadRecentActivitiesBtn.click);
             endDateRecent.addEventListener('change', loadRecentActivitiesBtn.click);
 
-            // Add event listener for the new runner stats filter
+            // Add event listener for the runner stats filter
             runnerStatsFilter.addEventListener('change', () => {
                 selectedRunnerIdForStats = runnerStatsFilter.value;
+                if (weeklyStatsData.length > 0) { // Only re-render if data already exists
+                    renderBubbleChart(weeklyStatsData);
+                }
+            });
+            // NEW: Add event listener for the club stats filter
+            clubStatsFilter.addEventListener('change', () => {
+                selectedClubIdForStats = clubStatsFilter.value;
+                // When club filter changes, also update the runner filter for stats
+                populateRunnerStatsFilter(); 
                 if (weeklyStatsData.length > 0) { // Only re-render if data already exists
                     renderBubbleChart(weeklyStatsData);
                 }
