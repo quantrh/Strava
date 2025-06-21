@@ -318,6 +318,29 @@
         input[type="date"]::-webkit-clear-button {
             display: none;
         }
+
+        /* Scroll-to-top button styles */
+        #scroll-to-top-btn {
+            display: none;
+            position: fixed;
+            bottom: 20px;
+            right: 30px;
+            z-index: 99;
+            border: none;
+            outline: none;
+            background-color: var(--bidv-green);
+            color: white;
+            cursor: pointer;
+            padding: 15px;
+            border-radius: 50%;
+            font-size: 18px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            transition: background-color 0.3s;
+        }
+
+        #scroll-to-top-btn:hover {
+            background-color: #005a57;
+        }
     </style>
 </head>
 <body>
@@ -486,10 +509,6 @@
                     </select>
                 </div>
 
-                <button id="load-recent-activities-btn" class="btn-primary mb-4">
-                    Tải hoạt động gần đây
-                </button>
-
                 <!-- Moved Activity Type Filter for Recent Activities -->
                 <div class="mb-4">
                     <label for="activity-type-filter-recent" class="block text-gray-700 text-sm font-bold mb-2" style="background-color: #FFFACD; padding: 0.25rem 0.5rem; border-radius: 0.25rem;">Lọc theo loại hoạt động:</label>
@@ -514,6 +533,11 @@
                         <input type="date" id="end-date-recent" class="form-input">
                     </div>
                 </div>
+
+                <!-- MOVED this button down -->
+                <button id="load-recent-activities-btn" class="btn-primary mb-4">
+                    Tải hoạt động gần đây
+                </button>
 
                 <!-- Changed from ul to div for multi-column layout -->
                 <div id="recent-activities-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -621,7 +645,7 @@
                         <li>Để thêm một Runner mới và kết nối với tài khoản Strava của họ, nhấn "Thêm Runner mới".</li>
                         <li>Bạn sẽ được yêu cầu nhập tên cho Runner và sau đó được chuyển hướng đến trang ủy quyền của Strava.</li>
                         <li>Sau khi cấp quyền thành công, thông tin Runner và Strava Athlete ID sẽ được lưu lại.</li>
-                        <li>Bạn có thể sửa hoặc xóa thông tin Runner đã lưu.</li>
+                        <li>Chỉ chủ sở hữu của thông tin runner mới có thể sửa hoặc xóa thông tin đó.</li>
                         <li>Lưu ý: Bạn không cần phải tự tạo ứng dụng Strava API hay nhập Client ID/Secret nữa.</li>
                     </ul>
                     <h3 class="font-bold text-lg text-bidv-green">3. Chọn Runner để làm việc:</h3>
@@ -664,6 +688,8 @@
     </div>
 </footer>
 
+    <!-- Scroll to top button -->
+    <button id="scroll-to-top-btn" title="Go to top">▲</button>
 
 
     <!-- Credential Modal -->
@@ -673,7 +699,7 @@
             <h3 id="modal-title" class="text-2xl font-bold mb-4 text-gray-800">Thêm thông tin đăng nhập Runner</h3>
             <form id="credential-form" class="space-y-4">
                 <div>
-                    <label for="runner-name" class="block text-gray-700 text-sm font-bold mb-2">Tên Runner (Duy nhất):</label>
+                    <label for="runner-name" class="block text-gray-700 text-sm font-bold mb-2 text-red-500">Tên Runner (Duy nhất):<span class="text-red-500">*</span></label>
                     <input type="text" id="runner-name" class="form-input" placeholder="Ví dụ: MyRunningAccount" required>
                 </div>
                 <!-- NEW FIELDS ADDED BELOW -->
@@ -686,7 +712,7 @@
                     <input type="tel" id="runner-phone-number" class="form-input" placeholder="Ví dụ: 0912345678">
                 </div>
                 <div>
-                    <label for="runner-email" class="block text-gray-700 text-sm font-bold mb-2">Email Runner:</label>
+                    <label for="runner-email" class="block text-gray-700 text-sm font-bold mb-2 text-red-500">Email Runner:<span class="text-red-500">*</span></label>
                     <input type="email" id="runner-email" class="form-input border-red-500 focus:ring-red-500" placeholder="Ví dụ: runner@example.com" required>
                 </div>
                 <div>
@@ -711,14 +737,14 @@
                     </select>
                 </div>
                 <div>
-                    <label for="runner-team" class="block text-gray-700 text-sm font-bold mb-2">Đội chạy:</label>
+                    <label for="runner-team" class="block text-gray-700 text-sm font-bold mb-2 text-red-500">Đội chạy:<span class="text-red-500">*</span></label>
                     <select id="runner-team" class="form-input border-red-500 focus:ring-red-500" required>
                         <option value="">-- Chọn đội chạy --</option>
                         <!-- Club options will be populated by JS -->
                     </select>
                 </div>
                 <div>
-                    <label for="runner-gender" class="block text-gray-700 text-sm font-bold mb-2">Giới tính:</label>
+                    <label for="runner-gender" class="block text-gray-700 text-sm font-bold mb-2 text-red-500">Giới tính:<span class="text-red-500">*</span></label>
                     <select id="runner-gender" class="form-input border-red-500 focus:ring-red-500" required>
                         <option value="">-- Chọn giới tính --</option>
                         <option value="Nam">Nam</option>
@@ -892,10 +918,6 @@
         const modalTitle = document.getElementById('modal-title');
         const credentialForm = document.getElementById('credential-form');
         const runnerNameInput = document.getElementById('runner-name');
-        // REMOVED: client-id, client-secret, refresh-token input elements
-        // const clientIdInput = document.getElementById('client-id');
-        // const clientSecretInput = document.getElementById('client-secret');
-        // const refreshTokenInput = document.getElementById('refresh-token');
         const redirectUriInput = document.getElementById('redirect-uri');
         const credentialIdInput = document.getElementById('credential-id');
         const runnerSelect = document.getElementById('runner-select');
@@ -911,7 +933,7 @@
         const userInfo = document.getElementById('user-info');
         const activitiesLimitInput = document.getElementById('activities-limit');
         const numRecentActivitiesInput = document.getElementById('num-recent-activities');
-        const loadRecentActivitiesBtn = document = document.getElementById('load-recent-activities-btn');
+        const loadRecentActivitiesBtn = document.getElementById('load-recent-activities-btn');
         const recentActivitiesContainer = document.getElementById('recent-activities-container'); // Changed from recentActivitiesList
         const recentActivitiesStatus = document.getElementById('recent-activities-status');
         const statsSection = document.getElementById('stats-section');
@@ -974,6 +996,9 @@
         const llmAnalysisSection = document.getElementById('llm-analysis-section');
         const llmAnalysisContent = document.getElementById('llm-analysis-content');
         const llmAnalysisStatus = document.getElementById('llm-analysis-status');
+        
+        // Scroll to top button
+        const scrollToTopBtn = document.getElementById('scroll-to-top-btn');
 
 
         // --- Helper functions for UI and data transformation ---
@@ -1284,10 +1309,10 @@
         async function fetchAndSetRunnerCredentials() {
             if (!currentAppUserId) {
                 allRunnerCredentials = []; // Clear global state if no app user
-                console.log('fetchAndSetRunnerCredentials: Không có người dùng ứng dụng, đang xóa thông tin đăng nhập.');
+                console.log('fetchAndSetRunnerCredentials: No app user, clearing credentials.');
                 return;
             }
-            console.log('fetchAndSetRunnerCredentials: Đang cố gắng lấy thông tin đăng nhập cho người dùng:', currentAppUserId);
+            console.log('fetchAndSetRunnerCredentials: Attempting to fetch credentials for user:', currentAppUserId);
             loadingCredentials.classList.remove('hidden'); // Show loading state
             errorCredentials.classList.add('hidden'); // Hide previous errors
             try {
@@ -1297,9 +1322,9 @@
                    .order('runner_name', { ascending: true });
                 if (error) throw error;
                 allRunnerCredentials = data; // Update global variable
-                console.log('fetchAndSetRunnerCredentials: Đã lấy thành công', data.length, 'thông tin đăng nhập.');
+                console.log('fetchAndSetRunnerCredentials: Successfully fetched', data.length, 'credentials.');
             } catch (error) {
-                console.error('Lỗi khi tải thông tin đăng nhập runner:', error.message);
+                console.error('Error fetching runner credentials:', error.message);
                 errorCredentials.textContent = `Lỗi: ${error.message}`;
                 errorCredentials.classList.remove('hidden');
                 showAlert(`Lỗi khi tải thông tin runner: ${error.message}`);
@@ -1329,25 +1354,29 @@
                 allRunnerCredentials.forEach(cred => {
                     const credDiv = document.createElement('div');
                     credDiv.className = 'bg-gray-50 p-4 rounded-lg border border-gray-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3';
+                    
+                    // Conditionally render Edit/Delete buttons
+                    const ownerButtons = (currentAppUserId && cred.owner_uid === currentAppUserId)
+                        ? `
+                        <div class="flex flex-row gap-2 mt-2 sm:mt-0">
+                            <button class="btn-primary btn-edit" data-id="${cred.id}">Sửa</button>
+                            <button class="btn-danger btn-delete" data-id="${cred.id}">Xóa</button>
+                        </div>
+                        `
+                        : '';
+
                     credDiv.innerHTML = `
                         <div>
                             <p class="text-lg font-semibold text-gray-800">${cred.runner_name}</p>
                             ${cred.athlete_id ? `<p class="text-sm text-gray-600">Strava Athlete ID: <span class="font-mono">${cred.athlete_id}</span></p>` : `<p class="text-sm text-gray-600 text-red-500">Chưa kết nối Strava</p>`}
                         </div>
-                        <div class="flex flex-row gap-2 mt-2 sm:mt-0">
-                            <button class="btn-primary btn-edit" data-id="${cred.id}">Sửa tên</button>
-                            <button class="btn-danger btn-delete" data-id="${cred.id}">Xóa</button>
-                        </div>
+                        ${ownerButtons}
                     `;
                     credentialsList.appendChild(credDiv);
 
                     const option = document.createElement('option');
                     option.value = cred.id; // Use the Supabase credential ID as the value
                     option.textContent = cred.runner_name;
-                    // We no longer store client_id, client_secret, refresh_token on the frontend for each runner
-                    // option.dataset.clientId = cred.client_id; 
-                    // option.dataset.clientSecret = cred.client_secret; 
-                    // option.dataset.refreshToken = cred.refresh_token; 
                     option.dataset.redirectUri = cred.redirect_uri; // Still useful for the OAuth flow from frontend
                     option.dataset.athleteId = cred.athlete_id || ''; // Store athlete ID
                     runnerSelect.appendChild(option.cloneNode(true)); // Clone for runnerSelect
@@ -1382,7 +1411,7 @@
         async function openCredentialModal(id = null) {
             credentialForm.reset();
             credentialIdInput.value = '';
-            modalTitle.textContent = 'Thêm Runner mới'; // Changed title
+            modalTitle.textContent = 'Thêm Runner mới'; 
             runnerNameInput.readOnly = false; // Ensure it's editable for new runner
 
             // Set default redirect URI to the fixed value
@@ -1393,7 +1422,7 @@
             populateClubDropdowns(); // Populate the runnerTeamSelect
 
             if (id) {
-                modalTitle.textContent = 'Sửa thông tin Runner'; // Changed title for edit mode
+                modalTitle.textContent = 'Sửa thông tin Runner'; 
                 try {
                     // Fetch all relevant columns for editing
                     const { data, error } = await supabaseClientInstance
@@ -1584,15 +1613,16 @@
         // --- Strava Authentication & API Interaction ---
 
         /**
-         * Checks the current Strava authentication status and updates the UI.
+         * Checks the current Strava authentication status from localStorage and updates the UI.
          */
         async function checkStravaAuthState() {
+            // This function confirms that saving the session to localStorage works as requested.
             currentRunnerCredentialId = localStorage.getItem('strava_runner_credential_id'); 
             isAuthenticated = localStorage.getItem('strava_authenticated') === 'true';
-            currentAthleteId = localStorage.getItem('strava_athlete_id'); // Strava athlete ID for API calls and for activities.user_id (of the currently logged-in Strava runner)
-            currentRunnerName = localStorage.getItem('strava_runner_name'); // Runner name (string)
+            currentAthleteId = localStorage.getItem('strava_athlete_id');
+            currentRunnerName = localStorage.getItem('strava_runner_name');
 
-            console.log('checkStravaAuthState - Kiểm tra trạng thái xác thực Strava ...');
+            console.log('checkStravaAuthState - Checking Strava auth state from localStorage...');
             console.log('  isAuthenticated (Strava):', isAuthenticated);
             console.log('  currentRunnerCredentialId (Credential ID):', currentRunnerCredentialId);
             console.log('  currentAthleteId (Strava ID):', currentAthleteId);
@@ -1603,84 +1633,66 @@
 
 
             if (isAuthenticated && currentRunnerCredentialId && currentAthleteId && currentRunnerName) {
-                // Ensure allRunnerCredentials is fresh as we are about to use it for mapping
-                // This call is crucial here to ensure allRunnerCredentials contains the latest athlete_id
-                await fetchAndSetRunnerCredentials(); // Fetch data
-                await renderCredentialsUI(); // Render UI from fetched data
-                await fetchClubs(); // Ensure clubs are also loaded for display if needed
-                populateClubDropdowns(); // Populate dropdowns for filters
+                await fetchAndSetRunnerCredentials();
+                await renderCredentialsUI(); 
+                await fetchClubs();
+                populateClubDropdowns();
 
                 const expiresAt = localStorage.getItem('strava_expires_at');
-                // Removed refresh_token check here as refresh logic is now solely handled by Edge Functions
-                // const refreshToken = localStorage.getItem('strava_refresh_token'); 
-
                 const now = Date.now();
                 if (expiresAt && now < parseInt(expiresAt, 10)) {
-                    console.log('  Token Strava hợp lệ. Đã đăng nhập Strava.');
+                    console.log('  Valid Strava token found. Logged into Strava.');
                     authStatus.textContent = 'Đã đăng nhập với Strava.';
                     currentRunnerNameSpan.textContent = currentRunnerName;
                     currentRunnerDisplay.classList.remove('hidden');
-                    // connectStravaBtn.classList.add('hidden'); // Hidden with image now
                     connectStravaBtn.style.display = 'none'; // Explicitly hide the image
                     disconnectStravaBtn.classList.remove('hidden');
                     dataSection.classList.remove('hidden');
                     statsSection.classList.remove('hidden');
-                    detailedStatsSection.classList.remove('hidden'); // Show new detailed stats section
-                    instructionSection.classList.remove('hidden'); // Show instruction section
-                    llmAnalysisSection.classList.remove('hidden'); // Show LLM analysis section
+                    detailedStatsSection.classList.remove('hidden'); 
+                    instructionSection.classList.remove('hidden'); 
+                    llmAnalysisSection.classList.remove('hidden'); 
                     userInfo.textContent = `Chào mừng, Runner: ${currentRunnerName} (Strava ID: ${currentAthleteId})`; 
                     
-                    // Select the logged-in runner in the dropdown
                     runnerSelect.value = currentRunnerCredentialId;
-
-                    // Collapse strava auth section if connected
                     toggleCollapsible(stravaAuthContent, stravaAuthToggleIcon, true);
 
                 } else {
-                    console.log('  Token Strava đã hết hạn hoặc không có. Cần làm mới hoặc đăng nhập lại.');
+                    console.log('  Strava token has expired or is missing. Re-authentication may be needed.');
                     authStatus.textContent = 'Token Strava đã hết hạn, vui lòng làm mới hoặc đăng nhập lại.';
-                    // No direct refresh call here from frontend anymore.
-                    // The fetch activities/stats functions will trigger refresh via Edge Function.
-                    // If refresh fails, user will be prompted to re-authenticate.
-                    disconnectStravaBtn.classList.remove('hidden'); // Keep disconnect visible
-                    // Forcing a clear and re-prompt if token is truly expired/invalid
                     showAlert('Phiên Strava đã hết hạn. Vui lòng đăng xuất và chọn lại Runner để kết nối.');
                     clearStravaSession();
                     checkStravaAuthState(); // Re-check to reset UI
                 }
             } else {
-                console.log('  Chưa đăng nhập Strava hoặc thiếu thông tin phiên.');
-                clearStravaSession(); // Ensure all related items are cleared
-                await fetchAndSetRunnerCredentials(); // Clear global state data
-                await renderCredentialsUI(); // Clear credentials list UI for consistency when logging out/not logged in
-                await fetchClubs(); // Clear clubs
-                populateClubDropdowns(); // Clear club dropdowns
+                console.log('  Not logged into Strava or session info is missing.');
+                clearStravaSession(); 
+                await fetchAndSetRunnerCredentials(); 
+                await renderCredentialsUI();
+                await fetchClubs(); 
+                populateClubDropdowns(); 
                 authStatus.textContent = 'Vui lòng chọn Runner và đăng nhập với Strava.';
                 currentRunnerDisplay.classList.add('hidden');
-                // connectStravaBtn.classList.remove('hidden'); // Shown with image now
                 connectStravaBtn.style.display = 'block'; // Explicitly show the image
                 disconnectStravaBtn.classList.add('hidden');
                 dataSection.classList.add('hidden');
                 statsSection.classList.add('hidden');
-                detailedStatsSection.classList.add('hidden'); // Hide new detailed stats section
-                instructionSection.classList.add('hidden'); // Hide instruction section
-                llmAnalysisSection.classList.add('hidden'); // Hide LLM analysis section
-                userInfo.textContent = ''; // Clear user info
-                // Reset content if not authenticated
+                detailedStatsSection.classList.add('hidden'); 
+                instructionSection.classList.add('hidden'); 
+                llmAnalysisSection.classList.add('hidden'); 
+                userInfo.textContent = ''; 
                 recentActivitiesContainer.innerHTML = '<div class="card p-4 text-gray-500 text-center col-span-full">Nhấn "Tải hoạt động gần đây" để xem.</div>';
                 document.getElementById('bubble-chart-container').innerHTML = '<p class="text-gray-500 text-center">Nhấn "Xem thống kê theo tuần" để hiển thị biểu đồ.</p>';
                 const table = document.getElementById('detailed-stats-table');
                 Array.from(table.children).forEach(child => {
-                    if (child.tagName === 'TBODY') { // Remove all tbodies
+                    if (child.tagName === 'TBODY') { 
                         table.removeChild(child);
                     }
                 });
-                // Re-add a fresh tbody placeholder if needed, or rely on renderDetailedStatsTable to create new ones
                 const newTbody = document.createElement('tbody');
                 table.appendChild(newTbody);
                 detailedStatsStatus.textContent = 'Chưa có dữ liệu để hiển thị.';
 
-                // Expand strava auth section if not connected
                 toggleCollapsible(stravaAuthContent, stravaAuthToggleIcon, false);
             }
         }
@@ -1690,21 +1702,20 @@
          * This logs the user out of Strava within the app.
          */
         function clearStravaSession() {
-            console.log('clearStravaSession - Đang xóa dữ liệu phiên Strava khỏi localStorage.');
+            console.log('clearStravaSession - Removing Strava session data from localStorage.');
             localStorage.removeItem('strava_access_token');
-            localStorage.removeItem('strava_refresh_token'); // Still clear this, though not directly used on frontend now
+            localStorage.removeItem('strava_refresh_token');
             localStorage.removeItem('strava_expires_at');
             localStorage.removeItem('strava_athlete_id');
             localStorage.removeItem('strava_runner_name');
-            localStorage.removeItem('strava_runner_credential_id'); // Clear the credential ID used for login
-            localStorage.removeItem('strava_runner_name_pending'); // Clear pending state
+            localStorage.removeItem('strava_runner_credential_id');
+            localStorage.removeItem('strava_authenticated');
+            localStorage.removeItem('strava_runner_credential_id_pending');
+            localStorage.removeItem('strava_runner_name_pending');
         }
-
-        // Removed refreshTokenCall as it's now handled by Edge Function
 
         /**
          * Initiates the Strava OAuth authorization flow.
-         * This function is now simplified as client_id and redirect_uri are global for the app.
          */
         connectStravaBtn.addEventListener('click', async () => {
             if (!currentAppUserId) {
@@ -1721,7 +1732,6 @@
             const credentialId = selectedOption.value; // Supabase runner_credential ID (UUID)
             const runnerName = selectedOption.textContent;
 
-            // Before redirecting, check if this runner already has a valid athlete_id
             const selectedRunner = allRunnerCredentials.find(cred => cred.id === credentialId);
             if (selectedRunner && selectedRunner.athlete_id) {
                 const confirmed = await showConfirm(`Runner "${runnerName}" đã được kết nối với Strava (ID: ${selectedRunner.athlete_id}). Bạn có muốn kết nối lại không? Điều này sẽ cập nhật token mới.`);
@@ -1730,19 +1740,14 @@
                 }
             }
 
-            // Store selected runner's basic info in local storage for callback processing
-            // The Edge Function will fetch full details using this ID.
             localStorage.setItem('strava_runner_credential_id_pending', credentialId);
             localStorage.setItem('strava_runner_name_pending', runnerName);
             
             const scope = 'activity:read_all';
-            // Pass ONLY the runnerCredentialId in 'state' to the callback function via URL.
-            // The Edge Function will fetch other details securely using this ID.
             const state = encodeURIComponent(JSON.stringify({ 
                 credentialId: credentialId
             }));
 
-            // Use the global APP_STRAVA_CLIENT_ID and APP_STRAVA_REDIRECT_URI
             const authUrl = `https://www.strava.com/oauth/authorize?client_id=${APP_STRAVA_CLIENT_ID}&response_type=code&redirect_uri=${encodeURIComponent(APP_STRAVA_REDIRECT_URI)}&approval_prompt=auto&scope=${scope}&state=${state}`;
             
             window.location.href = authUrl;
@@ -1754,7 +1759,7 @@
         async function handleStravaCallback() {
             const urlParams = new URLSearchParams(window.location.search);
             const code = urlParams.get('code');
-            const stateParam = urlParams.get('state'); // Contains runnerCredentialId
+            const stateParam = urlParams.get('state'); 
             const errorParam = urlParams.get('error');
 
             if (errorParam) {
@@ -1764,31 +1769,21 @@
                 return;
             }
 
-            if (code) { // Only check for code, stateParam might be null/missing on redirect sometimes or for old sessions
+            if (code) { 
                 authStatus.textContent = 'Đang xử lý kết nối Strava ...';
                 let runnerCredentialId = null;
-                let runnerNameForCallback = null; // Renamed to avoid confusion with existing global
-                let ownerUidForCallback = null; // Renamed to avoid confusion with existing global
+                let runnerNameForCallback = null;
+                let ownerUidForCallback = null;
 
                 if (stateParam) {
                     try {
                         const parsedState = JSON.parse(decodeURIComponent(stateParam));
                         runnerCredentialId = parsedState.credentialId;
-                        // For the initial OAuth, we don't send runnerName and ownerUid in state
-                        // Instead, we will rely on localStorage for pending info.
-                        // Or, ideally, the Edge Function would fetch these using runnerCredentialId
-                        // and the Supabase Auth JWT to verify ownership.
-                        if (!runnerCredentialId) {
-                            console.error('Thiếu thông tin runnerCredentialId trong tham số "state".');
-                            // Continue to check localStorage as fallback if stateParam exists but is malformed
-                        }
                     } catch (e) {
                         console.error('Lỗi giải mã tham số "state":', e);
-                        // Continue to check localStorage as fallback
                     }
                 }
 
-                // Fallback to localStorage if runnerCredentialId is still null or not found in state
                 if (!runnerCredentialId) {
                     runnerCredentialId = localStorage.getItem('strava_runner_credential_id_pending');
                     if (!runnerCredentialId) {
@@ -1799,11 +1794,9 @@
                     }
                 }
                 
-                // Retrieve runnerName from localStorage. This should have been set when initiating the OAuth.
                 runnerNameForCallback = localStorage.getItem('strava_runner_name_pending');
                 if (!runnerNameForCallback) {
-                     console.error('Không tìm thấy runnerName trong localStorage. Có thể lỗi trong luồng lưu trữ.');
-                     // Attempt to find it from allRunnerCredentials if it's already loaded
+                     console.error('Không tìm thấy runnerName trong localStorage.');
                      const existingRunner = allRunnerCredentials.find(rc => rc.id === runnerCredentialId);
                      if (existingRunner) {
                          runnerNameForCallback = existingRunner.runner_name;
@@ -1814,7 +1807,6 @@
                      }
                 }
 
-                // Get the current Supabase Auth user's UID (ownerUid)
                 const { data: { user }, error: authError } = await supabaseClientInstance.auth.getUser();
                 if (authError || !user) {
                     showAlert('Lỗi: Không tìm thấy phiên đăng nhập ứng dụng. Vui lòng đăng nhập lại ứng dụng.');
@@ -1822,16 +1814,14 @@
                     window.history.replaceState({}, document.title, window.location.pathname);
                     return;
                 }
-                ownerUidForCallback = user.id; // This is the ownerUid
+                ownerUidForCallback = user.id;
 
                 try {
-                    // GỌI EDGE FUNCTION để trao đổi mã lấy token
                     console.log(`[Client] Calling strava-oauth-callback Edge Function for runnerCredentialId: ${runnerCredentialId}`);
                     const response = await fetch(STRAVA_OAUTH_CALLBACK_URL, {
                         method: 'POST',
                         headers: { 
                             'Content-Type': 'application/json',
-                            // Pass Supabase Auth token for Edge Function authorization
                             'Authorization': `Bearer ${(await supabaseClientInstance.auth.getSession()).data.session?.access_token || ''}`
                         },
                         body: JSON.stringify({
@@ -1839,7 +1829,6 @@
                             runnerCredentialId: runnerCredentialId,
                             client_id: APP_STRAVA_CLIENT_ID,
                             redirect_uri: APP_STRAVA_REDIRECT_URI,
-                            // Pass runnerName and ownerUid explicitly as requested by the error message
                             runnerName: runnerNameForCallback, 
                             ownerUid: ownerUidForCallback 
                         }),
@@ -1848,10 +1837,10 @@
                     const result = await response.json();
 
                     if (response.ok && result.success) {
-                        // Lưu các token và athlete info từ phản hồi của Edge Function vào localStorage
+                        // Store tokens and athlete info from Edge Function response into localStorage
                         localStorage.setItem('strava_access_token', result.access_token);
                         localStorage.setItem('strava_refresh_token', result.refresh_token);
-                        localStorage.setItem('strava_expires_at', result.expires_at); // expires_at đã là mili giây từ EF
+                        localStorage.setItem('strava_expires_at', result.expires_at);
                         localStorage.setItem('strava_athlete_id', result.athlete_id);
                         localStorage.setItem('strava_runner_name', result.runner_name); 
                         localStorage.setItem('strava_runner_credential_id', result.runnerCredentialId); 
@@ -1865,14 +1854,14 @@
                         showAlert(`Lỗi đăng nhập Strava: ${result.error || 'Không xác định'}`);
                         clearStravaSession();
                         checkStravaAuthState();
-                        window.history.replaceState({}, document.title, window.location.pathname); // Clean URL
+                        window.history.replaceState({}, document.title, window.location.pathname);
                     }
                 } catch (err) {
                     console.error('Lỗi khi gọi Edge Function strava-oauth-callback:', err);
                     showAlert(`Lỗi mạng hoặc máy chủ khi xử lý đăng nhập Strava: ${err.message}`);
                     clearStravaSession();
                     checkStravaAuthState();
-                    window.history.replaceState({}, document.title, window.location.pathname); // Clean URL
+                    window.history.replaceState({}, document.title, window.location.pathname);
                 }
             } else {
                 console.log('Không có mã ủy quyền hoặc tham số "state" trong URL. Không có hành động nào được thực hiện.');
@@ -1905,7 +1894,6 @@
 
             const activitiesLimit = parseInt(activitiesLimitInput.value, 10);
 
-            // Validation for activities-limit
             if (isNaN(activitiesLimit) || activitiesLimit <= 0 || activitiesLimit > 200) {
                 showAlert('Vui lòng nhập số lượng hoạt động hợp lệ (1-200). Strava chỉ hỗ trợ tải tối đa 200 hoạt động.');
                 dataStatus.textContent = '';
@@ -1917,7 +1905,6 @@
             console.log('  currentAthleteId (Strava Athlete ID - for local logging):', currentAthleteId); 
 
             try {
-                // Get current Supabase Auth session to pass access token securely
                 const { data: { session }, error: sessionError } = await supabaseClientInstance.auth.getSession();
                 if (sessionError || !session?.access_token) {
                     showAlert('Lỗi: Không tìm thấy phiên đăng nhập Supabase. Vui lòng đăng nhập lại.');
@@ -1929,10 +1916,10 @@
                     method: 'POST',
                     headers: { 
                         'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${session.access_token}` // Pass Supabase Auth token
+                        'Authorization': `Bearer ${session.access_token}`
                     },
                     body: JSON.stringify({ 
-                        runnerCredentialId: currentRunnerCredentialId, // Gửi ID của runner credential
+                        runnerCredentialId: currentRunnerCredentialId,
                         limit: activitiesLimit 
                     }),
                 });
@@ -1942,7 +1929,6 @@
                 if (response.ok && result.success) {
                     dataStatus.textContent = `Đã tải và lưu ${result.count} hoạt động thành công!`;
                     showAlert(`Đã tải và lưu ${result.count} hoạt động thành công!`);
-                    // Optionally, reload recent activities and stats after fetching new data
                     await loadRecentActivitiesBtn.click(); 
                 } else {
                     dataStatus.textContent = `Lỗi khi tải hoạt động: ${result.error || 'Không xác định'}`;
@@ -1970,7 +1956,7 @@
                 return;
             }
 
-            const runnerToDownloadId = selectedOption.value; // This is the Supabase credential ID
+            const runnerToDownloadId = selectedOption.value;
             const runnerToDownloadName = selectedOption.textContent;
 
             const activitiesLimit = parseInt(activitiesLimitInput.value, 10);
@@ -1995,10 +1981,10 @@
                     method: 'POST',
                     headers: { 
                         'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${session.access_token}` // Pass Supabase Auth token
+                        'Authorization': `Bearer ${session.access_token}`
                     },
                     body: JSON.stringify({ 
-                        runnerCredentialId: runnerToDownloadId, // Use the selected runner's credential ID
+                        runnerCredentialId: runnerToDownloadId,
                         limit: activitiesLimit 
                     }),
                 });
@@ -2008,9 +1994,6 @@
                 if (response.ok && result.success) {
                     downloadForOtherStatus.textContent = `Đã tải và lưu ${result.count} hoạt động cho ${runnerToDownloadName} thành công!`;
                     showAlert(`Đã tải và lưu ${result.count} hoạt động cho ${runnerToDownloadName} thành công!`);
-                    // After downloading, we might want to refresh the recent activities display for the *current* user
-                    // if the newly downloaded activities are relevant to them (e.g., in multi-runner views).
-                    // For now, just show the status.
                 } else {
                     downloadForOtherStatus.textContent = `Lỗi khi tải hoạt động cho ${runnerToDownloadName}: ${result.error || 'Không xác định'}`;
                     showAlert(`Lỗi khi tải hoạt động cho ${runnerToDownloadName}: ${result.error || 'Không xác định'}`);
@@ -2026,10 +2009,10 @@
          * Populates the dropdown for "Download Strava hộ" with all saved runner credentials.
          */
         function populateDownloadRunnerSelect() {
-            downloadRunnerSelect.innerHTML = '<option value="">-- Chọn Runner --</option>'; // Clear existing options
+            downloadRunnerSelect.innerHTML = '<option value="">-- Chọn Runner --</option>'; 
             allRunnerCredentials.forEach(cred => {
                 const option = document.createElement('option');
-                option.value = cred.id; // Use the Supabase credential ID as the value
+                option.value = cred.id;
                 option.textContent = cred.runner_name;
                 downloadRunnerSelect.appendChild(option);
             });
@@ -2039,21 +2022,20 @@
          * Populates the runner filter dropdown for recent activities.
          */
         function populateRunnerRecentActivitiesFilter() {
-            runnerRecentActivitiesFilter.innerHTML = '<option value="all">Tất cả Runner</option>'; // Always start with "All Runners" option
+            runnerRecentActivitiesFilter.innerHTML = '<option value="all">Tất cả Runner</option>'; 
             allRunnerCredentials.forEach(cred => {
-                if (cred.athlete_id) { // Only add if athlete_id is known (meaning Strava connected)
+                if (cred.athlete_id) { 
                     const option = document.createElement('option');
-                    option.value = String(cred.athlete_id); // Use athlete_id as value for filtering
+                    option.value = String(cred.athlete_id);
                     option.textContent = cred.runner_name;
                     runnerRecentActivitiesFilter.appendChild(option);
                 }
             });
-            // Set the selected value back if it was previously set and is still valid
             if (selectedRunnerIdForRecentActivities && 
                 Array.from(runnerRecentActivitiesFilter.options).some(opt => opt.value === selectedRunnerIdForRecentActivities)) {
                 runnerRecentActivitiesFilter.value = selectedRunnerIdForRecentActivities;
             } else {
-                selectedRunnerIdForRecentActivities = 'all'; // Reset if previously selected runner is no longer available
+                selectedRunnerIdForRecentActivities = 'all';
                 runnerRecentActivitiesFilter.value = 'all';
             }
         }
@@ -2061,7 +2043,6 @@
 
         /**
          * Fetches all athlete IDs for the current logged-in app user from their runner credentials.
-         * Ensures `allRunnerCredentials` is up-to-date before extracting IDs.
          * @returns {Promise<string[]>} An array of athlete IDs (as strings).
          */
         async function getAllAthleteIdsForCurrentUser() {
@@ -2070,12 +2051,11 @@
                 return [];
             }
 
-            // Ensure allRunnerCredentials is up-to-date. This also handles populating the runnerSelect dropdown.
-            await fetchAndSetRunnerCredentials(); // ONLY FETCH, DO NOT RENDER UI HERE
+            await fetchAndSetRunnerCredentials();
 
             const athleteIds = allRunnerCredentials
-                .filter(cred => cred.athlete_id) // Only include credentials that have an athlete_id
-                .map(cred => String(cred.athlete_id)); // Ensure they are strings for consistent comparison
+                .filter(cred => cred.athlete_id)
+                .map(cred => String(cred.athlete_id));
 
             console.log('getAllAthleteIdsForCurrentUser: Fetched athlete IDs for current app user:', athleteIds);
             return athleteIds;
@@ -2085,15 +2065,14 @@
          * Loads recent activities from Supabase for all connected runners and displays them.
          */
         loadRecentActivitiesBtn.addEventListener('click', async () => {
-            if (!currentAppUserId) { // Only require app user to be logged in now
+            if (!currentAppUserId) { 
                 showAlert('Vui lòng đăng nhập ứng dụng để thực hiện chức năng này.');
                 return;
             }
 
             recentActivitiesStatus.textContent = 'Đang tải hoạt động gần đây ...';
-            recentActivitiesContainer.innerHTML = ''; // Clear previous list
+            recentActivitiesContainer.innerHTML = ''; 
 
-            // Get all athlete IDs associated with the current app user, filtered by selected club if any
             let runnerCredentialsToFilter = allRunnerCredentials;
             if (selectedClubNameForRecentActivities !== 'all') {
                 runnerCredentialsToFilter = allRunnerCredentials.filter(
@@ -2101,8 +2080,7 @@
                 );
             }
 
-            // Apply runner-specific filter if selected
-            const selectedRunnerId = runnerRecentActivitiesFilter.value; // 'all' or specific athlete_id
+            const selectedRunnerId = runnerRecentActivitiesFilter.value;
             let actualAthleteIdsToFilter = [];
 
             if (selectedRunnerId === 'all') {
@@ -2114,7 +2092,6 @@
                 if (specificRunner) {
                     actualAthleteIdsToFilter = [selectedRunnerId];
                 } else {
-                    // This case means a specific runner was selected, but they don't match the club filter
                     actualAthleteIdsToFilter = [];
                 }
             }
@@ -2122,8 +2099,8 @@
             if (actualAthleteIdsToFilter.length === 0) {
                 recentActivitiesContainer.innerHTML = '<div class="card p-4 text-gray-500 text-center col-span-full">Không tìm thấy hoạt động nào phù hợp với các bộ lọc đã chọn. Vui lòng thêm và kết nối runner hoặc điều chỉnh bộ lọc.</div>';
                 recentActivitiesStatus.textContent = 'Không có hoạt động nào để hiển thị.';
-                userActivities = []; // Clear activities if no runners match filters
-                renderDetailedStatsTable(); // Ensure detailed stats table is cleared
+                userActivities = [];
+                renderDetailedStatsTable();
                 return;
             }
 
@@ -2132,47 +2109,28 @@
             const numActivitiesToDisplay = parseInt(numRecentActivitiesInput.value, 10) || 10;
             const selectedTypes = selectedActivityTypesRecent;
             
-            // Lấy giá trị ngày bắt đầu và ngày kết thúc từ các input
-            const startDateInput = startDateRecent.value; // Ví dụ: "2025-06-16"
-            const endDateInput = endDateRecent.value;     // Ví dụ: "2025-06-20"
+            const startDateInput = startDateRecent.value;
+            const endDateInput = endDateRecent.value;
 
             let filterStartDate = null;
             let filterEndDate = null;
 
             if (startDateInput) {
-                // Tách chuỗi ngày thành năm, tháng, ngày
                 const parts = startDateInput.split('-');
                 const year = parseInt(parts[0]);
-                const month = parseInt(parts[1]) - 1; // Tháng trong JavaScript là 0-indexed (0-11)
+                const month = parseInt(parts[1]) - 1;
                 const day = parseInt(parts[2]);
-
-                // Tạo đối tượng Date bằng cách truyền các thành phần (năm, tháng, ngày)
-                // Cách này đảm bảo đối tượng Date được tạo ra theo múi giờ cục bộ của người dùng.
                 const localStartDate = new Date(year, month, day);
-                
-                // Chuyển đổi ngày cục bộ này thành chuỗi ISO UTC để gửi đi.
-                // Ví dụ: 2025-06-16 00:00:00 (UTC+7) -> 2025-06-15T17:00:00.000Z (UTC)
                 filterStartDate = localStartDate.toISOString();
             }
 
             if (endDateInput) {
-                // Tách chuỗi ngày thành năm, tháng, ngày
                 const parts = endDateInput.split('-');
                 const year = parseInt(parts[0]);
                 const month = parseInt(parts[1]) - 1;
                 const day = parseInt(parts[2]);
-
-                // Tạo đối tượng Date cho ngày kết thúc (theo giờ cục bộ).
                 const localEndDate = new Date(year, month, day);
-                
-                // Cộng thêm 1 ngày để đảm bảo bao gồm toàn bộ ngày kết thúc theo giờ cục bộ.
-                // Ví dụ: 2025-06-20 (local) + 1 ngày = 2025-06-21 00:00:00 (local)
                 localEndDate.setDate(localEndDate.getDate() + 1); 
-                
-                // Chuyển đổi ngày này sang chuỗi ISO UTC.
-                // Ví dụ: 2025-06-21 00:00:00 (UTC+7) -> 2025-06-20T17:00:00.000Z (UTC)
-                // Khi dùng toán tử 'lt' (<) với giá trị này, nó sẽ bao gồm tất cả các hoạt động
-                // có start_date (UTC) nhỏ hơn 2025-06-20T17:00:00.000Z, tức là toàn bộ ngày 2025-06-20 theo giờ địa phương.
                 filterEndDate = localEndDate.toISOString();
             }
 
@@ -2181,18 +2139,16 @@
                     .from('activities')
                     .select('strava_activity_id, name, type, distance, moving_time, total_elevation_gain, start_date, average_speed, average_heartrate, user_id');
                     
-                // Filter by multiple user_ids (athlete_id) using .in() based on the selected runner and club filters
                 query = query.in('user_id', actualAthleteIdsToFilter); 
 
                 if (selectedTypes.length > 0) {
                     query = query.in('type', selectedTypes); 
                 }
-                // Áp dụng bộ lọc ngày tháng đã được điều chỉnh múi giờ
                 if (filterStartDate) {
-                    query = query.gte('start_date', filterStartDate); // Start date inclusive (>=)
+                    query = query.gte('start_date', filterStartDate);
                 }
                 if (filterEndDate) {
-                    query = query.lt('start_date', filterEndDate); // End date exclusive (<)
+                    query = query.lt('start_date', filterEndDate);
                 }
 
                 const { data, error } = await query
@@ -2209,11 +2165,10 @@
                 console.log('Data returned from Supabase for recent activities (all runners):', data);
 
                 if (data && data.length > 0) {
-                    userActivities = data; // Store all fetched activities for detailed stats table
+                    userActivities = data;
                     data.forEach(activity => {
                         const activityCard = document.createElement('div');
-                        activityCard.className = 'card p-4 text-sm space-y-1 border border-gray-200 rounded-lg shadow-sm'; // Added card styling
-                        // Find runner name and club for display
+                        activityCard.className = 'card p-4 text-sm space-y-1 border border-gray-200 rounded-lg shadow-sm';
                         const runner = allRunnerCredentials.find(rc => String(rc.athlete_id) === String(activity.user_id));
                         const runnerNameForDisplay = runner ? runner.runner_name : `Runner ID: ${activity.user_id || 'Unknown'}`;
                         const runnerClubForDisplay = runner ? runner.running_team : 'N/A';
@@ -2248,7 +2203,7 @@
                     recentActivitiesStatus.textContent = 'Không có hoạt động nào để hiển thị.';
                     userActivities = [];
                 }
-                renderDetailedStatsTable(); // Always re-render the detailed stats table
+                renderDetailedStatsTable();
             } catch (error) {
                 console.error('Lỗi khi tải hoạt động gần đây từ Supabase:', error);
                 recentActivitiesStatus.textContent = `Lỗi khi tải hoạt động: ${error.message}`;
@@ -2267,14 +2222,13 @@
             chartStatus.textContent = 'Đang tải thống kê theo tuần ...';
             weeklyStatsData = []; 
 
-            // Get all runner credentials for the current app user, filtered by selected club if any
-            let runnerCredentialsToFetch = allRunnerCredentials.filter(cred => cred.athlete_id); // Only include connected runners
-            if (selectedClubIdForStats !== '') { // If a specific club is selected
+            let runnerCredentialsToFetch = allRunnerCredentials.filter(cred => cred.athlete_id);
+            if (selectedClubIdForStats !== '') {
                 runnerCredentialsToFetch = runnerCredentialsToFetch.filter(
                     cred => cred.running_team === selectedClubIdForStats
                 );
             }
-            if (selectedRunnerIdForStats !== '') { // If a specific runner is selected (after club filter)
+            if (selectedRunnerIdForStats !== '') {
                  runnerCredentialsToFetch = runnerCredentialsToFetch.filter(
                     cred => String(cred.athlete_id) === selectedRunnerIdForStats
                 );
@@ -2302,29 +2256,27 @@
                     return;
                 }
 
-                // Fetch stats for each runner individually
                 const fetchPromises = runnerCredentialsToFetch.map(async (runner) => {
-                    const runnerId = runner.id; // Get the ID
-                    if (!runnerId) { // Explicit check for null/undefined/empty string
+                    const runnerId = runner.id;
+                    if (!runnerId) {
                         console.error(`Skipping fetch for runner ${runner.runner_name || 'Unknown'} due to missing or invalid credential ID.`);
-                        return { weeklyStats: [], detailedActivities: [] }; // Skip this runner
+                        return { weeklyStats: [], detailedActivities: [] };
                     }
                     const payload = { runnerCredentialId: runnerId };
-                    console.log(`[viewStatsBtn] Sending payload to ${GET_STATS_API_URL}:`, payload); // Added logging here
+                    console.log(`[viewStatsBtn] Sending payload to ${GET_STATS_API_URL}:`, payload);
                     try {
                         const response = await fetch(GET_STATS_API_URL, {
                             method: 'POST',
                             headers: headers, 
-                            body: JSON.stringify(payload) // Use the validated payload
+                            body: JSON.stringify(payload)
                         });
 
                         const result = await response.json();
                         if (response.ok && result.success) {
-                            // Enrich weekly_stats with athlete_id AND running_team before pushing
                             const enrichedWeeklyStats = result.weekly_stats.map(s => ({
                                 ...s,
-                                athlete_id: runner.athlete_id, // Add athlete_id to each weekly stat entry
-                                running_team: runner.running_team // NEW: Add running_team for client-side filtering
+                                athlete_id: runner.athlete_id,
+                                running_team: runner.running_team
                             }));
                             return { 
                                 weeklyStats: enrichedWeeklyStats, 
@@ -2333,18 +2285,17 @@
                         } else {
                             console.error(`Lỗi khi tải thống kê cho ${runner.runner_name} (credential ID: ${runnerId}):`, result.error || 'Không xác định');
                             showAlert(`Lỗi khi tải thống kê cho ${runner.runner_name}: ${result.error || 'Không xác định'}`);
-                            return { weeklyStats: [], detailedActivities: [] }; // Return empty on error
+                            return { weeklyStats: [], detailedActivities: [] };
                         }
                     } catch (error) {
                         console.error(`Lỗi mạng/máy chủ khi tải thống kê cho ${runner.runner_name} (credential ID: ${runnerId}):`, error);
                         showAlert(`Lỗi mạng/máy chủ khi tải thống kê cho ${runner.runner_name}: ${error.message}`);
-                        return { weeklyStats: [], detailedActivities: [] }; // Return empty on error
+                        return { weeklyStats: [], detailedActivities: [] };
                     }
                 });
 
                 const allResults = await Promise.all(fetchPromises);
 
-                // Aggregate all results
                 allResults.forEach(res => {
                     weeklyStatsData.push(...res.weeklyStats);
                 });
@@ -2362,19 +2313,7 @@
          * Renders the detailed statistics table based on userActivities.
          */
         function renderDetailedStatsTable() {
-            // Clear all tbodies except the first (which is the thead, though named tbody for some reason in the original HTML)
-            // The initial HTML for the detailed stats table has <thead> and an empty <tbody>.
-            // We need to clear the *content* of the first tbody and append new tbodies directly to the table.
             const table = document.getElementById('detailed-stats-table');
-            const initialTbody = table.querySelector('thead + tbody'); // Selects the tbody immediately following the thead
-
-            // Remove all dynamically created tbodies (these will have class 'runner-summary-group' or 'collapsible-content')
-            // Also, remove the initial empty tbody if it exists and we're recreating everything.
-            // A safer approach is to remove all tbodies, then re-create the main tbody if needed, or simply append.
-            // Given the HTML structure, the easiest is to remove all TBODY elements *after* the THEAD,
-            // then append new structured TBODY elements.
-
-            // Let's clear all existing tbodies and rebuild.
             let currentTbody = table.lastElementChild;
             while (currentTbody && currentTbody.tagName === 'TBODY') {
                 table.removeChild(currentTbody);
@@ -2383,7 +2322,6 @@
 
             detailedStatsStatus.textContent = '';
 
-            // userActivities should already be filtered by club if `loadRecentActivitiesBtn` was clicked with a club filter
             const activitiesToDisplay = userActivities; 
 
             if (!activitiesToDisplay || activitiesToDisplay.length === 0) {
@@ -2391,14 +2329,12 @@
                 return;
             }
 
-            // Get values from new input fields
             const penaltyPerKmGt10 = parseFloat(penaltyPerKmGt10Input.value) || 0;
             const penaltyPerKmLte10 = parseFloat(penaltyPerKmLte10Input.value) || 0;
             const targetKmPerWeek = parseFloat(targetKmPerWeekInput.value) || 0;
 
-            // Group activities by runner (using athlete_id) - but now on filtered data
             const activitiesByAthlete = activitiesToDisplay.reduce((acc, activity) => {
-                const athleteId = String(activity.user_id); // Ensure string for consistency
+                const athleteId = String(activity.user_id);
                 if (!acc[athleteId]) {
                     acc[athleteId] = [];
                 }
@@ -2406,7 +2342,6 @@
                 return acc;
             }, {});
 
-            // Map athlete_id to runner_name and running_team using allRunnerCredentials
             const runnerInfoMap = new Map();
             allRunnerCredentials.forEach(cred => {
                 if (cred.athlete_id) {
@@ -2420,7 +2355,6 @@
             console.log('renderDetailedStatsTable: Activities grouped by athlete (filtered):', activitiesByAthlete); 
 
             const sortedAthleteIds = Object.keys(activitiesByAthlete).sort((a, b) => {
-                // Sort by runner name for consistent display
                 const nameA = runnerInfoMap.get(a)?.name || `Runner ID: ${a}`;
                 const nameB = runnerInfoMap.get(b)?.name || `Runner ID: ${b}`;
                 return nameA.localeCompare(nameB);
@@ -2435,20 +2369,16 @@
                 let totalRunnerDistanceKm = 0;
                 let totalRunnerTime = 0;
 
-                // Calculate totals first
                 runnerActivities.forEach(activity => {
                     totalRunnerDistanceKm += (activity.distance / 1000);
                     totalRunnerTime += activity.moving_time;
                 });
 
-                // --- Create a tbody for summary (always visible) ---
                 const summaryTbody = document.createElement('tbody');
-                summaryTbody.className = 'runner-summary-group'; // Add a class for styling if needed
+                summaryTbody.className = 'runner-summary-group';
 
-                // Add Total Row
                 const totalRow = summaryTbody.insertRow();
                 totalRow.className = 'total-row';
-                // Initial state of the arrow is right-pointing
                 totalRow.innerHTML = `
                     <td colspan="3" class="font-bold text-lg text-bidv-green">
                         Tổng cộng cho ${runnerName} <span class="text-gray-500 text-base">(${runnerTeam})</span>
@@ -2460,7 +2390,6 @@
                     <td></td>
                     <td>${formatDuration(totalRunnerTime)}</td>
                 `;
-                // Add click listener for the toggle icon *after* it's in the DOM
                 const toggleIcon = totalRow.querySelector('.detailed-stats-toggle-icon');
                 if (toggleIcon) {
                     toggleIcon.addEventListener('click', () => {
@@ -2470,12 +2399,11 @@
                     });
                 }
 
-                // Calculate KM difference and penalty/bonus
                 const kmDifference = totalRunnerDistanceKm - targetKmPerWeek;
                 
                 let kmMessage = '';
                 let amountMessage = '';
-                if (kmDifference < 0) { // Deficit
+                if (kmDifference < 0) {
                     const deficitKm = Math.abs(kmDifference);
                     let penaltyRate = 0;
                     if (deficitKm <= 10) {
@@ -2486,39 +2414,35 @@
                     const penaltyAmount = deficitKm * penaltyRate;
                     kmMessage = `Số KM thiếu (Mục tiêu ${targetKmPerWeek}KM): <strong>${deficitKm.toFixed(2)} KM</strong>`;
                     amountMessage = `Số tiền phạt (Phạt ${penaltyRate}K/KM): <strong>${penaltyAmount.toLocaleString('vi-VN')} nghìn VNĐ</strong>`;
-                } else { // Surplus or met target
+                } else {
                     const surplusKm = kmDifference;
-                    const bonusAmount = surplusKm * (penaltyPerKmGt10 || 0); // Use the base penalty rate for bonus
+                    const bonusAmount = surplusKm * (penaltyPerKmGt10 || 0);
                     kmMessage = `Số KM vượt mục tiêu (Mục tiêu ${targetKmPerWeek}KM): <strong>${surplusKm.toFixed(2)} KM</strong>`;
                     amountMessage = `Tiền thưởng (Thưởng ${(penaltyPerKmGt10 || 0)}K/KM): <strong>${bonusAmount.toLocaleString('vi-VN')} nghìn VNĐ</strong>`;
                 }
 
-                // Add Summary Row
                 const summaryRow = summaryTbody.insertRow();
-                summaryRow.className = kmDifference < 0 ? 'missing-row' : 'summary-row'; // Style based on outcome
+                summaryRow.className = kmDifference < 0 ? 'missing-row' : 'summary-row';
                 summaryRow.innerHTML = `
                     <td colspan="4">${kmMessage}</td>
                     <td colspan="4">${amountMessage}</td>
                 `;
 
-                // Append the summary tbody to the table
                 table.appendChild(summaryTbody);
 
 
-                // --- Create a tbody for detailed activities (collapsible) ---
                 const detailedActivitiesTbody = document.createElement('tbody');
                 detailedActivitiesTbody.id = `detailed-activities-for-${athleteId}`;
-                detailedActivitiesTbody.className = 'collapsible-content'; // Reuse existing collapsible-content class
-                detailedActivitiesTbody.classList.add('collapsed'); // Initially collapsed
+                detailedActivitiesTbody.className = 'collapsible-content';
+                detailedActivitiesTbody.classList.add('collapsed');
 
-                // Sort activities by date for better readability within each runner's section
                 runnerActivities.sort((a, b) => new Date(b.start_date) - new Date(a.start_date));
 
                 runnerActivities.forEach(activity => {
                     const distanceKm = (activity.distance / 1000);
                     const row = detailedActivitiesTbody.insertRow();
                     row.innerHTML = `
-                        <td></td> <!-- Empty cell for runner name, as it's in the summary -->
+                        <td></td>
                         <td>${new Date(activity.start_date).toLocaleDateString('vi-VN')}</td>
                         <td>${activity.type}</td>
                         <td>${distanceKm.toFixed(2)}</td>
@@ -2529,10 +2453,8 @@
                     `;
                 });
                 
-                // Append the detailed activities tbody to the table
                 table.appendChild(detailedActivitiesTbody);
 
-                // Add a spacer tbody for better readability
                 const spacerTbody = document.createElement('tbody');
                 spacerTbody.innerHTML = `<tr class="h-4 bg-gray-100"><td colspan="8"></td></tr>`;
                 table.appendChild(spacerTbody);
@@ -2574,17 +2496,14 @@
          * Populates the club filter dropdowns and the runner-team select in the modal.
          */
         function populateClubDropdowns() {
-            // Populate runner-team select in credential modal
             runnerTeamSelect.innerHTML = '<option value="">-- Chọn đội chạy --</option>';
             allClubs.forEach(club => {
                 const option = document.createElement('option');
-                option.value = club.name; // Use club name as value
+                option.value = club.name;
                 option.textContent = club.name;
                 runnerTeamSelect.appendChild(option);
             });
-            // (Setting selected value for runnerTeamSelect happens in openCredentialModal)
 
-            // Populate club filter for recent activities
             clubRecentActivitiesFilter.innerHTML = '<option value="all">Tất cả Câu lạc bộ</option>';
             allClubs.forEach(club => {
                 const option = document.createElement('option');
@@ -2592,7 +2511,6 @@
                 option.textContent = club.name;
                 clubRecentActivitiesFilter.appendChild(option);
             });
-            // Try to restore previous selection, or default to 'all'
             if (Array.from(clubRecentActivitiesFilter.options).some(opt => opt.value === selectedClubNameForRecentActivities)) {
                 clubRecentActivitiesFilter.value = selectedClubNameForRecentActivities;
             } else {
@@ -2601,15 +2519,13 @@
             }
 
 
-            // Populate club filter for stats
-            clubStatsFilter.innerHTML = '<option value="">Tất cả Câu lạc bộ</option>'; // '' for 'all'
+            clubStatsFilter.innerHTML = '<option value="">Tất cả Câu lạc bộ</option>'; 
             allClubs.forEach(club => {
                 const option = document.createElement('option');
                 option.value = club.name;
                 option.textContent = club.name;
                 clubStatsFilter.appendChild(option);
             });
-            // Try to restore previous selection, or default to '' (all)
             if (Array.from(clubStatsFilter.options).some(opt => opt.value === selectedClubIdForStats)) {
                 clubStatsFilter.value = selectedClubIdForStats;
             } else {
@@ -2623,30 +2539,27 @@
          * Populates the runner filter dropdown for the stats section.
          */
         function populateRunnerStatsFilter() {
-            runnerStatsFilter.innerHTML = '<option value="">Tất cả Runner</option>'; // Always start with "All Runners" option
+            runnerStatsFilter.innerHTML = '<option value="">Tất cả Runner</option>';
             
             let filteredRunners = allRunnerCredentials;
 
-            // Apply club filter first, if one is selected
             if (selectedClubIdForStats !== '') {
                 filteredRunners = filteredRunners.filter(cred => cred.running_team === selectedClubIdForStats);
             }
 
-            // Now, filter by athlete_id and populate
             filteredRunners.forEach(cred => {
-                if (cred.athlete_id) { // Only add if athlete_id is known (meaning Strava connected)
+                if (cred.athlete_id) {
                     const option = document.createElement('option');
-                    option.value = String(cred.athlete_id); // Use athlete_id as value for filtering
+                    option.value = String(cred.athlete_id);
                     option.textContent = cred.runner_name;
                     runnerStatsFilter.appendChild(option);
                 }
             });
-            // Set the selected value back if it was previously set and is still valid
             if (selectedRunnerIdForStats && 
                 Array.from(runnerStatsFilter.options).some(opt => opt.value === selectedRunnerIdForStats)) {
                 runnerStatsFilter.value = selectedRunnerIdForStats;
             } else {
-                selectedRunnerIdForStats = ''; // Reset if previously selected runner is no longer available
+                selectedRunnerIdForStats = '';
                 runnerStatsFilter.value = '';
             }
         }
@@ -2659,8 +2572,8 @@
         function getDateFromISOWeek(w) {
             const year = parseInt(w.substring(0, 4), 10);
             const week = parseInt(w.substring(6), 10);
-            const date = new Date(year, 0, 1 + (week - 1) * 7); // Start of year + (week - 1) weeks
-            date.setDate(date.getDate() + (1 - date.getDay() + (date.getDay() === 0 ? -6 : 1))); // Adjust to Monday
+            const date = new Date(year, 0, 1 + (week - 1) * 7);
+            date.setDate(date.getDate() + (1 - date.getDay() + (date.getDay() === 0 ? -6 : 1))); 
             return date;
         }
 
@@ -2670,12 +2583,11 @@
          * @param {string} athleteId - The Strava athlete ID.
          */
         async function fetchActivitiesForWeek(isoWeek, athleteId) {
-            weeklyActivitiesList.innerHTML = ''; // Clear previous list
+            weeklyActivitiesList.innerHTML = '';
             weeklyActivitiesStatus.textContent = 'Đang tải hoạt động cho tuần này...';
-            weeklyActivitiesModal.style.display = 'flex'; // Show the modal
+            weeklyActivitiesModal.style.display = 'flex';
 
             try {
-                // Find the runner's credential ID based on their athlete_id
                 const runner = allRunnerCredentials.find(rc => String(rc.athlete_id) === String(athleteId));
                 if (!runner) {
                     weeklyActivitiesStatus.textContent = 'Không tìm thấy thông tin runner.';
@@ -2694,11 +2606,11 @@
                 }
 
                 const payload = { 
-                    runnerCredentialId: runner.id, // Use the credential ID to fetch activities
-                    isoWeek: isoWeek // Pass the ISO week for filtering
+                    runnerCredentialId: runner.id,
+                    isoWeek: isoWeek
                 };
 
-                const response = await fetch(GET_STATS_API_URL, { // Reuse the GET_STATS_API_URL as it can filter by week
+                const response = await fetch(GET_STATS_API_URL, {
                     method: 'POST',
                     headers: headers,
                     body: JSON.stringify(payload)
@@ -2713,7 +2625,7 @@
                     );
 
                     if (activitiesInWeek.length > 0) {
-                        activitiesInWeek.sort((a, b) => new Date(b.start_date) - new Date(a.start_date)); // Sort by date descending
+                        activitiesInWeek.sort((a, b) => new Date(b.start_date) - new Date(a.start_date));
                         activitiesInWeek.forEach(activity => {
                             const li = document.createElement('li');
                             li.className = 'border-b last:border-b-0 py-2';
@@ -2753,7 +2665,6 @@
 
         /**
          * Helper to get ISO week string (YYYY-WNN) from a Date object.
-         * Used for filtering and grouping.
          * @param {Date} d - The Date object.
          * @returns {string} ISO week string.
          */
@@ -2767,16 +2678,14 @@
         
         // Function to draw the bubble chart
         function renderBubbleChart(data) {
-            console.log('renderBubbleChart: Dữ liệu đầu vào:', data); // Log the input data
+            console.log('renderBubbleChart: Input data:', data);
 
             const monthlyDataMap = new Map();
-            // Filtering by selectedRunnerIdForStats and selectedClubIdForStats
             let filteredData = data;
             if (selectedRunnerIdForStats !== '') { 
                 filteredData = filteredData.filter(d => String(d.athlete_id) === selectedRunnerIdForStats);
             }
             if (selectedClubIdForStats !== '') {
-                // Find runner's club from allRunnerCredentials
                 filteredData = filteredData.filter(d => {
                     const runner = allRunnerCredentials.find(rc => String(rc.athlete_id) === String(d.athlete_id));
                     return runner && runner.running_team === selectedClubIdForStats;
@@ -2785,14 +2694,14 @@
 
             if (filteredData.length === 0) {
                 document.getElementById('bubble-chart-container').innerHTML = '<p class="text-gray-500 text-center">Không có dữ liệu thống kê để hiển thị biểu đồ cho các bộ lọc đã chọn.</p>';
-                console.log('renderBubbleChart: Không có dữ liệu hàng tháng để vẽ biểu đồ cho các bộ lọc đã chọn.');
+                console.log('renderBubbleChart: No monthly data to draw chart for selected filters.');
                 return;
             }
 
             filteredData.forEach(d => {
                 const dateInWeek = getDateFromISOWeek(d.week);
                 const monthYear = dateInWeek.getFullYear() + '-' + String(dateInWeek.getMonth() + 1).padStart(2, '0');
-                const monthTotalDistance = d.totalDistance; // This will be summed later
+                const monthTotalDistance = d.totalDistance;
 
                 if (!monthlyDataMap.has(monthYear)) {
                     monthlyDataMap.set(monthYear, { month: monthYear, weeks: [], totalMonthlyDistance: 0 });
@@ -2801,14 +2710,14 @@
                 monthlyDataMap.get(monthYear).totalMonthlyDistance += d.totalDistance;
             });
 
-            const monthlyData = Array.from(monthlyDataMap.values()).sort((a, b) => b.month.localeCompare(a.month)); // Sort months descending
+            const monthlyData = Array.from(monthlyDataMap.values()).sort((a, b) => b.month.localeCompare(a.month));
 
             const container = document.getElementById('bubble-chart-container');
-            container.innerHTML = '';  // Clear previous SVG
+            container.innerHTML = ''; 
 
             if (!monthlyData || monthlyData.length === 0) {
-                container.innerHTML = '<p class="text-gray-500 text-center">Không có dữ liệu thống kê để hiển thị biểu đồ. Vui lòng tải dữ liệu từ Strava hoặc chọn bộ lọc khác.</p>'; // More specific message
-                console.log('renderBubbleChart: Không có dữ liệu hàng tháng để vẽ biểu đồ.');
+                container.innerHTML = '<p class="text-gray-500 text-center">Không có dữ liệu thống kê để hiển thị biểu đồ. Vui lòng tải dữ liệu từ Strava hoặc chọn bộ lọc khác.</p>';
+                console.log('renderBubbleChart: No monthly data to draw chart.');
                 return;
             }
 
@@ -2819,9 +2728,9 @@
             const totalSvgContentHeight = (monthlyData.length * monthBandHeight) + topPaddingForChart;
             const svgHeight = Math.max(container.clientHeight, totalSvgContentHeight);
 
-            console.log(`renderBubbleChart: Kích thước SVG - Width: ${width}, Height: ${svgHeight}`);
+            console.log(`renderBubbleChart: SVG dimensions - Width: ${width}, Height: ${svgHeight}`);
             if (width <= 0 || svgHeight <= 0) {
-                console.error('Lỗi renderBubbleChart: Kích thước biểu đồ không hợp lệ. Width hoặc Height <= 0.');
+                console.error('renderBubbleChart Error: Invalid chart dimensions. Width or Height <= 0.');
                 container.innerHTML = '<p class="text-red-500">Lỗi: Kích thước biểu đồ không hợp lệ. Vui lòng thử lại hoặc đảm bảo khung chứa hiển thị.</p>';
                 return;
             }
@@ -2834,21 +2743,20 @@
                 .attr("viewBox", `0 0 ${width} ${svgHeight}`)
                 .attr("preserveAspectRatio", "xMidYMid meet");
 
-            const maxDistance = d3.max(filteredData, d => d.totalDistance); // Use filteredData for maxDistance
-            const minDistance = d3.min(filteredData, d => d.totalDistance); // Use filteredData for minDistance
-            // const maxElevationGain = d3.max(data, d => d.totalElevationGain || 0); // Not used in bubble size/color
+            const maxDistance = d3.max(filteredData, d => d.totalDistance);
+            const minDistance = d3.min(filteredData, d => d.totalDistance);
 
-            console.log(`renderBubbleChart: Quãng đường Min: ${minDistance}, Max: ${maxDistance}`);
+            console.log(`renderBubbleChart: Min Distance: ${minDistance}, Max Distance: ${maxDistance}`);
             
             const maxRadius = width < 768 ? 30 : 60;
             const minRadius = width < 768 ? 8 : 15;
 
             const radiusScale = d3.scaleSqrt()
-                .domain([0, maxDistance || 1]) // Use 1 as fallback to prevent domain from being [0,0] if maxDistance is 0
+                .domain([0, maxDistance || 1])
                 .range([minRadius, maxRadius]);
 
             const colorScale = d3.scaleSequential(d3.interpolateViridis)
-                .domain([maxDistance || 1, minDistance || 0]); // Use 1 as fallback for max, 0 for min
+                .domain([maxDistance || 1, minDistance || 0]);
 
 
             const bubbleHorizontalPadding = width < 768 ? 10 : 20;
@@ -2875,7 +2783,7 @@
                     .attr("font-size", width < 768 ? "1rem" : "1.2rem")
                     .attr("font-weight", "bold")
                     .attr("fill", "#555")
-                    .text(`${monthDisplay} (${totalMonthlyKm}KM)`); // Updated text here
+                    .text(`${monthDisplay} (${totalMonthlyKm}KM)`);
 
                 monthObj.weeks.sort((a, b) => a.week.localeCompare(b.week));
 
@@ -2888,7 +2796,7 @@
                     return { ...d, r, cx, cy: bubbleVerticalOffset + (width < 768 ? 0 : 10) };
                 });
 
-                console.log('renderBubbleChart: positionedWeeks cho tháng', monthObj.month, ':', positionedWeeks);
+                console.log('renderBubbleChart: positionedWeeks for month', monthObj.month, ':', positionedWeeks);
 
                 monthGroup.selectAll(".bubble")
                     .data(positionedWeeks)
@@ -2898,36 +2806,8 @@
                     .attr("cy", d => d.cy)
                     .attr("r", d => d.r)
                     .attr("fill", d => colorScale(d.totalDistance))
-                 /* .attr("stroke", d => colorScale(d.totalDistance)) // Đây là dòng đã được thay đổi*/
                     .attr("stroke-width", 2)
-                 /* .on("mouseover", function(event, d) {
-                        d3.select(this).attr("stroke", "orange").attr("stroke-width", 3);
-                        // Calculate average pace for the week
-                        const avgPace = d.totalTime && d.totalDistance ? formatPace(d.totalDistance / d.totalTime) : 'N/A';
-
-                        // Get runner name for tooltip
-                        const runner = allRunnerCredentials.find(rc => String(rc.athlete_id) === String(d.athlete_id));
-                        const runnerNameForTooltip = runner ? runner.runner_name : `Runner ID: ${d.athlete_id || 'Unknown'}`;
-
-                        tooltip.style("opacity", 1)
-                            .html(`<strong>${runnerNameForTooltip}</strong><br>
-                                    Tuần: ${d.week.split('-W')[1]}<br>
-                                    Hoạt động: ${d.activityCount}<br>
-                                    Quãng đường: ${(d.totalDistance / 1000).toFixed(2)} km<br>
-                                    Thời gian: ${formatDuration(d.totalTime)}<br>
-                                    Pace TB: ${avgPace}<br>
-                                    Độ cao tăng TB: ${d.totalElevationGain ? formatElevationGain(d.totalElevationGain / d.activityCount) : 'N/A'}`)
-                            .style("left", (event.pageX + 10) + "px")
-                            .style("top", (event.pageY - 28) + "px");
-                    })
-                    .on("mouseout", function() {
-                        d3.select(this).attr("stroke", "#fff").attr("stroke-width", 2);
-                        tooltip.style("opacity", 0);
-                    })
-
-                    */
                     .on("click", function(event, d) {
-                        // Pass athleteId from the clicked bubble data for fetching specific activities
                         fetchActivitiesForWeek(d.week, d.athlete_id); 
                         weeklyActivitiesTitle.textContent = `Hoạt động của ${allRunnerCredentials.find(rc => String(rc.athlete_id) === String(d.athlete_id))?.runner_name || `Runner ID: ${d.athlete_id}`} trong tuần ${d.week.split('-W')[1]} (${d.week.split('-W')[0]}):`;
                     });
@@ -2938,7 +2818,7 @@
                     .attr("class", "bubble-text")
                     .attr("x", d => d.cx)
                     .attr("y", d => d.cy)
-                    .text(d => d.r > (width < 768 ? 15 : 25) ? `${(d.totalDistance / 1000).toFixed(1)}km` : '') // Display KM on bubble
+                    .text(d => d.r > (width < 768 ? 15 : 25) ? `${(d.totalDistance / 1000).toFixed(1)}km` : '')
                     .attr("dy", "0.35em")
                     .attr("fill", "white")
                     .attr("pointer-events", "none");
@@ -2949,7 +2829,6 @@
 
         /**
          * Handles the "Analyze Activities (AI)" button click.
-         * Sends `userActivities` to the AI analysis Edge Function and displays the result.
          */
         analyzeActivitiesBtn.addEventListener('click', async () => {
             if (!currentAppUserId) {
@@ -2961,11 +2840,10 @@
                 return;
             }
 
-            llmAnalysisSection.classList.remove('hidden'); // Ensure the section is visible
-            llmAnalysisContent.innerHTML = '<div class="loader"></div> Đang phân tích hoạt động của bạn với AI...'; // Show loading spinner
-            llmAnalysisStatus.textContent = ''; // Clear previous status
+            llmAnalysisSection.classList.remove('hidden');
+            llmAnalysisContent.innerHTML = '<div class="loader"></div> Đang phân tích hoạt động của bạn với AI...';
+            llmAnalysisStatus.textContent = '';
 
-            // Scroll to the AI analysis section
             llmAnalysisSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
             try {
@@ -2976,7 +2854,6 @@
                     return;
                 }
 
-                // Prepare activities for LLM. Only send necessary fields to reduce payload size.
                 const activitiesForLLM = userActivities.map(activity => ({
                     id: activity.strava_activity_id,
                     name: activity.name,
@@ -2987,51 +2864,45 @@
                     start_date: activity.start_date,
                     average_speed_mps: activity.average_speed,
                     average_heartrate_bpm: activity.average_heartrate,
-                    runner_id: activity.user_id // Keep runner_id for context
+                    runner_id: activity.user_id
                 }));
                 
-                // The prompt for the LLM will be sent to the Edge Function.
-                // The Edge Function will construct the chatHistory and call the Gemini API internally.
                 const response = await fetch(ANALYZE_ACTIVITIES_FUNCTION_URL, {
                     method: 'POST',
                     headers: { 
                         'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${session.access_token}` // Pass Supabase Auth token for Edge Function auth
+                        'Authorization': `Bearer ${session.access_token}`
                     },
                     body: JSON.stringify({ 
-                        activities: activitiesForLLM // Send filtered activities to the Edge Function
+                        activities: activitiesForLLM
                     })
                 });
 
                 const result = await response.json();
 
                 if (response.ok && result.success) {
-                    let analysisContent = result.analysis; // CHANGE: Look for 'analysis' field
-                    // Attempt to parse if analysisContent is a stringified JSON object (as seen in the screenshot)
+                    let analysisContent = result.analysis;
                     if (typeof analysisContent === 'string') {
                         try {
                             const parsedAnalysis = JSON.parse(analysisContent);
                             if (parsedAnalysis.analysis) {
-                                analysisContent = parsedAnalysis.analysis; // Get the nested 'analysis'
+                                analysisContent = parsedAnalysis.analysis;
                             }
                         } catch (e) {
-                            // Not a JSON string, use as is.
                             console.warn("Analysis content was a string but not a JSON object, using as-is.");
                         }
                     }
 
                     if (analysisContent) {
-                        // NEW: Convert speed units from m/s to min/km in the analysis content
                         const msRegex = /(\d+\.?\d*)\s*m\/s/g;
                         analysisContent = analysisContent.replace(msRegex, (match, value) => {
                             const speedInMs = parseFloat(value);
                             if (!isNaN(speedInMs)) {
-                                return formatPace(speedInMs); // Reusing the existing formatPace function
+                                return formatPace(speedInMs);
                             }
-                            return match; // Return original match if conversion fails
+                            return match;
                         });
 
-                        // Chuyển đổi nội dung Markdown sang HTML
                         llmAnalysisContent.innerHTML = marked.parse(analysisContent); 
                         llmAnalysisStatus.textContent = 'Phân tích AI hoàn tất.';
                     } else {
@@ -3048,8 +2919,6 @@
                 console.error('Lỗi khi gọi Edge Function phân tích AI:', error);
                 llmAnalysisContent.innerHTML = `<p class="text-red-500">Lỗi mạng hoặc máy chủ khi phân tích AI: ${error.message}</p>`;
                 llmAnalysisStatus.textContent = 'Lỗi trong quá trình phân tích AI.';
-            } finally {
-                // Any cleanup if needed, but the content will be replaced anyway.
             }
         });
 
@@ -3096,19 +2965,15 @@
 
             // Handle initial Strava OAuth callback if any
             await handleStravaCallback(); 
-            // The initial UI update will be handled by the onAuthStateChange listener
-            // once Supabase session is established.
-            // No direct call to displayCredentials() or checkStravaAuthState() here anymore
-            // as onAuthStateChange will trigger updateAppAuthUI which calls them.
 
             // Auto-fill date filters
             const today = new Date();
-            const endDate = today.toISOString().split('T')[0]; //YYYY-MM-DD
+            const endDate = today.toISOString().split('T')[0];
             endDateRecent.value = endDate;
 
             const sevenDaysAgo = new Date(today);
             sevenDaysAgo.setDate(today.getDate() - 7);
-            const startDate = sevenDaysAgo.toISOString().split('T')[0]; //YYYY-MM-DD
+            const startDate = sevenDaysAgo.toISOString().split('T')[0];
             startDateRecent.value = startDate;
 
             // Add resize event listener to redraw the chart
@@ -3122,19 +2987,16 @@
             populateActivityTypeFilters();
             updateMultiSelectDisplay(multiSelectDisplayRecent, selectedActivityTypesRecent, document.getElementById('multi-select-options-recent'));
             
-            // NEW: Add event listener for the runner recent activities filter
             runnerRecentActivitiesFilter.addEventListener('change', () => {
                 selectedRunnerIdForRecentActivities = runnerRecentActivitiesFilter.value;
-                loadRecentActivitiesBtn.click(); // Reload activities based on the new filter
+                loadRecentActivitiesBtn.click();
             });
-            // NEW: Add event listener for the club recent activities filter
             clubRecentActivitiesFilter.addEventListener('change', () => {
                 selectedClubNameForRecentActivities = clubRecentActivitiesFilter.value;
-                loadRecentActivitiesBtn.click(); // Reload activities based on the new filter
+                loadRecentActivitiesBtn.click();
             });
 
 
-            // Add event listeners for collapsible headers
             document.querySelectorAll('.collapsible-header').forEach(header => {
                 header.addEventListener('click', () => {
                     const targetId = header.dataset.target;
@@ -3143,44 +3005,47 @@
                     toggleCollapsible(contentElement, toggleIcon);
                 });
             });
-            // Initial collapse for "Download Strava hộ" section
             toggleCollapsible(downloadForOtherContent, downloadForOtherSection.querySelector('.toggle-icon'), true);
 
 
-            // Add event listeners for detailed stats table inputs
             penaltyPerKmGt10Input.addEventListener('input', renderDetailedStatsTable); 
             penaltyPerKmLte10Input.addEventListener('input', renderDetailedStatsTable); 
             targetKmPerWeekInput.addEventListener('input', renderDetailedStatsTable);
 
-            // Add event listeners for date filters to trigger activity reload
-            startDateRecent.addEventListener('change', loadRecentActivitiesBtn.click);
-            endDateRecent.addEventListener('change', loadRecentActivitiesBtn.click);
+            startDateRecent.addEventListener('change', () => loadRecentActivitiesBtn.click());
+            endDateRecent.addEventListener('change', () => loadRecentActivitiesBtn.click());
 
-            // Add event listener for the runner stats filter
             runnerStatsFilter.addEventListener('change', () => {
                 selectedRunnerIdForStats = runnerStatsFilter.value;
-                if (weeklyStatsData.length > 0) { // Only re-render if data already exists
+                if (weeklyStatsData.length > 0) {
                     renderBubbleChart(weeklyStatsData);
                 }
             });
-            // NEW: Add event listener for the club stats filter
             clubStatsFilter.addEventListener('change', () => {
                 selectedClubIdForStats = clubStatsFilter.value;
-                // When club filter changes, also update the runner filter for stats
                 populateRunnerStatsFilter(); 
-                if (weeklyStatsData.length > 0) { // Only re-render if data already exists
+                if (weeklyStatsData.length > 0) {
                     renderBubbleChart(weeklyStatsData);
                 }
             });
-
-            // Add event listener for the new "Download Strava hộ" button
-            downloadActivitiesForOtherBtn.addEventListener('click', downloadActivitiesForOtherBtn.onclick); // Attach event listener
 
             // Initial collapse instruction section
             toggleCollapsible(instructionContent, instructionSection.querySelector('.toggle-icon'), true);
+            
+            // Scroll-to-top button logic
+            window.onscroll = function() {
+                if (document.body.scrollTop > 20 || document.documentElement.scrollTop > 20) {
+                    scrollToTopBtn.style.display = "block";
+                } else {
+                    scrollToTopBtn.style.display = "none";
+                }
+            };
+            scrollToTopBtn.addEventListener('click', () => {
+                window.scrollTo({top: 0, behavior: 'smooth'});
+            });
 
             // Trigger initial load of recent activities and detailed stats after all setup
-            loadRecentActivitiesBtn.click();
+            // This is triggered by onAuthStateChange now
         };
     </script>
 </body>
