@@ -840,7 +840,7 @@
         const userInfo = document.getElementById('user-info');
         const activitiesLimitInput = document.getElementById('activities-limit');
         const numRecentActivitiesInput = document.getElementById('num-recent-activities');
-        const loadRecentActivitiesBtn = document.getElementById('load-recent-activities-btn');
+        const loadRecentActivitiesBtn = document = document.getElementById('load-recent-activities-btn');
         const recentActivitiesContainer = document.getElementById('recent-activities-container'); // Changed from recentActivitiesList
         const recentActivitiesStatus = document.getElementById('recent-activities-status');
         const statsSection = document.getElementById('stats-section');
@@ -1638,8 +1638,8 @@
             if (code) { // Only check for code, stateParam might be null/missing on redirect sometimes or for old sessions
                 authStatus.textContent = 'Đang xử lý kết nối Strava ...';
                 let runnerCredentialId = null;
-                let runnerNameFromState = null;
-                let ownerUidFromState = null;
+                let runnerNameForCallback = null; // Renamed to avoid confusion with existing global
+                let ownerUidForCallback = null; // Renamed to avoid confusion with existing global
 
                 if (stateParam) {
                     try {
@@ -1662,7 +1662,6 @@
                 // Fallback to localStorage if runnerCredentialId is still null or not found in state
                 if (!runnerCredentialId) {
                     runnerCredentialId = localStorage.getItem('strava_runner_credential_id_pending');
-                    runnerNameFromState = localStorage.getItem('strava_runner_name_pending'); // Get pending name
                     if (!runnerCredentialId) {
                         console.error('Không tìm thấy runnerCredentialId trong state hoặc localStorage.');
                         showAlert('Lỗi: Thông tin phiên không hợp lệ hoặc thiếu Runner ID. Vui lòng đăng nhập lại Strava.');
@@ -1671,6 +1670,21 @@
                     }
                 }
                 
+                // Retrieve runnerName from localStorage. This should have been set when initiating the OAuth.
+                runnerNameForCallback = localStorage.getItem('strava_runner_name_pending');
+                if (!runnerNameForCallback) {
+                     console.error('Không tìm thấy runnerName trong localStorage. Có thể lỗi trong luồng lưu trữ.');
+                     // Attempt to find it from allRunnerCredentials if it's already loaded
+                     const existingRunner = allRunnerCredentials.find(rc => rc.id === runnerCredentialId);
+                     if (existingRunner) {
+                         runnerNameForCallback = existingRunner.runner_name;
+                     } else {
+                         showAlert('Lỗi: Không tìm thấy tên Runner. Vui lòng thử lại quá trình kết nối.');
+                         window.history.replaceState({}, document.title, window.location.pathname);
+                         return;
+                     }
+                }
+
                 // Get the current Supabase Auth user's UID (ownerUid)
                 const { data: { user }, error: authError } = await supabaseClientInstance.auth.getUser();
                 if (authError || !user) {
@@ -1679,7 +1693,7 @@
                     window.history.replaceState({}, document.title, window.location.pathname);
                     return;
                 }
-                ownerUidFromState = user.id; // This is the ownerUid
+                ownerUidForCallback = user.id; // This is the ownerUid
 
                 try {
                     // GỌI EDGE FUNCTION để trao đổi mã lấy token
@@ -1697,8 +1711,8 @@
                             client_id: APP_STRAVA_CLIENT_ID,
                             redirect_uri: APP_STRAVA_REDIRECT_URI,
                             // Pass runnerName and ownerUid explicitly as requested by the error message
-                            runnerName: runnerNameFromState, 
-                            ownerUid: ownerUidFromState 
+                            runnerName: runnerNameForCallback, 
+                            ownerUid: ownerUidForCallback 
                         }),
                     });
 
@@ -2212,17 +2226,12 @@
             // Given the HTML structure, the easiest is to remove all TBODY elements *after* the THEAD,
             // then append new structured TBODY elements.
 
-            // Remove all TBODY elements that are not the initial one or the first one (if used as container)
-            // A simple clear of the innerHTML of the container table element will also work if we reconstruct it.
             // Let's clear all existing tbodies and rebuild.
             let currentTbody = table.lastElementChild;
             while (currentTbody && currentTbody.tagName === 'TBODY') {
                 table.removeChild(currentTbody);
                 currentTbody = table.lastElementChild;
             }
-
-            // Re-add an empty tbody placeholder if you want to keep the original structure,
-            // but for this dynamic table, directly appending is fine.
 
             detailedStatsStatus.textContent = '';
 
