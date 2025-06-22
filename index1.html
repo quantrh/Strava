@@ -2979,14 +2979,17 @@
                     runner_id: activity.user_id
                 }));
                 
-                const response = await fetch(ANALYZE_ACTIVITIES_FUNCTION_URL, {
+             const response = await fetch(ANALYZE_ACTIVITIES_FUNCTION_URL, {
                     method: 'POST',
                     headers: { 
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${session.access_token}`
                     },
                     body: JSON.stringify({ 
-                        activities: activitiesForLLM
+                        activities: activitiesForLLM,
+                        // Thêm múi giờ của client để Edge Function có thể sử dụng
+                        // 'Intl.DateTimeFormat().resolvedOptions().timeZone' sẽ trả về múi giờ của trình duyệt
+                        clientTimezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'Asia/Ho_Chi_Minh' 
                     })
                 });
 
