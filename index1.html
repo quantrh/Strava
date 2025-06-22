@@ -570,9 +570,14 @@
                     <button id="analyze-activities-btn" class="btn-primary">
                         ✨ Phân tích hoạt động (AI)
                     </button>
-                    <!-- Changed from ul to div for multi-column layout -->
-                    <div id="recent-activities-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                        <div class="card p-4 text-gray-500 text-center col-span-full">Nhấn "Tải hoạt động gần đây" để xem.</div>
+                 <!-- Changed from ul to div for multi-column layout -->
+                    <div id="recent-activities-container" class="space-y-4"> <!-- Bỏ grid layout ở đây để các phần tử con tự quản lý -->
+                        <div id="recent-activities-summary-area" class="card p-4 text-gray-500 text-center col-span-full">
+                            Nhấn "Tải hoạt động gần đây" để xem.
+                        </div>
+                        <div id="detailed-recent-activities-cards" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 hidden">
+                            <!-- Activity cards will be inserted here by JS -->
+                        </div>
                     </div>
                     <div id="recent-activities-status" class="mt-2 text-sm text-gray-600"></div>
                 </div>
@@ -987,6 +992,10 @@
         const recentActivitiesStatus = document.getElementById('recent-activities-status');
         const statsSection = document.getElementById('stats-section');
 
+        const recentActivitiesSummaryArea = document.getElementById('recent-activities-summary-area');
+        const detailedRecentActivitiesCards = document.getElementById('detailed-recent-activities-cards');
+        
+
         // New DOM elements for weekly activities modal
         const weeklyActivitiesModal = document.getElementById('weekly-activities-modal');
         const closeWeeklyActivitiesModalBtn = document.getElementById('close-weekly-activities-modal-btn');
@@ -1243,6 +1252,130 @@ function applySettingsVisibility(isVisible) {
             return [h, m, s].map(v => v < 10 ? "0" + v : v).filter((v, i) => v !== "00" || i > 0).join(":");
         }
 
+/**
+         * Render activity summary and "View Details" button.
+         * @param {Array} activities - List of activity objects.
+         */
+        function renderActivitySummary(activities) {
+            recentActivitiesSummaryArea.innerHTML = ''; // Clear previous summary
+
+            if (!activities || activities.length === 0) {
+                recentActivitiesSummaryArea.innerHTML = '<p class="text-gray-500">Không tìm thấy hoạt động nào phù hợp với các bộ lọc đã chọn.</p>';
+                detailedRecentActivitiesCards.classList.add('hidden'); // Ensure detailed cards are hidden
+                return;
+            }
+
+            const totalActivities = activities.length;
+            let totalDistanceKm = 0;
+
+            const distanceByRunner = new Map();
+            const distanceByClub = new Map();
+
+            activities.forEach(activity => {
+                const distance = activity.distance / 1000; // Convert meters to kilometers
+                totalDistanceKm += distance;
+
+                const runner = allRunnerCredentials.find(rc => String(rc.athlete_id) === String(activity.user_id));
+                const runnerName = runner ? runner.runner_name : `Runner ID: ${activity.user_id || 'Unknown'}`;
+                const clubName = runner ? runner.running_team : 'Không rõ CLB';
+
+                // Sum distance by runner
+                distanceByRunner.set(runnerName, (distanceByRunner.get(runnerName) || 0) + distance);
+
+                // Sum distance by club
+                distanceByClub.set(clubName, (distanceByClub.get(clubName) || 0) + distance);
+            });
+
+            let summaryHtml = `<p class="text-lg font-bold text-bidv-green mb-2">Tổng quan hoạt động (${totalActivities} hoạt động):</p>`;
+            summaryHtml += `<p class="mb-2">Tổng quãng đường: <span class="font-bold text-xl">${totalDistanceKm.toFixed(2)} KM</span></p>`;
+
+            summaryHtml += `<p class="font-semibold mt-4 mb-1">Quãng đường theo Runner:</p>`;
+            summaryHtml += `<ul class="list-disc ml-6 text-sm">`;
+            Array.from(distanceByRunner.entries()).sort((a, b) => b[1] - a[1]).forEach(([runner, dist]) => {
+                summaryHtml += `<li>${runner}: ${dist.toFixed(2)} KM</li>`;
+            });
+            summaryHtml += `</ul>`;
+
+            summaryHtml += `<p class="font-semibold mt-4 mb-1">Quãng đường theo Câu lạc bộ:</p>`;
+            summaryHtml += `<ul class="list-disc ml-6 text-sm">`;
+            Array.from(distanceByClub.entries()).sort((a, b) => b[1] - a[1]).forEach(([club, dist]) => {
+                summaryHtml += `<li>${club}: ${dist.toFixed(2)} KM</li>`;
+            });
+            summaryHtml += `</ul>`;
+
+            summaryHtml += `
+                <div class="mt-6 text-center">
+                    <button id="view-detailed-activities-btn" class="btn-primary">
+                        Xem chi tiết các hoạt động
+                    </button>
+                </div>
+            `;
+            recentActivitiesSummaryArea.innerHTML = summaryHtml;
+
+            // Attach event listener to the new button
+            const viewDetailedActivitiesBtn = document.getElementById('view-detailed-activities-btn');
+            if (viewDetailedActivitiesBtn) {
+                viewDetailedActivitiesBtn.addEventListener('click', () => {
+                    renderDetailedActivityCards(activities); // Render the detailed cards
+                    detailedRecentActivitiesCards.classList.remove('hidden'); // Show the detailed cards container
+                    viewDetailedActivitiesBtn.classList.add('hidden'); // Optionally hide the summary button after click
+                    // Cuộn xuống để người dùng thấy các hoạt động chi tiết
+                    detailedRecentActivitiesCards.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                });
+            }
+        }
+
+
+        /**
+         * Render detailed activity cards in the dedicated container.
+         * @param {Array} activities - List of activity objects.
+         */
+        function renderDetailedActivityCards(activities) {
+            detailedRecentActivitiesCards.innerHTML = ''; // Clear previous cards
+
+            if (!activities || activities.length === 0) {
+                detailedRecentActivitiesCards.innerHTML = '<div class="card p-4 text-gray-500 text-center col-span-full">Không có hoạt động nào để hiển thị chi tiết.</div>';
+                return;
+            }
+
+            activities.forEach(activity => {
+                const activityCard = document.createElement('div');
+                activityCard.className = 'card p-4 text-sm space-y-1 border border-gray-200 rounded-lg shadow-sm';
+                const runner = allRunnerCredentials.find(rc => String(rc.athlete_id) === String(activity.user_id));
+                const runnerNameForDisplay = runner ? runner.runner_name : `Runner ID: ${activity.user_id || 'Unknown'}`;
+                const runnerClubForDisplay = runner ? runner.running_team : 'N/A';
+
+                activityCard.innerHTML = `
+                    <p class="font-bold text-base text-bidv-green">${runnerNameForDisplay} <span class="text-gray-500 text-xs">(${runnerClubForDisplay})</span></p>
+                    <p class="font-semibold">${activity.name} (${activity.type})</p>
+                    <p>Ngày: ${new Date(activity.start_date).toLocaleString('vi-VN', { 
+                        timeZone: 'Asia/Ho_Chi_Minh',
+                        hour: '2-digit', 
+                        minute: '2-digit', 
+                        day: '2-digit', 
+                        month: '2-digit', 
+                        year: 'numeric' 
+                    })}</p>
+                    <p>Quãng đường: ${(activity.distance / 1000).toFixed(2)} km</p>
+                    <p>Thời gian: ${formatDuration(activity.moving_time)}</p>
+                    <p>Pace: ${formatPace(activity.average_speed)}</p>
+                    <p>Nhịp tim TB: ${activity.average_heartrate ? `${activity.average_heartrate.toFixed(0)} bpm` : 'N/A'}</p>
+                    <p>Độ cao tăng: ${formatElevationGain(activity.total_elevation_gain)}</p>
+                    ${activity.strava_activity_id ? `<button class="btn-primary mt-2 text-sm px-3 py-1 view-map-btn" style="font-weight: bold; text-decoration: underline; background-color: #FC5200; color: white;" data-activity-id="${activity.strava_activity_id}">View on Strava</button>` : ''}
+                `;
+                detailedRecentActivitiesCards.appendChild(activityCard);
+            });
+
+            document.querySelectorAll('#detailed-recent-activities-cards .view-map-btn').forEach(button => {
+                button.onclick = (e) => {
+                    const activityId = e.target.dataset.activityId;
+                    if (activityId) {
+                        window.open(`https://www.strava.com/activities/${activityId}`, '_blank');
+                    }
+                };
+            });
+        }
+        
         /**
          * Converts average speed (m/s) to pace (min/km).
          * @param {number} metersPerSecond - Average speed in meters per second.
@@ -2254,23 +2387,19 @@ function applySettingsVisibility(isVisible) {
             return athleteIds;
         }
 
-        /**
-         * Loads recent activities from Supabase for all connected runners and displays them.
-         */
-        loadRecentActivitiesBtn.addEventListener('click', async () => {
+       loadRecentActivitiesBtn.addEventListener('click', async () => {
             if (!currentAppUserId) { 
                 showAlert('Vui lòng đăng nhập ứng dụng để thực hiện chức năng này.');
                 return;
             }
 
             recentActivitiesStatus.textContent = 'Đang tải hoạt động gần đây ...';
-            recentActivitiesContainer.innerHTML = ''; 
+            // Vùng tóm tắt và vùng chi tiết cần được reset và ẩn đi ban đầu
+            recentActivitiesSummaryArea.innerHTML = ''; 
+            detailedRecentActivitiesCards.innerHTML = ''; 
+            detailedRecentActivitiesCards.classList.add('hidden'); 
 
-            // Filter runner credentials by owner_uid first
-            // let runnerCredentialsToFilter = allRunnerCredentials.filter(cred => cred.owner_uid === currentAppUserId);
-            //Quantrh * update 1
             // Filter runner credentials to include all connected runners (those with an athlete_id), regardless of app user owner.
-            // This is for displaying activities from all Strava-connected runners in this section.
             let runnerCredentialsToFilter = allRunnerCredentials.filter(cred => cred.athlete_id);
             
             if (selectedClubNameForRecentActivities !== 'all') {
@@ -2296,7 +2425,7 @@ function applySettingsVisibility(isVisible) {
             }
 
             if (actualAthleteIdsToFilter.length === 0) {
-                recentActivitiesContainer.innerHTML = '<div class="card p-4 text-gray-500 text-center col-span-full">Không tìm thấy hoạt động nào phù hợp với các bộ lọc đã chọn. Vui lòng thêm và kết nối runner hoặc điều chỉnh bộ lọc.</div>';
+                recentActivitiesSummaryArea.innerHTML = '<p class="card p-4 text-gray-500 text-center col-span-full">Không tìm thấy hoạt động nào phù hợp với các bộ lọc đã chọn. Vui lòng thêm và kết nối runner hoặc điều chỉnh bộ lọc.</p>';
                 recentActivitiesStatus.textContent = 'Không có hoạt động nào để hiển thị.';
                 userActivities = [];
                 renderDetailedStatsTable();
@@ -2364,160 +2493,19 @@ function applySettingsVisibility(isVisible) {
                 console.log('Data returned from Supabase for recent activities (all runners):', data);
 
                 if (data && data.length > 0) {
-                    userActivities = data;
-                    data.forEach(activity => {
-                        const activityCard = document.createElement('div');
-                        activityCard.className = 'card p-4 text-sm space-y-1 border border-gray-200 rounded-lg shadow-sm';
-                        const runner = allRunnerCredentials.find(rc => String(rc.athlete_id) === String(activity.user_id));
-                        const runnerNameForDisplay = runner ? runner.runner_name : `Runner ID: ${activity.user_id || 'Unknown'}`;
-                        const runnerClubForDisplay = runner ? runner.running_team : 'N/A';
-
-
-                        activityCard.innerHTML = `
-                            <p class="font-bold text-base text-bidv-green">${runnerNameForDisplay} <span class="text-gray-500 text-xs">(${runnerClubForDisplay})</span></p>
-                            <p class="font-semibold">${activity.name} (${activity.type})</p>
-                            <p>Ngày: ${new Date(activity.start_date).toLocaleString('vi-VN', { 
-                                timeZone: 'Asia/Ho_Chi_Minh', // Đảm bảo hiển thị theo múi giờ Việt Nam
-                                hour: '2-digit', 
-                                minute: '2-digit', 
-                                day: '2-digit', 
-                                month: '2-digit', 
-                                year: 'numeric' 
-                            })}</p>    
-                            <p>Quãng đường: ${(activity.distance / 1000).toFixed(2)} km</p>
-                            <p>Thời gian: ${formatDuration(activity.moving_time)}</p>
-                            <p>Pace: ${formatPace(activity.average_speed)}</p>
-                            <p>Nhịp tim TB: ${activity.average_heartrate ? `${activity.average_heartrate.toFixed(0)} bpm` : 'N/A'}</p>
-                            <p>Độ cao tăng: ${formatElevationGain(activity.total_elevation_gain)}</p>
-                            ${activity.strava_activity_id ? `<button class="btn-primary mt-2 text-sm px-3 py-1 view-map-btn" style="font-weight: bold; text-decoration: underline; background-color: #FC5200; color: white;" data-activity-id="${activity.strava_activity_id}">View on Strava</button>` : ''}
-                        `;
-                        recentActivitiesContainer.appendChild(activityCard);
-                    });
+                    userActivities = data; // Store globally
+                    renderActivitySummary(userActivities); // GỌI HÀM RENDER TÓM TẮT
                     recentActivitiesStatus.textContent = `Đã tải ${data.length} hoạt động gần đây cho các runner đã chọn.`;
-
-                    document.querySelectorAll('.view-map-btn').forEach(button => {
-                        button.onclick = (e) => {
-                            const activityId = e.target.dataset.activityId;
-                            if (activityId) {
-                                window.open(`https://www.strava.com/activities/${activityId}`, '_blank');
-                            }
-                        };
-                    });
-
                 } else {
-                    recentActivitiesContainer.innerHTML = '<div class="card p-4 text-gray-500 text-center col-span-full">Không tìm thấy hoạt động nào gần đây cho các runner hoặc với bộ lọc đã chọn.</div>';
+                    recentActivitiesSummaryArea.innerHTML = '<p class="card p-4 text-gray-500 text-center col-span-full">Không tìm thấy hoạt động nào gần đây cho các runner hoặc với bộ lọc đã chọn.</p>';
                     recentActivitiesStatus.textContent = 'Không có hoạt động nào để hiển thị.';
                     userActivities = [];
                 }
-                renderDetailedStatsTable();
+                renderDetailedStatsTable(); // Always update detailed stats table
             } catch (error) {
                 console.error('Lỗi khi tải hoạt động gần đây từ Supabase:', error);
                 recentActivitiesStatus.textContent = `Lỗi khi tải hoạt động: ${error.message}`;
                 showAlert(`Lỗi khi tải hoạt động gần đây: ${error.message}`);
-            }
-        });
-
-        // Event listener for "Xem thống kê theo tuần" button
-        viewStatsBtn.addEventListener('click', async () => {
-            if (!currentAppUserId) { 
-                showAlert('Vui lòng đăng nhập ứng dụng để xem thống kê.');
-                return;
-            }
-
-            const chartStatus = document.getElementById('chart-status');
-            chartStatus.textContent = 'Đang tải thống kê theo tuần ...';
-            weeklyStatsData = []; 
-
-            // Filter runner credentials by owner_uid first
-          //  let runnerCredentialsToFetch = allRunnerCredentials.filter(cred => cred.athlete_id && cred.owner_uid === currentAppUserId);
-
-        // Filter runner credentials to include all connected runners (those with an athlete_id), regardless of app user owner.
-            // This is for displaying statistics for all Strava-connected runners in this section.
-            let runnerCredentialsToFetch = allRunnerCredentials.filter(cred => cred.athlete_id);
-            
-            if (selectedClubIdForStats !== '') {
-                runnerCredentialsToFetch = runnerCredentialsToFetch.filter(
-                    cred => cred.running_team === selectedClubIdForStats
-                );
-            }
-            if (selectedRunnerIdForStats !== '') {
-                 runnerCredentialsToFetch = runnerCredentialsToFetch.filter(
-                    cred => String(cred.athlete_id) === selectedRunnerIdForStats
-                );
-            }
-
-
-            if (runnerCredentialsToFetch.length === 0) {
-                chartStatus.textContent = 'Không tìm thấy runner nào được kết nối với tài khoản Strava hoặc phù hợp với bộ lọc. Vui lòng thêm và kết nối runner.';
-                document.getElementById('bubble-chart-container').innerHTML = '<p class="text-gray-500 text-center">Không có dữ liệu thống kê để hiển thị biểu đồ.</p>';
-                weeklyStatsData = [];
-                renderDetailedStatsTable(); 
-                return;
-            }
-
-            console.log('Fetching weekly stats for runners:', runnerCredentialsToFetch.map(r => r.runner_name), 'and club:', selectedClubIdForStats);
-
-            try {
-                const { data: { session }, error: sessionError } = await supabaseClientInstance.auth.getSession();
-                const headers = { 'Content-Type': 'application/json' };
-                if (session?.access_token) {
-                    headers['Authorization'] = `Bearer ${session.access_token}`;
-                } else {
-                    showAlert('Lỗi: Không tìm thấy phiên đăng nhập. Vui lòng đăng nhập lại để xem thống kê.');
-                    chartStatus.textContent = 'Lỗi xác thực: Không tìm thấy phiên đăng nhập.';
-                    return;
-                }
-
-                const fetchPromises = runnerCredentialsToFetch.map(async (runner) => {
-                    const runnerId = runner.id;
-                    if (!runnerId) {
-                        console.error(`Skipping fetch for runner ${runner.runner_name || 'Unknown'} due to missing or invalid credential ID.`);
-                        return { weeklyStats: [], detailedActivities: [] };
-                    }
-                    const payload = { runnerCredentialId: runnerId };
-                    console.log(`[viewStatsBtn] Sending payload to ${GET_STATS_API_URL}:`, payload);
-                    try {
-                        const response = await fetch(GET_STATS_API_URL, {
-                            method: 'POST',
-                            headers: headers, 
-                            body: JSON.stringify(payload)
-                        });
-
-                        const result = await response.json();
-                        if (response.ok && result.success) {
-                            const enrichedWeeklyStats = result.weekly_stats.map(s => ({
-                                ...s,
-                                athlete_id: runner.athlete_id,
-                                running_team: runner.running_team
-                            }));
-                            return { 
-                                weeklyStats: enrichedWeeklyStats, 
-                                detailedActivities: result.detailed_activities 
-                            };
-                        } else {
-                            console.error(`Lỗi khi tải thống kê cho ${runner.runner_name} (credential ID: ${runnerId}):`, result.error || 'Không xác định');
-                            showAlert(`Lỗi khi tải thống kê cho ${runner.runner_name}: ${result.error || 'Không xác định'}`);
-                            return { weeklyStats: [], detailedActivities: [] };
-                        }
-                    } catch (error) {
-                        console.error(`Lỗi mạng/máy chủ khi tải thống kê cho ${runner.runner_name} (credential ID: ${runnerId}):`, error);
-                        showAlert(`Lỗi mạng/máy chủ khi tải thống kê cho ${runner.runner_name}: ${error.message}`);
-                        return { weeklyStats: [], detailedActivities: [] };
-                    }
-                });
-
-                const allResults = await Promise.all(fetchPromises);
-
-                allResults.forEach(res => {
-                    weeklyStatsData.push(...res.weeklyStats);
-                });
-
-                chartStatus.textContent = `Đã tải thống kê cho ${runnerCredentialsToFetch.length} runner. Tổng cộng ${weeklyStatsData.length} tuần.`;
-                renderBubbleChart(weeklyStatsData); 
-            } catch (error) {
-                console.error('Lỗi chung khi tải thống kê theo tuần:', error);
-                chartStatus.textContent = 'Lỗi mạng hoặc máy chủ khi tải thống kê.';
-                showAlert('Lỗi mạng hoặc máy chủ khi tải thống kê.');
             }
         });
 
