@@ -2872,23 +2872,36 @@ function applySettingsVisibility(isVisible) {
             }
         }
 
-       /**
- * Chuyển đổi chuỗi tuần ISO 8601 (YYYY-WNN) thành đối tượng Date,
+    /**
+ * Chuyển đổi chuỗi tuần ISO 8601 (YYYY-WNN) hoặc (YYYY-NN) thành đối tượng Date,
  * căn chỉnh theo múi giờ Việt Nam (UTC+7).
  * Hàm này sẽ trả về một đối tượng Date đại diện cho một ngày trong tuần đó,
  * mà khi lấy năm và tháng từ nó (sử dụng getFullYear() và getMonth()),
  * sẽ tương ứng với năm và tháng theo giờ Việt Nam.
- * @param {string} w - Chuỗi tuần ISO (ví dụ: "2025-W25").
+ * @param {string} w - Chuỗi tuần ISO (ví dụ: "2025-W25" hoặc "2025-25").
  * @returns {Date|null} Đối tượng Date tương ứng hoặc null nếu đầu vào không hợp lệ.
  */
 function getDateFromISOWeek(w) {
-    const parts = w.split('-W');
-    if (parts.length !== 2) {
-        console.error("Invalid ISO week string format:", w);
-        return null;
+    let year, week;
+    // Kiểm tra định dạng có 'W' hay không
+    if (w.includes('-W')) {
+        const parts = w.split('-W');
+        if (parts.length !== 2) {
+            console.error("Invalid ISO week string format (YYYY-WNN):", w);
+            return null;
+        }
+        year = parseInt(parts[0], 10);
+        week = parseInt(parts[1], 10);
+    } else {
+        // Xử lý định dạng YYYY-NN
+        const parts = w.split('-');
+        if (parts.length !== 2) {
+            console.error("Invalid ISO week string format (YYYY-NN):", w);
+            return null;
+        }
+        year = parseInt(parts[0], 10);
+        week = parseInt(parts[1], 10);
     }
-    const year = parseInt(parts[0], 10);
-    const week = parseInt(parts[1], 10);
 
     if (isNaN(year) || isNaN(week) || week < 1 || week > 53) {
         console.error("Invalid year or week number in ISO week string:", w);
@@ -2924,6 +2937,7 @@ function getDateFromISOWeek(w) {
 
     return vietnamAlignedDate;
 }
+
 
 
         /**
