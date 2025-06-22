@@ -2981,63 +2981,91 @@ function applySettingsVisibility(isVisible) {
             }
         }
 
- /**
+/**
  * Helper to get ISO week string (YYYY-WNN) from a Date object, adjusted for Vietnam timezone.
- * This function ensures that the week calculation aligns with Vietnam local time,
- * regardless of the user's browser timezone settings.
- * @param {Date|string} d - The Date object or ISO 8601 string (assumed to be UTC).
- * @returns {string} ISO week string (YYYY-WNN).
+ * This function ensures that the week calculation aligns with Vietnam local time (UTC+7),
+ * regardless of the user's browser timezone settings, by explicitly converting the UTC date
+ * to its Vietnam timezone components before calculating the ISO week.
+ * @param {Date|string} d - The Date object or ISO 8601 string (assumed to be UTC from Supabase).
+ * @returns {string} ISO week string (YYYY-WNN). Returns null if input is invalid.
  */
 function getISOWeekString(d) {
-    // Chuyển đổi đầu vào thành một đối tượng Date.
-    // Nếu 'd' là chuỗi ISO UTC (ví dụ: từ Supabase), new Date(d) sẽ tạo ra một đối tượng
-    // có timestamp nội bộ khớp với thời điểm UTC đó.
-    const activityDateUtc = new Date(d);
+    let activityDateUtc;
 
-    // Múi giờ Việt Nam là UTC+7. Chúng ta cần dịch chuyển thời gian của hoạt động
-    // để các phép tính ngày/tuần ISO của nó phản ánh ngày ở Việt Nam.
-    // Thêm 7 giờ (tính bằng mili giây) vào timestamp UTC của hoạt động.
-    const vietnamOffsetMillis = 7 * 60 * 60 * 1000; // 7 giờ * 60 phút/giờ * 60 giây/phút * 1000 mili giây/giây
-    
-    // Tạo một đối tượng Date mới từ timestamp đã điều chỉnh này.
-    // Các phương thức UTC (getUTCFullYear, getUTCDay, getUTCDate) của đối tượng này
-    // sẽ trả về các giá trị tương ứng với ngày và thứ trong tuần tại Việt Nam.
-    const vietnamAlignedDate = new Date(activityDateUtc.getTime() + vietnamOffsetMillis);
+    // Ensure we have a valid Date object, assuming string inputs are UTC ISO 8601
+    if (typeof d === 'string') {
+        activityDateUtc = new Date(d);
+    } else if (d instanceof Date) {
+        activityDateUtc = d;
+    } else {
+        console.error("Invalid date input for getISOWeekString:", d);
+        return null;
+    }
 
-    // Đặt thời gian về 00:00:00 UTC của ngày đã điều chỉnh
-    // để đảm bảo tính nhất quán cho việc xác định tuần ISO,
-    // vì ISO tuần được định nghĩa dựa trên một ngày cụ thể (thường là Thứ Năm)
-    // trong tuần đó.
-    vietnamAlignedDate.setUTCHours(0, 0, 0, 0); 
-    
-    // Logic tính tuần ISO 8601:
-    // Tuần ISO 8601 bắt đầu vào Thứ Hai. Tuần 1 của một năm là tuần đầu tiên
-    // có ít nhất 4 ngày trong năm đó, hoặc tuần chứa ngày 4 tháng 1.
-    // Chúng ta dựa vào Thứ Năm để xác định tuần.
+    // Check for invalid date
+    if (isNaN(activityDateUtc.getTime())) {
+        console.error("Invalid Date object after parsing in getISOWeekString:", d);
+        return null;
+    }
 
-    // Lấy thứ trong tuần UTC của ngày đã điều chỉnh (0=CN, 1=T2, ..., 6=T7)
-    // Chuyển Chủ Nhật (0) thành 7 để phù hợp với tính toán ISO
-    const dayOfVietnamWeek = vietnamAlignedDate.getUTCDay() || 7; 
+    // Use Intl.DateTimeFormat to get date components as perceived in 'Asia/Ho_Chi_Minh'
+    // This is the most robust way to get timezone-specific date parts in vanilla JS.
+    const formatter = new Intl.DateTimeFormat('en-US', {
+        year: 'numeric',
+        month: 'numeric',
+        day: 'numeric',
+        hour: 'numeric',
+        minute: 'numeric',
+        second: 'numeric',
+        timeZone: 'Asia/Ho_Chi_Minh',
+        hour12: false // Ensure 24-hour format for consistency
+    });
 
-    // Điều chỉnh ngày về Thứ Năm của tuần hiện tại.
-    // Việc này đảm bảo chúng ta đang làm việc với ngày "đại diện" cho tuần đó.
-    vietnamAlignedDate.setUTCDate(vietnamAlignedDate.getUTCDate() + 4 - dayOfVietnamWeek);
+    const parts = formatter.formatToParts(activityDateUtc);
+    let year, month, day, hour = 0, minute = 0, second = 0;
 
-    // Lấy năm của tuần ISO. Điều này có thể khác với năm thực tế
-    // nếu tuần đầu tiên của năm mới rơi vào cuối năm trước, hoặc ngược lại.
-    const isoWeekYear = vietnamAlignedDate.getUTCFullYear();
+    parts.forEach(p => {
+        switch (p.type) {
+            case 'year': year = parseInt(p.value); break;
+            case 'month': month = parseInt(p.value); break;
+            case 'day': day = parseInt(p.value); break;
+            case 'hour': hour = parseInt(p.value); break;
+            case 'minute': minute = parseInt(p.value); break;
+            case 'second': second = parseInt(p.value); break;
+        }
+    });
 
-    // Lấy ngày đầu tiên của năm ISO đó (ngày 1 tháng 1 UTC)
+    // Construct a new Date object using Date.UTC() from the Vietnam-aligned components.
+    // This creates a UTC date whose *UTC properties* (like getUTCDay, getUTCFullYear)
+    // will now correctly reflect the date and day of the week in Vietnam.
+    const vietnamAlignedUtcDate = new Date(Date.UTC(year, month - 1, day, hour, minute, second));
+
+    // Set to the start of the day in UTC for the Vietnam-aligned date
+    vietnamAlignedUtcDate.setUTCHours(0, 0, 0, 0);
+
+    // ISO week calculation logic (ISO 8601 defines weeks starting on Monday)
+    // getUTCDay() returns 0 for Sunday, 1 for Monday, ..., 6 for Saturday.
+    // We map Sunday (0) to 7 for consistent calculation.
+    const dayOfVietnamWeekUtc = vietnamAlignedUtcDate.getUTCDay() || 7; 
+
+    // Adjust the date to the nearest Thursday of its week (in Vietnam time).
+    // Thursday is chosen because it's always in the same ISO week as the week's Monday.
+    vietnamAlignedUtcDate.setUTCDate(vietnamAlignedUtcDate.getUTCDate() + 4 - dayOfVietnamWeekUtc);
+
+    // Get the year of the ISO week. This might be different from the actual year
+    // if the first week of the new year falls into the end of the previous year, or vice-versa.
+    const isoWeekYear = vietnamAlignedUtcDate.getUTCFullYear();
+
+    // Get the first day of that ISO year (January 1st UTC of the ISO year)
     const yearStart = new Date(Date.UTC(isoWeekYear, 0, 1));
 
-    // Tính số tuần ISO: (số mili giây từ đầu năm đến ngày Thứ Năm hiện tại + 1 ngày) / 7 ngày
-    // Kết quả là số tuần, làm tròn lên.
-    const weekNo = Math.ceil((((vietnamAlignedDate - yearStart) / 86400000) + 1) / 7);
+    // Calculate the ISO week number:
+    // (Difference in milliseconds between the Vietnam-aligned Thursday and the start of its ISO year + 1 day) / milliseconds in 7 days
+    const weekNo = Math.ceil((((vietnamAlignedUtcDate - yearStart) / 86400000) + 1) / 7);
 
-    // Trả về chuỗi định dạng YYYY-WNN
+    // Return the ISO week string in YYYY-WNN format
     return `${isoWeekYear}-W${String(weekNo).padStart(2, '0')}`;
 }
-
 
         
         // Function to draw the bubble chart
