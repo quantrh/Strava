@@ -2515,7 +2515,106 @@ function applySettingsVisibility(isVisible) {
                 showAlert(`Lỗi khi tải hoạt động gần đây: ${error.message}`);
             }
         });
+ // Event listener for "Xem thống kê theo tuần" button
+        viewStatsBtn.addEventListener('click', async () => {
+            if (!currentAppUserId) { 
+                showAlert('Vui lòng đăng nhập ứng dụng để xem thống kê.');
+                return;
+            }
 
+            const chartStatus = document.getElementById('chart-status');
+            chartStatus.textContent = 'Đang tải thống kê theo tuần ...';
+            weeklyStatsData = []; 
+
+            let runnerCredentialsToFetch = allRunnerCredentials.filter(cred => cred.athlete_id);
+            if (selectedClubIdForStats !== '') {
+                runnerCredentialsToFetch = runnerCredentialsToFetch.filter(
+                    cred => cred.running_team === selectedClubIdForStats
+                );
+            }
+            if (selectedRunnerIdForStats !== '') {
+                 runnerCredentialsToFetch = runnerCredentialsToFetch.filter(
+                    cred => String(cred.athlete_id) === selectedRunnerIdForStats
+                );
+            }
+
+
+            if (runnerCredentialsToFetch.length === 0) {
+                chartStatus.textContent = 'Không tìm thấy runner nào được kết nối với tài khoản Strava hoặc phù hợp với bộ lọc. Vui lòng thêm và kết nối runner.';
+                document.getElementById('bubble-chart-container').innerHTML = '<p class="text-gray-500 text-center">Không có dữ liệu thống kê để hiển thị biểu đồ.</p>';
+                weeklyStatsData = [];
+                renderDetailedStatsTable(); 
+                return;
+            }
+
+            console.log('Fetching weekly stats for runners:', runnerCredentialsToFetch.map(r => r.runner_name), 'and club:', selectedClubIdForStats);
+
+            try {
+                const { data: { session }, error: sessionError } = await supabaseClientInstance.auth.getSession();
+                const headers = { 'Content-Type': 'application/json' };
+                if (session?.access_token) {
+                    headers['Authorization'] = `Bearer ${session.access_token}`;
+                } else {
+                    showAlert('Lỗi: Không tìm thấy phiên đăng nhập. Vui lòng đăng nhập lại để xem thống kê.');
+                    chartStatus.textContent = 'Lỗi xác thực: Không tìm thấy phiên đăng nhập.';
+                    return;
+                }
+
+                const fetchPromises = runnerCredentialsToFetch.map(async (runner) => {
+                    const runnerId = runner.id;
+                    if (!runnerId) {
+                        console.error(`Skipping fetch for runner ${runner.runner_name || 'Unknown'} due to missing or invalid credential ID.`);
+                        return { weeklyStats: [], detailedActivities: [] };
+                    }
+                    const payload = { runnerCredentialId: runnerId };
+                    console.log(`[viewStatsBtn] Sending payload to ${GET_STATS_API_URL}:`, payload);
+                    try {
+                        const response = await fetch(GET_STATS_API_URL, {
+                            method: 'POST',
+                            headers: headers, 
+                            body: JSON.stringify(payload)
+                        });
+
+                        const result = await response.json();
+                        if (response.ok && result.success) {
+                            const enrichedWeeklyStats = result.weekly_stats.map(s => ({
+                                ...s,
+                                athlete_id: runner.athlete_id,
+                                running_team: runner.running_team
+                            }));
+                            return { 
+                                weeklyStats: enrichedWeeklyStats, 
+                                detailedActivities: result.detailed_activities 
+                            };
+                        } else {
+                            console.error(`Lỗi khi tải thống kê cho ${runner.runner_name} (credential ID: ${runnerId}):`, result.error || 'Không xác định');
+                            showAlert(`Lỗi khi tải thống kê cho ${runner.runner_name}: ${result.error || 'Không xác định'}`);
+                            return { weeklyStats: [], detailedActivities: [] };
+                        }
+                    } catch (error) {
+                        console.error(`Lỗi mạng/máy chủ khi tải thống kê cho ${runner.runner_name} (credential ID: ${runnerId}):`, error);
+                        showAlert(`Lỗi mạng/máy chủ khi tải thống kê cho ${runner.runner_name}: ${error.message}`);
+                        return { weeklyStats: [], detailedActivities: [] };
+                    }
+                });
+
+                const allResults = await Promise.all(fetchPromises);
+
+                allResults.forEach(res => {
+                    weeklyStatsData.push(...res.weeklyStats);
+                });
+
+                chartStatus.textContent = `Đã tải thống kê cho ${runnerCredentialsToFetch.length} runner. Tổng cộng ${weeklyStatsData.length} tuần.`;
+                renderBubbleChart(weeklyStatsData); 
+            } catch (error) {
+                console.error('Lỗi chung khi tải thống kê theo tuần:', error);
+                chartStatus.textContent = 'Lỗi mạng hoặc máy chủ khi tải thống kê.';
+                showAlert('Lỗi mạng hoặc máy chủ khi tải thống kê.');
+            }
+        });
+
+
+        
         /**
          * Renders the detailed statistics table based on userActivities.
          */
