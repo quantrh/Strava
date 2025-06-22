@@ -3065,12 +3065,29 @@ function applySettingsVisibility(isVisible) {
             llmAnalysisSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
             try {
-                const { data: { session }, error: sessionError } = await supabaseClientInstance.auth.getSession();
-                if (sessionError || !session?.access_token) {
-                    showAlert('Lỗi: Không tìm thấy phiên đăng nhập. Vui lòng đăng nhập lại để phân tích AI.');
-                    llmAnalysisContent.innerHTML = '<p class="text-red-500">Lỗi xác thực: Không tìm thấy phiên đăng nhập.</p>';
+                // BẮT ĐẦU ĐOẠN MÃ ĐÃ SỬA ĐỔI ĐỂ LẤY/LÀM MỚI SESSION
+                // Bước 1: Cố gắng làm mới session để đảm bảo chúng ta có token mới nhất
+                const { data: { session: refreshedSession }, error: refreshError } = await supabaseClientInstance.auth.refreshSession();
+
+                let currentSession = refreshedSession;
+                let sessionError = refreshError;
+
+                // Bước 2: Nếu làm mới thất bại hoặc không có session mới,
+                // thử lấy session hiện tại trực tiếp (có thể đã được refresh tự động hoặc là session còn hiệu lực)
+                if (sessionError || !currentSession?.access_token) {
+                    const { data: { session: directSession }, error: directError } = await supabaseClientInstance.auth.getSession();
+                    currentSession = directSession;
+                    sessionError = directError; // Cập nhật lỗi nếu có
+                }
+
+                // Bước 3: Kiểm tra xem chúng ta có một session hợp lệ để sử dụng hay không
+                if (sessionError || !currentSession?.access_token) {
+                    console.error("Lỗi khi lấy/làm mới session Supabase:", sessionError);
+                    showAlert('Lỗi: Không tìm thấy phiên đăng nhập hoặc phiên đã hết hạn. Vui lòng đăng nhập lại để phân tích AI.');
+                    llmAnalysisContent.innerHTML = '<p class="text-red-500">Lỗi xác thực: Không tìm thấy phiên đăng nhập hoặc phiên đã hết hạn.</p>';
                     return;
                 }
+                // KẾT THÚC ĐOẠN MÃ ĐÃ SỬA ĐỔI ĐỂ LẤY/LÀM MỚI SESSION
 
                 const activitiesForLLM = userActivities.map(activity => ({
                     id: activity.strava_activity_id,
@@ -3085,16 +3102,14 @@ function applySettingsVisibility(isVisible) {
                     runner_id: activity.user_id
                 }));
                 
-             const response = await fetch(ANALYZE_ACTIVITIES_FUNCTION_URL, {
+                const response = await fetch(ANALYZE_ACTIVITIES_FUNCTION_URL, {
                     method: 'POST',
                     headers: { 
                         'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${session.access_token}`
+                        'Authorization': `Bearer ${currentSession.access_token}` // SỬ DỤNG currentSession.access_token
                     },
                     body: JSON.stringify({ 
                         activities: activitiesForLLM,
-                        // Thêm múi giờ của client để Edge Function có thể sử dụng
-                        // 'Intl.DateTimeFormat().resolvedOptions().timeZone' sẽ trả về múi giờ của trình duyệt
                         clientTimezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'Asia/Ho_Chi_Minh' 
                     })
                 });
