@@ -2872,18 +2872,59 @@ function applySettingsVisibility(isVisible) {
             }
         }
 
-        /**
-         * Converts an ISO week string (YYYY-WNN) to a Date object, representing the start of that week (Monday).
-         * @param {string} w - The ISO week string (e.g., "2023-W01").
-         * @returns {Date} A Date object for the Monday of the given ISO week.
-         */
-        function getDateFromISOWeek(w) {
-            const year = parseInt(w.substring(0, 4), 10);
-            const week = parseInt(w.substring(6), 10);
-            const date = new Date(year, 0, 1 + (week - 1) * 7);
-            date.setDate(date.getDate() + (1 - date.getDay() + (date.getDay() === 0 ? -6 : 1))); 
-            return date;
-        }
+       /**
+ * Chuyển đổi chuỗi tuần ISO 8601 (YYYY-WNN) thành đối tượng Date,
+ * căn chỉnh theo múi giờ Việt Nam (UTC+7).
+ * Hàm này sẽ trả về một đối tượng Date đại diện cho một ngày trong tuần đó,
+ * mà khi lấy năm và tháng từ nó (sử dụng getFullYear() và getMonth()),
+ * sẽ tương ứng với năm và tháng theo giờ Việt Nam.
+ * @param {string} w - Chuỗi tuần ISO (ví dụ: "2025-W25").
+ * @returns {Date|null} Đối tượng Date tương ứng hoặc null nếu đầu vào không hợp lệ.
+ */
+function getDateFromISOWeek(w) {
+    const parts = w.split('-W');
+    if (parts.length !== 2) {
+        console.error("Invalid ISO week string format:", w);
+        return null;
+    }
+    const year = parseInt(parts[0], 10);
+    const week = parseInt(parts[1], 10);
+
+    if (isNaN(year) || isNaN(week) || week < 1 || week > 53) {
+        console.error("Invalid year or week number in ISO week string:", w);
+        return null;
+    }
+
+    // Bắt đầu từ ngày 4 tháng 1 của năm đó (đảm bảo nó nằm trong tuần 1 ISO)
+    // và tính toán ngày tương ứng với tuần yêu cầu.
+    // Chúng ta sẽ tạo một ngày UTC để tránh các vấn đề múi giờ ban đầu,
+    // sau đó điều chỉnh nó để phản ánh ngày cục bộ tại Việt Nam.
+
+    // Bước 1: Tạo một ngày đại diện cho ngày 4 tháng 1 của năm (luôn nằm trong tuần ISO 1)
+    const d = new Date(Date.UTC(year, 0, 4));
+
+    // Bước 2: Lấy thứ trong tuần UTC (0=CN, 1=T2, ... , 6=T7)
+    // Điều chỉnh để T2 là 1, CN là 7 (theo chuẩn ISO)
+    const dayOfWeek = d.getUTCDay(); // 0 for Sunday, 1 for Monday
+    const isoDayOfWeek = dayOfWeek === 0 ? 7 : dayOfWeek; // Convert Sunday 0 to 7
+
+    // Bước 3: Đặt lại ngày của 'd' để nó là ngày Thứ Hai của tuần 1 ISO
+    d.setUTCDate(d.getUTCDate() - (isoDayOfWeek - 1));
+
+    // Bước 4: Thêm số tuần cần thiết để đến tuần mong muốn
+    // Mỗi tuần thêm 7 ngày.
+    d.setUTCDate(d.getUTCDate() + (week - 1) * 7);
+
+    // Bước 5: Điều chỉnh múi giờ để ngày phản ánh ngày ở Việt Nam
+    // Việt Nam là UTC+7. Chúng ta sẽ thêm 7 giờ vào timestamp của ngày UTC đã tính.
+    // Điều này sẽ dịch chuyển thời gian để khi các phương thức getFullYear(), getMonth()
+    // được gọi, chúng sẽ trả về giá trị chính xác cho múi giờ Việt Nam.
+    const vietnamOffsetMillis = 7 * 60 * 60 * 1000; // 7 giờ * 60 phút/giờ * 60 giây/phút * 1000 mili giây/giây
+    const vietnamAlignedDate = new Date(d.getTime() + vietnamOffsetMillis);
+
+    return vietnamAlignedDate;
+}
+
 
         /**
          * Fetches and displays detailed activities for a specific week and athlete ID.
