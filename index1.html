@@ -463,7 +463,7 @@
 
         <!-- Section 1: Activity Data & Download -->
         <section id="data-section-part1" class="card mb-8 hidden">
-            <div class="collapsible-header" data-target="data-section-part1-content">
+            <div class="collapsible-header" data-target="data-section-part1-content" data-state-key="data-section-part1-state">
                 <h2 class="text-xl font-semibold text-[#FC5200]"><i class="fa-brands fa-strava text-[#FC5200]"></i>Tải/Cập nhật dữ liệu từ Strava</h2>
                 <i class="toggle-icon fas fa-chevron-right text-gray-600"></i>
             </div>
@@ -508,7 +508,7 @@
 
         <!-- Section 2: AI Analysis & Recent Activities -->
         <section id="data-section-part2" class="card mb-8 hidden">
-            <div class="collapsible-header" data-target="data-section-part2-content">
+            <div class="collapsible-header" data-target="data-section-part2-content"  data-state-key="data-section-part2-state">
                 <h2 class="text-xl font-semibold"><i class="fas fa-brain text-indigo-500"></i>Phân tích AI & Hoạt động gần đây</h2>
                 <i class="toggle-icon fas fa-chevron-right text-gray-600"></i>
             </div>
@@ -594,7 +594,7 @@
 
         <!-- New Detailed Stats Section -->
         <section id="detailed-stats-section" class="card hidden mb-8">
-            <div class="collapsible-header" data-target="detailed-stats-content">
+            <div class="collapsible-header" data-target="detailed-stats-content"  data-state-key="detailed-stats-section-state">
                 <h2 class="text-xl font-semibold"><i class="fas fa-chart-line text-teal-600"></i>Thống kê chi tiết & Tiền phạt/Thưởng</h2>
                 <i class="toggle-icon fas fa-chevron-right text-gray-600"></i>
             </div>
@@ -636,7 +636,7 @@
         </section>
 
         <section id="stats-section" class="card hidden">
-            <div class="collapsible-header" data-target="stats-content">
+            <div class="collapsible-header" data-target="stats-content" data-state-key="stats-section-state">
                 <h2 class="text-xl font-semibold"><i class="fas fa-chart-bar text-red-500"></i>Thống kê thành tích theo tuần</h2>
                 <i class="toggle-icon fas fa-chevron-right text-gray-600"></i>
             </div>
@@ -1073,37 +1073,44 @@
 
         // --- Helper functions for UI and data transformation ---
 
-        /**
-         * Toggles the collapsible state of a section.
-         * @param {HTMLElement} contentElement - The content div/tbody to collapse/expand.
-         * @param {HTMLElement} toggleIcon - The icon element (SVG or span with text).
-         * @param {boolean} [forceCollapse] - If true, force collapse. If false, force expand. If undefined, toggles.
-         */
-        function toggleCollapsible(contentElement, toggleIcon, forceCollapse) {
-            const isCollapsed = contentElement.classList.contains('collapsed');
+       /**
+ * Toggles the collapsible state of a section.
+ * @param {HTMLElement} contentElement - The content div/tbody to collapse/expand.
+ * @param {HTMLElement} toggleIcon - The icon element (SVG or span with text).
+ * @param {boolean} [forceCollapse] - If true, force collapse. If false, force expand. If undefined, toggles.
+ * @param {string} [stateKey] - Optional: A key to store the state in localStorage.
+ */
+function toggleCollapsible(contentElement, toggleIcon, forceCollapse, stateKey) { // Thêm stateKey vào tham số
+    const isCollapsed = contentElement.classList.contains('collapsed');
 
-            let shouldCollapse;
-            if (forceCollapse !== undefined) {
-                shouldCollapse = forceCollapse;
-            } else {
-                shouldCollapse = !isCollapsed;
-            }
+    let shouldCollapse;
+    if (forceCollapse !== undefined) {
+        shouldCollapse = forceCollapse;
+    } else {
+        shouldCollapse = !isCollapsed;
+    }
 
-            if (shouldCollapse) {
-                contentElement.classList.add('collapsed');
-                // Use Font Awesome classes for icons
-                if (toggleIcon) { // Ensure toggleIcon exists before manipulating
-                    toggleIcon.classList.remove('fa-chevron-down');
-                    toggleIcon.classList.add('fa-chevron-right');
-                }
-            } else {
-                contentElement.classList.remove('collapsed');
-                if (toggleIcon) { // Ensure toggleIcon exists before manipulating
-                    toggleIcon.classList.remove('fa-chevron-right');
-                    toggleIcon.classList.add('fa-chevron-down');
-                }
-            }
+    if (shouldCollapse) {
+        contentElement.classList.add('collapsed');
+        // Use Font Awesome classes for icons
+        if (toggleIcon) { // Ensure toggleIcon exists before manipulating
+            toggleIcon.classList.remove('fa-chevron-down');
+            toggleIcon.classList.add('fa-chevron-right');
         }
+        if (stateKey) { // <-- Thêm dòng này để lưu trạng thái
+            localStorage.setItem(stateKey, 'collapsed');
+        }
+    } else {
+        contentElement.classList.remove('collapsed');
+        if (toggleIcon) { // Ensure toggleIcon exists before manipulating
+            toggleIcon.classList.remove('fa-chevron-right');
+            toggleIcon.classList.add('fa-chevron-down');
+        }
+        if (stateKey) { // <-- Thêm dòng này để lưu trạng thái
+            localStorage.setItem(stateKey, 'expanded');
+        }
+    }
+}
 
         /**
  * Áp dụng trạng thái hiển thị cho các section cài đặt và cập nhật nút toggle.
@@ -3233,12 +3240,13 @@ function applySettingsVisibility(isVisible) {
             });
 
 
-            document.querySelectorAll('.collapsible-header').forEach(header => {
+           document.querySelectorAll('.collapsible-header').forEach(header => {
                 header.addEventListener('click', () => {
                     const targetId = header.dataset.target;
                     const contentElement = document.getElementById(targetId);
-                    const toggleIcon = header.querySelector('.toggle-icon'); // Assuming toggle-icon is direct child
-                    toggleCollapsible(contentElement, toggleIcon);
+                    const toggleIcon = header.querySelector('.toggle-icon');
+                    const stateKey = header.dataset.stateKey; // <-- THÊM DÒNG NÀY: Lấy giá trị data-state-key
+                    toggleCollapsible(contentElement, toggleIcon, undefined, stateKey); // <-- SỬA DÒNG NÀY: Truyền stateKey vào
                 });
             });
             toggleCollapsible(downloadForOtherContent, downloadForOtherSection.querySelector('.toggle-icon'), true);
@@ -3280,6 +3288,38 @@ function applySettingsVisibility(isVisible) {
                 window.scrollTo({top: 0, behavior: 'smooth'});
             });
 
+    // Danh sách các section cần khôi phục trạng thái
+    const sectionsToRestoreState = [
+        'data-section-part1',
+        'data-section-part2',
+        'detailed-stats-section',
+        'stats-section',
+        'app-auth-section', // Đã có data-state-key
+        'credential-management-section', // Đã có data-state-key
+        'strava-auth-section', // Đã có data-state-key
+        'download-for-other-section', // Đã có data-state-key
+        'instruction-section' // Đã có data-state-key
+    ];
+
+    sectionsToRestoreState.forEach(sectionId => {
+        const header = document.getElementById(sectionId)?.querySelector('.collapsible-header');
+        const content = document.getElementById(header?.dataset.target);
+        const toggleIcon = header?.querySelector('.toggle-icon');
+        const stateKey = header?.dataset.stateKey;
+
+        if (header && content && toggleIcon && stateKey) {
+            const savedState = localStorage.getItem(stateKey);
+            // Mặc định là 'expanded' nếu không có trạng thái lưu
+            const isCollapsed = savedState === 'collapsed'; 
+            // Áp dụng trạng thái. forceCollapse là true nếu muốn thu gọn, false nếu muốn mở rộng.
+            toggleCollapsible(content, toggleIcon, isCollapsed, stateKey);
+        }
+    });
+
+
+
+
+            
             // Trigger initial load of recent activities and detailed stats after all setup
             // This is triggered by onAuthStateChange now
         
