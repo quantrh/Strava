@@ -2787,11 +2787,12 @@
         function renderBubbleChart(data) {
             console.log('renderBubbleChart: Input data:', data);
 
-            const monthlyDataMap = new Map();
-            // Filter data by owner_uid first
+          const monthlyDataMap = new Map();
+            // Filter data to include all connected runners (those with an athlete_id), regardless of app user owner.
             let filteredData = data.filter(d => {
                 const runner = allRunnerCredentials.find(c => String(c.athlete_id) === String(d.athlete_id));
-                return runner && runner.owner_uid === currentAppUserId;
+                // Bỏ điều kiện lọc theo owner_uid để hiển thị tất cả dữ liệu
+                return runner; // Chỉ cần đảm bảo runner tồn tại (tức là đã kết nối Strava)
             });
 
             if (selectedRunnerIdForStats !== '') { 
