@@ -726,7 +726,7 @@
 
 <footer class="bg-bidv-green text-white p-4 text-center text-sm" style="background-color: #006B68;">
     <div class="container" style="color: var(--bidv-yellow);">
-        &copy; 2025 Trương Hồng Quân - BIDV Running Club. All rights reserved (Dev by AIs - Gemini, GPT) - 📧quantrhvn@gmail.com - 📳+84989073739 - 248064a v1.
+        &copy; 2025 Trương Hồng Quân - BIDV Running Club. All rights reserved (Dev by AIs - Gemini, GPT) - 📧quantrhvn@gmail.com - 📳+84989073739 - 248064a v2.
         <br>
         <img src="PowerStrava.png" alt="PowerStrava Logo" style="height: 28px; margin: 5px auto 0 auto; display: block;">
         <br> <!-- Thêm một thẻ ngắt dòng để nó xuống dòng -->
@@ -2981,18 +2981,70 @@ function applySettingsVisibility(isVisible) {
             }
         }
 
-        /**
-         * Helper to get ISO week string (YYYY-WNN) from a Date object.
-         * @param {Date} d - The Date object.
-         * @returns {string} ISO week string.
-         */
-        function getISOWeekString(d) {
-            d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
-            d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
-            const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
-            const weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
-            return `${d.getUTCFullYear()}-W${String(weekNo).padStart(2, '0')}`;
-        }
+      /**
+ * Helper to get ISO week string (YYYY-WNN) from a Date object, adjusted for Vietnam timezone.
+ * This function ensures that the week calculation aligns with Vietnam local time.
+ * @param {Date} d - The Date object.
+ * @returns {string} ISO week string (YYYY-WNN).
+ */
+function getISOWeekString(d) {
+    // Tạo một đối tượng Date mới từ timestamp của hoạt động.
+    // Đối tượng này sẽ được hiểu trong múi giờ cục bộ của trình duyệt,
+    // nhưng chúng ta sẽ điều chỉnh nó để phản ánh ngày ở múi giờ Việt Nam.
+    const date = new Date(d);
+
+    // Để đảm bảo tính toán tuần chính xác theo múi giờ Việt Nam,
+    // chúng ta sẽ điều chỉnh ngày của 'date' bằng cách thêm/bớt độ lệch múi giờ.
+    // Lấy độ lệch múi giờ của trình duyệt so với UTC (tính bằng phút)
+    const browserOffset = date.getTimezoneOffset(); // Ví dụ: 420 phút cho GMT+7
+    
+    // Giả sử múi giờ Việt Nam là GMT+7 (420 phút trước UTC)
+    // Nếu trình duyệt cũng ở GMT+7, offset = -420.
+    // Nếu trình duyệt ở UTC, offset = 0.
+    // Mục tiêu là chuyển date về ngày ở đầu ngày theo giờ Việt Nam.
+
+    // Điều chỉnh ngày để nó là "ngày cục bộ" tại Việt Nam.
+    // Điều này quan trọng để đảm bảo rằng các ngày chuyển tiếp tuần (ví dụ: tối CN sang T2)
+    // được xử lý đúng theo giờ Việt Nam, không phải UTC.
+    // Chúng ta không cần thay đổi múi giờ thực tế của đối tượng Date,
+    // mà chỉ điều chỉnh ngày để logic tính tuần ISO hoạt động đúng trên "ngày Việt Nam".
+    
+    // Tạm thời tạo một Date representation cho 00:00:00 ở Việt Nam
+    // Lấy chuỗi ngày giờ theo chuẩn ISO 8601 tại múi giờ Việt Nam
+    const vnDateString = date.toLocaleString('en-US', {
+        timeZone: 'Asia/Ho_Chi_Minh',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false // Đảm bảo định dạng 24h
+    });
+
+    // Parse chuỗi này để tạo một đối tượng Date mới, mà các phương thức getFullYear, getDate
+    // sẽ trả về giá trị khớp với ngày ở múi giờ Việt Nam.
+    // Lưu ý: Cần xử lý định dạng chuỗi để new Date() có thể parse đúng trên mọi trình duyệt.
+    // Chuyển "MM/DD/YYYY, HH:MM:SS" thành "YYYY-MM-DDTHH:MM:SS"
+    const [datePart, timePart] = vnDateString.split(', ');
+    const [month, day, year] = datePart.split('/');
+    const formattedVnDateString = `${year}-${month}-${day}T${timePart}`;
+    
+    const vnDate = new Date(formattedVnDateString);
+
+    // Logic tính tuần ISO 8601 dựa trên ngày đã điều chỉnh
+    vnDate.setHours(0, 0, 0, 0); // Đảm bảo thời gian là 00:00:00 cho ngày đã điều chỉnh
+    // Thứ 4 trong tuần là ngày quyết định tuần ISO
+    vnDate.setDate(vnDate.getDate() + 4 - (vnDate.getDay() || 7)); // getDay() trả về 0 cho CN, 1 cho T2...
+
+    // Năm của tuần ISO
+    const yearStart = new Date(vnDate.getFullYear(), 0, 1);
+    // Số tuần ISO
+    const weekNo = Math.ceil((((vnDate - yearStart) / 86400000) + 1) / 7);
+
+    // Trả về chuỗi định dạng YYYY-WNN
+    return `${vnDate.getFullYear()}-W${String(weekNo).padStart(2, '0')}`;
+}
         
         // Function to draw the bubble chart
         function renderBubbleChart(data) {
