@@ -9,6 +9,8 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <!-- Thêm thư viện Marked.js để phân tích Markdown thành HTML -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <!-- Thêm Font Awesome để sử dụng icon -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
         /* Define BIDV brand colors */
         :root {
@@ -226,6 +228,9 @@
 
         .collapsible-header h2 {
             margin-bottom: 0;
+            display: flex; /* Enable flex for icon and text */
+            align-items: center;
+            gap: 0.75rem; /* Space between icon and text */
         }
 
         .collapsible-content {
@@ -364,7 +369,7 @@
         <!-- Application Authentication Section (Supabase Auth) -->
         <section id="app-auth-section" class="card mb-8">
             <div class="collapsible-header" data-target="app-auth-content">
-                <h2 class="text-xl font-semibold">1️⃣Đăng nhập/Đăng ký Ứng dụng</h2>
+                <h2 class="text-xl font-semibold"><i class="fas fa-lock text-yellow-500"></i>Đăng nhập/Đăng ký Ứng dụng</h2>
                 <svg class="toggle-icon w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
             </div>
             <div id="app-auth-content" class="collapsible-content">
@@ -399,7 +404,7 @@
         <!-- Credential Management Section -->
         <section class="card mb-8 hidden" id="credential-management-section">
             <div class="collapsible-header" data-target="credential-management-content">
-                <h2 class="text-xl font-semibold">2️⃣Quản lý Runner (Thông tin Runner và CLB)</h2>
+                <h2 class="text-xl font-semibold"><i class="fas fa-users-cog text-blue-500"></i>Quản lý Runner (Thông tin Runner và CLB)</h2>
                 <div class="flex items-center gap-2">
                     <button id="add-credential-btn" class="btn-primary text-sm px-3 py-1">Thêm Runner mới</button>
                     <svg class="toggle-icon w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
@@ -418,7 +423,7 @@
         <!-- Strava Login Section (Adjusted) -->
         <section id="strava-auth-section" class="card mb-8 text-center hidden">
             <div class="collapsible-header" data-target="strava-auth-content">
-                <h2 class="text-xl font-semibold">3️⃣Kết nối tài khoản Strava của bạn</h2>
+                <h2 class="text-xl font-semibold"><i class="fas fa-running text-orange-500"></i>Kết nối tài khoản Strava của bạn</h2>
                 <svg class="toggle-icon w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
             </div>
             <div id="strava-auth-content" class="collapsible-content">
@@ -447,203 +452,218 @@
             </div>
         </section>
 
-        <!-- Activity Data & Visualization Section -->
-        <section id="data-section" class="card mb-8 hidden">
-       
-
-             <!-- Icon của ứng dụng -->
-             
-                <!-- Nội dung mô tả và link -->
-               <div class="flex-grow text-center md:text-left">
-    <h2 class="text-2xl font-bold mb-2 text-[#FC4C02]">🏃Dữ liệu thành tích chạy bộ</h2>
-</div>
-
+        <!-- Section 1: Activity Data & Download -->
+        <section id="data-section-part1" class="card mb-8 hidden">
+            <div class="collapsible-header" data-target="data-section-part1-content">
+                <h2 class="text-xl font-semibold"><i class="fas fa-download text-green-600"></i>Tải/Cập nhật dữ liệu & Quản lý Strava Runner</h2>
+                <svg class="toggle-icon w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
             </div>
-
-            
-            <p id="user-info" class="mb-4 text-lg font-medium"></p>
-            <div class="mb-4">
-                <label for="activities-limit" class="block text-gray-700 text-sm font-bold mb-2" style="background-color: #FFFACD; padding: 0.25rem 0.5rem; border-radius: 0.25rem;">Số lượng hoạt động muốn tải từ Strava (mặc định 60, max 200):</label>
-                <input type="number" id="activities-limit" class="form-input" value="60" min="1" step="1" max="200">
-            </div>
-
-            <div class="flex flex-wrap gap-4 mb-6">
-                <button id="fetch-activities-btn" class="btn-primary">
-                    Tải/Cập nhật dữ liệu từ Strava
-                </button>
-                
-            </div>
-            
-            <!-- Collapsible section for "Download Strava hộ" -->
-            <section id="download-for-other-section" class="mt-6 border-t pt-4" style="background-color: #d4d4d4;">
-                <div class="collapsible-header" data-target="download-for-other-content">
-                    <h3 class="text-lg font-semibold">Tải dữ liệu Strava cho các Runner khác</h3>
-                    <svg class="toggle-icon w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+            <div id="data-section-part1-content" class="collapsible-content">
+                <!-- Chỗ chèn ảnh Strava vào đầu section -->
+                <div class="flex justify-center mb-4">
+                    <img src="https://placehold.co/600x100/ADD8E6/000000?text=Chèn+ảnh+Strava+tại+đây" alt="Strava Placeholder Image" class="w-full max-w-lg rounded-md shadow-md">
                 </div>
-                <div id="download-for-other-content" class="collapsible-content">
-                    <div class="mb-4">
-                        <label for="download-runner-select" class="block text-gray-700 text-sm font-bold mb-2">Chọn Runner để tải hộ:</label>
-                        <select id="download-runner-select" class="form-input">
-                            <option value="">-- Chọn Runner --</option>
-                        </select>
-                        <p class="text-xs text-gray-500 mt-1">Chọn một Runner đã thêm để tải các hoạt động Strava của họ.</p>
-                    </div>
-                    <button id="download-activities-for-other-btn" class="btn-primary">
-                        Download Strava hộ
+
+                <p id="user-info" class="mb-4 text-lg font-medium"></p>
+                <div class="mb-4">
+                    <label for="activities-limit" class="block text-gray-700 text-sm font-bold mb-2" style="background-color: #FFFACD; padding: 0.25rem 0.5rem; border-radius: 0.25rem;">Số lượng hoạt động muốn tải từ Strava (mặc định 60, max 200):</label>
+                    <input type="number" id="activities-limit" class="form-input" value="60" min="1" step="1" max="200">
+                </div>
+
+                <div class="flex flex-wrap gap-4 mb-6">
+                    <button id="fetch-activities-btn" class="btn-primary">
+                        Tải/Cập nhật dữ liệu từ Strava
                     </button>
-                    <div id="download-for-other-status" class="mt-4 text-sm text-gray-600"></div>
-                </div>
-            </section>
-
-            <div id="data-status" class="mt-4 text-sm text-gray-600"></div>
-
-            <div id="activities-list-section" class="mt-6 border-t pt-4">
-                <h3 class="text-lg font-semibold mb-3">Các hoạt động gần đây:</h3>
-                <div class="mb-4">
-                    <label for="num-recent-activities" class="block text-gray-700 text-sm font-bold mb-2" style="background-color: #FFFACD; padding: 0.25rem 0.5rem; border-radius: 0.25rem;">Số lượng hoạt động gần đây muốn hiển thị (mặc định 10):</label>
-                    <input type="number" id="num-recent-activities" class="form-input" value="10" min="1" step="1">
                 </div>
                 
-                <!-- Dropdown for filtering recent activities by runner -->
-                <div class="mb-4">
-                    <label for="runner-recent-activities-filter" class="block text-gray-700 text-sm font-bold mb-2" style="background-color: #FFFACD; padding: 0.25rem 0.5rem; border-radius: 0.25rem;">Lọc hoạt động theo Runner:</label>
-                    <select id="runner-recent-activities-filter" class="form-input">
-                        <option value="all">Tất cả Runner</option>
-                        <!-- Runner options will be populated by JS -->
-                    </select>
-                </div>
-
-                <!-- NEW: Dropdown for filtering recent activities by club -->
-                <div class="mb-4">
-                    <label for="club-recent-activities-filter" class="block text-gray-700 text-sm font-bold mb-2" style="background-color: #FFFACD; padding: 0.25rem 0.5rem; border-radius: 0.25rem;">Lọc hoạt động theo Câu lạc bộ:</label>
-                    <select id="club-recent-activities-filter" class="form-input">
-                        <option value="all">Tất cả Câu lạc bộ</option>
-                        <!-- Club options will be populated by JS -->
-                    </select>
-                </div>
-
-                <!-- Moved Activity Type Filter for Recent Activities -->
-                <div class="mb-4">
-                    <label for="activity-type-filter-recent" class="block text-gray-700 text-sm font-bold mb-2" style="background-color: #FFFACD; padding: 0.25rem 0.5rem; border-radius: 0.25rem;">Lọc theo loại hoạt động:</label>
-                    <div class="multi-select-container">
-                        <div id="multi-select-display-recent" class="multi-select-selected-items">
-                            <span class="text-gray-500">Chọn loại hoạt động</span>
+                <!-- Collapsible section for "Download Strava hộ" -->
+                <section id="download-for-other-section" class="mt-6 border-t pt-4 bg-gray-100 rounded-lg p-4">
+                    <div class="collapsible-header" data-target="download-for-other-content">
+                        <h3 class="text-lg font-semibold"><i class="fas fa-user-friends text-purple-600"></i>Tải dữ liệu Strava cho các Runner khác</h3>
+                        <svg class="toggle-icon w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                    </div>
+                    <div id="download-for-other-content" class="collapsible-content">
+                        <div class="mb-4">
+                            <label for="download-runner-select" class="block text-gray-700 text-sm font-bold mb-2">Chọn Runner để tải hộ:</label>
+                            <select id="download-runner-select" class="form-input">
+                                <option value="">-- Chọn Runner --</option>
+                            </select>
+                            <p class="text-xs text-gray-500 mt-1">Chọn một Runner đã thêm để tải các hoạt động Strava của họ.</p>
                         </div>
-                        <div id="multi-select-options-recent" class="multi-select-options hidden">
-                            <!-- Options will be populated by JS -->
+                        <button id="download-activities-for-other-btn" class="btn-primary">
+                            Download Strava hộ
+                        </button>
+                        <div id="download-for-other-status" class="mt-4 text-sm text-gray-600"></div>
+                    </div>
+                </section>
+                <div id="data-status" class="mt-4 text-sm text-gray-600"></div>
+            </div>
+        </section>
+
+        <!-- Section 2: AI Analysis & Recent Activities -->
+        <section id="data-section-part2" class="card mb-8 hidden">
+            <div class="collapsible-header" data-target="data-section-part2-content">
+                <h2 class="text-xl font-semibold"><i class="fas fa-brain text-indigo-500"></i>Phân tích AI & Hoạt động gần đây</h2>
+                <svg class="toggle-icon w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+            </div>
+            <div id="data-section-part2-content" class="collapsible-content">
+                <div id="activities-list-section" class="mt-4 pt-2">
+                    <h3 class="text-lg font-semibold mb-3">Các hoạt động gần đây:</h3>
+                    <div class="mb-4">
+                        <label for="num-recent-activities" class="block text-gray-700 text-sm font-bold mb-2" style="background-color: #FFFACD; padding: 0.25rem 0.5rem; border-radius: 0.25rem;">Số lượng hoạt động gần đây muốn hiển thị (mặc định 10):</label>
+                        <input type="number" id="num-recent-activities" class="form-input" value="10" min="1" step="1">
+                    </div>
+                    
+                    <!-- Dropdown for filtering recent activities by runner -->
+                    <div class="mb-4">
+                        <label for="runner-recent-activities-filter" class="block text-gray-700 text-sm font-bold mb-2" style="background-color: #FFFACD; padding: 0.25rem 0.5rem; border-radius: 0.25rem;">Lọc hoạt động theo Runner:</label>
+                        <select id="runner-recent-activities-filter" class="form-input">
+                            <option value="all">Tất cả Runner</option>
+                            <!-- Runner options will be populated by JS -->
+                        </select>
+                    </div>
+
+                    <!-- NEW: Dropdown for filtering recent activities by club -->
+                    <div class="mb-4">
+                        <label for="club-recent-activities-filter" class="block text-gray-700 text-sm font-bold mb-2" style="background-color: #FFFACD; padding: 0.25rem 0.5rem; border-radius: 0.25rem;">Lọc hoạt động theo Câu lạc bộ:</label>
+                        <select id="club-recent-activities-filter" class="form-input">
+                            <option value="all">Tất cả Câu lạc bộ</option>
+                            <!-- Club options will be populated by JS -->
+                        </select>
+                    </div>
+
+                    <!-- Moved Activity Type Filter for Recent Activities -->
+                    <div class="mb-4">
+                        <label for="activity-type-filter-recent" class="block text-gray-700 text-sm font-bold mb-2" style="background-color: #FFFACD; padding: 0.25rem 0.5rem; border-radius: 0.25rem;">Lọc theo loại hoạt động:</label>
+                        <div class="multi-select-container">
+                            <div id="multi-select-display-recent" class="multi-select-selected-items">
+                                <span class="text-gray-500">Chọn loại hoạt động</span>
+                            </div>
+                            <div id="multi-select-options-recent" class="multi-select-options hidden">
+                                <!-- Options will be populated by JS -->
+                            </div>
                         </div>
                     </div>
-                </div>
 
-                <!-- Moved Date Range Filter for Recent Activities -->
-                <div class="mb-4 flex gap-4">
-                    <div class="flex-1">
-                        <label for="start-date-recent" class="block text-gray-700 text-sm font-bold mb-2" style="background-color: #FFFACD; padding: 0.25rem 0.5rem; border-radius: 0.25rem;">Từ ngày:</label>
-                        <input type="date" id="start-date-recent" class="form-input">
+                    <!-- Moved Date Range Filter for Recent Activities -->
+                    <div class="mb-4 flex gap-4">
+                        <div class="flex-1">
+                            <label for="start-date-recent" class="block text-gray-700 text-sm font-bold mb-2" style="background-color: #FFFACD; padding: 0.25rem 0.5rem; border-radius: 0.25rem;">Từ ngày:</label>
+                            <input type="date" id="start-date-recent" class="form-input">
+                        </div>
+                        <div class="flex-1">
+                            <label for="end-date-recent" class="block text-gray-700 text-sm font-bold mb-2" style="background-color: #FFFACD; padding: 0.25rem 0.5rem; border-radius: 0.25rem;">Đến ngày:</label>
+                            <input type="date" id="end-date-recent" class="form-input">
+                        </div>
                     </div>
-                    <div class="flex-1">
-                        <label for="end-date-recent" class="block text-gray-700 text-sm font-bold mb-2" style="background-color: #FFFACD; padding: 0.25rem 0.5rem; border-radius: 0.25rem;">Đến ngày:</label>
-                        <input type="date" id="end-date-recent" class="form-input">
+
+                    <!-- MOVED this button down -->
+                    <button id="load-recent-activities-btn" class="btn-primary mb-4">
+                        Tải hoạt động gần đây
+                    </button>
+                    <button id="analyze-activities-btn" class="btn-primary">
+                        ✨ Phân tích hoạt động (AI)
+                    </button>
+                    <!-- Changed from ul to div for multi-column layout -->
+                    <div id="recent-activities-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <div class="card p-4 text-gray-500 text-center col-span-full">Nhấn "Tải hoạt động gần đây" để xem.</div>
                     </div>
+                    <div id="recent-activities-status" class="mt-2 text-sm text-gray-600"></div>
                 </div>
 
-                <!-- MOVED this button down -->
-                <button id="load-recent-activities-btn" class="btn-primary mb-4">
-                    Tải hoạt động gần đây
-                </button>
-                <button id="analyze-activities-btn" class="btn-primary">
-                    ✨ Phân tích hoạt động (AI)
-                </button>
-                <!-- Changed from ul to div for multi-column layout -->
-                <div id="recent-activities-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    <div class="card p-4 text-gray-500 text-center col-span-full">Nhấn "Tải hoạt động gần đây" để xem.</div>
+                <div id="llm-analysis-section" class="mt-6 border-t pt-4 hidden">
+                    <h3 class="text-lg font-semibold mb-3">Phân tích hoạt động của bạn:</h3>
+                    <div id="llm-analysis-content" class="bg-gray-100 p-4 rounded-md text-sm">
+                        <p class="text-gray-500">Nhấn "✨ Phân tích hoạt động (AI)" để nhận phân tích từ AI.</p>
+                    </div>
+                    <div id="llm-analysis-status" class="mt-2 text-sm text-gray-600"></div>
                 </div>
-                <div id="recent-activities-status" class="mt-2 text-sm text-gray-600"></div>
             </div>
-
-            <div id="llm-analysis-section" class="mt-6 border-t pt-4 hidden">
-                <h3 class="text-lg font-semibold mb-3">Phân tích hoạt động của bạn:</h3>
-                <div id="llm-analysis-content" class="bg-gray-100 p-4 rounded-md text-sm">
-                    <p class="text-gray-500">Nhấn "✨ Phân tích hoạt động (AI)" để nhận phân tích từ AI.</p>
-                </div>
-                <div id="llm-analysis-status" class="mt-2 text-sm text-gray-600"></div>
-            </div>
-
         </section>
 
         <!-- New Detailed Stats Section -->
         <section id="detailed-stats-section" class="card hidden mb-8">
-            <h3 class="text-xl font-semibold mb-4">Thống kê chi tiết & Tiền phạt/Thưởng</h3>
-            <div class="mb-4 flex gap-4 items-end">
-                <div class="flex-1">
-                    <label for="penalty-per-km-gt10" class="block text-gray-700 text-sm font-bold mb-2">Số tiền nộp cho 1KM (nghìn VNĐ) khi thiếu > 10KM:</label>
-                    <input type="number" id="penalty-per-km-gt10" class="form-input bg-yellow-100" value="30" min="0" step="1">
-                </div>
-                <div class="flex-1">
-                    <label for="penalty-per-km-lte10" class="block text-gray-700 text-sm font-bold mb-2">Số tiền nộp cho 1KM (nghìn VNĐ) khi thiếu <= 10KM:</label>
-                    <input type="number" id="penalty-per-km-lte10" class="form-input bg-yellow-100" value="20" min="0" step="1">
-                </div>
-                <div class="flex-1">
-                    <label for="target-km-per-week" class="block text-gray-700 text-sm font-bold mb-2">Số KM một tuần (KM):</label>
-                    <input type="number" id="target-km-per-week" class="form-input bg-yellow-100" value="25" min="0" step="1">
-                </div>
+            <div class="collapsible-header" data-target="detailed-stats-content">
+                <h2 class="text-xl font-semibold"><i class="fas fa-chart-line text-teal-600"></i>Thống kê chi tiết & Tiền phạt/Thưởng</h2>
+                <svg class="toggle-icon w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
             </div>
-            <div id="detailed-stats-table-container" class="overflow-x-auto">
-                <table id="detailed-stats-table" class="data-table">
-                    <thead>
-                        <tr>
-                            <th>Tên Runner</th>
-                            <th>Ngày chạy</th>
-                            <th>Loại hoạt động</th>
-                            <th>Quãng đường (KM)</th>
-                            <th>Pace</th>
-                            <th>Nhịp tim TB</th>
-                            <th>Độ cao tăng</th>
-                            <th>Thời gian chạy</th>
-                        </tr>
-                    </thead>
-                    <!-- The tbodies for each runner will be inserted here dynamically by JS -->
-                    <tbody></tbody> <!-- This empty tbody will be selected by JS and filled with content -->
-                </table>
-                <p id="detailed-stats-status" class="mt-4 text-sm text-gray-600 text-center">Chưa có dữ liệu để hiển thị.</p>
+            <div id="detailed-stats-content" class="collapsible-content">
+                <div class="mb-4 flex gap-4 items-end">
+                    <div class="flex-1">
+                        <label for="penalty-per-km-gt10" class="block text-gray-700 text-sm font-bold mb-2">Số tiền nộp cho 1KM (nghìn VNĐ) khi thiếu > 10KM:</label>
+                        <input type="number" id="penalty-per-km-gt10" class="form-input bg-yellow-100" value="30" min="0" step="1">
+                    </div>
+                    <div class="flex-1">
+                        <label for="penalty-per-km-lte10" class="block text-gray-700 text-sm font-bold mb-2">Số tiền nộp cho 1KM (nghìn VNĐ) khi thiếu <= 10KM:</label>
+                        <input type="number" id="penalty-per-km-lte10" class="form-input bg-yellow-100" value="20" min="0" step="1">
+                    </div>
+                    <div class="flex-1">
+                        <label for="target-km-per-week" class="block text-gray-700 text-sm font-bold mb-2">Số KM một tuần (KM):</label>
+                        <input type="number" id="target-km-per-week" class="form-input bg-yellow-100" value="25" min="0" step="1">
+                    </div>
+                </div>
+                <div id="detailed-stats-table-container" class="overflow-x-auto">
+                    <table id="detailed-stats-table" class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Tên Runner</th>
+                                <th>Ngày chạy</th>
+                                <th>Loại hoạt động</th>
+                                <th>Quãng đường (KM)</th>
+                                <th>Pace</th>
+                                <th>Nhịp tim TB</th>
+                                <th>Độ cao tăng</th>
+                                <th>Thời gian chạy</th>
+                            </tr>
+                        </thead>
+                        <!-- The tbodies for each runner will be inserted here dynamically by JS -->
+                        <tbody></tbody> <!-- This empty tbody will be selected by JS and filled with content -->
+                    </table>
+                    <p id="detailed-stats-status" class="mt-4 text-sm text-gray-600 text-center">Chưa có dữ liệu để hiển thị.</p>
+                </div>
             </div>
         </section>
 
         <section id="stats-section" class="card hidden">
-            <h2 class="text-xl font-semibold mb-4">Thống kê thành tích theo tuần</h2>
-            <!-- Runner Filter for Stats Section -->
-            <div class="mb-4">
-                <label for="runner-stats-filter" class="block text-gray-700 text-sm font-bold mb-2" style="background-color: #FFFACD; padding: 0.25rem 0.5rem; border-radius: 0.25rem;">Chọn Runner để xem thống kê:</label>
-                <select id="runner-stats-filter" class="form-input">
-                    <option value="">Tất cả Runner</option>
-                    <!-- Options will be populated by JS -->
-                </select>
+            <div class="collapsible-header" data-target="stats-content">
+                <h2 class="text-xl font-semibold"><i class="fas fa-chart-bar text-red-500"></i>Thống kê thành tích theo tuần</h2>
+                <svg class="toggle-icon w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
             </div>
+            <div id="stats-content" class="collapsible-content">
+                <!-- Runner Filter for Stats Section -->
+                <div class="mb-4">
+                    <label for="runner-stats-filter" class="block text-gray-700 text-sm font-bold mb-2" style="background-color: #FFFACD; padding: 0.25rem 0.5rem; border-radius: 0.25rem;">Chọn Runner để xem thống kê:</label>
+                    <select id="runner-stats-filter" class="form-input">
+                        <option value="">Tất cả Runner</option>
+                        <!-- Options will be populated by JS -->
+                    </select>
+                </div>
 
-            <!-- NEW: Club Filter for Stats Section -->
-            <div class="mb-4">
-                <label for="club-stats-filter" class="block text-gray-700 text-sm font-bold mb-2" style="background-color: #FFFACD; padding: 0.25rem 0.5rem; border-radius: 0.25rem;">Chọn Câu lạc bộ để xem thống kê:</label>
-                <select id="club-stats-filter" class="form-input">
-                    <option value="">Tất cả Câu lạc bộ</option>
-                    <!-- Club options will be populated by JS -->
-                </select>
+                <!-- NEW: Club Filter for Stats Section -->
+                <div class="mb-4">
+                    <label for="club-stats-filter" class="block text-gray-700 text-sm font-bold mb-2" style="background-color: #FFFACD; padding: 0.25rem 0.5rem; border-radius: 0.25rem;">Chọn Câu lạc bộ để xem thống kê:</label>
+                    <select id="club-stats-filter" class="form-input">
+                        <option value="">Tất cả Câu lạc bộ</option>
+                        <!-- Club options will be populated by JS -->
+                    </select>
+                </div>
+
+                <!-- Moved view-stats-btn here -->
+                <button id="view-stats-btn" class="btn-primary mb-4">
+                    Xem thống kê theo tuần
+                </button>
+
+                <div id="bubble-chart-container">
+                    <p class="text-gray-500 text-center">Nhấn "Xem thống kê theo tuần" để hiển thị biểu đồ.</p>
+                </div>
+                <div id="chart-status" class="mt-4 text-sm text-gray-600"></div>
             </div>
-
-            <!-- Moved view-stats-btn here -->
-            <button id="view-stats-btn" class="btn-primary mb-4">
-                Xem thống kê theo tuần
-            </button>
-
-            <div id="bubble-chart-container">
-                <p class="text-gray-500 text-center">Nhấn "Xem thống kê theo tuần" để hiển thị biểu đồ.</p>
-            </div>
-            <div id="chart-status" class="mt-4 text-sm text-gray-600"></div>
         </section>
 
         <!-- Instruction Section -->
         <section id="instruction-section" class="card mb-8">
             <div class="collapsible-header" data-target="instruction-content">
-                <h2 class="text-xl font-semibold">Hướng dẫn sử dụng ứng dụng</h2>
+                <h2 class="text-xl font-semibold"><i class="fas fa-info-circle text-blue-400"></i>Hướng dẫn sử dụng ứng dụng</h2>
                 <svg class="toggle-icon w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
             </div>
             <div id="instruction-content" class="collapsible-content">
@@ -863,6 +883,9 @@
 
         // Your Supabase configuration
         const SUPABASE_URL = 'https://rmbsxccrwrktbjlnezpu.supabase.co'; // Your Supabase project URL
+        // LƯU Ý: Lỗi "Invalid API key" khi tải danh sách câu lạc bộ thường xuất hiện nếu khóa này không đúng
+        // hoặc các chính sách bảo mật (RLS) trên bảng 'clubs' trong dự án Supabase của bạn không cho phép truy cập.
+        // Vui lòng kiểm tra lại Anon Key và cấu hình RLS trên bảng 'clubs' trong bảng điều khiển Supabase của bạn.
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJtYnN4Y2Nyd3JrdGJqbG5lenB1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg2MjczNjQsImV4cCI6MjA2NDIwMzM2NH0.ydCqificftdtn1niRciFCifeuo8aX6SDGti-hCY5Z_Y'; // Your public anon key for Supabase
         const STRAVA_OAUTH_CALLBACK_URL = 'https://rmbsxccrwrktbjlnezpu.supabase.co/functions/v1/strava-oauth-callback';
         const FETCH_ACTIVITIES_API_URL = 'https://rmbsxccrwrktbjlnezpu.supabase.co/functions/v1/fetch-strava-activities';
@@ -942,7 +965,11 @@
         const fetchActivitiesBtn = document.getElementById('fetch-activities-btn');
         const viewStatsBtn = document.getElementById('view-stats-btn');
         const analyzeActivitiesBtn = document.getElementById('analyze-activities-btn');
-        const dataSection = document.getElementById('data-section');
+        
+        // Split data-section into two parts
+        const dataSectionPart1 = document.getElementById('data-section-part1');
+        const dataSectionPart2 = document.getElementById('data-section-part2');
+        
         const userInfo = document.getElementById('user-info');
         const activitiesLimitInput = document.getElementById('activities-limit');
         const numRecentActivitiesInput = document.getElementById('num-recent-activities');
@@ -994,6 +1021,10 @@
         const stravaAuthContent = document.getElementById('strava-auth-content');
         const instructionSection = document.getElementById('instruction-section');
         const instructionContent = document.getElementById('instruction-content');
+        const dataSectionPart1Content = document.getElementById('data-section-part1-content'); // New content element for part1
+        const dataSectionPart2Content = document.getElementById('data-section-part2-content'); // New content element for part2
+        const detailedStatsContent = document.getElementById('detailed-stats-content'); // Content for detailed stats
+        const statsContent = document.getElementById('stats-content'); // Content for weekly stats
 
         // DOM element for runner stats filter
         const runnerStatsFilter = document.getElementById('runner-stats-filter');
@@ -1199,7 +1230,8 @@
                 // Show sections dependent on app authentication
                 credentialManagementSection.classList.remove('hidden');
                 stravaAuthSection.classList.remove('hidden');
-                dataSection.classList.remove('hidden');
+                dataSectionPart1.classList.remove('hidden'); // Show part 1
+                dataSectionPart2.classList.remove('hidden'); // Show part 2
                 statsSection.classList.remove('hidden');
                 detailedStatsSection.classList.remove('hidden'); // Show new detailed stats section
                 instructionSection.classList.remove('hidden'); // Show instruction section
@@ -1229,7 +1261,8 @@
                 // Hide sections dependent on app authentication
                 credentialManagementSection.classList.add('hidden');
                 stravaAuthSection.classList.add('hidden');
-                dataSection.classList.add('hidden');
+                dataSectionPart1.classList.add('hidden'); // Hide part 1
+                dataSectionPart2.classList.add('hidden'); // Hide part 2
                 statsSection.classList.add('hidden');
                 detailedStatsSection.classList.add('hidden'); // Hide new detailed stats section
                 instructionSection.classList.add('hidden'); // Hide instruction section
@@ -1660,7 +1693,8 @@
                     currentRunnerDisplay.classList.remove('hidden');
                     connectStravaBtn.style.display = 'none'; // Explicitly hide the image
                     disconnectStravaBtn.classList.remove('hidden');
-                    dataSection.classList.remove('hidden');
+                    dataSectionPart1.classList.remove('hidden'); // Show part 1
+                    dataSectionPart2.classList.remove('hidden'); // Show part 2
                     statsSection.classList.remove('hidden');
                     detailedStatsSection.classList.remove('hidden'); 
                     instructionSection.classList.remove('hidden'); 
@@ -1668,7 +1702,7 @@
                     userInfo.textContent = `Chào mừng, Runner: ${currentRunnerName} (Strava ID: ${currentAthleteId})`; 
                     
                     runnerSelect.value = currentRunnerCredentialId;
-                    toggleCollapsible(stravaAuthContent, stravaAuthToggleIcon, true);
+                    toggleCollapsible(stravaAuthContent, straavaAuthToggleIcon, true);
 
                 } else {
                     console.log('  Strava token has expired or is missing. Re-authentication may be needed.');
@@ -1688,7 +1722,8 @@
                 currentRunnerDisplay.classList.add('hidden');
                 connectStravaBtn.style.display = 'block'; // Explicitly show the image
                 disconnectStravaBtn.classList.add('hidden');
-                dataSection.classList.add('hidden');
+                dataSectionPart1.classList.add('hidden'); // Hide part 1
+                dataSectionPart2.classList.add('hidden'); // Hide part 2
                 statsSection.classList.add('hidden');
                 detailedStatsSection.classList.add('hidden'); 
                 instructionSection.classList.add('hidden'); 
@@ -2498,8 +2533,10 @@
                 console.log('Fetched clubs:', allClubs);
                 return allClubs;
             } catch (error) {
+                // Đây là nơi lỗi "Invalid API key" thường xuất hiện nếu khóa không đúng
+                // hoặc chính sách RLS trên bảng 'clubs' không cho phép 'select'.
                 console.error('Error fetching clubs:', error.message);
-                showAlert(`Lỗi khi tải danh sách câu lạc bộ: ${error.message}`);
+                showAlert(`Lỗi khi tải danh sách câu lạc bộ: ${error.message}. Vui lòng kiểm tra API Key và chính sách RLS trên bảng 'clubs' trong Supabase.`);
                 allClubs = [];
                 return [];
             }
