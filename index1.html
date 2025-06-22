@@ -367,8 +367,13 @@
                 <h1 class="text-2xl font-bold text-white">Running Management with AI✨</h1>
             </div>
             <nav>
-                <span id="app-user-status" class="text-white text-sm"></span>
-            </nav>
+     
+            <!-- THÊM ĐOẠN MÃ NÀY VÀO ĐÂY -->
+            <button id="toggle-settings-btn" class="ml-4 px-3 py-1 rounded-md text-white bg-gray-700 hover:bg-gray-600 transition duration-300 flex items-center gap-2">
+                <i class="fas fa-gear"></i> <!-- Biểu tượng bánh răng (cài đặt) -->
+                <span id="toggle-settings-text"></span> <!-- Nhãn của nút (sẽ được cập nhật bằng JS) -->
+            </button>
+        </nav>
         </div>
     </header>
 
@@ -896,6 +901,7 @@
         const GET_STATS_API_URL = 'https://rmbsxccrwrktbjlnezpu.supabase.co/functions/v1/get-user-activities';
         // New Edge Function URL for AI analysis
         const ANALYZE_ACTIVITIES_FUNCTION_URL = 'https://rmbsxccrwrktbjlnezpu.supabase.co/functions/v1/analyze-activities-with-gemini'; 
+        const SETTINGS_VISIBILITY_KEY = 'app_settings_visible'; // Khóa để lưu trạng thái hiển thị cài đặt trong localStorage
 
         // Add the application's global Strava Client ID for OAuth flow
         // You MUST replace 'YOUR_APP_STRAVA_CLIENT_ID' with your actual application's Client ID
@@ -1048,6 +1054,14 @@
         // Scroll to top button
         const scrollToTopBtn = document.getElementById('scroll-to-top-btn');
 
+        // Thêm các DOM elements mới cho nút ẩn/hiện cài đặt
+        const toggleSettingsBtn = document.getElementById('toggle-settings-btn');
+        const toggleSettingsText = document.getElementById('toggle-settings-text');
+
+    // LƯU Ý: Các section appAuthSection, credentialManagementSection, stravaAuthSection đã được khai báo ở trên.
+    // Bạn không cần khai báo lại chúng ở đây.
+
+        
 
         // --- Helper functions for UI and data transformation ---
 
@@ -1083,6 +1097,52 @@
             }
         }
 
+        /**
+ * Áp dụng trạng thái hiển thị cho các section cài đặt và cập nhật nút toggle.
+ * @param {boolean} isVisible - True nếu các section nên hiển thị, false nếu nên ẩn.
+ */
+function applySettingsVisibility(isVisible) {
+    // Cập nhật trạng thái hiển thị của 3 section cài đặt chính
+    if (appAuthSection) {
+        if (isVisible) {
+            appAuthSection.classList.remove('hidden');
+        } else {
+            appAuthSection.classList.add('hidden');
+        }
+    }
+    if (credentialManagementSection) {
+        if (isVisible) {
+            credentialManagementSection.classList.remove('hidden');
+        } else {
+            credentialManagementSection.classList.add('hidden');
+        }
+    }
+    if (stravaAuthSection) {
+        if (isVisible) {
+            stravaAuthSection.classList.remove('hidden');
+        } else {
+            stravaAuthSection.classList.add('hidden');
+        }
+    }
+
+    // Cập nhật nhãn nút "Hiện/Ẩn Cài đặt"
+    if (toggleSettingsText) {
+        if (isVisible) {
+            toggleSettingsText.textContent = 'Ẩn cài đặt';
+            toggleSettingsBtn.classList.remove('bg-gray-500'); // Thay đổi màu nền khi hiển thị
+            toggleSettingsBtn.classList.add('bg-gray-700');
+        } else {
+            toggleSettingsText.textContent = 'Hiện cài đặt';
+            toggleSettingsBtn.classList.remove('bg-gray-700'); // Thay đổi màu nền khi ẩn
+            toggleSettingsBtn.classList.add('bg-gray-500');
+        }
+    }
+
+    // Lưu trạng thái vào localStorage
+    localStorage.setItem(SETTINGS_VISIBILITY_KEY, isVisible.toString());
+}
+
+        
         /**
          * Populates the multi-select filter dropdowns.
          */
@@ -1230,18 +1290,24 @@
                 loggedOutView.classList.add('hidden');
                 loggedInView.classList.remove('hidden');
                 
-                // Show sections dependent on app authentication
-                credentialManagementSection.classList.remove('hidden');
-                stravaAuthSection.classList.remove('hidden');
-                dataSectionPart1.classList.remove('hidden'); // Show part 1
-                dataSectionPart2.classList.remove('hidden'); // Show part 2
-                statsSection.classList.remove('hidden');
-                detailedStatsSection.classList.remove('hidden'); // Show new detailed stats section
-                instructionSection.classList.remove('hidden'); // Show instruction section
-                llmAnalysisSection.classList.remove('hidden'); // Show LLM analysis section
+              // --- THAY THẾ ĐOẠN CODE TRÊN BẰNG ĐOẠN DƯỚI ĐÂY KHI NGƯỜI DÙNG ĐÃ ĐĂNG NHẬP (if (user)) ---
+            // Chỉ quản lý hiển thị các section nội dung chính ở đây
+            dataSectionPart1.classList.remove('hidden'); // Show part 1
+            dataSectionPart2.classList.remove('hidden'); // Show part 2
+            statsSection.classList.remove('hidden');
+            detailedStatsSection.classList.remove('hidden'); // Show new detailed stats section
+            instructionSection.classList.remove('hidden'); // Show instruction section
+            llmAnalysisSection.classList.remove('hidden'); // Show LLM analysis section
 
-                // Collapse app auth section if logged in
-                toggleCollapsible(appAuthContent, appAuthToggleIcon, true); 
+            // Các section cài đặt (appAuthSection, credentialManagementSection, stravaAuthSection)
+            // sẽ được quản lý bởi hàm applySettingsVisibility() sau.
+            // Đảm bảo chúng được loại bỏ lớp 'hidden' ở đây để applySettingsVisibility có thể hoạt động.
+            if (appAuthSection) appAuthSection.classList.remove('hidden');
+            if (credentialManagementSection) credentialManagementSection.classList.remove('hidden');
+            if (stravaAuthSection) stravaAuthSection.classList.remove('hidden');
+
+            // Bỏ dòng toggleCollapsible(appAuthContent, appAuthToggleIcon, true); ở đây
+            // vì applySettingsVisibility sẽ quyết định trạng thái cuối cùng cho appAuthSection.
 
                 // Ensure other sections are initially collapsed when becoming visible
                 toggleCollapsible(credentialManagementContent, credentialManagementSection.querySelector('.toggle-icon'), true);
@@ -1267,18 +1333,24 @@
                 loggedOutView.classList.remove('hidden');
                 loggedInView.classList.add('hidden');
 
-                // Expand app auth section if logged out
-                toggleCollapsible(appAuthContent, appAuthToggleIcon, false);
+             // --- THAY THẾ ĐOẠN CODE TRÊN BẰNG ĐOẠN DƯỚI ĐÂY KHI NGƯỜI DÙNG CHƯA ĐĂNG NHẬP (else) ---
+            // Ẩn tất cả các section nội dung chính
+            dataSectionPart1.classList.add('hidden');
+            dataSectionPart2.classList.add('hidden');
+            statsSection.classList.add('hidden');
+            detailedStatsSection.classList.add('hidden');
+            instructionSection.classList.add('hidden');
+            llmAnalysisSection.classList.add('hidden');
 
-                // Hide sections dependent on app authentication
-                credentialManagementSection.classList.add('hidden');
-                stravaAuthSection.classList.add('hidden');
-                dataSectionPart1.classList.add('hidden'); // Hide part 1
-                dataSectionPart2.classList.add('hidden'); // Hide part 2
-                statsSection.classList.add('hidden');
-                detailedStatsSection.classList.add('hidden'); // Hide new detailed stats section
-                instructionSection.classList.add('hidden'); // Hide instruction section
-                llmAnalysisSection.classList.add('hidden'); // Hide LLM analysis section
+            // Các section cài đặt sẽ được quản lý bởi applySettingsVisibility() sau,
+            // nhưng đảm bảo chúng bị ẩn ở đây trước nếu người dùng chưa đăng nhập.
+            // Riêng appAuthSection sẽ được hiển thị mặc định khi chưa đăng nhập.
+            if (appAuthSection) appAuthSection.classList.remove('hidden'); // appAuthSection luôn hiện khi chưa login
+            if (credentialManagementSection) credentialManagementSection.classList.add('hidden');
+            if (stravaAuthSection) stravaAuthSection.classList.add('hidden');
+
+            // Bỏ dòng toggleCollapsible(appAuthContent, appAuthToggleIcon, false); ở đây
+            // vì applySettingsVisibility sẽ quyết định trạng thái cuối cùng cho appAuthSection.
 
                 clearStravaSession(); // Clear Strava session if app user logs out
                 await fetchAndSetRunnerCredentials(); // Clear global state data
@@ -1289,7 +1361,17 @@
                 populateRunnerRecentActivitiesFilter(); // NEW: Clear runner filter for recent activities
                 populateClubDropdowns(); // Clear club dropdowns
             }
-        }
+        // ... (các dòng code cuối cùng của updateAppAuthUI, ví dụ: populateClubDropdowns();) ...
+
+    // ĐÃ THAY ĐỔI: Sau khi updateAppAuthUI thiết lập trạng thái cơ bản,
+    // áp dụng trạng thái hiển thị cài đặt từ localStorage.
+    const savedVisibility = localStorage.getItem(SETTINGS_VISIBILITY_KEY);
+    // Mặc định hiển thị nếu chưa có trong localStorage (lần đầu tiên mở app)
+    const initialVisibility = savedVisibility === null ? true : savedVisibility === 'true';
+    applySettingsVisibility(initialVisibility);
+} // Đây là dấu đóng ngoặc nhọn của hàm updateAppAuthUI
+        
+        
 
         /**
          * Handles user sign-up or sign-in.
@@ -3166,7 +3248,20 @@
 
             // Trigger initial load of recent activities and detailed stats after all setup
             // This is triggered by onAuthStateChange now
-        };
+        
+        // ... (các đoạn mã khác trong window.onload) ...
+
+    // Lắng nghe sự kiện click cho nút "Hiện/Ẩn Cài đặt"
+    if (toggleSettingsBtn) { // Đảm bảo nút tồn tại
+        toggleSettingsBtn.addEventListener('click', () => {
+            // Lấy trạng thái hiện tại từ localStorage hoặc mặc định là true (hiện)
+            const currentVisibility = localStorage.getItem(SETTINGS_VISIBILITY_KEY) === 'true';
+            // Đảo ngược trạng thái và áp dụng
+            applySettingsVisibility(!currentVisibility);
+        });
+    }
+}; // Đây là dấu đóng ngoặc nhọn của window.onload
+        
     </script>
 </body>
 </html>
