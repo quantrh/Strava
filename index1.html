@@ -1274,13 +1274,13 @@ function applySettingsVisibility(isVisible) {
 
         // --- Supabase App Authentication Functions ---
 
-        /**
+      /**
          * Updates the UI based on the current Supabase Authentication state.
          * @param {Object|null} user - The Supabase user object or null if logged out.
          */
         async function updateAppAuthUI(user) {
-            const appAuthHeader = appAuthSection.querySelector('.collapsible-header');
-            const appAuthToggleIcon = appAuthHeader.querySelector('.toggle-icon');
+            // appAuthHeader và appAuthToggleIcon đã được khai báo ở phạm vi toàn cục hoặc trong window.onload.
+            // Không cần phải lấy lại ở đây nếu chúng đã có sẵn.
 
             if (user) {
                 currentAppUserId = user.id;
@@ -1289,26 +1289,26 @@ function applySettingsVisibility(isVisible) {
                 loggedOutView.classList.add('hidden');
                 loggedInView.classList.remove('hidden');
                 
-              // --- THAY THẾ ĐOẠN CODE TRÊN BẰNG ĐOẠN DƯỚI ĐÂY KHI NGƯỜI DÙNG ĐÃ ĐĂNG NHẬP (if (user)) ---
-            // Chỉ quản lý hiển thị các section nội dung chính ở đây
-            dataSectionPart1.classList.remove('hidden'); // Show part 1
-            dataSectionPart2.classList.remove('hidden'); // Show part 2
-            statsSection.classList.remove('hidden');
-            detailedStatsSection.classList.remove('hidden'); // Show new detailed stats section
-            instructionSection.classList.remove('hidden'); // Show instruction section
-            llmAnalysisSection.classList.remove('hidden'); // Show LLM analysis section
+                // Khi người dùng ĐÃ đăng nhập ứng dụng:
+                // 1. Hiển thị tất cả các section nội dung chính (không liên quan đến cài đặt)
+                if (dataSectionPart1) dataSectionPart1.classList.remove('hidden');
+                if (dataSectionPart2) dataSectionPart2.classList.remove('hidden');
+                if (statsSection) statsSection.classList.remove('hidden');
+                if (detailedStatsSection) detailedStatsSection.classList.remove('hidden');
+                if (instructionSection) instructionSection.classList.remove('hidden');
+                if (llmAnalysisSection) llmAnalysisSection.classList.remove('hidden');
 
-            // Các section cài đặt (appAuthSection, credentialManagementSection, stravaAuthSection)
-            // sẽ được quản lý bởi hàm applySettingsVisibility() sau.
-            // Đảm bảo chúng được loại bỏ lớp 'hidden' ở đây để applySettingsVisibility có thể hoạt động.
-            if (appAuthSection) appAuthSection.classList.remove('hidden');
-            if (credentialManagementSection) credentialManagementSection.classList.remove('hidden');
-            if (stravaAuthSection) stravaAuthSection.classList.remove('hidden');
+                // 2. Đảm bảo các section cài đặt cũng được loại bỏ lớp 'hidden' Ở ĐÂY.
+                // Trạng thái cuối cùng của chúng (ẩn hay hiện) sẽ được quyết định bởi
+                // checkStravaAuthState() và hàm applySettingsVisibility() sau đó.
+                if (appAuthSection) appAuthSection.classList.remove('hidden');
+                if (credentialManagementSection) credentialManagementSection.classList.remove('hidden');
+                if (stravaAuthSection) stravaAuthSection.classList.remove('hidden');
 
-            // Bỏ dòng toggleCollapsible(appAuthContent, appAuthToggleIcon, true); ở đây
-            // vì applySettingsVisibility sẽ quyết định trạng thái cuối cùng cho appAuthSection.
-
-                // Ensure other sections are initially collapsed when becoming visible
+                // 3. Thực hiện các thao tác tải dữ liệu và cập nhật UI khác
+                // (Giữ nguyên các dòng này từ mã của bạn)
+                // Các section con bên trong (như dataSectionPart1Content, v.v.) sẽ được thu gọn mặc định
+                // hoặc theo trạng thái riêng của chúng khi chúng được hiển thị.
                 toggleCollapsible(credentialManagementContent, credentialManagementSection.querySelector('.toggle-icon'), true);
                 toggleCollapsible(stravaAuthContent, stravaAuthSection.querySelector('.toggle-icon'), true);
                 toggleCollapsible(dataSectionPart1Content, dataSectionPart1.querySelector('.toggle-icon'), true);
@@ -1316,15 +1316,13 @@ function applySettingsVisibility(isVisible) {
                 toggleCollapsible(detailedStatsContent, detailedStatsSection.querySelector('.toggle-icon'), true);
                 toggleCollapsible(statsContent, statsSection.querySelector('.toggle-icon'), true);
 
-
-                // Re-fetch credentials and check Strava auth state after app user is authenticated
-                await fetchAndSetRunnerCredentials(); // Fetch data
-                await renderCredentialsUI(); // Render UI from fetched data
-                await checkStravaAuthState();
-                populateRunnerStatsFilter(); // Populate runner stats filter on app auth change
-                populateDownloadRunnerSelect(); // Populate the new download runner select
-                populateRunnerRecentActivitiesFilter(); // NEW: Populate runner filter for recent activities
-                populateClubDropdowns(); // NEW: Populate club dropdowns after app auth and credential load
+                await fetchAndSetRunnerCredentials(); // Tải dữ liệu runner
+                await renderCredentialsUI(); // Render danh sách runner
+                await checkStravaAuthState(); // KIỂM TRA TRẠNG THÁI STRAVA VÀ ÁP DỤNG HIỂN THỊ CÀI ĐẶT TẠI ĐÂY
+                populateRunnerStatsFilter();
+                populateDownloadRunnerSelect();
+                populateRunnerRecentActivitiesFilter();
+                populateClubDropdowns();
 
             } else {
                 currentAppUserId = null;
@@ -1332,43 +1330,46 @@ function applySettingsVisibility(isVisible) {
                 loggedOutView.classList.remove('hidden');
                 loggedInView.classList.add('hidden');
 
-             // --- THAY THẾ ĐOẠN CODE TRÊN BẰNG ĐOẠN DƯỚI ĐÂY KHI NGƯỜI DÙNG CHƯA ĐĂNG NHẬP (else) ---
-            // Ẩn tất cả các section nội dung chính
-            dataSectionPart1.classList.add('hidden');
-            dataSectionPart2.classList.add('hidden');
-            statsSection.classList.add('hidden');
-            detailedStatsSection.classList.add('hidden');
-            instructionSection.classList.add('hidden');
-            llmAnalysisSection.classList.add('hidden');
+                // Khi người dùng CHƯA đăng nhập ứng dụng:
+                // 1. Ẩn tất cả các section nội dung chính
+                if (dataSectionPart1) dataSectionPart1.classList.add('hidden');
+                if (dataSectionPart2) dataSectionPart2.classList.add('hidden');
+                if (statsSection) statsSection.classList.add('hidden');
+                if (detailedStatsSection) detailedStatsSection.classList.add('hidden');
+                if (instructionSection) instructionSection.classList.add('hidden');
+                if (llmAnalysisSection) llmAnalysisSection.classList.add('hidden');
 
-            // Các section cài đặt sẽ được quản lý bởi applySettingsVisibility() sau,
-            // nhưng đảm bảo chúng bị ẩn ở đây trước nếu người dùng chưa đăng nhập.
-            // Riêng appAuthSection sẽ được hiển thị mặc định khi chưa đăng nhập.
-            if (appAuthSection) appAuthSection.classList.remove('hidden'); // appAuthSection luôn hiện khi chưa login
-            if (credentialManagementSection) credentialManagementSection.classList.add('hidden');
-            if (stravaAuthSection) stravaAuthSection.classList.add('hidden');
+                // 2. Section "Đăng nhập/Đăng ký Ứng dụng" (appAuthSection) luôn hiển thị.
+                // Các section cài đặt khác (Credential Management, Strava Auth) sẽ bị ẩn.
+                if (appAuthSection) appAuthSection.classList.remove('hidden');
+                if (credentialManagementSection) credentialManagementSection.classList.add('hidden');
+                if (stravaAuthSection) stravaAuthSection.classList.add('hidden');
 
-            // Bỏ dòng toggleCollapsible(appAuthContent, appAuthToggleIcon, false); ở đây
-            // vì applySettingsVisibility sẽ quyết định trạng thái cuối cùng cho appAuthSection.
+                // 3. Xóa trạng thái phiên Strava và reset UI liên quan
+                clearStravaSession(); 
+                await fetchAndSetRunnerCredentials(); 
+                await renderCredentialsUI();
+                // Không cần gọi checkStravaAuthState() ở đây vì không có app user,
+                // và các section liên quan đến Strava Auth đã bị ẩn ở trên.
+                populateRunnerStatsFilter();
+                populateDownloadRunnerSelect();
+                populateRunnerRecentActivitiesFilter();
+                populateClubDropdowns();
 
-                clearStravaSession(); // Clear Strava session if app user logs out
-                await fetchAndSetRunnerCredentials(); // Clear global state data
-                await renderCredentialsUI(); // Clear credentials list UI
-                checkStravaAuthState(); // Reset Strava UI
-                populateRunnerStatsFilter(); // Clear runner stats filter
-                populateDownloadRunnerSelect(); // Clear the new download runner select
-                populateRunnerRecentActivitiesFilter(); // NEW: Clear runner filter for recent activities
-                populateClubDropdowns(); // Clear club dropdowns
+                // 4. Đặt trạng thái ban đầu của nút cài đặt và các section cài đặt khi ĐĂNG XUẤT.
+                // Mặc định cho phép hiển thị các phần cài đặt để người dùng có thể đăng nhập.
+                // Trạng thái này sẽ lưu vào localStorage là "true" và nút sẽ ghi "Ẩn cài đặt".
+                applySettingsVisibility(true);
+                
+                // Quan trọng: Thoát sớm khỏi hàm nếu không có người dùng ứng dụng để tránh
+                // checkStravaAuthState() chạy với trạng thái không mong muốn hoặc gây lỗi.
+                return; 
             }
-        // ... (các dòng code cuối cùng của updateAppAuthUI, ví dụ: populateClubDropdowns();) ...
-
-    // ĐÃ THAY ĐỔI: Sau khi updateAppAuthUI thiết lập trạng thái cơ bản,
-    // áp dụng trạng thái hiển thị cài đặt từ localStorage.
-    const savedVisibility = localStorage.getItem(SETTINGS_VISIBILITY_KEY);
-    // Mặc định hiển thị nếu chưa có trong localStorage (lần đầu tiên mở app)
-    const initialVisibility = savedVisibility === null ? true : savedVisibility === 'true';
-    applySettingsVisibility(initialVisibility);
-} // Đây là dấu đóng ngoặc nhọn của hàm updateAppAuthUI
+            // LƯU Ý: Lời gọi applySettingsVisibility() cuối cùng đã được loại bỏ khỏi đây.
+            // Quyết định cuối cùng về việc hiển thị/ẩn các section cài đặt sẽ được đưa ra bởi
+            // checkStravaAuthState() (khi đã đăng nhập ứng dụng) hoặc bởi applySettingsVisibility(true)
+            // (khi chưa đăng nhập ứng dụng).
+        }
         
         
 
@@ -1760,7 +1761,7 @@ function applySettingsVisibility(isVisible) {
 
         // --- Strava Authentication & API Interaction ---
 
-        /**
+      /**
          * Checks the current Strava authentication status from localStorage and updates the UI.
          */
         async function checkStravaAuthState() {
@@ -1776,11 +1777,11 @@ function applySettingsVisibility(isVisible) {
             console.log('  currentAthleteId (Strava ID):', currentAthleteId);
             console.log('  currentRunnerName:', currentRunnerName);
 
-            const stravaAuthHeader = stravaAuthSection.querySelector('.collapsible-header');
-            const stravaAuthToggleIcon = stravaAuthHeader.querySelector('.toggle-icon');
-
+            // Các biến stravaAuthHeader và stravaAuthToggleIcon không cần thiết ở đây nữa
+            // vì việc ẩn/hiện toàn bộ section cha sẽ được quản lý bởi applySettingsVisibility.
 
             if (isAuthenticated && currentRunnerCredentialId && currentAthleteId && currentRunnerName) {
+                // Đảm bảo dữ liệu runner và clubs được tải và UI được cập nhật
                 await fetchAndSetRunnerCredentials();
                 await renderCredentialsUI(); 
                 await fetchClubs();
@@ -1788,48 +1789,80 @@ function applySettingsVisibility(isVisible) {
 
                 const expiresAt = localStorage.getItem('strava_expires_at');
                 const now = Date.now();
+
                 if (expiresAt && now < parseInt(expiresAt, 10)) {
+                    // Trạng thái: Đã đăng nhập Strava thành công và token hợp lệ
                     console.log('  Valid Strava token found. Logged into Strava.');
                     authStatus.textContent = 'Đã đăng nhập với Strava.';
                     currentRunnerNameSpan.textContent = currentRunnerName;
                     currentRunnerDisplay.classList.remove('hidden');
-                    connectStravaBtn.style.display = 'none'; // Explicitly hide the image
-                    disconnectStravaBtn.classList.remove('hidden');
-                    dataSectionPart1.classList.remove('hidden'); // Show part 1
-                    dataSectionPart2.classList.remove('hidden'); // Show part 2
-                    statsSection.classList.remove('hidden');
-                    detailedStatsSection.classList.remove('hidden'); 
-                    instructionSection.classList.remove('hidden'); 
-                    llmAnalysisSection.classList.remove('hidden'); 
+                    connectStravaBtn.style.display = 'none'; // Ẩn nút "Connect with Strava"
+                    disconnectStravaBtn.classList.remove('hidden'); // Hiển thị nút "Đăng xuất Strava"
+                    
+                    // Hiển thị các section nội dung chính (phần này đã được xử lý trong updateAppAuthUI)
+                    // dataSectionPart1.classList.remove('hidden'); 
+                    // dataSectionPart2.classList.remove('hidden'); 
+                    // statsSection.classList.remove('hidden');
+                    // detailedStatsSection.classList.remove('hidden'); 
+                    // instructionSection.classList.remove('hidden'); 
+                    // llmAnalysisSection.classList.remove('hidden'); 
                     userInfo.textContent = `Chào mừng, Runner: ${currentRunnerName} (Strava ID: ${currentAthleteId})`; 
                     
-                    // Collapse Strava auth section if logged in
-                    toggleCollapsible(stravaAuthContent, stravaAuthToggleIcon, true); 
+                    // ẨN CÁC SECTION CÀI ĐẶT và đặt nút "Hiện cài đặt"
+                    applySettingsVisibility(false); 
 
                 } else {
+                    // Trạng thái: Đã đăng nhập Strava nhưng token hết hạn/không hợp lệ
                     console.log('  Strava token has expired or is missing. Re-authentication may be needed.');
                     authStatus.textContent = 'Token Strava đã hết hạn, vui lòng làm mới hoặc đăng nhập lại.';
                     showAlert('Phiên Strava đã hết hạn. Vui lòng đăng xuất và chọn lại Runner để kết nối.');
-                    clearStravaSession();
-                    checkStravaAuthState(); // Re-check to reset UI
+                    clearStravaSession(); // Xóa phiên Strava cũ
+                    // KHÔNG GỌI checkStravaAuthState() đệ quy ở đây để tránh lặp vô hạn.
+                    // Chúng ta sẽ đặt trạng thái UI ngay lập tức.
+                    
+                    // HIỂN THỊ CÁC SECTION CÀI ĐẶT và đặt nút "Ẩn cài đặt" (để người dùng có thể kết nối lại)
+                    applySettingsVisibility(true);
+
+                    // Reset UI cho trạng thái chưa đăng nhập Strava
+                    currentRunnerDisplay.classList.add('hidden');
+                    connectStravaBtn.style.display = 'block'; 
+                    disconnectStravaBtn.classList.add('hidden');
+                    userInfo.textContent = ''; 
+                    recentActivitiesContainer.innerHTML = '<div class="card p-4 text-gray-500 text-center col-span-full">Nhấn "Tải hoạt động gần đây" để xem.</div>';
+                    document.getElementById('bubble-chart-container').innerHTML = '<p class="text-gray-500 text-center">Nhấn "Xem thống kê theo tuần" để hiển thị biểu đồ.</p>';
+                    const table = document.getElementById('detailed-stats-table');
+                    Array.from(table.children).forEach(child => {
+                        if (child.tagName === 'TBODY') { 
+                            table.removeChild(child);
+                        }
+                    });
+                    const newTbody = document.createElement('tbody');
+                    table.appendChild(newTbody);
+                    detailedStatsStatus.textContent = 'Chưa có dữ liệu để hiển thị.';
                 }
             } else {
+                // Trạng thái: Chưa đăng nhập Strava hoặc không có thông tin phiên
                 console.log('  Not logged into Strava or session info is missing.');
-                clearStravaSession(); 
+                clearStravaSession(); // Đảm bảo xóa mọi thứ liên quan đến Strava
+                
+                // Tải lại các thông tin runner và club (luôn cần thiết)
                 await fetchAndSetRunnerCredentials(); 
                 await renderCredentialsUI();
                 await fetchClubs(); 
                 populateClubDropdowns(); 
+
                 authStatus.textContent = 'Vui lòng chọn Runner và đăng nhập với Strava.';
                 currentRunnerDisplay.classList.add('hidden');
-                connectStravaBtn.style.display = 'block'; // Explicitly show the image
-                disconnectStravaBtn.classList.add('hidden');
-                dataSectionPart1.classList.add('hidden'); // Hide part 1
-                dataSectionPart2.classList.add('hidden'); // Hide part 2
-                statsSection.classList.add('hidden');
-                detailedStatsSection.classList.add('hidden'); 
-                instructionSection.classList.add('hidden'); 
-                llmAnalysisSection.classList.add('hidden'); 
+                connectStravaBtn.style.display = 'block'; // Hiển thị nút "Connect with Strava"
+                disconnectStravaBtn.classList.add('hidden'); // Ẩn nút "Đăng xuất Strava"
+                
+                // Ẩn các section nội dung chính (phần này đã được xử lý trong updateAppAuthUI)
+                // dataSectionPart1.classList.add('hidden'); 
+                // dataSectionPart2.classList.add('hidden'); 
+                // statsSection.classList.add('hidden');
+                // detailedStatsSection.classList.add('hidden'); 
+                // instructionSection.classList.add('hidden'); 
+                // llmAnalysisSection.classList.add('hidden'); 
                 userInfo.textContent = ''; 
                 recentActivitiesContainer.innerHTML = '<div class="card p-4 text-gray-500 text-center col-span-full">Nhấn "Tải hoạt động gần đây" để xem.</div>';
                 document.getElementById('bubble-chart-container').innerHTML = '<p class="text-gray-500 text-center">Nhấn "Xem thống kê theo tuần" để hiển thị biểu đồ.</p>';
@@ -1843,11 +1876,10 @@ function applySettingsVisibility(isVisible) {
                 table.appendChild(newTbody);
                 detailedStatsStatus.textContent = 'Chưa có dữ liệu để hiển thị.';
 
-                // Expand Strava auth section if not logged in
-                toggleCollapsible(stravaAuthContent, stravaAuthToggleIcon, false);
+                // HIỂN THỊ CÁC SECTION CÀI ĐẶT và đặt nút "Ẩn cài đặt"
+                applySettingsVisibility(true);
             }
         }
-
         /**
          * Clears all Strava session data from local storage.
          * This logs the user out of Strava within the app.
