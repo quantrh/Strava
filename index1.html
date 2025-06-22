@@ -2092,8 +2092,8 @@
          */
         function populateDownloadRunnerSelect() {
             downloadRunnerSelect.innerHTML = '<option value="">-- Chọn Runner --</option>'; 
-            // Only populate with runners owned by the current app user
-            allRunnerCredentials.filter(cred => cred.owner_uid === currentAppUserId).forEach(cred => {
+             // Populate with all runners who have an athlete_id (connected to Strava), regardless of app user owner.
+            allRunnerCredentials.filter(cred => cred.athlete_id).forEach(cred => { // Thay đổi điều kiện lọc
                 const option = document.createElement('option');
                 option.value = cred.id;
                 option.textContent = cred.runner_name;
@@ -2701,12 +2701,12 @@
                 }
 
                 // Explicitly check ownership for viewing detailed activities
-                if (runner.owner_uid !== currentAppUserId) {
-                    showAlert('Bạn không có quyền xem hoạt động của runner này.');
-                    weeklyActivitiesStatus.textContent = 'Không có quyền truy cập.';
-                    weeklyActivitiesModal.style.display = 'none'; // Close modal on unauthorized access
-                    return;
-                }
+         //       if (runner.owner_uid !== currentAppUserId) {
+         //           showAlert('Bạn không có quyền xem hoạt động của runner này.');
+         //           weeklyActivitiesStatus.textContent = 'Không có quyền truy cập.';
+         //           weeklyActivitiesModal.style.display = 'none'; // Close modal on unauthorized access
+         //           return;
+         //       }
 
                 const { data: { session }, error: sessionError } = await supabaseClientInstance.auth.getSession();
                 const headers = { 'Content-Type': 'application/json' };
