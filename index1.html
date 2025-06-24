@@ -2998,39 +2998,39 @@ function getDateFromISOWeek(w) {
 
                 const result = await response.json();
 
-                if (response.ok && result.success && result.detailed_activities) {
-                    const activitiesInWeek = result.detailed_activities.filter(act => 
-                        String(act.user_id) === String(athleteId) && 
-                        getISOWeekString(new Date(act.start_date)) === isoWeek
-                    );
+           if (response.ok && result.success && result.detailed_activities) {
+                    // Loại bỏ việc lọc lại ở frontend vì backend đã lọc rồi.
+                    const activitiesToDisplay = result.detailed_activities;
 
-                    if (activitiesInWeek.length > 0) {
-                        activitiesInWeek.sort((a, b) => new Date(b.start_date) - new Date(a.start_date));
-                        activitiesInWeek.forEach(activity => {
-                            const li = document.createElement('li');
-                            li.className = 'border-b last:border-b-0 py-2';
-                            li.innerHTML = `
-                                <p class="font-semibold">${activity.name} (${activity.type})</p>
-                                <p class="text-sm text-gray-600">Ngày: ${new Date(activity.start_date).toLocaleDateString('vi-VN')}</p>
-                                <p class="text-sm text-gray-600">Quãng đường: ${(activity.distance / 1000).toFixed(2)} km</p>
-                                <p class="text-sm text-gray-600">Thời gian: ${formatDuration(activity.moving_time)}</p>
-                                <p class="text-sm text-gray-600">Pace: ${formatPace(activity.average_speed)}</p>
-                                ${activity.strava_activity_id ? `<button class="btn-primary mt-2 text-xs px-2 py-1 view-map-btn" data-activity-id="${activity.strava_activity_id}">Xem bản đồ</button>` : ''}
-                            `;
-                            weeklyActivitiesList.appendChild(li);
-                        });
-                        weeklyActivitiesStatus.textContent = `Đã tải ${activitiesInWeek.length} hoạt động cho tuần này.`;
-                        document.querySelectorAll('#weekly-activities-modal .view-map-btn').forEach(button => {
-                            button.onclick = (e) => {
-                                const activityId = e.target.dataset.activityId;
-                                if (activityId) {
-                                    window.open(`https://www.strava.com/activities/${activityId}`, '_blank');
-                                }
-                            };
-                        });
-                    } else {
-                        weeklyActivitiesStatus.textContent = 'Không tìm thấy hoạt động nào cho tuần này.';
-                    }
+                    if (activitiesToDisplay.length > 0) {
+                        activitiesToDisplay.sort((a, b) => new Date(b.start_date) - new Date(a.start_date));
+                        weeklyActivitiesList.innerHTML = ''; // Đảm bảo làm rỗng danh sách trước khi thêm mới
+                        activitiesToDisplay.forEach(activity => {
+                            const li = document.createElement('li');
+                            li.className = 'border-b last:border-b-0 py-2';
+                            li.innerHTML = `
+                                <p class="font-semibold">${activity.name} (${activity.type})</p>
+                                <p class="text-sm text-gray-600">Ngày: ${new Date(activity.start_date).toLocaleDateString('vi-VN')}</p>
+                                <p class="text-sm text-gray-600">Quãng đường: ${(activity.distance / 1000).toFixed(2)} km</p>
+                                <p class="text-sm text-gray-600">Thời gian: ${formatDuration(activity.moving_time)}</p>
+                                <p class="text-sm text-gray-600">Pace: ${formatPace(activity.average_speed)}</p>
+                                ${activity.strava_activity_id ? `<button class="btn-primary mt-2 text-xs px-2 py-1 view-map-btn" data-activity-id="${activity.strava_activity_id}">Xem bản đồ</button>` : ''}
+                            `;
+                            weeklyActivitiesList.appendChild(li);
+                        });
+                        weeklyActivitiesStatus.textContent = `Đã tải ${activitiesToDisplay.length} hoạt động cho tuần này.`;
+                        document.querySelectorAll('#weekly-activities-modal .view-map-btn').forEach(button => {
+                            button.onclick = (e) => {
+                                const activityId = e.target.dataset.activityId;
+                                if (activityId) {
+                                    window.open(`https://www.strava.com/activities/${activityId}`, '_blank');
+                                }
+                            };
+                        });
+                    } else {
+                        weeklyActivitiesStatus.textContent = 'Không tìm thấy hoạt động nào cho tuần này.';
+                    }
+                }
                 } else {
                     console.error('Lỗi khi tải hoạt động chi tiết cho tuần:', result.error || 'Không xác định');
                     weeklyActivitiesStatus.textContent = `Lỗi: ${result.error || 'Không xác định'}`;
