@@ -307,6 +307,17 @@
             justify-content: center;
         }
 
+        /* Collapsible content styles */
+        .collapsible-content {
+            max-height: 1000px; /* Arbitrarily large value for expanded state */
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+        }
+
+        .collapsible-content.collapsed {
+            max-height: 0;
+            overflow: hidden;
+        }
     </style>
 </head>
 <body>
@@ -329,10 +340,8 @@
             <h2 class="text-2xl font-bold mb-4 text-center text-bidv-green">Báo cáo hoạt động</h2>
             <p id="user-info" class="text-lg font-medium text-center mb-6">Chào mừng, <span id="current-user-email"></span>!</p>
 
-            <!-- REMOVED: JSON Data Input Section -->
-
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <!-- Bộ lọc (Restored from original report.html structure with proper IDs) -->
+                <!-- Bộ lọc -->
                 <div class="card p-6">
                     <h3 class="text-xl font-semibold mb-4 text-indigo-700"><i class="fas fa-filter"></i> Bộ lọc báo cáo</h3>
                     <div class="mb-4">
@@ -376,7 +385,7 @@
                     <div id="report-filter-status" class="mt-2 text-sm text-gray-600 text-center"></div>
                 </div>
 
-                <!-- Tổng quan thống kê (kept from report origin.html for consistent styling) -->
+                <!-- Tổng quan thống kê -->
                 <div class="bg-white p-6 rounded-lg shadow-md border border-gray-200">
                     <h2 class="text-xl font-semibold text-gray-700 mb-4">Tổng quan thống kê</h2>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -444,10 +453,15 @@
                 </div>
             </div>
 
-            <!-- Bảng chi tiết hoạt động (Restored from original report.html) -->
-            <div class="card mt-8 p-6">
-                <h3 class="text-xl font-semibold mb-4 text-blue-700"><i class="fas fa-list"></i> Chi tiết các hoạt động</h3>
-                <div class="overflow-x-auto">
+            <!-- Bảng chi tiết hoạt động (Collapsible) -->
+            <div id="detailed-activities-section" class="card mt-8 p-6">
+                <div id="detailed-activities-header" class="flex justify-between items-center cursor-pointer mb-4">
+                    <h3 class="text-xl font-semibold text-blue-700">
+                        <i class="fas fa-list mr-2"></i> Chi tiết các hoạt động
+                    </h3>
+                    <i id="detailed-activities-toggle-icon" class="fas fa-chevron-down text-gray-600 transition-transform duration-300"></i>
+                </div>
+                <div id="detailed-activities-content" class="collapsible-content overflow-x-auto">
                     <table id="detailed-activities-table" class="data-table">
                         <thead>
                             <tr>
@@ -467,11 +481,11 @@
                             <!-- Hoạt động sẽ được tải vào đây -->
                         </tbody>
                     </table>
+                    <p id="detailed-activities-status" class="mt-4 text-sm text-gray-600 text-center">Không có hoạt động nào để hiển thị.</p>
                 </div>
-                <p id="detailed-activities-status" class="mt-4 text-sm text-gray-600 text-center">Không có hoạt động nào để hiển thị.</p>
             </div>
 
-            <!-- Biểu đồ thống kê theo tuần (Restored from original report.html) -->
+            <!-- Biểu đồ thống kê theo tuần -->
             <div class="card mt-8 p-6">
                 <h3 class="text-xl font-semibold mb-4 text-red-700"><i class="fas fa-chart-line"></i> Thống kê quãng đường theo tuần</h3>
                 <div id="weekly-distance-chart-container" class="border rounded-md p-2 min-h-[300px] flex items-center justify-center">
@@ -480,7 +494,7 @@
                 <p id="weekly-chart-status" class="mt-4 text-sm text-gray-600 text-center"></p>
             </div>
 
-             <!-- Bảng thống kê chi tiết & Tiền phạt/Thưởng (Restored from original report.html) -->
+             <!-- Bảng thống kê chi tiết & Tiền phạt/Thưởng -->
              <div class="card mt-8 p-6">
                 <h3 class="text-xl font-semibold mb-4 text-teal-700"><i class="fas fa-calculator"></i> Thống kê tiền phạt/thưởng</h3>
                 <div class="mb-4 flex gap-4 items-end">
@@ -528,7 +542,7 @@
         </div>
     </footer>
 
-    <!-- Weekly Activities Modal (Restored from original report.html) -->
+    <!-- Weekly Activities Modal -->
     <div id="weekly-activities-modal" class="modal">
         <div class="modal-content" style="max-width: 700px;">
             <span class="close-button" id="close-weekly-activities-modal-btn">&times;</span>
@@ -543,14 +557,14 @@
     </div>
 
     <!-- Custom Alert/Confirm Modals -->
-    <div id="custom-alert" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div id="custom-alert" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-content-center z-50">
         <div class="bg-white p-6 rounded-lg shadow-xl max-w-sm w-full text-center">
             <p id="alert-message" class="mb-4 text-lg"></p>
             <button id="alert-ok-btn" class="btn-primary">OK</button>
         </div>
     </div>
 
-    <div id="custom-confirm-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div id="custom-confirm-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-content-center z-50">
         <div class="bg-white p-6 rounded-lg shadow-xl max-w-sm w-full text-center">
             <p id="confirm-message" class="mb-4 text-lg"></p>
             <div class="flex justify-center gap-4">
@@ -629,6 +643,14 @@
         const weeklyActivitiesList = document.getElementById('weekly-activities-list');
         const weeklyActivitiesStatus = document.getElementById('weekly-activities-status');
 
+        // Collapsible section elements (for Detailed Activities Table)
+        const detailedActivitiesSection = document.getElementById('detailed-activities-section');
+        const detailedActivitiesHeader = document.getElementById('detailed-activities-header');
+        const detailedActivitiesContent = document.getElementById('detailed-activities-content');
+        const detailedActivitiesToggleIcon = document.getElementById('detailed-activities-toggle-icon');
+        const DETAILED_ACTIVITIES_STATE_KEY = 'detailedActivitiesCollapsed';
+
+
         // All Activity Types for multi-select (from original report.html)
         const ALL_ACTIVITY_TYPES = [
             'Run', 'Walk', 'Ride', 'Swim', 'Hike', 'NordicSki', 'AlpineSki', 'Workout', 'Yoga', 
@@ -700,35 +722,73 @@
         }
 
         // Function to format seconds into MM:SS for pace labels (used for chart axes and tooltips) - from report origin.html
+        // This function assumes valid totalSeconds input. The validity check should happen upstream.
         function formatPaceLabel(totalSeconds) {
-            if (totalSeconds === null || isNaN(totalSeconds) || totalSeconds < 0) return 'N/A';
+            console.log('DEBUG: formatPaceLabel input totalSeconds:', totalSeconds);
+            if (totalSeconds === null || isNaN(totalSeconds) || totalSeconds < 0) {
+                console.log('DEBUG: formatPaceLabel output: N/A (invalid input)');
+                return 'N/A';
+            }
             const minutes = Math.floor(totalSeconds / 60);
-            const seconds = Math.round(totalSeconds % 60); // Round to nearest second
-            return `${minutes < 10 ? '0' : ''}${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+            const seconds = Math.round(totalSeconds % 60);
+            console.log(`DEBUG: minutes=${minutes}, seconds=${seconds} for totalSeconds=${totalSeconds}`);
+            const formatted = `${minutes < 10 ? '0' : ''}${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+            console.log('DEBUG: formatPaceLabel output:', formatted);
+            return formatted;
         }
 
-        // Function to convert average_speed (m/s) to pace (min/km) formatted as MM:SS /km (used for overall summary) - from report origin.html
+        // Function to convert average_speed (m/s) to pace (min/km) formatted as MM:SS /km (used for overall summary)
         function formatPace(speedMs) {
-            if (speedMs === null || speedMs <= 0 || isNaN(speedMs)) return 'N/A';
+            console.log('DEBUG: formatPace input speedMs (for overall summary):', speedMs);
+            if (speedMs === null || isNaN(speedMs) || speedMs <= 0) {
+                console.log('DEBUG: formatPace output (overall): N/A (invalid speedMs)');
+                return 'N/A';
+            }
+            // Check for extremely fast pace that would result in 00:00 (less than 0.5 seconds/km)
             const paceSecondsPerKm = 1000 / speedMs; // total seconds per kilometer
-            return `${formatPaceLabel(paceSecondsPerKm)} /km`;
+            console.log('DEBUG: Calculated paceSecondsPerKm (overall):', paceSecondsPerKm);
+
+            if (paceSecondsPerKm < 0.5) { 
+                console.warn('DEBUG: Extremely fast pace detected, returning N/A. Pace seconds/km:', paceSecondsPerKm);
+                return 'N/A'; // Revert to plain N/A
+            }
+
+            const formatted = `${formatPaceLabel(paceSecondsPerKm)} /km`;
+            console.log('DEBUG: formatPace output (overall):', formatted);
+            return formatted;
         }
         
         // Original formatPace from initial report.html for detailed table
         function formatPaceForTable(metersPerSecond) {
-            if (typeof metersPerSecond !== 'number' || isNaN(metersPerSecond) || metersPerSecond <= 0) return 'N/A';
+            console.log('DEBUG: formatPaceForTable input metersPerSecond (for detailed table):', metersPerSecond);
+            if (typeof metersPerSecond !== 'number' || isNaN(metersPerSecond) || metersPerSecond <= 0) {
+                console.log('DEBUG: formatPaceForTable output (individual): N/A (invalid metersPerSecond)');
+                return 'N/A';
+            }
             const kmPerHour = (metersPerSecond * 3.6); 
-            if (kmPerHour === 0) return 'N/A';
+            if (kmPerHour === 0) {
+                console.log('DEBUG: formatPaceForTable output (individual): N/A (kmPerHour is 0)');
+                return 'N/A';
+            }
             const minutesPerKm = 60 / kmPerHour; 
+            console.log('DEBUG: Calculated minutesPerKm (individual):', minutesPerKm);
+
+            // Check for extremely fast pace that would result in 00:00 (less than 0.5 seconds)
+            if (minutesPerKm < (0.5 / 60)) { 
+                console.warn('DEBUG: Extremely fast pace detected for table, returning N/A. Minutes per Km:', minutesPerKm);
+                return 'N/A'; // Revert to plain N/A
+            }
+
             const minutes = Math.floor(minutesPerKm);
             const seconds = Math.round((minutesPerKm - minutes) * 60);
+            console.log(`DEBUG: minutes (table)=${minutes}, seconds (table)=${seconds} for minutesPerKm=${minutesPerKm}`);
             return `${minutes}:${String(seconds).padStart(2, '0')} /km`;
         }
 
-        // Original formatElevationGain from initial report.html
+        // Function to format elevation gain (m)
         function formatElevationGain(meters) {
-            if (typeof meters !== 'number' || isNaN(meters)) return 'N/A';
-            return `${meters.toFixed(0)} m`;
+            if (meters === null || isNaN(meters)) return 'N/A';
+            return `${Math.round(meters)} m`;
         }
 
         /**
@@ -986,6 +1046,8 @@
                 totalMovingTime += activity.moving_time || 0;
             });
 
+            console.log('DEBUG: Total Distance (m):', totalDistance, 'Total Moving Time (s):', totalMovingTime); // Debugging log
+
             totalActivitiesSpan.textContent = totalActivities;
             totalDistanceSpan.textContent = `${(totalDistance / 1000).toFixed(2)} KM`;
             totalMovingTimeSpan.textContent = formatTime(totalMovingTime);
@@ -993,9 +1055,12 @@
             // Calculate overall average pace for summary
             let averageOverallPaceFormatted = 'N/A';
             if (totalDistance > 0 && totalMovingTime > 0) {
-                const overallAverageSpeedMs = (totalDistance * 1000) / totalMovingTime;
+                // Corrected: totalDistance is already in meters, no need to multiply by 1000 again.
+                const overallAverageSpeedMs = totalDistance / totalMovingTime; 
+                console.log('DEBUG: Overall Average Speed (m/s):', overallAverageSpeedMs); // Debugging log
                 averageOverallPaceFormatted = formatPace(overallAverageSpeedMs);
             }
+            console.log('DEBUG: Average Overall Pace Formatted (before assign):', averageOverallPaceFormatted); // Debugging log
             averageOverallPaceSpan.textContent = averageOverallPaceFormatted;
 
 
@@ -1003,6 +1068,7 @@
             renderDetailedActivitiesTable(allActivitiesData);
 
             // 3. Render Weekly Distance Chart (D3.js)
+            // Changed to use the generic drawBubbleChart function
             renderWeeklyDistanceChart(allActivitiesData);
 
             // 4. Render Penalty/Bonus Table
@@ -1060,7 +1126,8 @@
         }
 
         /**
-         * Calculates and renders weekly distance chart (D3.js - from original report.html).
+         * Calculates and renders weekly distance chart (D3.js).
+         * This version aggregates distance across all runners for each week.
          * @param {Array} activities - Array of activity objects.
          */
         function renderWeeklyDistanceChart(activities) {
@@ -1072,34 +1139,29 @@
                 return;
             }
 
-            const weeklyDataMap = new Map();
+            const weeklyAggregatedData = new Map(); // Map: ISOWeek -> totalDistance
+            const weeklyDetailedActivities = new Map(); // Map: ISOWeek -> array of activities for that week
+
             activities.forEach(activity => {
                 const isoWeek = getISOWeekString(activity.start_date);
                 if (isoWeek) {
-                    // Use a combined key for runner and week to differentiate per-runner weekly stats
-                    const key = `${activity.user_id}-${isoWeek}`; 
-                    if (!weeklyDataMap.has(key)) {
-                        weeklyDataMap.set(key, {
-                            week: isoWeek,
-                            totalDistance: 0,
-                            athlete_id: activity.user_id // Keep track of athlete_id for detailed view
-                        });
+                    weeklyAggregatedData.set(isoWeek, (weeklyAggregatedData.get(isoWeek) || 0) + activity.distance);
+
+                    if (!weeklyDetailedActivities.has(isoWeek)) {
+                        weeklyDetailedActivities.set(isoWeek, []);
                     }
-                    weeklyDataMap.get(key).totalDistance += activity.distance;
+                    // Store the original activity object (or a copy) along with its runner's athlete_id
+                    weeklyDetailedActivities.get(isoWeek).push({ ...activity, athlete_id: activity.user_id }); 
                 }
             });
 
-            // Convert map values to array, then sort by week and then by runner name
-            const weeklyStats = Array.from(weeklyDataMap.values()).sort((a, b) => {
-                const weekComparison = a.week.localeCompare(b.week);
-                if (weekComparison !== 0) return weekComparison;
-
-                const runnerA = allRunnerCredentials.find(rc => String(rc.athlete_id) === String(a.athlete_id));
-                const runnerB = allRunnerCredentials.find(rc => String(rc.athlete_id) === String(b.athlete_id));
-                const nameA = runnerA ? runnerA.runner_name : `Runner ID: ${a.athlete_id}`;
-                const nameB = runnerB ? runnerB.runner_name : `Runner ID: ${b.athlete_id}`;
-                return nameA.localeCompare(nameB);
-            });
+            // Convert map to array for D3, then sort by week
+            const weeklyStats = Array.from(weeklyAggregatedData.entries()).map(([week, totalDistance]) => ({
+                week: week,
+                totalDistance: totalDistance, // Total distance for the week across all runners
+                // We don't need athlete_id here for drawing the bubble, but for the modal click.
+                // We'll pass the whole week's activities to the modal function.
+            })).sort((a, b) => a.week.localeCompare(b.week));
 
 
             if (weeklyStats.length === 0) {
@@ -1129,7 +1191,7 @@
                 .domain([maxDistance || 1, minDistance || 0]);
 
             const x = d3.scaleBand()
-                .domain(weeklyStats.map(d => `${d.week}-${d.athlete_id}`)) // Use unique band per week-athlete
+                .domain(weeklyStats.map(d => d.week)) // Use unique week string for X axis
                 .range([50, width - 20])
                 .paddingInner(0.1);
 
@@ -1137,8 +1199,11 @@
                 .domain([0, maxDistance * 1.2 || 10000]) // Extend y-axis slightly
                 .range([height - 50, 20]);
 
-            // Adjust x-axis tick format to show only week, but allow hover to show runner
-            const xAxis = d3.axisBottom(x).tickFormat(d => d.split('-')[0].replace(/W/, 'W')); // Only show week string
+            // Adjust x-axis tick format to show only week number and year
+            const xAxis = d3.axisBottom(x).tickFormat(d => {
+                const parts = d.split('-W');
+                return `W${parts[1]}-${parts[0]}`; // Format as WNN-YYYY
+            });
             const yAxis = d3.axisLeft(y).tickFormat(d => `${(d / 1000).toFixed(0)}km`);
 
             svg.append("g")
@@ -1162,15 +1227,13 @@
                 .data(weeklyStats)
                 .enter().append("circle")
                 .attr("class", "bubble")
-                .attr("cx", d => x(`${d.week}-${d.athlete_id}`) + x.bandwidth() / 2)
+                .attr("cx", d => x(d.week) + x.bandwidth() / 2) // Center bubble in band
                 .attr("cy", d => y(d.totalDistance))
                 .attr("r", d => radiusScale(d.totalDistance))
                 .attr("fill", d => colorScale(d.totalDistance))
                 .on("mouseover", function(event, d) {
-                    const runner = allRunnerCredentials.find(rc => String(rc.athlete_id) === String(d.athlete_id));
-                    const runnerName = runner ? runner.runner_name : `Runner ID: ${d.athlete_id}`;
                     tooltip.style("opacity", 1)
-                        .html(`Tuần: ${d.week.replace(/-W/, 'W')}<br>Runner: ${runnerName}<br>Quãng đường: ${(d.totalDistance / 1000).toFixed(2)} km`)
+                        .html(`Tuần: ${d.week.replace(/-W/, 'W')}<br>Tổng quãng đường: ${(d.totalDistance / 1000).toFixed(2)} km`)
                         .style("left", (event.pageX + 10) + "px")
                         .style("top", (event.pageY - 28) + "px");
                 })
@@ -1178,10 +1241,10 @@
                     tooltip.style("opacity", 0);
                 })
                 .on("click", function(event, d) {
-                    const runner = allRunnerCredentials.find(rc => String(rc.athlete_id) === String(d.athlete_id));
-                    const runnerName = runner ? runner.runner_name : `Runner ID: ${d.athlete_id}`;
-                    weeklyActivitiesTitle.textContent = `Hoạt động của ${runnerName} trong tuần ${d.week.replace(/-W/, 'W')}:`;
-                    fetchActivitiesForWeek(d.week, d.athlete_id);
+                    // When clicked, open modal for activities of this week (for ALL runners)
+                    const activitiesInWeek = weeklyDetailedActivities.get(d.week) || [];
+                    weeklyActivitiesTitle.textContent = `Hoạt động trong tuần ${d.week.replace(/-W/, 'W')}:`;
+                    displayActivitiesInModal(activitiesInWeek); // New function to display
                 });
 
             svg.append("text")
@@ -1197,133 +1260,132 @@
 
         /**
          * Helper to get ISO week string (YYYY-WNN) from a Date object, adjusted for Vietnam timezone.
-         * This function ensures that the week calculation aligns with Vietnam local time (UTC+7).
+         * This function ensures that the week calculation aligns with Vietnam local time (UTC+7),
+         * regardless of the user's browser timezone settings, by explicitly converting the UTC date
+         * to its Vietnam timezone components before calculating the ISO week.
          * @param {Date|string} d - The Date object or ISO 8601 string (assumed to be UTC from Supabase).
          * @returns {string} ISO week string (YYYY-WNN). Returns null if input is invalid.
          */
         function getISOWeekString(d) {
             let activityDateUtc;
+
+            // Ensure we have a valid Date object, assuming string inputs are UTC ISO 8601
             if (typeof d === 'string') {
                 activityDateUtc = new Date(d);
             } else if (d instanceof Date) {
                 activityDateUtc = d;
             } else {
+                console.error("Invalid date input for getISOWeekString:", d);
                 return null;
             }
-            if (isNaN(activityDateUtc.getTime())) return null;
 
+            // Check for invalid date
+            if (isNaN(activityDateUtc.getTime())) {
+                console.error("Invalid Date object after parsing in getISOWeekString:", d);
+                return null;
+            }
+
+            // Use Intl.DateTimeFormat to get date components as perceived in 'Asia/Ho_Chi_Minh'
+            // This is the most robust way to get timezone-specific date parts in vanilla JS.
             const formatter = new Intl.DateTimeFormat('en-US', {
-                year: 'numeric', month: 'numeric', day: 'numeric',
-                timeZone: 'Asia/Ho_Chi_Minh'
+                year: 'numeric',
+                month: 'numeric',
+                day: 'numeric',
+                hour: 'numeric',
+                minute: 'numeric',
+                second: 'numeric',
+                timeZone: 'Asia/Ho_Chi_Minh',
+                hour12: false // Ensure 24-hour format for consistency
             });
+
             const parts = formatter.formatToParts(activityDateUtc);
-            let year, month, day;
+            let year, month, day, hour = 0, minute = 0, second = 0;
+
             parts.forEach(p => {
                 switch (p.type) {
                     case 'year': year = parseInt(p.value); break;
                     case 'month': month = parseInt(p.value); break;
                     case 'day': day = parseInt(p.value); break;
+                    case 'hour': hour = parseInt(p.value); break;
+                    case 'minute': minute = parseInt(p.value); break;
+                    case 'second': second = parseInt(p.value); break;
                 }
             });
 
-            const vietnamAlignedDate = new Date(year, month - 1, day);
-            vietnamAlignedDate.setHours(0, 0, 0, 0); // Set to start of the day in Vietnam time
+            // Construct a new Date object using Date.UTC() from the Vietnam-aligned components.
+            // This creates a UTC date whose *UTC properties* (like getUTCDay, getUTCFullYear)
+            // will now correctly reflect the date and day of the week in Vietnam.
+            const vietnamAlignedUtcDate = new Date(Date.UTC(year, month - 1, day, hour, minute, second));
 
-            const dayOfWeek = vietnamAlignedDate.getDay() || 7; // 0 for Sunday, 1 for Monday, ..., 6 for Saturday. Map 0 to 7 for ISO.
-            vietnamAlignedDate.setDate(vietnamAlignedDate.getDate() + 4 - dayOfWeek); // To nearest Thursday
+            // Set to the start of the day in UTC for the Vietnam-aligned date
+            vietnamAlignedUtcDate.setUTCHours(0, 0, 0, 0);
 
-            const isoWeekYear = vietnamAlignedDate.getFullYear();
-            const yearStart = new Date(isoWeekYear, 0, 1);
-            const weekNo = Math.ceil((((vietnamAlignedDate - yearStart) / 86400000) + 1) / 7);
+            // ISO week calculation logic (ISO 8601 defines weeks starting on Monday)
+            // getUTCDay() returns 0 for Sunday, 1 for Monday, ..., 6 for Saturday.
+            // We map Sunday (0) to 7 for consistent calculation.
+            const dayOfVietnamWeekUtc = vietnamAlignedUtcDate.getUTCDay() || 7; 
 
+            // Adjust the date to the nearest Thursday of its week (in Vietnam time).
+            // Thursday is chosen because it's always in the same ISO week as the week's Monday.
+            vietnamAlignedUtcDate.setUTCDate(vietnamAlignedUtcDate.getUTCDate() + 4 - dayOfVietnamWeekUtc);
+
+            // Get the year of the ISO week. This might be different from the actual year
+            // if the first week of the new year falls into the end of the previous year, or vice-versa.
+            const isoWeekYear = vietnamAlignedUtcDate.getUTCFullYear();
+
+            // Get the first day of that ISO year (January 1st UTC of the ISO year)
+            const yearStart = new Date(Date.UTC(isoWeekYear, 0, 1));
+
+            // Calculate the ISO week number:
+            // (Difference in milliseconds between the Vietnam-aligned Thursday and the start of its ISO year + 1 day) / milliseconds in 7 days
+            const weekNo = Math.ceil((((vietnamAlignedUtcDate - yearStart) / 86400000) + 1) / 7);
+
+            // Return the ISO week string in YYYY-WNN format
             return `${isoWeekYear}-W${String(weekNo).padStart(2, '0')}`;
         }
 
         /**
-         * Fetches and displays detailed activities for a specific week and athlete ID in a modal.
-         * (Adapted from original report.html)
-         * @param {string} isoWeek - The ISO week string (e.e.g., "2023-W01").
-         * @param {string} athleteId - The Strava athlete ID.
+         * Displays detailed activities for a specific week in a modal.
+         * This function now takes an array of activity objects directly.
+         * @param {Array} activitiesToDisplay - Array of activity objects for the week.
          */
-        async function fetchActivitiesForWeek(isoWeek, athleteId) {
+        function displayActivitiesInModal(activitiesToDisplay) {
             weeklyActivitiesList.innerHTML = '';
-            weeklyActivitiesStatus.textContent = 'Đang tải hoạt động cho tuần này...';
-            weeklyActivitiesModal.style.display = 'flex';
+            weeklyActivitiesStatus.textContent = '';
+            weeklyActivitiesModal.style.display = 'flex'; // Show modal
 
-            try {
-                const runner = allRunnerCredentials.find(rc => String(rc.athlete_id) === String(athleteId));
-                if (!runner) {
-                    weeklyActivitiesStatus.textContent = 'Không tìm thấy thông tin runner.';
-                    showAlert('Không tìm thấy thông tin runner cho Athlete ID này. Vui lòng kiểm tra lại dữ liệu.');
-                    weeklyActivitiesModal.style.display = 'none';
-                    return;
-                }
+            if (activitiesToDisplay.length > 0) {
+                activitiesToDisplay.sort((a, b) => new Date(b.start_date) - new Date(a.start_date));
+                activitiesToDisplay.forEach(activity => {
+                    const li = document.createElement('li');
+                    li.className = 'border-b last:border-b-0 py-2';
+                    const runner = allRunnerCredentials.find(rc => String(rc.athlete_id) === String(activity.user_id));
+                    const runnerName = runner ? runner.runner_name : 'N/A';
 
-                const { data: { session }, error: sessionError } = await supabaseClientInstance.auth.getSession();
-                const headers = { 'Content-Type': 'application/json' };
-                if (session?.access_token) {
-                    headers['Authorization'] = `Bearer ${session.access_token}`;
-                } else {
-                    weeklyActivitiesStatus.textContent = 'Lỗi xác thực: Vui lòng đăng nhập lại.';
-                    showAlert('Lỗi: Không tìm thấy phiên đăng nhập. Vui lòng đăng nhập lại để xem chi tiết hoạt động.');
-                    weeklyActivitiesModal.style.display = 'none';
-                    return;
-                }
-
-                const payload = {
-                    runnerCredentialId: runner.id,
-                    isoWeek: isoWeek,
-                };
-
-                const response = await fetch(GET_STATS_API_URL, {
-                    method: 'POST',
-                    headers: headers,
-                    body: JSON.stringify(payload)
+                    li.innerHTML = `
+                        <p class="font-semibold">${runnerName}: ${activity.name} (${activity.type})</p>
+                        <p class="text-sm text-gray-600">Ngày: ${new Date(activity.start_date).toLocaleDateString('vi-VN')}</p>
+                        <p class="text-sm text-gray-600">Quãng đường: ${(activity.distance / 1000).toFixed(2)} km</p>
+                        <p class="text-sm text-gray-600">Thời gian: ${formatTime(activity.moving_time)}</p>
+                        <p class="text-sm text-gray-600">Pace: ${formatPaceForTable(activity.average_speed)}</p>
+                        ${activity.strava_activity_id ? `<button class="btn-primary mt-2 text-xs px-2 py-1 view-map-btn" data-activity-id="${activity.strava_activity_id}">Xem bản đồ</button>` : ''}
+                    `;
+                    weeklyActivitiesList.appendChild(li);
                 });
-
-                const result = await response.json();
-
-                if (response.ok && result.success && result.detailed_activities) {
-                    const activitiesToDisplay = result.detailed_activities;
-                    if (activitiesToDisplay.length > 0) {
-                        activitiesToDisplay.sort((a, b) => new Date(b.start_date) - new Date(a.start_date));
-                        weeklyActivitiesList.innerHTML = '';
-                        activitiesToDisplay.forEach(activity => {
-                            const li = document.createElement('li');
-                            li.className = 'border-b last:border-b-0 py-2';
-                            li.innerHTML = `
-                                <p class="font-semibold">${activity.name} (${activity.type})</p>
-                                <p class="text-sm text-gray-600">Ngày: ${new Date(activity.start_date).toLocaleDateString('vi-VN')}</p>
-                                <p class="text-sm text-gray-600">Quãng đường: ${(activity.distance / 1000).toFixed(2)} km</p>
-                                <p class="text-sm text-gray-600">Thời gian: ${formatTime(activity.moving_time)}</p>
-                                <p class="text-sm text-gray-600">Pace: ${formatPaceForTable(activity.average_speed)}</p>
-                                ${activity.strava_activity_id ? `<button class="btn-primary mt-2 text-xs px-2 py-1 view-map-btn" data-activity-id="${activity.strava_activity_id}">Xem bản đồ</button>` : ''}
-                            `;
-                            weeklyActivitiesList.appendChild(li);
-                        });
-                        weeklyActivitiesStatus.textContent = `Đã tải ${activitiesToDisplay.length} hoạt động cho tuần này.`;
-                        document.querySelectorAll('#weekly-activities-modal .view-map-btn').forEach(button => {
-                            button.onclick = (e) => {
-                                const activityId = e.target.dataset.activityId;
-                                if (activityId) {
-                                    window.open(`https://www.strava.com/activities/${activityId}`, '_blank');
-                                }
-                            };
-                        });
-                    } else {
-                        weeklyActivitiesStatus.textContent = 'Không tìm thấy hoạt động nào cho tuần này.';
-                    }
-                } else {
-                    console.error('Lỗi khi tải hoạt động chi tiết cho tuần:', result.error || 'Không xác định');
-                    weeklyActivitiesStatus.textContent = `Lỗi: ${result.error || 'Không xác định'}`;
-                    showAlert(`Lỗi khi tải hoạt động chi tiết: ${result.error || 'Không xác định'}`);
-                }
-            } catch (error) {
-                console.error('Lỗi mạng hoặc máy chủ khi tải hoạt động chi tiết:', error);
-                weeklyActivitiesStatus.textContent = 'Lỗi mạng hoặc máy chủ khi tải hoạt động.';
-                showAlert(`Lỗi mạng hoặc máy chủ khi tải hoạt động: ${error.message}`);
+                weeklyActivitiesStatus.textContent = `Đã tải ${activitiesToDisplay.length} hoạt động cho tuần này.`;
+                document.querySelectorAll('#weekly-activities-modal .view-map-btn').forEach(button => {
+                    button.onclick = (e) => {
+                        const activityId = e.target.dataset.activityId;
+                        if (activityId) {
+                            window.open(`https://www.strava.com/activities/${activityId}`, '_blank');
+                        }
+                    };
+                });
+            } else {
+                weeklyActivitiesStatus.textContent = 'Không tìm thấy hoạt động nào cho tuần này.';
             }
         }
+
 
         /**
          * Renders the penalty/bonus table (from original report.html).
@@ -1346,7 +1408,7 @@
 
             activities.forEach(activity => {
                 const athleteId = String(activity.user_id);
-                const isoWeek = getISOWeekString(activity.start_date);
+                const isoWeek = getISOWeekString(activity.start_date); // Sử dụng hàm lấy tuần theo múi giờ VN
 
                 if (!weeklyStatsByRunner[athleteId]) {
                     weeklyStatsByRunner[athleteId] = {};
@@ -1359,8 +1421,10 @@
             });
 
             const sortedAthleteIds = Object.keys(weeklyStatsByRunner).sort((a, b) => {
-                const nameA = allRunnerCredentials.find(rc => String(rc.athlete_id) === a)?.runner_name || `Runner ID: ${a}`;
-                const nameB = allRunnerCredentials.find(rc => String(rc.athlete_id) === b)?.runner_name || `Runner ID: ${b}`;
+                const runnerA = allRunnerCredentials.find(rc => String(rc.athlete_id) === a);
+                const runnerB = allRunnerCredentials.find(rc => String(rc.athlete_id) === b);
+                const nameA = runnerA ? runnerA.runner_name : `Runner ID: ${a}`;
+                const nameB = runnerB ? runnerB.runner_name : `Runner ID: ${b}`;
                 return nameA.localeCompare(nameB);
             });
 
@@ -1476,9 +1540,12 @@
             const maxValue = d3.max(data, d => d[valueKey]);
             const minValue = d3.min(data, d => d[valueKey]);
 
+            const maxRadius = width < 768 ? 30 : 60; // Max radius for bubbles
+            const minRadius = width < 768 ? 8 : 15; // Min radius for bubbles
+
             const radiusScale = d3.scaleSqrt()
                 .domain([0, maxValue || 1])
-                .range([15, 60]);
+                .range([minRadius, maxRadius]); // Adjust range based on desired bubble sizes
 
             const colorScale = d3.scaleSequential(d3.interpolateYlGnBu)
                 .domain([minValue || 0, maxValue || 1]);
@@ -1878,6 +1945,36 @@
             });
         }
 
+        /**
+         * Toggles the visibility of a collapsible content section and rotates its icon.
+         * Optionally saves the state to localStorage.
+         * @param {HTMLElement} contentElement - The content div to show/hide.
+         * @param {HTMLElement} toggleIcon - The icon element to rotate.
+         * @param {boolean|null} forceCollapse - If true, forces collapse; if false, forces expand. If null, toggles.
+         * @param {string|null} stateKey - Key for localStorage to save the state ('expanded' or 'collapsed').
+         */
+        function toggleCollapsible(contentElement, toggleIcon, forceCollapse = null, stateKey = null) {
+            let isCollapsed;
+            if (forceCollapse !== null) {
+                isCollapsed = forceCollapse;
+            } else {
+                // If not forcing, toggle based on current state
+                isCollapsed = !contentElement.classList.contains('collapsed');
+            }
+
+            if (isCollapsed) {
+                contentElement.classList.add('collapsed');
+                toggleIcon.classList.remove('fa-chevron-up');
+                toggleIcon.classList.add('fa-chevron-down');
+                if (stateKey) localStorage.setItem(stateKey, 'collapsed');
+            } else {
+                contentElement.classList.remove('collapsed');
+                toggleIcon.classList.remove('fa-chevron-down');
+                toggleIcon.classList.add('fa-chevron-up');
+                if (stateKey) localStorage.setItem(stateKey, 'expanded');
+            }
+        }
+
 
         // --- Supabase Authentication Check for Report Page ---
         async function checkAuthAndLoadReport() {
@@ -2006,6 +2103,18 @@
                 // clearCharts(); // Already handled by fetchAndRenderReportData which calls renderAllReports
                 populateFilters(); // Ensure filters are populated even if no data is loaded yet
             });
+
+            // Initialize collapsible detailed activities section
+            if (detailedActivitiesHeader && detailedActivitiesContent && detailedActivitiesToggleIcon) {
+                const savedState = localStorage.getItem(DETAILED_ACTIVITIES_STATE_KEY);
+                // Default to collapsed if no state saved or if it was explicitly collapsed
+                const initialStateCollapsed = (savedState === null || savedState === 'collapsed');
+                toggleCollapsible(detailedActivitiesContent, detailedActivitiesToggleIcon, initialStateCollapsed, DETAILED_ACTIVITIES_STATE_KEY);
+
+                detailedActivitiesHeader.addEventListener('click', () => {
+                    toggleCollapsible(detailedActivitiesContent, detailedActivitiesToggleIcon, null, DETAILED_ACTIVITIES_STATE_KEY);
+                });
+            }
         };
     </script>
 </body>
