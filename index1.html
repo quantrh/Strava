@@ -1414,7 +1414,7 @@ function applySettingsVisibility(isVisible) {
 
         // --- Supabase App Authentication Functions ---
 
-    /**
+/**
  * Updates the UI based on the current Supabase Authentication state.
  * @param {Object|null} user - The Supabase user object or null if logged out.
  */
@@ -1458,6 +1458,18 @@ async function updateAppAuthUI(user) {
             console.log('updateAppAuthUI: Kích hoạt tải hoạt động gần đây khi đăng nhập.');
             loadRecentActivitiesBtn.click();
         }
+
+        // MỚI: Đảm bảo các khu vực cụ thể hiển thị rõ ràng sau khi tải dữ liệu và UI đã cập nhật.
+        // Điều này giúp khắc phục các vấn đề hiển thị do timing hoặc trạng thái ban đầu của DOM.
+        if (credentialsList) credentialsList.classList.remove('hidden'); // Đảm bảo danh sách runner hiển thị
+        if (recentActivitiesSummaryArea) recentActivitiesSummaryArea.classList.remove('hidden'); // Đảm bảo khu vực tóm tắt hoạt động hiển thị
+        // Nếu dataSectionPart2 là một phần tử có thể thu gọn và bạn muốn nó luôn mở rộng khi đăng nhập
+        const dataSectionPart2Content = document.getElementById('data-section-part2-content');
+        const dataSectionPart2Toggle = document.getElementById('data-section-part2-toggle');
+        if (dataSectionPart2Content && dataSectionPart2Toggle) {
+            toggleCollapsible(dataSectionPart2Content, dataSectionPart2Toggle, false, 'data-section-part2-state'); // Buộc mở rộng
+        }
+
 
     } else {
         currentAppUserId = null;
@@ -1727,7 +1739,7 @@ async function updateAppAuthUI(user) {
             credentialModal.style.display = 'flex';
         }
 
-      /**
+     /**
  * Saves (adds or updates) runner credentials to Supabase.
  * For new runners, it initiates the Strava OAuth flow.
  * For existing runners, it only updates the name and other details.
@@ -1847,6 +1859,7 @@ async function saveCredential(event) {
         // Việc này sẽ đảm bảo `recent-activities-summary-area` hiển thị dữ liệu mới nhất
         if (loadRecentActivitiesBtn) {
             console.log('saveCredential: Kích hoạt tải hoạt động gần đây sau khi lưu credential.');
+            recentActivitiesSummaryArea.classList.remove('hidden'); // Đảm bảo khu vực này hiển thị
             loadRecentActivitiesBtn.click();
         }
 
@@ -2392,7 +2405,7 @@ async function saveCredential(event) {
             return athleteIds;
         }
 
-    loadRecentActivitiesBtn.addEventListener('click', async () => {
+loadRecentActivitiesBtn.addEventListener('click', async () => {
     if (!currentAppUserId) {
         showAlert('Vui lòng đăng nhập ứng dụng để thực hiện chức năng này.');
         return;
