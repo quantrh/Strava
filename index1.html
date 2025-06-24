@@ -1449,12 +1449,13 @@ function applySettingsVisibility(isVisible) {
                 // (Giữ nguyên các dòng này từ mã của bạn)
                 // Các section con bên trong (như dataSectionPart1Content, v.v.) sẽ được thu gọn mặc định
                 // hoặc theo trạng thái riêng của chúng khi chúng được hiển thị.
-                toggleCollapsible(credentialManagementContent, credentialManagementSection.querySelector('.toggle-icon'), true);
-                toggleCollapsible(stravaAuthContent, stravaAuthSection.querySelector('.toggle-icon'), true);
-                toggleCollapsible(dataSectionPart1Content, dataSectionPart1.querySelector('.toggle-icon'), true);
-                toggleCollapsible(dataSectionPart2Content, dataSectionPart2.querySelector('.toggle-icon'), true);
-                toggleCollapsible(detailedStatsContent, detailedStatsSection.querySelector('.toggle-icon'), true);
-                toggleCollapsible(statsContent, statsSection.querySelector('.toggle-icon'), true);
+                // Loại bỏ các lệnh forceCollapse mặc định ở đây, việc khôi phục trạng thái sẽ được xử lý bởi logic window.onload
+                // toggleCollapsible(credentialManagementContent, credentialManagementSection.querySelector('.toggle-icon'), true);
+                // toggleCollapsible(stravaAuthContent, stravaAuthSection.querySelector('.toggle-icon'), true);
+                // toggleCollapsible(dataSectionPart1Content, dataSectionPart1.querySelector('.toggle-icon'), true);
+                // toggleCollapsible(dataSectionPart2Content, dataSectionPart2.querySelector('.toggle-icon'), true);
+                // toggleCollapsible(detailedStatsContent, detailedStatsSection.querySelector('.toggle-icon'), true);
+                // toggleCollapsible(statsContent, statsSection.querySelector('.toggle-icon'), true);
 
                 await fetchAndSetRunnerCredentials(); // Tải dữ liệu runner
                 await renderCredentialsUI(); // Render danh sách runner
@@ -1636,7 +1637,8 @@ function applySettingsVisibility(isVisible) {
                     noCredentialsMessage.classList.remove('hidden');
                     toggleCollapsible(credentialManagementContent, credentialManagementSection.querySelector('.toggle-icon'), false); // Expand if no owned credentials
                 } else {
-                    toggleCollapsible(credentialManagementContent, credentialManagementSection.querySelector('.toggle-icon'), true); // Collapse if there are owned credentials
+                    // Loại bỏ lệnh forceCollapse để giữ nguyên trạng thái hoặc khôi phục từ localStorage
+                    // toggleCollapsible(credentialManagementContent, credentialManagementSection.querySelector('.toggle-icon'), true); // Collapse if there are owned credentials
 
                     ownedCredentials.forEach(cred => { // Loop through filtered (owned) credentials
                         const credDiv = document.createElement('div');
@@ -1726,7 +1728,7 @@ function applySettingsVisibility(isVisible) {
                     document.getElementById('runner-full-name').value = data.full_name || '';
                     document.getElementById('runner-phone-number').value = data.phone_number || '';
                     document.getElementById('runner-email').value = data.runner_email || '';
-                    document.getElementById('runner-date-of-birth').value = data.date_of_birth ? data.date_of-birth.split('T')[0] : ''; // Format for date input
+                    document.getElementById('runner-date-of-birth').value = data.date_of_birth ? data.date_of_birth.split('T')[0] : ''; // Format for date input
                     document.getElementById('runner-weight-kg').value = data.weight_kg || '';
                     document.getElementById('runner-shirt-size').value = data.shirt_size || '';
                     runnerTeamSelect.value = data.running_team || ''; // Set value for the select
@@ -2035,6 +2037,11 @@ function applySettingsVisibility(isVisible) {
             localStorage.removeItem('strava_authenticated');
             localStorage.removeItem('strava_runner_credential_id_pending');
             localStorage.removeItem('strava_runner_name_pending');
+            // GIỮ LẠI CÁC KHÓA STATE CHO COLLAPSIBLE SECTIONS
+            // localStorage.removeItem('data-section-part1-state'); 
+            // localStorage.removeItem('data-section-part2-state');
+            // localStorage.removeItem('detailed-stats-section-state');
+            // localStorage.removeItem('stats-section-state');
         }
 
         /**
@@ -2042,7 +2049,7 @@ function applySettingsVisibility(isVisible) {
          */
         connectStravaBtn.addEventListener('click', async () => {
             if (!currentAppUserId) {
-                showAlert('Lỗi: Bạn phải đăng nhập ứng dụng để kết nối với Strava.');
+                showAlert('Vui lòng đăng nhập ứng dụng để kết nối với Strava.');
                 return;
             }
 
@@ -3521,45 +3528,35 @@ function getISOWeekString(d) {
         'data-section-part1',
         'data-section-part2',
         'detailed-stats-section',
-        'stats-section',
-        'app-auth-section', // Đã có data-state-key
-        'credential-management-section', // Đã có data-state-key
-        'strava-auth-section', // Đã có data-state-key
-        'download-for-other-section', // Đã có data-state-key
-        'instruction-section' // Đã có data-state-key
+        'stats-section'
+        // 'app-auth-section', // không yêu cầu lưu trạng thái
+        // 'credential-management-section', // không yêu cầu lưu trạng thái
+        // 'strava-auth-section', // không yêu cầu lưu trạng thái
+        // 'download-for-other-section', // không yêu cầu lưu trạng thái
+        // 'instruction-section' // không yêu cầu lưu trạng thái
     ];
 
     sectionsToRestoreState.forEach(sectionId => {
         const header = document.getElementById(sectionId)?.querySelector('.collapsible-header');
-        const content = document.getElementById(header?.dataset.target);
-        const toggleIcon = header?.querySelector('.toggle-icon');
-        const stateKey = header?.dataset.stateKey;
-
-        const sectionsToRestoreState = [
-        'data-section-part1',
-        'data-section-part2',
-        'detailed-stats-section',
-        'stats-section'
-    ];
-
-         sectionsToRestoreState.forEach(sectionId => {
-        const header = document.getElementById(sectionId)?.querySelector('.collapsible-header');
-        const content = document.getElementById(header?.dataset.target);
+        // Kiểm tra xem header có tồn tại và có dataset.target không
+        const content = header ? document.getElementById(header.dataset.target) : null;
         const toggleIcon = header?.querySelector('.toggle-icon');
         const stateKey = header?.dataset.stateKey;
 
         console.log(`--- Đang kiểm tra section: ${sectionId} ---`);
         console.log(`  Header tìm thấy:`, header ? true : false);
         console.log(`  data-target của header:`, header?.dataset.target);
-        console.log(`  Content element tìm thấy (id: ${header?.dataset.target}):`, content ? true : false); // <-- Rất quan trọng
+        console.log(`  Content element tìm thấy (id: ${header?.dataset.target}):`, content ? true : false); 
         console.log(`  Toggle Icon tìm thấy:`, toggleIcon ? true : false);
         console.log(`  State Key tìm thấy:`, stateKey);
 
         if (header && content && toggleIcon && stateKey) {
             const savedState = localStorage.getItem(stateKey);
-            console.log(`  Trạng thái đã lưu cho <span class="math-inline">\{stateKey\} từ Local Storage\: "</span>{savedState}"`);
-            const isCollapsed = savedState === 'collapsed';
+            console.log(`  Trạng thái đã lưu cho ${stateKey} từ Local Storage: "${savedState}"`);
+            // Mặc định là 'expanded' nếu không có trạng thái lưu
+            const isCollapsed = savedState === 'collapsed'; 
             console.log(`  isCollapsed sẽ là: ${isCollapsed}`);
+            // Áp dụng trạng thái. forceCollapse là true nếu muốn thu gọn, false nếu muốn mở rộng.
             toggleCollapsible(content, toggleIcon, isCollapsed, stateKey);
             console.log(`  Đã gọi toggleCollapsible cho ${sectionId}`);
         } else {
@@ -3567,17 +3564,6 @@ function getISOWeekString(d) {
         }
         console.log(`----------------------------------------`);
     });
-        
-        if (header && content && toggleIcon && stateKey) {
-            const savedState = localStorage.getItem(stateKey);
-            // Mặc định là 'expanded' nếu không có trạng thái lưu
-            const isCollapsed = savedState === 'collapsed'; 
-            // Áp dụng trạng thái. forceCollapse là true nếu muốn thu gọn, false nếu muốn mở rộng.
-            toggleCollapsible(content, toggleIcon, isCollapsed, stateKey);
-        }
-    });
-
-
 
 
             
