@@ -5,7 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Báo cáo hoạt động chạy bộ - FOR RUNNER LOVER</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- D3.js for bubble charts and weekly distance (from original report.html) -->
     <script src="https://d3js.org/d3.v7.min.js"></script>
+    <!-- Chart.js for other charts (from report origin.html) -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
@@ -61,35 +64,30 @@
             @apply w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500;
         }
         
+        /* Multi-select specific CSS (from original report.html) */
         .multi-select-container {
             position: relative;
         }
-
         .multi-select-selected-items {
             @apply w-full p-2 border border-gray-300 rounded-md bg-white cursor-pointer flex flex-wrap gap-1;
             min-height: 42px;
             align-items: center;
         }
-
         .multi-select-selected-item {
             @apply bg-gray-200 text-gray-700 text-xs px-2 py-1 rounded-full flex items-center gap-1;
         }
-
         .multi-select-selected-item span {
             cursor: pointer;
             font-weight: bold;
         }
-
         .multi-select-options {
             @apply absolute w-full border border-gray-300 rounded-md bg-white shadow-lg z-10;
             max-height: 200px;
             overflow-y: auto;
         }
-
         .multi-select-option {
             @apply p-2 cursor-pointer hover:bg-gray-100;
         }
-
         .multi-select-option.selected {
             @apply bg-blue-100 font-semibold;
         }
@@ -135,7 +133,14 @@
             color: #9ca3af;
         }
 
-        /* Biểu đồ bong bóng (Bubble Chart) */
+        /* Chart.js specific styles from report origin.html */
+        .chart-container {
+            position: relative;
+            height: 400px; /* Fixed height for charts */
+            width: 100%;
+        }
+
+        /* D3.js chart specific styles (from original report.html) */
         #distance-by-runner-chart,
         #distance-by-club-chart,
         #weekly-distance-chart-container {
@@ -147,7 +152,7 @@
             overflow-y: auto;
             background-color: #f9fafb;
             border-radius: 0.5rem;
-            min-height: 300px; /* Chiều cao tối thiểu để dễ nhìn */
+            min-height: 300px;
         }
 
         .bubble {
@@ -249,9 +254,6 @@
         .data-table .runner-summary-group .summary-row td {
             border-bottom: none;
         }
-        .data-table .runner-summary-group .summary-row td {
-            border-top: none;
-        }
         .data-table .runner-summary-group .total-row {
             border-bottom: 1px solid #e2e8f0;
         }
@@ -300,7 +302,7 @@
 
         #custom-alert, #custom-confirm-modal {
             background-color: rgba(0, 0, 0, 0.5);
-            display: flex;
+            /* display: flex; <-- REMOVED this line as 'hidden' class handles it */
             align-items: center;
             justify-content: center;
         }
@@ -327,8 +329,10 @@
             <h2 class="text-2xl font-bold mb-4 text-center text-bidv-green">Báo cáo hoạt động</h2>
             <p id="user-info" class="text-lg font-medium text-center mb-6">Chào mừng, <span id="current-user-email"></span>!</p>
 
+            <!-- REMOVED: JSON Data Input Section -->
+
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <!-- Bộ lọc -->
+                <!-- Bộ lọc (Restored from original report.html structure with proper IDs) -->
                 <div class="card p-6">
                     <h3 class="text-xl font-semibold mb-4 text-indigo-700"><i class="fas fa-filter"></i> Bộ lọc báo cáo</h3>
                     <div class="mb-4">
@@ -372,49 +376,75 @@
                     <div id="report-filter-status" class="mt-2 text-sm text-gray-600 text-center"></div>
                 </div>
 
-                <!-- Tổng quan thống kê -->
-                <div class="card p-6">
-                    <h3 class="text-xl font-semibold mb-4 text-green-700"><i class="fas fa-chart-pie"></i> Tổng quan thống kê</h3>
-                    <div id="overall-stats" class="space-y-3 text-gray-700">
-                        <p class="text-lg">Tổng số hoạt động: <span id="total-activities-count" class="font-bold text-bidv-green">0</span></p>
-                        <p class="text-lg">Tổng quãng đường: <span id="total-distance-km" class="font-bold text-bidv-green">0.00 KM</span></p>
-                        <p class="text-lg">Tổng thời gian di chuyển: <span id="total-moving-time" class="font-bold text-bidv-green">00:00:00</span></p>
+                <!-- Tổng quan thống kê (kept from report origin.html for consistent styling) -->
+                <div class="bg-white p-6 rounded-lg shadow-md border border-gray-200">
+                    <h2 class="text-xl font-semibold text-gray-700 mb-4">Tổng quan thống kê</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="bg-gradient-to-r from-blue-500 to-blue-600 text-white p-4 rounded-lg shadow-md">
+                            <h2 class="text-lg font-semibold mb-1">Tổng quãng đường</h2>
+                            <p id="totalDistance" class="text-2xl font-bold"></p>
+                        </div>
+                        <div class="bg-gradient-to-r from-green-500 to-green-600 text-white p-4 rounded-lg shadow-md">
+                            <h2 class="text-lg font-semibold mb-1">Tổng thời gian di chuyển</h2>
+                            <p id="totalMovingTime" class="text-2xl font-bold"></p>
+                        </div>
+                        <div class="bg-gradient-to-r from-purple-500 to-purple-600 text-white p-4 rounded-lg shadow-md">
+                            <h2 class="text-lg font-semibold mb-1">Tốc độ trung bình</h2>
+                            <p id="averageOverallPace" class="text-2xl font-bold"></p>
+                        </div>
+                        <div class="bg-gradient-to-r from-red-500 to-red-600 text-white p-4 rounded-lg shadow-md">
+                            <h2 class="text-lg font-semibold mb-1">Hoạt động</h2>
+                            <p id="totalActivities" class="text-2xl font-bold"></p>
+                        </div>
                     </div>
+                </div>
+            </div>
+
+            <!-- Charts Section (from report origin.html - Chart.js) -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-8">
+                <div class="bg-white p-6 rounded-lg shadow-md border border-gray-200">
+                    <h2 class="text-xl font-semibold text-gray-700 mb-4">Quãng đường chạy theo ngày (km)</h2>
+                    <div class="chart-container">
+                        <canvas id="distanceChart"></canvas>
+                    </div>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow-md border border-gray-200">
+                    <h2 class="text-xl font-semibold text-gray-700 mb-4">Phân bố tốc độ trung bình (phút/km)</h2>
+                    <div class="chart-container">
+                        <canvas id="paceDistributionChart"></canvas>
+                    </div>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow-md border border-gray-200">
+                    <h2 class="text-xl font-semibold text-gray-700 mb-4">Nhịp tim trung bình theo tốc độ (phút/km)</h2>
+                    <div class="chart-container">
+                        <canvas id="heartRatePaceChart"></canvas>
+                    </div>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow-md border border-gray-200">
+                    <h2 class="text-xl font-semibold text-gray-700 mb-4">Phân loại hoạt động</h2>
+                    <div class="chart-container">
+                        <canvas id="activityTypeChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- D3.js Charts (Restored from original report.html) -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
+                <div class="card p-6">
+                    <h3 class="text-xl font-semibold mb-4 text-green-700">Quãng đường (KM) theo Runner</h3>
                     <div id="distance-by-runner-chart" class="mt-4 border rounded-md p-2 min-h-[150px] flex items-center justify-center">
                         <p class="text-gray-500 text-sm">Biểu đồ quãng đường theo Runner sẽ hiển thị ở đây.</p>
                     </div>
+                </div>
+                <div class="card p-6">
+                    <h3 class="text-xl font-semibold mb-4 text-yellow-700">Quãng đường (KM) theo CLB</h3>
                     <div id="distance-by-club-chart" class="mt-4 border rounded-md p-2 min-h-[150px] flex items-center justify-center">
                         <p class="text-gray-500 text-sm">Biểu đồ quãng đường theo CLB sẽ hiển thị ở đây.</p>
                     </div>
                 </div>
             </div>
 
-            <!-- Biểu đồ phân bố tốc độ trung bình (Pace Distribution) -->
-            <div class="card mt-8 p-6">
-                <h3 class="text-xl font-semibold mb-4 text-purple-700"><i class="fas fa-chart-bar"></i> Phân bố tốc độ trung bình (Pace)</h3>
-                <div id="pace-distribution-chart" class="mt-4 border rounded-md p-2 min-h-[300px] flex items-center justify-center">
-                    <p class="text-gray-500 text-sm">Biểu đồ phân bố tốc độ trung bình sẽ hiển thị ở đây.</p>
-                </div>
-            </div>
-
-            <!-- Biểu đồ Nhịp tim trung bình theo tốc độ (Heartrate vs Pace) -->
-            <div class="card mt-8 p-6">
-                <h3 class="text-xl font-semibold mb-4 text-pink-700"><i class="fas fa-heartbeat"></i> Nhịp tim trung bình theo tốc độ</h3>
-                <div id="heartrate-pace-chart" class="mt-4 border rounded-md p-2 min-h-[300px] flex items-center justify-center">
-                    <p class="text-gray-500 text-sm">Biểu đồ nhịp tim trung bình theo tốc độ sẽ hiển thị ở đây.</p>
-                </div>
-            </div>
-
-            <!-- Biểu đồ phân loại hoạt động (Activity Type Distribution) -->
-            <div class="card mt-8 p-6">
-                <h3 class="text-xl font-semibold mb-4 text-yellow-700"><i class="fas fa-running"></i> Phân loại hoạt động</h3>
-                <div id="activity-type-chart" class="mt-4 border rounded-md p-2 min-h-[300px] flex items-center justify-center">
-                    <p class="text-gray-500 text-sm">Biểu đồ phân loại hoạt động sẽ hiển thị ở đây.</p>
-                </div>
-            </div>
-
-
-            <!-- Bảng chi tiết hoạt động -->
+            <!-- Bảng chi tiết hoạt động (Restored from original report.html) -->
             <div class="card mt-8 p-6">
                 <h3 class="text-xl font-semibold mb-4 text-blue-700"><i class="fas fa-list"></i> Chi tiết các hoạt động</h3>
                 <div class="overflow-x-auto">
@@ -441,7 +471,7 @@
                 <p id="detailed-activities-status" class="mt-4 text-sm text-gray-600 text-center">Không có hoạt động nào để hiển thị.</p>
             </div>
 
-            <!-- Biểu đồ thống kê theo tuần -->
+            <!-- Biểu đồ thống kê theo tuần (Restored from original report.html) -->
             <div class="card mt-8 p-6">
                 <h3 class="text-xl font-semibold mb-4 text-red-700"><i class="fas fa-chart-line"></i> Thống kê quãng đường theo tuần</h3>
                 <div id="weekly-distance-chart-container" class="border rounded-md p-2 min-h-[300px] flex items-center justify-center">
@@ -450,7 +480,7 @@
                 <p id="weekly-chart-status" class="mt-4 text-sm text-gray-600 text-center"></p>
             </div>
 
-             <!-- Bảng thống kê chi tiết & Tiền phạt/Thưởng -->
+             <!-- Bảng thống kê chi tiết & Tiền phạt/Thưởng (Restored from original report.html) -->
              <div class="card mt-8 p-6">
                 <h3 class="text-xl font-semibold mb-4 text-teal-700"><i class="fas fa-calculator"></i> Thống kê tiền phạt/thưởng</h3>
                 <div class="mb-4 flex gap-4 items-end">
@@ -492,13 +522,13 @@
 
     <footer class="bg-bidv-green text-white p-4 text-center text-sm" style="background-color: #006B68;">
         <div class="container" style="color: var(--bidv-yellow);">
-            &copy; 2025 Trương Hồng Quân - BIDV Running Club. All rights reserved (Dev by AIs - Gemini, GPT) - 📧quantrhvn@gmail.com -  +84989073739 - 248064a v2.
+            &copy; 2025 Trương Hồng Quân - BIDV Running Club. All rights reserved (Dev by AIs - Gemini, GPT) - 📧quantrhvn@gmail.com - 📳+84989073739 - 248064a v2.
             <br>
             <img src="https://placehold.co/80x28/006B68/FFFFFF?text=PowerStrava" alt="PowerStrava Logo" style="height: 28px; margin: 5px auto 0 auto; display: block;">
         </div>
     </footer>
 
-    <!-- Weekly Activities Modal -->
+    <!-- Weekly Activities Modal (Restored from original report.html) -->
     <div id="weekly-activities-modal" class="modal">
         <div class="modal-content" style="max-width: 700px;">
             <span class="close-button" id="close-weekly-activities-modal-btn">&times;</span>
@@ -537,20 +567,27 @@
         const SUPABASE_URL = 'https://rmbsxccrwrktbjlnezpu.supabase.co'; // Replace with your Supabase URL
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJtYnN4Y2Nyd3JrdGJqbG5lenB1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg2MjczNjQsImV4cCI6MjA2NDIwMzM2NH0.ydCqificftdtn1niRciFCifeuo8aX6SDGti-hCY5Z_Y'; // Replace with your Supabase Anon Key
 
+        // Supabase Edge Function URL to fetch activities (from original report.html)
         const GET_STATS_API_URL = 'https://rmbsxccrwrktbjlnezpu.supabase.co/functions/v1/get-user-activities';
 
         let supabaseClientInstance;
-        let allRunnerCredentials = [];
-        let allClubs = [];
-        let allActivitiesData = []; // Store all fetched activities for the report
+        let allRunnerCredentials = []; // Used for filtering and display (from original report.html)
+        let allClubs = []; // Used for filtering and display (from original report.html)
+        let allActivitiesData = []; // Store all fetched activities for the report (from original report.html)
 
-        let selectedRunnerIdReport = 'all'; // Default filter for runner in report
-        let selectedClubNameReport = 'all'; // Default filter for club in report
-        let selectedActivityTypesReport = []; // Default filter for activity type in report
+        // Filter states (from original report.html)
+        let selectedRunnerIdReport = 'all'; 
+        let selectedClubNameReport = 'all'; 
+        let selectedActivityTypesReport = []; 
+
+        // Chart.js instances (from report origin.html)
+        let distanceChart, paceDistributionChart, heartRatePaceChart, activityTypeChart;
 
         // DOM Elements
         const currentUserEmailSpan = document.getElementById('current-user-email');
         const logoutBtn = document.getElementById('logout-btn');
+
+        // Filter elements (from original report.html's filter section)
         const reportRunnerFilter = document.getElementById('report-runner-filter');
         const reportClubFilter = document.getElementById('report-club-filter');
         const multiSelectDisplayReport = document.getElementById('multi-select-display-report');
@@ -559,35 +596,40 @@
         const reportEndDateInput = document.getElementById('report-end-date');
         const applyReportFiltersBtn = document.getElementById('apply-report-filters-btn');
         const reportFilterStatus = document.getElementById('report-filter-status');
+        
+        // Summary stats elements (from report origin.html, using Chart.js related IDs)
+        const totalDistanceSpan = document.getElementById('totalDistance');
+        const totalMovingTimeSpan = document.getElementById('totalMovingTime');
+        const averageOverallPaceSpan = document.getElementById('averageOverallPace');
+        const totalActivitiesSpan = document.getElementById('totalActivities');
 
-        const totalActivitiesCountSpan = document.getElementById('total-activities-count');
-        const totalDistanceKmSpan = document.getElementById('total-distance-km');
-        const totalMovingTimeSpan = document.getElementById('total-moving-time');
+        // D3.js chart specific elements (from original report.html)
+        const distanceByRunnerChart = document.getElementById('distance-by-runner-chart'); 
+        const distanceByClubChart = document.getElementById('distance-by-club-chart'); 
 
+        // Detailed Activities Table elements (from original report.html)
         const detailedActivitiesTableBody = document.querySelector('#detailed-activities-table tbody');
         const detailedActivitiesStatus = document.getElementById('detailed-activities-status');
 
+        // Weekly Distance Chart elements (from original report.html)
         const weeklyDistanceChartContainer = document.getElementById('weekly-distance-chart-container');
         const weeklyChartStatus = document.getElementById('weekly-chart-status');
 
+        // Penalty/Bonus Table elements (from original report.html)
         const penaltyPerKmGt10Input = document.getElementById('penalty-per-km-gt10');
         const penaltyPerKmLte10Input = document.getElementById('penalty-per-km-lte10');
         const targetKmPerWeekInput = document.getElementById('target-km-per-week');
         const penaltyBonusTableBody = document.querySelector('#penalty-bonus-table tbody');
         const penaltyBonusStatus = document.getElementById('penalty-bonus-status');
 
+        // Weekly Activities Modal elements (from original report.html)
         const weeklyActivitiesModal = document.getElementById('weekly-activities-modal');
         const closeWeeklyActivitiesModalBtn = document.getElementById('close-weekly-activities-modal-btn');
         const weeklyActivitiesTitle = document.getElementById('weekly-activities-title');
         const weeklyActivitiesList = document.getElementById('weekly-activities-list');
         const weeklyActivitiesStatus = document.getElementById('weekly-activities-status');
 
-        const paceDistributionChart = document.getElementById('pace-distribution-chart');
-        const heartratePaceChart = document.getElementById('heartrate-pace-chart');
-        const activityTypeChart = document.getElementById('activity-type-chart');
-        const distanceByRunnerChart = document.getElementById('distance-by-runner-chart');
-        const distanceByClubChart = document.getElementById('distance-by-club-chart');
-
+        // All Activity Types for multi-select (from original report.html)
         const ALL_ACTIVITY_TYPES = [
             'Run', 'Walk', 'Ride', 'Swim', 'Hike', 'NordicSki', 'AlpineSki', 'Workout', 'Yoga', 
             'WeightTraining', 'Elliptical', 'StairStepper', 'Rowing', 'Crossfit', 'Canoeing', 
@@ -612,7 +654,7 @@
 
             alertOkBtn.onclick = () => {
                 customAlert.classList.add('hidden');
-                customAlert.style.display = 'none';
+                customAlert.style.display = 'none'; // Ensure it's hidden
             };
         }
 
@@ -629,7 +671,7 @@
 
                 const cleanup = () => {
                     customConfirm.classList.add('hidden');
-                    customConfirm.style.display = 'none';
+                    customConfirm.style.display = 'none'; // Ensure it's hidden
                     confirmOkBtn.onclick = null;
                     confirmCancelBtn.onclick = null;
                 };
@@ -645,15 +687,35 @@
             });
         }
 
-        function formatDuration(seconds) {
-            if (typeof seconds !== 'number' || isNaN(seconds) || seconds < 0) return 'N/A';
+        // Function to convert seconds to HH:MM:SS format (used for total moving time) - from report origin.html
+        function formatTime(seconds) {
+            if (seconds === null || isNaN(seconds)) return 'N/A';
             const h = Math.floor(seconds / 3600);
             const m = Math.floor((seconds % 3600) / 60);
             const s = Math.floor(seconds % 60);
-            return [h, m, s].map(v => v < 10 ? "0" + v : v).filter((v, i) => v !== "00" || i > 0).join(":");
+            return [h, m, s]
+                .map(v => v < 10 ? '0' + v : v)
+                .filter((v, i) => v !== '00' || i > 0)
+                .join(':') || '00:00';
         }
 
-        function formatPace(metersPerSecond) {
+        // Function to format seconds into MM:SS for pace labels (used for chart axes and tooltips) - from report origin.html
+        function formatPaceLabel(totalSeconds) {
+            if (totalSeconds === null || isNaN(totalSeconds) || totalSeconds < 0) return 'N/A';
+            const minutes = Math.floor(totalSeconds / 60);
+            const seconds = Math.round(totalSeconds % 60); // Round to nearest second
+            return `${minutes < 10 ? '0' : ''}${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+        }
+
+        // Function to convert average_speed (m/s) to pace (min/km) formatted as MM:SS /km (used for overall summary) - from report origin.html
+        function formatPace(speedMs) {
+            if (speedMs === null || speedMs <= 0 || isNaN(speedMs)) return 'N/A';
+            const paceSecondsPerKm = 1000 / speedMs; // total seconds per kilometer
+            return `${formatPaceLabel(paceSecondsPerKm)} /km`;
+        }
+        
+        // Original formatPace from initial report.html for detailed table
+        function formatPaceForTable(metersPerSecond) {
             if (typeof metersPerSecond !== 'number' || isNaN(metersPerSecond) || metersPerSecond <= 0) return 'N/A';
             const kmPerHour = (metersPerSecond * 3.6); 
             if (kmPerHour === 0) return 'N/A';
@@ -663,13 +725,14 @@
             return `${minutes}:${String(seconds).padStart(2, '0')} /km`;
         }
 
+        // Original formatElevationGain from initial report.html
         function formatElevationGain(meters) {
             if (typeof meters !== 'number' || isNaN(meters)) return 'N/A';
             return `${meters.toFixed(0)} m`;
         }
 
         /**
-         * Populates the multi-select filter dropdowns.
+         * Populates the multi-select filter dropdowns (from original report.html).
          */
         function populateActivityTypeFilters() {
             multiSelectOptionsReport.innerHTML = ''; 
@@ -683,7 +746,7 @@
         }
 
         /**
-         * Updates the display of selected items in the multi-select.
+         * Updates the display of selected items in the multi-select (from original report.html).
          * @param {HTMLElement} displayElement - The element to show selected tags.
          * @param {string[]} selectedTypes - Array of selected activity types.
          * @param {HTMLElement} optionsContainer - The container for options to update their 'selected' class.
@@ -711,7 +774,7 @@
         }
 
         /**
-         * Toggles an activity type in the selected list.
+         * Toggles an activity type in the selected list (from original report.html).
          * @param {string} type - The activity type to toggle.
          * @param {string[]} selectedTypesArray - The array to modify.
          * @param {HTMLElement} displayElement - The display element for this filter.
@@ -754,9 +817,9 @@
             }
         });
 
+
         /**
-         * Fetches all runner credentials for the logged-in user from Supabase.
-         * This includes runners with and without athlete_id as they might still be relevant for filtering by club etc.
+         * Fetches all runner credentials for the logged-in user from Supabase (from original report.html).
          */
         async function fetchAllRunnerCredentials() {
             try {
@@ -775,7 +838,7 @@
         }
 
         /**
-         * Fetches clubs from Supabase and updates the global `allClubs` array.
+         * Fetches clubs from Supabase and updates the global `allClubs` array (from original report.html).
          */
         async function fetchClubs() {
             try {
@@ -794,7 +857,7 @@
         }
 
         /**
-         * Populates the runner and club filter dropdowns.
+         * Populates the runner and club filter dropdowns (from original report.html).
          */
         function populateFilters() {
             // Populate Runner filter
@@ -823,7 +886,8 @@
         }
 
         /**
-         * Fetches activity data based on current filters and renders all reports.
+         * Fetches activity data based on current filters from Supabase and then renders all reports.
+         * (Adapted from original report.html)
          */
         async function fetchAndRenderReportData() {
             reportFilterStatus.textContent = 'Đang tải dữ liệu báo cáo...';
@@ -883,7 +947,17 @@
 
                 if (error) throw error;
                 
-                allActivitiesData = data || []; // Store fetched data
+                // Process fetched data to include formatted fields for Chart.js and D3.js
+                allActivitiesData = data.map(activity => ({
+                    ...activity,
+                    start_date: new Date(activity.start_date), // Convert date string to Date object
+                    distance_km: (activity.distance / 1000).toFixed(2), // Convert meters to km
+                    moving_time_formatted: formatTime(activity.moving_time),
+                    // Calculate raw pace in seconds/km for sorting/binning (numerical value for Chart.js)
+                    pace_seconds_per_km_raw: (activity.average_speed !== null && activity.average_speed > 0) ? (1000 / activity.average_speed) : null,
+                    pace_min_per_km_formatted: formatPaceForTable(activity.average_speed) // Formatted pace string for display
+                }));
+
                 reportFilterStatus.textContent = `Đã tải ${allActivitiesData.length} hoạt động.`;
                 renderAllReports(); // Call a function to render all sections
                 
@@ -896,8 +970,10 @@
             }
         }
 
+
         /**
          * Renders all report sections: summary, detailed table, charts.
+         * (Adapted from original report.html)
          */
         function renderAllReports() {
             // 1. Render Overall Stats
@@ -910,34 +986,48 @@
                 totalMovingTime += activity.moving_time || 0;
             });
 
-            totalActivitiesCountSpan.textContent = totalActivities;
-            totalDistanceKmSpan.textContent = `${(totalDistance / 1000).toFixed(2)} KM`;
-            totalMovingTimeSpan.textContent = formatDuration(totalMovingTime);
+            totalActivitiesSpan.textContent = totalActivities;
+            totalDistanceSpan.textContent = `${(totalDistance / 1000).toFixed(2)} KM`;
+            totalMovingTimeSpan.textContent = formatTime(totalMovingTime);
+
+            // Calculate overall average pace for summary
+            let averageOverallPaceFormatted = 'N/A';
+            if (totalDistance > 0 && totalMovingTime > 0) {
+                const overallAverageSpeedMs = (totalDistance * 1000) / totalMovingTime;
+                averageOverallPaceFormatted = formatPace(overallAverageSpeedMs);
+            }
+            averageOverallPaceSpan.textContent = averageOverallPaceFormatted;
+
 
             // 2. Render Detailed Activities Table
             renderDetailedActivitiesTable(allActivitiesData);
 
-            // 3. Render Weekly Distance Chart
+            // 3. Render Weekly Distance Chart (D3.js)
             renderWeeklyDistanceChart(allActivitiesData);
 
             // 4. Render Penalty/Bonus Table
             renderPenaltyBonusTable(allActivitiesData);
 
-            // 5. Render Distance by Runner/Club Chart
+            // 5. Render Distance by Runner/Club Chart (D3.js)
             renderDistanceCharts(allActivitiesData);
 
-            // 6. Render Pace Distribution Chart
-            renderPaceDistributionChart(allActivitiesData);
-
-            // 7. Render Heartrate vs Pace Chart
-            renderHeartratePaceChart(allActivitiesData);
-
-            // 8. Render Activity Type Distribution Chart
-            renderActivityTypeChart(allActivitiesData);
+            // 6. Render Chart.js Charts (re-using functions from report origin.html)
+            renderChartJSCharts(allActivitiesData);
+        }
+        
+        /**
+         * Renders all Chart.js specific charts.
+         * @param {Array} data - Array of activity objects.
+         */
+        function renderChartJSCharts(data) {
+            renderDistanceChart(data);
+            renderPaceDistributionChart(data);
+            renderHeartRatePaceChart(data);
+            renderActivityTypeChart(data);
         }
 
         /**
-         * Renders the detailed activities table.
+         * Renders the detailed activities table (from original report.html).
          * @param {Array} activities - Array of activity objects.
          */
         function renderDetailedActivitiesTable(activities) {
@@ -961,8 +1051,8 @@
                     <td>${activity.type}</td>
                     <td>${new Date(activity.start_date).toLocaleDateString('vi-VN')}</td>
                     <td>${(activity.distance / 1000).toFixed(2)}</td>
-                    <td>${formatDuration(activity.moving_time)}</td>
-                    <td>${formatPace(activity.average_speed)}</td>
+                    <td>${formatTime(activity.moving_time)}</td>
+                    <td>${formatPaceForTable(activity.average_speed)}</td>
                     <td>${activity.average_heartrate ? activity.average_heartrate.toFixed(0) : 'N/A'}</td>
                     <td>${formatElevationGain(activity.total_elevation_gain)}</td>
                 `;
@@ -970,7 +1060,7 @@
         }
 
         /**
-         * Calculates and renders weekly distance chart.
+         * Calculates and renders weekly distance chart (D3.js - from original report.html).
          * @param {Array} activities - Array of activity objects.
          */
         function renderWeeklyDistanceChart(activities) {
@@ -986,18 +1076,31 @@
             activities.forEach(activity => {
                 const isoWeek = getISOWeekString(activity.start_date);
                 if (isoWeek) {
-                    if (!weeklyDataMap.has(isoWeek)) {
-                        weeklyDataMap.set(isoWeek, {
+                    // Use a combined key for runner and week to differentiate per-runner weekly stats
+                    const key = `${activity.user_id}-${isoWeek}`; 
+                    if (!weeklyDataMap.has(key)) {
+                        weeklyDataMap.set(key, {
                             week: isoWeek,
                             totalDistance: 0,
                             athlete_id: activity.user_id // Keep track of athlete_id for detailed view
                         });
                     }
-                    weeklyDataMap.get(isoWeek).totalDistance += activity.distance;
+                    weeklyDataMap.get(key).totalDistance += activity.distance;
                 }
             });
 
-            const weeklyStats = Array.from(weeklyDataMap.values()).sort((a, b) => a.week.localeCompare(b.week));
+            // Convert map values to array, then sort by week and then by runner name
+            const weeklyStats = Array.from(weeklyDataMap.values()).sort((a, b) => {
+                const weekComparison = a.week.localeCompare(b.week);
+                if (weekComparison !== 0) return weekComparison;
+
+                const runnerA = allRunnerCredentials.find(rc => String(rc.athlete_id) === String(a.athlete_id));
+                const runnerB = allRunnerCredentials.find(rc => String(rc.athlete_id) === String(b.athlete_id));
+                const nameA = runnerA ? runnerA.runner_name : `Runner ID: ${a.athlete_id}`;
+                const nameB = runnerB ? runnerB.runner_name : `Runner ID: ${b.athlete_id}`;
+                return nameA.localeCompare(nameB);
+            });
+
 
             if (weeklyStats.length === 0) {
                 weeklyDistanceChartContainer.innerHTML = '<p class="text-gray-500 text-center">Không có dữ liệu để hiển thị biểu đồ thống kê theo tuần.</p>';
@@ -1026,7 +1129,7 @@
                 .domain([maxDistance || 1, minDistance || 0]);
 
             const x = d3.scaleBand()
-                .domain(weeklyStats.map(d => d.week))
+                .domain(weeklyStats.map(d => `${d.week}-${d.athlete_id}`)) // Use unique band per week-athlete
                 .range([50, width - 20])
                 .paddingInner(0.1);
 
@@ -1034,7 +1137,8 @@
                 .domain([0, maxDistance * 1.2 || 10000]) // Extend y-axis slightly
                 .range([height - 50, 20]);
 
-            const xAxis = d3.axisBottom(x).tickFormat(d => d.replace(/-W/, 'W'));
+            // Adjust x-axis tick format to show only week, but allow hover to show runner
+            const xAxis = d3.axisBottom(x).tickFormat(d => d.split('-')[0].replace(/W/, 'W')); // Only show week string
             const yAxis = d3.axisLeft(y).tickFormat(d => `${(d / 1000).toFixed(0)}km`);
 
             svg.append("g")
@@ -1058,13 +1162,15 @@
                 .data(weeklyStats)
                 .enter().append("circle")
                 .attr("class", "bubble")
-                .attr("cx", d => x(d.week) + x.bandwidth() / 2)
+                .attr("cx", d => x(`${d.week}-${d.athlete_id}`) + x.bandwidth() / 2)
                 .attr("cy", d => y(d.totalDistance))
                 .attr("r", d => radiusScale(d.totalDistance))
                 .attr("fill", d => colorScale(d.totalDistance))
                 .on("mouseover", function(event, d) {
+                    const runner = allRunnerCredentials.find(rc => String(rc.athlete_id) === String(d.athlete_id));
+                    const runnerName = runner ? runner.runner_name : `Runner ID: ${d.athlete_id}`;
                     tooltip.style("opacity", 1)
-                        .html(`Tuần: ${d.week.replace(/-W/, 'W')}<br>Quãng đường: ${(d.totalDistance / 1000).toFixed(2)} km`)
+                        .html(`Tuần: ${d.week.replace(/-W/, 'W')}<br>Runner: ${runnerName}<br>Quãng đường: ${(d.totalDistance / 1000).toFixed(2)} km`)
                         .style("left", (event.pageX + 10) + "px")
                         .style("top", (event.pageY - 28) + "px");
                 })
@@ -1135,6 +1241,7 @@
 
         /**
          * Fetches and displays detailed activities for a specific week and athlete ID in a modal.
+         * (Adapted from original report.html)
          * @param {string} isoWeek - The ISO week string (e.e.g., "2023-W01").
          * @param {string} athleteId - The Strava athlete ID.
          */
@@ -1188,8 +1295,8 @@
                                 <p class="font-semibold">${activity.name} (${activity.type})</p>
                                 <p class="text-sm text-gray-600">Ngày: ${new Date(activity.start_date).toLocaleDateString('vi-VN')}</p>
                                 <p class="text-sm text-gray-600">Quãng đường: ${(activity.distance / 1000).toFixed(2)} km</p>
-                                <p class="text-sm text-gray-600">Thời gian: ${formatDuration(activity.moving_time)}</p>
-                                <p class="text-sm text-gray-600">Pace: ${formatPace(activity.average_speed)}</p>
+                                <p class="text-sm text-gray-600">Thời gian: ${formatTime(activity.moving_time)}</p>
+                                <p class="text-sm text-gray-600">Pace: ${formatPaceForTable(activity.average_speed)}</p>
                                 ${activity.strava_activity_id ? `<button class="btn-primary mt-2 text-xs px-2 py-1 view-map-btn" data-activity-id="${activity.strava_activity_id}">Xem bản đồ</button>` : ''}
                             `;
                             weeklyActivitiesList.appendChild(li);
@@ -1219,7 +1326,7 @@
         }
 
         /**
-         * Renders the penalty/bonus table.
+         * Renders the penalty/bonus table (from original report.html).
          * @param {Array} activities - Array of activity objects.
          */
         function renderPenaltyBonusTable(activities) {
@@ -1309,7 +1416,7 @@
         }
 
         /**
-         * Renders bubble charts for distance by runner and distance by club.
+         * Renders bubble charts for distance by runner and distance by club (D3.js - from original report.html).
          * @param {Array} activities - Array of activity objects.
          */
         function renderDistanceCharts(activities) {
@@ -1342,7 +1449,7 @@
         }
 
         /**
-         * Generic function to draw a bubble chart.
+         * Generic function to draw a bubble chart (D3.js - from original report.html).
          * @param {HTMLElement} container - The DOM element to append the SVG to.
          * @param {Array} data - Array of objects for the chart.
          * @param {string} title - Chart title.
@@ -1430,282 +1537,345 @@
                 .text(title);
         }
 
+        // --- Chart.js Specific Rendering Functions (from report origin.html) ---
+
         /**
-         * Renders the Pace Distribution Chart (Histogram).
-         * @param {Array} activities - Array of activity objects.
+         * Function to render Distance over Time Chart (Chart.js).
+         * @param {Array} data - Array of activity objects.
          */
-        function renderPaceDistributionChart(activities) {
-            paceDistributionChart.innerHTML = '<p class="text-gray-500 text-sm">Biểu đồ phân bố tốc độ trung bình sẽ hiển thị ở đây.</p>';
-            if (activities.length === 0) return;
+        function renderDistanceChart(data) {
+            const ctx = document.getElementById('distanceChart').getContext('2d');
 
-            const paceData = activities
-                .filter(d => d.average_speed > 0) // Only include activities with valid speed
-                .map(d => {
-                    const kmPerHour = (d.average_speed * 3.6); 
-                    return kmPerHour > 0 ? 60 / kmPerHour : null; // Pace in minutes per km
-                })
-                .filter(p => p !== null && p > 0); // Filter out invalid paces
+            // Sort data by date for chronological display
+            data.sort((a, b) => a.start_date - b.start_date);
 
-            if (paceData.length === 0) {
-                paceDistributionChart.innerHTML = '<p class="text-gray-500 text-sm">Không có dữ liệu tốc độ trung bình hợp lệ để hiển thị biểu đồ.</p>';
-                return;
+            const labels = data.map(activity => activity.start_date.toLocaleDateString('vi-VN'));
+            const distances = data.map(activity => activity.distance_km);
+
+            if (distanceChart) {
+                distanceChart.destroy(); // Destroy previous chart instance
             }
 
-            const container = paceDistributionChart;
-            const width = container.clientWidth;
-            const height = 300;
-            const margin = { top: 20, right: 20, bottom: 60, left: 50 };
-
-            const svg = d3.select(container)
-                .append("svg")
-                .attr("width", width)
-                .attr("height", height)
-                .attr("viewBox", `0 0 ${width} ${height}`)
-                .attr("preserveAspectRatio", "xMidYMid meet");
-
-            const x = d3.scaleLinear()
-                .domain([d3.min(paceData) * 0.9, d3.max(paceData) * 1.1]) // Dynamic domain
-                .range([margin.left, width - margin.right]);
-
-            const histogram = d3.histogram()
-                .value(d => d)
-                .domain(x.domain())
-                .thresholds(x.ticks(20)); // 20 bins for the histogram
-
-            const bins = histogram(paceData);
-
-            const y = d3.scaleLinear()
-                .domain([0, d3.max(bins, d => d.length)]).nice()
-                .range([height - margin.bottom, margin.top]);
-
-            svg.append("g")
-                .attr("transform", `translate(0,${height - margin.bottom})`)
-                .call(d3.axisBottom(x).tickFormat(d => formatMinutesToPaceLabel(d)))
-                .selectAll("text")
-                .attr("transform", "rotate(-45)")
-                .style("text-anchor", "end");
-
-            svg.append("g")
-                .attr("transform", `translate(${margin.left},0)`)
-                .call(d3.axisLeft(y));
-
-            // Bars
-            svg.selectAll("rect")
-                .data(bins)
-                .enter().append("rect")
-                .attr("x", 1)
-                .attr("transform", d => `translate(${x(d.x0)},${y(d.length)})`)
-                .attr("width", d => Math.max(0, x(d.x1) - x(d.x0) - 1))
-                .attr("height", d => height - margin.bottom - y(d.length))
-                .attr("fill", "var(--bidv-green)") // Changed to correctly reference CSS variable
-                .on("mouseover", function(event, d) {
-                    tooltip.style("opacity", 1)
-                        .html(`Pace: ${formatMinutesToPaceLabel(d.x0)} - ${formatMinutesToPaceLabel(d.x1)}<br>Số hoạt động: ${d.length}`)
-                        .style("left", (event.pageX + 10) + "px")
-                        .style("top", (event.pageY - 28) + "px");
-                    d3.select(this).attr("fill", "#005a57"); // Darker green on hover
-                })
-                .on("mouseout", function() {
-                    tooltip.style("opacity", 0);
-                    d3.select(this).attr("fill", "var(--bidv-green)"); // Changed to correctly reference CSS variable
-                });
-            
-            // X-axis label
-            svg.append("text")
-                .attr("x", width / 2)
-                .attr("y", height - 10)
-                .attr("text-anchor", "middle")
-                .text("Tốc độ trung bình (phút/km)");
-
-            // Y-axis label
-            svg.append("text")
-                .attr("transform", `rotate(-90) translate(-${height / 2}, 15)`)
-                .attr("text-anchor", "middle")
-                .text("Số lượng hoạt động");
-
-            let tooltip = d3.select("body").select(".tooltip");
-            if (tooltip.empty()) {
-                tooltip = d3.select("body").append("div")
-                    .attr("class", "tooltip");
-            }
-        }
-
-        // Helper for pace label on Pace Distribution chart
-        function formatMinutesToPaceLabel(minutes) {
-            const min = Math.floor(minutes);
-            const sec = Math.round((minutes - min) * 60);
-            return `${min}:${String(sec).padStart(2, '0')}`;
+            distanceChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Khoảng cách (km)',
+                        data: distances,
+                        borderColor: 'rgb(75, 192, 192)',
+                        backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                        tension: 0.1,
+                        fill: true,
+                        pointBackgroundColor: 'rgb(75, 192, 192)',
+                        pointBorderColor: '#fff',
+                        pointHoverBackgroundColor: '#fff',
+                        pointHoverBorderColor: 'rgb(75, 192, 192)'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const activity = data[context.dataIndex];
+                                    return `Khoảng cách: ${activity.distance_km} km\nThời gian: ${activity.moving_time_formatted}\nTốc độ TB: ${activity.pace_min_per_km_formatted}`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Ngày',
+                                color: '#4b5563'
+                            },
+                            ticks: {
+                                color: '#4b5563'
+                            }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Khoảng cách (km)',
+                                color: '#4b5563'
+                            },
+                            beginAtZero: true,
+                            ticks: {
+                                color: '#4b5563'
+                            }
+                        }
+                    }
+                }
+            });
         }
 
         /**
-         * Renders Heartrate vs Pace Chart (Scatter Plot).
-         * @param {Array} activities - Array of activity objects.
+         * Function to render Pace Distribution Chart (Chart.js).
+         * @param {Array} data - Array of activity objects.
          */
-        function renderHeartratePaceChart(activities) {
-            heartratePaceChart.innerHTML = '<p class="text-gray-500 text-sm">Biểu đồ nhịp tim trung bình theo tốc độ sẽ hiển thị ở đây.</p>';
-            if (activities.length === 0) return;
+        function renderPaceDistributionChart(data) {
+            const ctx = document.getElementById('paceDistributionChart').getContext('2d');
 
-            const data = activities.filter(d => d.average_speed > 0 && d.average_heartrate !== null);
-            if (data.length === 0) {
-                heartratePaceChart.innerHTML = '<p class="text-gray-500 text-sm">Không có dữ liệu nhịp tim hoặc tốc độ hợp lệ để hiển thị biểu đồ.</p>';
+            // Filter out activities with null or invalid pace
+            const validPaces = data
+                .filter(activity => activity.pace_seconds_per_km_raw !== null && activity.pace_seconds_per_km_raw > 0)
+                .map(activity => activity.pace_seconds_per_km_raw);
+
+            if (validPaces.length === 0) {
+                if (paceDistributionChart) paceDistributionChart.destroy();
+                ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height); // Clear canvas
+                ctx.font = '16px Inter';
+                ctx.fillStyle = '#6b7280';
+                ctx.fillText("Không có dữ liệu tốc độ để hiển thị.", 10, 50);
                 return;
             }
 
-            // Convert average_speed (m/s) to pace (minutes/km) for the x-axis
-            const chartData = data.map(d => ({
-                pace: d.average_speed > 0 ? (60 / (d.average_speed * 3.6)) : null,
-                heartrate: d.average_heartrate
-            })).filter(d => d.pace !== null);
+            // Create bins for histogram (e.g., 30 seconds/km intervals)
+            const minPace = Math.min(...validPaces);
+            const maxPace = Math.max(...validPaces);
+            const binSize = 30; // seconds/km (e.g., 0.5 min/km)
+            const bins = {};
 
-            if (chartData.length === 0) {
-                 heartratePaceChart.innerHTML = '<p class="text-gray-500 text-sm">Không có dữ liệu nhịp tim hoặc tốc độ hợp lệ để hiển thị biểu đồ.</p>';
-                return;
+            // Initialize bins
+            for (let i = Math.floor(minPace / binSize) * binSize; i <= maxPace + binSize; i += binSize) {
+                bins[i.toFixed(0)] = 0;
             }
 
-            const container = heartratePaceChart;
-            const width = container.clientWidth;
-            const height = 300;
-            const margin = { top: 20, right: 20, bottom: 60, left: 50 };
+            validPaces.forEach(pace => {
+                const binKey = (Math.floor(pace / binSize) * binSize).toFixed(0);
+                if (bins[binKey] !== undefined) {
+                    bins[binKey]++;
+                }
+            });
 
-            const svg = d3.select(container)
-                .append("svg")
-                .attr("width", width)
-                .attr("height", height)
-                .attr("viewBox", `0 0 ${width} ${height}`)
-                .attr("preserveAspectRatio", "xMidYMid meet");
+            // Get raw seconds labels for Chart.js to handle tick generation
+            const labels = Object.keys(bins).sort((a, b) => parseFloat(a) - parseFloat(b));
+            const counts = labels.map(label => bins[label]);
 
-            const x = d3.scaleLinear()
-                .domain([d3.min(chartData, d => d.pace) * 0.9, d3.max(chartData, d => d.pace) * 1.1])
-                .range([margin.left, width - margin.right]);
-
-            const y = d3.scaleLinear()
-                .domain([d3.min(chartData, d => d.heartrate) * 0.9, d3.max(chartData, d => d.heartrate) * 1.1]).nice()
-                .range([height - margin.bottom, margin.top]);
-
-            svg.append("g")
-                .attr("transform", `translate(0,${height - margin.bottom})`)
-                .call(d3.axisBottom(x).tickFormat(d => formatMinutesToPaceLabel(d)));
-
-            svg.append("g")
-                .attr("transform", `translate(${margin.left},0)`)
-                .call(d3.axisLeft(y));
-
-            let tooltip = d3.select("body").select(".tooltip");
-            if (tooltip.empty()) {
-                tooltip = d3.select("body").append("div")
-                    .attr("class", "tooltip");
+            if (paceDistributionChart) {
+                paceDistributionChart.destroy();
             }
 
-            svg.selectAll("circle")
-                .data(chartData)
-                .enter().append("circle")
-                .attr("cx", d => x(d.pace))
-                .attr("cy", d => y(d.heartrate))
-                .attr("r", 5)
-                .attr("fill", "steelblue")
-                .attr("opacity", 0.7)
-                .on("mouseover", function(event, d) {
-                    tooltip.style("opacity", 1)
-                        .html(`Pace: ${formatMinutesToPaceLabel(d.pace)}/km<br>Nhịp tim: ${d.heartrate.toFixed(0)} bpm`)
-                        .style("left", (event.pageX + 10) + "px")
-                        .style("top", (event.pageY - 28) + "px");
-                })
-                .on("mouseout", function() {
-                    tooltip.style("opacity", 0);
-                });
-
-            // X-axis label
-            svg.append("text")
-                .attr("x", width / 2)
-                .attr("y", height - 10)
-                .attr("text-anchor", "middle")
-                .text("Tốc độ trung bình (phút/km)");
-
-            // Y-axis label
-            svg.append("text")
-                .attr("transform", `rotate(-90) translate(-${height / 2}, 15)`)
-                .attr("text-anchor", "middle")
-                .text("Nhịp tim trung bình (bpm)");
+            paceDistributionChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels, // Use raw seconds values as labels
+                    datasets: [{
+                        label: 'Số lượng hoạt động',
+                        data: counts,
+                        backgroundColor: 'rgba(153, 102, 255, 0.6)',
+                        borderColor: 'rgb(153, 102, 255)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                title: function(context) {
+                                    // Get the raw seconds value for the bin
+                                    const rawSeconds = parseFloat(context[0].label);
+                                    const startPace = formatPaceLabel(rawSeconds);
+                                    const endPace = formatPaceLabel(rawSeconds + binSize);
+                                    return `Tốc độ: ${startPace} - ${endPace} /km`;
+                                },
+                                label: function(context) {
+                                    return `Số lượng hoạt động: ${context.parsed.y}`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Tốc độ trung bình (phút/km)',
+                                color: '#4b5563'
+                            },
+                            ticks: {
+                                color: '#4b5563',
+                                // Format x-axis ticks as MM:SS pace range using the new formatPaceLabel function
+                                callback: function(value, index, values) {
+                                    const startSeconds = parseFloat(this.getLabelForValue(value));
+                                    const endSeconds = startSeconds + binSize;
+                                    return `${formatPaceLabel(startSeconds)} - ${formatPaceLabel(endSeconds)}`;
+                                }
+                            }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Số lượng hoạt động',
+                                color: '#4b5563'
+                            },
+                            beginAtZero: true,
+                            ticks: {
+                                precision: 0, // Ensure integer ticks for counts
+                                color: '#4b5563'
+                            }
+                        }
+                    }
+                }
+            });
         }
 
         /**
-         * Renders Activity Type Distribution Chart (Pie Chart).
-         * @param {Array} activities - Array of activity objects.
+         * Function to render Heart Rate vs. Pace Chart (Chart.js).
+         * @param {Array} data - Array of activity objects.
          */
-        function renderActivityTypeChart(activities) {
-            activityTypeChart.innerHTML = '<p class="text-gray-500 text-sm">Biểu đồ phân loại hoạt động sẽ hiển thị ở đây.</p>';
-            if (activities.length === 0) return;
+        function renderHeartRatePaceChart(data) {
+            const ctx = document.getElementById('heartRatePaceChart').getContext('2d');
 
-            const activityTypeCounts = activities.reduce((acc, activity) => {
-                acc[activity.type] = (acc[activity.type] || 0) + 1;
-                return acc;
-            }, {});
+            const scatterData = data
+                .filter(activity => activity.average_heartrate !== null && activity.average_heartrate > 0 && activity.pace_seconds_per_km_raw !== null && activity.pace_seconds_per_km_raw > 0)
+                .map(activity => ({
+                    x: activity.pace_seconds_per_km_raw, // Raw pace in seconds/km for plotting
+                    y: activity.average_heartrate,
+                    name: activity.name,
+                    distance_km: activity.distance_km,
+                    moving_time_formatted: activity.moving_time_formatted,
+                    pace_min_per_km_formatted: formatPaceForTable(activity.average_speed) // Formatted pace for tooltip
+                }));
 
-            const data = Object.entries(activityTypeCounts).map(([type, count]) => ({ type, count }));
-
-            if (data.length === 0) {
-                 activityTypeChart.innerHTML = '<p class="text-gray-500 text-sm">Không có dữ liệu loại hoạt động để hiển thị biểu đồ.</p>';
+            if (scatterData.length === 0) {
+                if (heartRatePaceChart) heartRatePaceChart.destroy();
+                ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height); // Clear canvas
+                ctx.font = '16px Inter';
+                ctx.fillStyle = '#6b7280';
+                ctx.fillText("Không có dữ liệu nhịp tim/tốc độ để hiển thị.", 10, 50);
                 return;
             }
 
-            const container = activityTypeChart;
-            const width = container.clientWidth;
-            const height = 300;
-            const radius = Math.min(width, height) / 2 - 20;
-
-            const svg = d3.select(container)
-                .append("svg")
-                .attr("width", width)
-                .attr("height", height)
-                .attr("viewBox", `0 0 ${width} ${height}`)
-                .attr("preserveAspectRatio", "xMidYMid meet")
-                .append("g")
-                .attr("transform", `translate(${width / 2}, ${height / 2})`);
-
-            const pie = d3.pie()
-                .sort(null)
-                .value(d => d.count);
-
-            const arc = d3.arc()
-                .innerRadius(0)
-                .outerRadius(radius);
-
-            const color = d3.scaleOrdinal(d3.schemeCategory10);
-
-            let tooltip = d3.select("body").select(".tooltip");
-            if (tooltip.empty()) {
-                tooltip = d3.select("body").append("div")
-                    .attr("class", "tooltip");
+            if (heartRatePaceChart) {
+                heartRatePaceChart.destroy();
             }
 
-            const arcs = svg.selectAll(".arc")
-                .data(pie(data))
-                .enter().append("g")
-                .attr("class", "arc");
+            heartRatePaceChart = new Chart(ctx, {
+                type: 'scatter',
+                data: {
+                    datasets: [{
+                        label: 'Nhịp tim trung bình vs Tốc độ trung bình',
+                        data: scatterData,
+                        backgroundColor: 'rgba(255, 99, 132, 0.6)',
+                        borderColor: 'rgb(255, 99, 132)',
+                        pointRadius: 6,
+                        pointHoverRadius: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const item = context.raw;
+                                    return `Hoạt động: ${item.name}\nTốc độ TB: ${item.pace_min_per_km_formatted}\nNhịp tim TB: ${item.y.toFixed(1)} bpm\nKhoảng cách: ${item.distance_km} km\nThời gian: ${item.moving_time_formatted}`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Tốc độ trung bình (phút/km)', // Updated label for clarity
+                                color: '#4b5563'
+                            },
+                            beginAtZero: true,
+                            ticks: {
+                                color: '#4b5563',
+                                callback: function(value, index, values) {
+                                    return formatPaceLabel(value); // Format x-axis ticks as MM:SS
+                                }
+                            }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Nhịp tim trung bình (bpm)',
+                                color: '#4b5563'
+                            },
+                            beginAtZero: true,
+                            ticks: {
+                                color: '#4b5563'
+                            }
+                        }
+                    }
+                }
+            });
+        }
 
-            arcs.append("path")
-                .attr("d", arc)
-                .attr("fill", d => color(d.data.type))
-                .attr("stroke", "white")
-                .style("stroke-width", "2px")
-                .on("mouseover", function(event, d) {
-                    tooltip.style("opacity", 1)
-                        .html(`${d.data.type}: ${d.data.count} hoạt động (${(d.data.count / activities.length * 100).toFixed(1)}%)`)
-                        .style("left", (event.pageX + 10) + "px")
-                        .style("top", (event.pageY - 28) + "px");
-                })
-                .on("mouseout", function() {
-                    tooltip.style("opacity", 0);
-                });
+        /**
+         * Function to render Activity Type Chart (Doughnut Chart) (Chart.js).
+         * @param {Array} data - Array of activity objects.
+         */
+        function renderActivityTypeChart(data) {
+            const ctx = document.getElementById('activityTypeChart').getContext('2d');
 
-            arcs.append("text")
-                .attr("transform", d => `translate(${arc.centroid(d)})`)
-                .attr("dy", "0.35em")
-                .style("text-anchor", "middle")
-                .text(d => d.data.type)
-                .attr("fill", "white")
-                .style("font-size", "0.8rem")
-                .style("pointer-events", "none");
+            const activityTypes = {};
+            data.forEach(activity => {
+                activityTypes[activity.type] = (activityTypes[activity.type] || 0) + 1;
+            });
+
+            const labels = Object.keys(activityTypes);
+            const counts = Object.values(activityTypes);
+
+            const backgroundColors = [
+                'rgba(255, 205, 86, 0.8)', // Yellow for Run
+                'rgba(54, 162, 235, 0.8)',  // Blue for Walk
+                'rgba(75, 192, 192, 0.8)',  // Teal for others
+                'rgba(153, 102, 255, 0.8)', // Purple
+                'rgba(201, 203, 207, 0.8)'  // Gray
+            ];
+            const borderColors = [
+                'rgb(255, 205, 86)',
+                'rgb(54, 162, 235)',
+                'rgb(75, 192, 192)',
+                'rgb(153, 102, 255)',
+                'rgb(201, 203, 207)'
+            ];
+
+            if (activityTypeChart) {
+                activityTypeChart.destroy();
+            }
+
+            activityTypeChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Số lượng hoạt động',
+                        data: counts,
+                        backgroundColor: backgroundColors.slice(0, labels.length),
+                        borderColor: borderColors.slice(0, labels.length),
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const label = context.label || '';
+                                    const value = context.parsed;
+                                    const total = context.dataset.data.reduce((sum, val) => sum + val, 0);
+                                    const percentage = ((value / total) * 100).toFixed(1);
+                                    return `${label}: ${value} (${percentage}%)`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
         }
 
 
@@ -1727,7 +1897,7 @@
                 await fetchAllRunnerCredentials(); // Load all runner credentials
                 await fetchClubs(); // Load all clubs
                 populateFilters(); // Populate dropdowns
-                
+
                 // Set default dates to past 7 days
                 const today = new Date();
                 const endDate = today.toISOString().split('T')[0];
@@ -1738,7 +1908,7 @@
                 const startDate = sevenDaysAgo.toISOString().split('T')[0];
                 reportStartDateInput.value = startDate;
 
-                await fetchAndRenderReportData(); // Initial data load
+                await fetchAndRenderReportData(); // Initial data load from Supabase
             } catch (authError) {
                 console.error('Error during authentication check:', authError.message);
                 showAlert(`Lỗi xác thực: ${authError.message}. Đang chuyển hướng về trang đăng nhập...`);
@@ -1783,15 +1953,21 @@
                 }
             });
 
+            // Event listener for the Apply Filters button (to fetch data from Supabase)
             applyReportFiltersBtn.addEventListener('click', fetchAndRenderReportData);
+
+            // Filter changes don't trigger direct fetch, only update selected values
             reportRunnerFilter.addEventListener('change', (e) => {
                 selectedRunnerIdReport = e.target.value;
-                // No automatic re-fetch, user clicks apply button
             });
             reportClubFilter.addEventListener('change', (e) => {
                 selectedClubNameReport = e.target.value;
-                // No automatic re-fetch, user clicks apply button
             });
+            // Multi-select activity type changes are handled by global click listener
+            reportStartDateInput.addEventListener('change', () => { /* value changed */ });
+            reportEndDateInput.addEventListener('change', () => { /* value changed */ });
+
+            // Penalty/Bonus calculation inputs trigger re-render of all reports (not a new fetch)
             penaltyPerKmGt10Input.addEventListener('input', renderAllReports);
             penaltyPerKmLte10Input.addEventListener('input', renderAllReports);
             targetKmPerWeekInput.addEventListener('input', renderAllReports);
@@ -1816,15 +1992,21 @@
             // Re-render charts on window resize
             window.addEventListener('resize', () => {
                 if (allActivitiesData.length > 0) {
-                    renderDistanceCharts(allActivitiesData);
-                    renderPaceDistributionChart(allActivitiesData);
-                    renderHeartratePaceChart(allActivitiesData);
-                    renderActivityTypeChart(allActivitiesData);
-                    renderWeeklyDistanceChart(allActivitiesData);
+                    renderDistanceCharts(allActivitiesData); // D3.js charts
+                    renderWeeklyDistanceChart(allActivitiesData); // D3.js chart
+                    renderChartJSCharts(allActivitiesData); // Chart.js charts
                 }
+            });
+
+            // Initial state: Clear charts and filter options until data is loaded
+            // (Note: Initial rendering is now handled by checkAuthAndLoadReport calling fetchAndRenderReportData)
+            document.addEventListener('DOMContentLoaded', () => {
+                // Clear charts and set initial filter options, though checkAuthAndLoadReport will ultimately populate
+                // and fetch data, so this might be redundant but safe.
+                // clearCharts(); // Already handled by fetchAndRenderReportData which calls renderAllReports
+                populateFilters(); // Ensure filters are populated even if no data is loaded yet
             });
         };
     </script>
 </body>
 </html>
- 
