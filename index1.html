@@ -2947,101 +2947,121 @@ function getDateFromISOWeek(w) {
 
 
 
-        /**
-         * Fetches and displays detailed activities for a specific week and athlete ID.
-         * @param {string} isoWeek - The ISO week string (e.g., "2023-W01").
-         * @param {string} athleteId - The Strava athlete ID.
-         */
-        async function fetchActivitiesForWeek(isoWeek, athleteId) {
-            weeklyActivitiesList.innerHTML = '';
-            weeklyActivitiesStatus.textContent = 'Đang tải hoạt động cho tuần này...';
-            weeklyActivitiesModal.style.display = 'flex';
+   /**
+ * Fetches and displays detailed activities for a specific week and athlete ID.
+ * @param {string} isoWeek - The ISO week string (e.g., "2023-W01").
+ * @param {string} athleteId - The Strava athlete ID.
+ */
+async function fetchActivitiesForWeek(isoWeek, athleteId) {
+    // Làm rỗng danh sách hiện tại và hiển thị trạng thái tải
+    weeklyActivitiesList.innerHTML = '';
+    weeklyActivitiesStatus.textContent = 'Đang tải hoạt động cho tuần này...';
+    weeklyActivitiesModal.style.display = 'flex';
 
-            try {
-                const runner = allRunnerCredentials.find(rc => String(rc.athlete_id) === String(athleteId));
-                if (!runner) {
-                    weeklyActivitiesStatus.textContent = 'Không tìm thấy thông tin runner.';
-                    showAlert('Không tìm thấy thông tin runner cho Athlete ID này.');
-                    weeklyActivitiesModal.style.display = 'none'; // Close modal on error
-                    return;
-                }
+    try {
+        // Tìm thông tin runner từ danh sách credentials đã tải
+        const runner = allRunnerCredentials.find(rc => String(rc.athlete_id) === String(athleteId));
+        if (!runner) {
+            weeklyActivitiesStatus.textContent = 'Không tìm thấy thông tin runner.';
+            showAlert('Không tìm thấy thông tin runner cho Athlete ID này. Vui lòng kiểm tra lại dữ liệu.');
+            weeklyActivitiesModal.style.display = 'none'; // Đóng modal khi có lỗi
+            return;
+        }
 
-                // Explicitly check ownership for viewing detailed activities
-         //       if (runner.owner_uid !== currentAppUserId) {
-         //           showAlert('Bạn không có quyền xem hoạt động của runner này.');
-         //           weeklyActivitiesStatus.textContent = 'Không có quyền truy cập.';
-         //           weeklyActivitiesModal.style.display = 'none'; // Close modal on unauthorized access
-         //           return;
-         //       }
+        // --- Bắt đầu phần kiểm tra xác thực (giữ nguyên để yêu cầu người dùng đăng nhập) ---
+        const { data: { session }, error: sessionError } = await supabaseClientInstance.auth.getSession();
+        const headers = { 'Content-Type': 'application/json' };
+        if (session?.access_token) {
+            headers['Authorization'] = `Bearer ${session.access_token}`;
+        } else {
+            weeklyActivitiesStatus.textContent = 'Lỗi xác thực: Vui lòng đăng nhập lại.';
+            showAlert('Lỗi: Không tìm thấy phiên đăng nhập. Vui lòng đăng nhập lại để xem chi tiết hoạt động.');
+            weeklyActivitiesModal.style.display = 'none'; // Đóng modal khi có lỗi
+            return;
+        }
+        // --- Kết thúc phần kiểm tra xác thực ---
 
-                const { data: { session }, error: sessionError } = await supabaseClientInstance.auth.getSession();
-                const headers = { 'Content-Type': 'application/json' };
-                if (session?.access_token) {
-                    headers['Authorization'] = `Bearer ${session.access_token}`;
-                } else {
-                    weeklyActivitiesStatus.textContent = 'Lỗi xác thực: Vui lòng đăng nhập lại.';
-                    showAlert('Lỗi: Không tìm thấy phiên đăng nhập. Vui lòng đăng nhập lại để xem chi tiết hoạt động.');
-                    weeklyActivitiesModal.style.display = 'none'; // Close modal on error
-                    return;
-                }
+        // Chuẩn bị payload để gửi đến Edge Function
+        // Edge Function sẽ sử dụng runnerCredentialId để tìm athleteId,
+        // HOẶC sử dụng trực tiếp athleteId nếu được gửi trong payload
+        const payload = {
+            runnerCredentialId: runner.id, // Gửi runnerCredentialId để Edge Function xác định athlete_id
+            isoWeek: isoWeek,
+            // Mặc dù Edge Function đã ưu tiên athleteId từ payload,
+            // việc gửi runnerCredentialId vẫn là cách gọi ban đầu của bạn.
+            // Edge Function sẽ tự xử lý để lấy đúng athleteId dựa trên logic đã sửa.
+        };
 
-                const payload = { 
-                    runnerCredentialId: runner.id,
-                    isoWeek: isoWeek
-                };
+        // Gửi yêu cầu đến Edge Function
+        const response = await fetch(GET_STATS_API_URL, {
+            method: 'POST',
+            headers: headers,
+            body: JSON.stringify(payload)
+        });
 
-                const response = await fetch(GET_STATS_API_URL, {
-                    method: 'POST',
-                    headers: headers,
-                    body: JSON.stringify(payload)
+        // Phân tích phản hồi từ Edge Function
+        const result = await response.json();
+
+        // --- BẮT ĐẦU PHẦN ĐÃ CHỈNH SỬA QUAN TRỌNG ---
+        // Kiểm tra xem phản hồi có thành công và có dữ liệu hoạt động chi tiết không
+        if (response.ok && result.success && result.detailed_activities) {
+            // Dữ liệu đã được Edge Function lọc chính xác theo athleteId và isoWeek.
+            // Vì vậy, chúng ta sử dụng trực tiếp mảng này để hiển thị.
+            const activitiesToDisplay = result.detailed_activities;
+
+            if (activitiesToDisplay.length > 0) {
+                // Sắp xếp hoạt động theo ngày bắt đầu giảm dần
+                activitiesToDisplay.sort((a, b) => new Date(b.start_date) - new Date(a.start_date));
+
+                // Làm rỗng danh sách trước khi thêm các mục mới (đảm bảo không có dữ liệu cũ)
+                weeklyActivitiesList.innerHTML = '';
+
+                // Lặp qua các hoạt động và thêm chúng vào danh sách
+                activitiesToDisplay.forEach(activity => {
+                    const li = document.createElement('li');
+                    li.className = 'border-b last:border-b-0 py-2'; // Thêm class TailwindCSS cho styling
+                    li.innerHTML = `
+                        <p class="font-semibold">${activity.name} (${activity.type})</p>
+                        <p class="text-sm text-gray-600">Ngày: ${new Date(activity.start_date).toLocaleDateString('vi-VN')}</p>
+                        <p class="text-sm text-gray-600">Quãng đường: ${(activity.distance / 1000).toFixed(2)} km</p>
+                        <p class="text-sm text-gray-600">Thời gian: ${formatDuration(activity.moving_time)}</p>
+                        <p class="text-sm text-gray-600">Pace: ${formatPace(activity.average_speed)}</p>
+                        ${activity.strava_activity_id ? `<button class="btn-primary mt-2 text-xs px-2 py-1 view-map-btn" data-activity-id="${activity.strava_activity_id}">Xem bản đồ</button>` : ''}
+                    `;
+                    weeklyActivitiesList.appendChild(li);
                 });
 
-                const result = await response.json();
+                // Cập nhật trạng thái hiển thị số lượng hoạt động
+                weeklyActivitiesStatus.textContent = `Đã tải ${activitiesToDisplay.length} hoạt động cho tuần này.`;
 
-                if (response.ok && result.success && result.detailed_activities) {
-                    const activitiesInWeek = result.detailed_activities.filter(act => 
-                        String(act.user_id) === String(athleteId) && 
-                        getISOWeekString(new Date(act.start_date)) === isoWeek
-                    );
-
-                    if (activitiesInWeek.length > 0) {
-                        activitiesInWeek.sort((a, b) => new Date(b.start_date) - new Date(a.start_date));
-                        activitiesInWeek.forEach(activity => {
-                            const li = document.createElement('li');
-                            li.className = 'border-b last:border-b-0 py-2';
-                            li.innerHTML = `
-                                <p class="font-semibold">${activity.name} (${activity.type})</p>
-                                <p class="text-sm text-gray-600">Ngày: ${new Date(activity.start_date).toLocaleDateString('vi-VN')}</p>
-                                <p class="text-sm text-gray-600">Quãng đường: ${(activity.distance / 1000).toFixed(2)} km</p>
-                                <p class="text-sm text-gray-600">Thời gian: ${formatDuration(activity.moving_time)}</p>
-                                <p class="text-sm text-gray-600">Pace: ${formatPace(activity.average_speed)}</p>
-                                ${activity.strava_activity_id ? `<button class="btn-primary mt-2 text-xs px-2 py-1 view-map-btn" data-activity-id="${activity.strava_activity_id}">Xem bản đồ</button>` : ''}
-                            `;
-                            weeklyActivitiesList.appendChild(li);
-                        });
-                        weeklyActivitiesStatus.textContent = `Đã tải ${activitiesInWeek.length} hoạt động cho tuần này.`;
-                        document.querySelectorAll('#weekly-activities-modal .view-map-btn').forEach(button => {
-                            button.onclick = (e) => {
-                                const activityId = e.target.dataset.activityId;
-                                if (activityId) {
-                                    window.open(`https://www.strava.com/activities/${activityId}`, '_blank');
-                                }
-                            };
-                        });
-                    } else {
-                        weeklyActivitiesStatus.textContent = 'Không tìm thấy hoạt động nào cho tuần này.';
-                    }
-                } else {
-                    console.error('Lỗi khi tải hoạt động chi tiết cho tuần:', result.error || 'Không xác định');
-                    weeklyActivitiesStatus.textContent = `Lỗi: ${result.error || 'Không xác định'}`;
-                    showAlert(`Lỗi khi tải hoạt động chi tiết: ${result.error || 'Không xác định'}`);
-                }
-            } catch (error) {
-                console.error('Lỗi mạng hoặc máy chủ khi tải hoạt động chi tiết:', error);
-                weeklyActivitiesStatus.textContent = 'Lỗi mạng hoặc máy chủ khi tải hoạt động.';
-                showAlert(`Lỗi mạng hoặc máy chủ khi tải hoạt động: ${error.message}`);
+                // Gán sự kiện click cho các nút "Xem bản đồ"
+                document.querySelectorAll('#weekly-activities-modal .view-map-btn').forEach(button => {
+                    button.onclick = (e) => {
+                        const activityId = e.target.dataset.activityId;
+                        if (activityId) {
+                            window.open(`https://www.strava.com/activities/${activityId}`, '_blank');
+                        }
+                    };
+                });
+            } else {
+                // Nếu mảng rỗng, hiển thị thông báo không tìm thấy hoạt động
+                weeklyActivitiesStatus.textContent = 'Không tìm thấy hoạt động nào cho tuần này.';
             }
+        } else {
+            // Xử lý các trường hợp phản hồi lỗi hoặc thiếu dữ liệu
+            console.error('Lỗi khi tải hoạt động chi tiết cho tuần:', result.error || 'Không xác định');
+            weeklyActivitiesStatus.textContent = `Lỗi: ${result.error || 'Không xác định'}`;
+            showAlert(`Lỗi khi tải hoạt động chi tiết: ${result.error || 'Không xác định'}`);
         }
+        // --- KẾT THÚC PHẦN ĐÃ CHỈNH SỬA QUAN TRỌNG ---
+
+    } catch (error) {
+        // Xử lý các lỗi mạng hoặc lỗi không mong muốn
+        console.error('Lỗi mạng hoặc máy chủ khi tải hoạt động chi tiết:', error);
+        weeklyActivitiesStatus.textContent = 'Lỗi mạng hoặc máy chủ khi tải hoạt động.';
+        showAlert(`Lỗi mạng hoặc máy chủ khi tải hoạt động: ${error.message}`);
+    }
+}
 
 /**
  * Helper to get ISO week string (YYYY-WNN) from a Date object, adjusted for Vietnam timezone.
