@@ -1414,104 +1414,87 @@ function applySettingsVisibility(isVisible) {
 
         // --- Supabase App Authentication Functions ---
 
-      /**
-         * Updates the UI based on the current Supabase Authentication state.
-         * @param {Object|null} user - The Supabase user object or null if logged out.
-         */
-        async function updateAppAuthUI(user) {
-            // appAuthHeader và appAuthToggleIcon đã được khai báo ở phạm vi toàn cục hoặc trong window.onload.
-            // Không cần phải lấy lại ở đây nếu chúng đã có sẵn.
+    /**
+ * Updates the UI based on the current Supabase Authentication state.
+ * @param {Object|null} user - The Supabase user object or null if logged out.
+ */
+async function updateAppAuthUI(user) {
+    if (user) {
+        currentAppUserId = user.id;
+        appUserStatus.textContent = `Đã đăng nhập: ${user.email || 'Khách'}`;
+        currentAppUserEmail.textContent = user.email || 'Khách';
+        loggedOutView.classList.add('hidden');
+        loggedInView.classList.remove('hidden');
 
-            if (user) {
-                currentAppUserId = user.id;
-                appUserStatus.textContent = `Đã đăng nhập: ${user.email || 'Khách'}`;
-                currentAppUserEmail.textContent = user.email || 'Khách';
-                loggedOutView.classList.add('hidden');
-                loggedInView.classList.remove('hidden');
-                
-                // Khi người dùng ĐÃ đăng nhập ứng dụng:
-                // 1. Hiển thị tất cả các section nội dung chính (không liên quan đến cài đặt)
-                if (dataSectionPart1) dataSectionPart1.classList.remove('hidden');
-                if (dataSectionPart2) dataSectionPart2.classList.remove('hidden');
-                if (statsSection) statsSection.classList.remove('hidden');
-                if (detailedStatsSection) detailedStatsSection.classList.remove('hidden');
-                if (instructionSection) instructionSection.classList.remove('hidden');
-                if (llmAnalysisSection) llmAnalysisSection.classList.remove('hidden');
+        // Khi người dùng ĐÃ đăng nhập ứng dụng:
+        // 1. Hiển thị tất cả các section nội dung chính (không liên quan đến cài đặt)
+        if (dataSectionPart1) dataSectionPart1.classList.remove('hidden');
+        if (dataSectionPart2) dataSectionPart2.classList.remove('hidden');
+        if (statsSection) statsSection.classList.remove('hidden');
+        if (detailedStatsSection) detailedStatsSection.classList.remove('hidden');
+        if (instructionSection) instructionSection.classList.remove('hidden');
+        if (llmAnalysisSection) llmAnalysisSection.classList.remove('hidden');
 
-                // 2. Đảm bảo các section cài đặt cũng được loại bỏ lớp 'hidden' Ở ĐÂY.
-                // Trạng thái cuối cùng của chúng (ẩn hay hiện) sẽ được quyết định bởi
-                // checkStravaAuthState() và hàm applySettingsVisibility() sau đó.
-                if (appAuthSection) appAuthSection.classList.remove('hidden');
-                if (credentialManagementSection) credentialManagementSection.classList.remove('hidden');
-                if (stravaAuthSection) stravaAuthSection.classList.remove('hidden');
+        // 2. Đảm bảo các section cài đặt cũng được loại bỏ lớp 'hidden' Ở ĐÂY.
+        // Trạng thái cuối cùng của chúng (ẩn hay hiện) sẽ được quyết định bởi
+        // checkStravaAuthState() và hàm applySettingsVisibility() sau đó.
+        if (appAuthSection) appAuthSection.classList.remove('hidden');
+        if (credentialManagementSection) credentialManagementSection.classList.remove('hidden');
+        if (stravaAuthSection) stravaAuthSection.classList.remove('hidden');
 
-                // 3. Thực hiện các thao tác tải dữ liệu và cập nhật UI khác
-                // (Giữ nguyên các dòng này từ mã của bạn)
-                // Các section con bên trong (như dataSectionPart1Content, v.v.) sẽ được thu gọn mặc định
-                // hoặc theo trạng thái riêng của chúng khi chúng được hiển thị.
-                // Loại bỏ các lệnh forceCollapse mặc định ở đây, việc khôi phục trạng thái sẽ được xử lý bởi logic window.onload
-                // toggleCollapsible(credentialManagementContent, credentialManagementSection.querySelector('.toggle-icon'), true);
-                // toggleCollapsible(stravaAuthContent, stravaAuthSection.querySelector('.toggle-icon'), true);
-                // toggleCollapsible(dataSectionPart1Content, dataSectionPart1.querySelector('.toggle-icon'), true);
-                // toggleCollapsible(dataSectionPart2Content, dataSectionPart2.querySelector('.toggle-icon'), true);
-                // toggleCollapsible(detailedStatsContent, detailedStatsSection.querySelector('.toggle-icon'), true);
-                // toggleCollapsible(statsContent, statsSection.querySelector('.toggle-icon'), true);
+        // 3. Thực hiện các thao tác tải dữ liệu và cập nhật UI khác
+        await fetchAndSetRunnerCredentials(); // Tải dữ liệu runner
+        await renderCredentialsUI(); // Render danh sách runner
+        await checkStravaAuthState(); // KIỂM TRA TRẠNG THÁI STRAVA VÀ ÁP DỤNG HIỂN THỊ CÀI ĐẶT TẠI ĐÂY
+        populateRunnerStatsFilter();
+        populateDownloadRunnerSelect();
+        populateRunnerRecentActivitiesFilter();
+        populateClubDropdowns();
 
-                await fetchAndSetRunnerCredentials(); // Tải dữ liệu runner
-                await renderCredentialsUI(); // Render danh sách runner
-                await checkStravaAuthState(); // KIỂM TRA TRẠNG THÁI STRAVA VÀ ÁP DỤNG HIỂN THỊ CÀI ĐẶT TẠI ĐÂY
-                populateRunnerStatsFilter();
-                populateDownloadRunnerSelect();
-                populateRunnerRecentActivitiesFilter();
-                populateClubDropdowns();
-
-            } else {
-                currentAppUserId = null;
-                appUserStatus.textContent = 'Chưa đăng nhập';
-                loggedOutView.classList.remove('hidden');
-                loggedInView.classList.add('hidden');
-
-                // Khi người dùng CHƯA đăng nhập ứng dụng:
-                // 1. Ẩn tất cả các section nội dung chính
-                if (dataSectionPart1) dataSectionPart1.classList.add('hidden');
-                if (dataSectionPart2) dataSectionPart2.classList.add('hidden');
-                if (statsSection) statsSection.classList.add('hidden');
-                if (detailedStatsSection) detailedStatsSection.classList.add('hidden');
-                if (instructionSection) instructionSection.classList.add('hidden');
-                if (llmAnalysisSection) llmAnalysisSection.classList.add('hidden');
-
-                // 2. Section "Đăng nhập/Đăng ký Ứng dụng" (appAuthSection) luôn hiển thị.
-                // Các section cài đặt khác (Credential Management, Strava Auth) sẽ bị ẩn.
-                if (appAuthSection) appAuthSection.classList.remove('hidden');
-                if (credentialManagementSection) credentialManagementSection.classList.add('hidden');
-                if (stravaAuthSection) stravaAuthSection.classList.add('hidden');
-
-                // 3. Xóa trạng thái phiên Strava và reset UI liên quan
-                clearStravaSession(); 
-                await fetchAndSetRunnerCredentials(); 
-                await renderCredentialsUI();
-                // Không cần gọi checkStravaAuthState() ở đây vì không có app user,
-                // và các section liên quan đến Strava Auth đã bị ẩn ở trên.
-                populateRunnerStatsFilter();
-                populateDownloadRunnerSelect();
-                populateRunnerRecentActivitiesFilter();
-                populateClubDropdowns();
-
-                // 4. Đặt trạng thái ban đầu của nút cài đặt và các section cài đặt khi ĐĂNG XUẤT.
-                // Mặc định cho phép hiển thị các phần cài đặt để người dùng có thể đăng nhập.
-                // Trạng thái này sẽ lưu vào localStorage là "true" và nút sẽ ghi "Ẩn cài đặt".
-                applySettingsVisibility(true);
-                
-                // Quan trọng: Thoát sớm khỏi hàm nếu không có người dùng ứng dụng để tránh
-                // checkStravaAuthState() chạy với trạng thái không mong muốn hoặc gây lỗi.
-                return; 
-            }
-            // LƯU Ý: Lời gọi applySettingsVisibility() cuối cùng đã được loại bỏ khỏi đây.
-            // Quyết định cuối cùng về việc hiển thị/ẩn các section cài đặt sẽ được đưa ra bởi
-            // checkStravaAuthState() (khi đã đăng nhập ứng dụng) hoặc bởi applySettingsVisibility(true)
-            // (khi chưa đăng nhập ứng dụng).
+        // MỚI: Tự động tải hoạt động gần đây khi đăng nhập
+        // Việc này sẽ kích hoạt event listener của nút 'loadRecentActivitiesBtn'.
+        // Đảm bảo rằng 'loadRecentActivitiesBtn' tồn tại và logic lọc dữ liệu đã sẵn sàng.
+        if (loadRecentActivitiesBtn) {
+            console.log('updateAppAuthUI: Kích hoạt tải hoạt động gần đây khi đăng nhập.');
+            loadRecentActivitiesBtn.click();
         }
-        
+
+    } else {
+        currentAppUserId = null;
+        appUserStatus.textContent = 'Chưa đăng nhập';
+        loggedOutView.classList.remove('hidden');
+        loggedInView.classList.add('hidden');
+
+        // Khi người dùng CHƯA đăng nhập ứng dụng:
+        // 1. Ẩn tất cả các section nội dung chính
+        if (dataSectionPart1) dataSectionPart1.classList.add('hidden');
+        if (dataSectionPart2) dataSectionPart2.classList.add('hidden');
+        if (statsSection) statsSection.classList.add('hidden');
+        if (detailedStatsSection) detailedStatsSection.classList.add('hidden');
+        if (instructionSection) instructionSection.classList.add('hidden');
+        if (llmAnalysisSection) llmAnalysisSection.classList.add('hidden');
+
+        // 2. Section "Đăng nhập/Đăng ký Ứng dụng" (appAuthSection) luôn hiển thị.
+        // Các section cài đặt khác (Credential Management, Strava Auth) sẽ bị ẩn.
+        if (appAuthSection) appAuthSection.classList.remove('hidden');
+        if (credentialManagementSection) credentialManagementSection.classList.add('hidden');
+        if (stravaAuthSection) stravaAuthSection.classList.add('hidden');
+
+        // 3. Xóa trạng thái phiên Strava và reset UI liên quan
+        clearStravaSession();
+        await fetchAndSetRunnerCredentials();
+        await renderCredentialsUI();
+        populateRunnerStatsFilter();
+        populateDownloadRunnerSelect();
+        populateRunnerRecentActivitiesFilter();
+        populateClubDropdowns();
+
+        // 4. Đặt trạng thái ban đầu của nút cài đặt và các section cài đặt khi ĐĂNG XUẤT.
+        applySettingsVisibility(true);
+
+        return;
+    }
+}
         
 
         /**
@@ -1744,126 +1727,134 @@ function applySettingsVisibility(isVisible) {
             credentialModal.style.display = 'flex';
         }
 
-        /**
-         * Saves (adds or updates) runner credentials to Supabase.
-         * For new runners, it initiates the Strava OAuth flow.
-         * For existing runners, it only updates the name and other details.
-         * @param {Event} event - Form submission event.
-         */
-        async function saveCredential(event) {
-            event.preventDefault();
+      /**
+ * Saves (adds or updates) runner credentials to Supabase.
+ * For new runners, it initiates the Strava OAuth flow.
+ * For existing runners, it only updates the name and other details.
+ * @param {Event} event - Form submission event.
+ */
+async function saveCredential(event) {
+    event.preventDefault();
 
-            if (!currentAppUserId) {
-                showAlert('Lỗi: Bạn phải đăng nhập ứng dụng để thêm hoặc sửa Runner.');
-                console.error('Attempted to save credential but app user is not authenticated.');
-                return;
-            }
+    if (!currentAppUserId) {
+        showAlert('Lỗi: Bạn phải đăng nhập ứng dụng để thêm hoặc sửa Runner.');
+        console.error('Attempted to save credential but app user is not authenticated.');
+        return;
+    }
 
-            const id = credentialIdInput.value;
-            const runnerName = runnerNameInput.value.trim();
-            const redirectUri = redirectUriInput.value; // Use the fixed value
+    const id = credentialIdInput.value;
+    const runnerName = runnerNameInput.value.trim();
+    const redirectUri = redirectUriInput.value; // Sử dụng giá trị cố định
 
-            // Get new field values
-            const fullName = document.getElementById('runner-full-name').value.trim();
-            const phoneNumber = document.getElementById('runner-phone-number').value.trim();
-            const runnerEmail = document.getElementById('runner-email').value.trim();
-            const dateOfBirth = document.getElementById('runner-date-of-birth').value; //YYYY-MM-DD format
-            const weightKg = parseFloat(document.getElementById('runner-weight-kg').value);
-            const shirtSize = document.getElementById('runner-shirt-size').value;
-            const runningTeam = runnerTeamSelect.value; // Get value from the select dropdown
-            const gender = document.getElementById('runner-gender').value;
-
-
-            if (!runnerName) {
-                showAlert('Vui lòng nhập Tên Runner.');
-                return;
-            }
-            // Validate new required fields
-            if (!runnerEmail || !gender || !runningTeam) {
-                showAlert('Vui lòng nhập đầy đủ Email Runner, Giới tính và Đội chạy.');
-                return;
-            }
+    // Lấy các giá trị trường mới
+    const fullName = document.getElementById('runner-full-name').value.trim();
+    const phoneNumber = document.getElementById('runner-phone-number').value.trim();
+    const runnerEmail = document.getElementById('runner-email').value.trim();
+    const dateOfBirth = document.getElementById('runner-date-of-birth').value; // Định dạng YYYY-MM-DD
+    const weightKg = parseFloat(document.getElementById('runner-weight-kg').value);
+    const shirtSize = document.getElementById('runner-shirt-size').value;
+    const runningTeam = runnerTeamSelect.value; // Lấy giá trị từ dropdown
+    const gender = document.getElementById('runner-gender').value;
 
 
-            try {
-                if (id) {
-                    // This is an EDIT operation (update existing runner details)
-                    const { error: updateError } = await supabaseClientInstance
-                        .from('runner_credentials')
-                        .update({ 
-                            runner_name: runnerName, 
-                            full_name: fullName,
-                            phone_number: phoneNumber,
-                            runner_email: runnerEmail,
-                            date_of_birth: dateOfBirth || null, // Allow null if not provided
-                            weight_kg: isNaN(weightKg) ? null : weightKg, // Allow null if not a valid number
-                            shirt_size: shirtSize || null, // Allow null if not selected
-                            running_team: runningTeam,
-                            gender: gender,
-                        })
-                        .eq('id', id)
-                        .eq('owner_uid', currentAppUserId); // Ensure only owner can update
+    if (!runnerName) {
+        showAlert('Vui lòng nhập Tên Runner.');
+        return;
+    }
+    // Xác thực các trường bắt buộc mới
+    if (!runnerEmail || !gender || !runningTeam) {
+        showAlert('Vui lòng nhập đầy đủ Email Runner, Giới tính và Đội chạy.');
+        return;
+    }
 
-                    if (updateError) throw updateError;
-                    showAlert('Cập nhật thông tin runner thành công!');
 
-                } else {
-                    // This is an ADD operation (new runner, initiate OAuth)
-                    // First, save a placeholder runner_credential in DB with name and owner_uid
-                    // We need this ID to pass to the OAuth callback
-                    const { data: insertData, error: insertError } = await supabaseClientInstance
-                        .from('runner_credentials')
-                        .insert([{
-                            runner_name: runnerName,
-                            owner_uid: currentAppUserId,
-                            redirect_uri: redirectUri, // Save redirect_uri for consistent callback
-                            full_name: fullName,
-                            phone_number: phoneNumber,
-                            runner_email: runnerEmail,
-                            date_of_birth: dateOfBirth || null, 
-                            weight_kg: isNaN(weightKg) ? null : weightKg, 
-                            shirt_size: shirtSize || null, 
-                            running_team: runningTeam,
-                            gender: gender,
-                            // access_token, refresh_token, athlete_id, expires_at will be null initially
-                            // and populated by the strava-oauth-callback Edge Function
-                        }])
-                        .select('id') // Select the ID of the newly inserted row
-                        .single();
+    try {
+        if (id) {
+            // Đây là thao tác SỬA (cập nhật chi tiết runner hiện có)
+            const { error: updateError } = await supabaseClientInstance
+                .from('runner_credentials')
+                .update({
+                    runner_name: runnerName,
+                    full_name: fullName,
+                    phone_number: phoneNumber,
+                    runner_email: runnerEmail,
+                    date_of_birth: dateOfBirth || null, // Cho phép null nếu không được cung cấp
+                    weight_kg: isNaN(weightKg) ? null : weightKg, // Cho phép null nếu không phải số hợp lệ
+                    shirt_size: shirtSize || null, // Cho phép null nếu không được chọn
+                    running_team: runningTeam,
+                    gender: gender,
+                })
+                .eq('id', id)
+                .eq('owner_uid', currentAppUserId); // Đảm bảo chỉ chủ sở hữu mới có thể cập nhật
 
-                    if (insertError) throw insertError;
-                    const newRunnerCredentialId = insertData.id;
+            if (updateError) throw updateError;
+            showAlert('Cập nhật thông tin runner thành công!');
 
-                    showAlert('Thêm Runner thành công! Chuyển hướng đến Strava để ủy quyền...');
-                    credentialModal.style.display = 'none'; // Close modal immediately
+        } else {
+            // Đây là thao tác THÊM (runner mới, bắt đầu luồng OAuth)
+            // Đầu tiên, lưu một runner_credential giữ chỗ trong DB với tên và owner_uid
+            // Chúng ta cần ID này để chuyển đến callback OAuth
+            const { data: insertData, error: insertError } = await supabaseClientInstance
+                .from('runner_credentials')
+                .insert([{
+                    runner_name: runnerName,
+                    owner_uid: currentAppUserId,
+                    redirect_uri: redirectUri, // Lưu redirect_uri để callback nhất quán
+                    full_name: fullName,
+                    phone_number: phoneNumber,
+                    runner_email: runnerEmail,
+                    date_of_birth: dateOfBirth || null,
+                    weight_kg: isNaN(weightKg) ? null : weightKg,
+                    shirt_size: shirtSize || null,
+                    running_team: runningTeam,
+                    gender: gender,
+                    // access_token, refresh_token, athlete_id, expires_at sẽ null ban đầu
+                    // và được điền bởi Edge Function strava-oauth-callback
+                }])
+                .select('id') // Chọn ID của hàng mới được thêm vào
+                .single();
 
-                    // Store the newly created credential ID for the OAuth callback
-                    localStorage.setItem('strava_runner_credential_id_pending', newRunnerCredentialId);
-                    localStorage.setItem('strava_runner_name_pending', runnerName);
+            if (insertError) throw insertError;
+            const newRunnerCredentialId = insertData.id;
 
-                    // Redirect to Strava for OAuth authorization using the APP's Client ID
-                    const scope = 'activity:read_all';
-                    const state = encodeURIComponent(JSON.stringify({ 
-                        credentialId: newRunnerCredentialId // Pass the newly created DB ID
-                    }));
-                    const authUrl = `https://www.strava.com/oauth/authorize?client_id=${APP_STRAVA_CLIENT_ID}&response_type=code&redirect_uri=${encodeURIComponent(APP_STRAVA_REDIRECT_URI)}&approval_prompt=auto&scope=${scope}&state=${state}`;
-                    
-                    window.location.href = authUrl;
-                    return; // Exit function after redirect
-                }
+            showAlert('Thêm Runner thành công! Chuyển hướng đến Strava để ủy quyền...');
+            credentialModal.style.display = 'none'; // Đóng modal ngay lập tức
 
-                credentialModal.style.display = 'none';
-                await fetchAndSetRunnerCredentials(); // Refresh the list data
-                await renderCredentialsUI(); // Refresh the list UI
-                populateRunnerStatsFilter(); // Refresh runner stats filter as well
-                populateDownloadRunnerSelect(); // Refresh the new download runner select
-                populateRunnerRecentActivitiesFilter(); // NEW: Refresh runner filter for recent activities
-                checkStravaAuthState(); // Re-check Strava auth status to ensure UI is consistent
-            } catch (error) {
-                console.error('Lỗi khi lưu thông tin đăng nhập runner:', error.message);
-                showAlert(`Lỗi khi lưu thông tin runner: ${error.message}`);
-            }
+            // Lưu ID credential mới được tạo cho callback OAuth
+            localStorage.setItem('strava_runner_credential_id_pending', newRunnerCredentialId);
+            localStorage.setItem('strava_runner_name_pending', runnerName);
+
+            // Chuyển hướng đến Strava để ủy quyền OAuth bằng Client ID của ỨNG DỤNG
+            const scope = 'activity:read_all';
+            const state = encodeURIComponent(JSON.stringify({
+                credentialId: newRunnerCredentialId // Truyền ID DB mới được tạo
+            }));
+            const authUrl = `https://www.strava.com/oauth/authorize?client_id=${APP_STRAVA_CLIENT_ID}&response_type=code&redirect_uri=${encodeURIComponent(APP_STRAVA_REDIRECT_URI)}&approval_prompt=auto&scope=${scope}&state=${state}`;
+
+            window.location.href = authUrl;
+            return; // Thoát hàm sau khi chuyển hướng
         }
+
+        credentialModal.style.display = 'none';
+        await fetchAndSetRunnerCredentials(); // Làm mới dữ liệu danh sách
+        await renderCredentialsUI(); // Làm mới UI danh sách
+        populateRunnerStatsFilter(); // Làm mới bộ lọc thống kê runner
+        populateDownloadRunnerSelect(); // Làm mới lựa chọn tải hộ runner mới
+        populateRunnerRecentActivitiesFilter(); // MỚI: Làm mới bộ lọc runner cho hoạt động gần đây
+        checkStravaAuthState(); // Kiểm tra lại trạng thái xác thực Strava để đảm bảo UI nhất quán
+
+        // MỚI: Tự động tải hoạt động gần đây sau khi lưu runner
+        // Việc này sẽ đảm bảo `recent-activities-summary-area` hiển thị dữ liệu mới nhất
+        if (loadRecentActivitiesBtn) {
+            console.log('saveCredential: Kích hoạt tải hoạt động gần đây sau khi lưu credential.');
+            loadRecentActivitiesBtn.click();
+        }
+
+    } catch (error) {
+        console.error('Lỗi khi lưu thông tin đăng nhập runner:', error.message);
+        showAlert(`Lỗi khi lưu thông tin runner: ${error.message}`);
+    }
+}
 
         /**
          * Deletes a runner credential from Supabase.
@@ -2401,127 +2392,129 @@ function applySettingsVisibility(isVisible) {
             return athleteIds;
         }
 
-       loadRecentActivitiesBtn.addEventListener('click', async () => {
-            if (!currentAppUserId) { 
-                showAlert('Vui lòng đăng nhập ứng dụng để thực hiện chức năng này.');
-                return;
-            }
+    loadRecentActivitiesBtn.addEventListener('click', async () => {
+    if (!currentAppUserId) {
+        showAlert('Vui lòng đăng nhập ứng dụng để thực hiện chức năng này.');
+        return;
+    }
 
-            recentActivitiesStatus.textContent = 'Đang tải hoạt động gần đây ...';
-            // Vùng tóm tắt và vùng chi tiết cần được reset và ẩn đi ban đầu
-            recentActivitiesSummaryArea.innerHTML = ''; 
-            detailedRecentActivitiesCards.innerHTML = ''; 
-            detailedRecentActivitiesCards.classList.add('hidden'); 
+    recentActivitiesStatus.textContent = 'Đang tải hoạt động gần đây ...';
+    // MỚI: Đặt lại trạng thái hiển thị của khu vực tóm tắt và chi tiết
+    recentActivitiesSummaryArea.innerHTML = '<p class="text-gray-500">Đang tải...</p>'; // Hiển thị trạng thái tải ban đầu
+    recentActivitiesSummaryArea.classList.remove('hidden'); // Đảm bảo khu vực này hiển thị
+    detailedRecentActivitiesCards.innerHTML = '';
+    detailedRecentActivitiesCards.classList.add('hidden');
 
-            // Filter runner credentials to include all connected runners (those with an athlete_id), regardless of app user owner.
-            let runnerCredentialsToFilter = allRunnerCredentials.filter(cred => cred.athlete_id);
-            
-            if (selectedClubNameForRecentActivities !== 'all') {
-                runnerCredentialsToFilter = runnerCredentialsToFilter.filter(
-                    cred => cred.running_team === selectedClubNameForRecentActivities
-                );
-            }
 
-            const selectedRunnerId = runnerRecentActivitiesFilter.value;
-            let actualAthleteIdsToFilter = [];
+    // Lọc thông tin xác thực runner để bao gồm tất cả các runner đã kết nối (những runner có athlete_id), bất kể chủ sở hữu ứng dụng.
+    let runnerCredentialsToFilter = allRunnerCredentials.filter(cred => cred.athlete_id);
 
-            if (selectedRunnerId === 'all') {
-                actualAthleteIdsToFilter = runnerCredentialsToFilter
-                    .filter(cred => cred.athlete_id)
-                    .map(cred => String(cred.athlete_id));
-            } else {
-                const specificRunner = runnerCredentialsToFilter.find(cred => String(cred.athlete_id) === selectedRunnerId);
-                if (specificRunner) {
-                    actualAthleteIdsToFilter = [selectedRunnerId];
-                } else {
-                    actualAthleteIdsToFilter = [];
-                }
-            }
+    if (selectedClubNameForRecentActivities !== 'all') {
+        runnerCredentialsToFilter = runnerCredentialsToFilter.filter(
+            cred => cred.running_team === selectedClubNameForRecentActivities
+        );
+    }
 
-            if (actualAthleteIdsToFilter.length === 0) {
-                recentActivitiesSummaryArea.innerHTML = '<p class="card p-4 text-gray-500 text-center col-span-full">Không tìm thấy hoạt động nào phù hợp với các bộ lọc đã chọn. Vui lòng thêm và kết nối runner hoặc điều chỉnh bộ lọc.</p>';
-                recentActivitiesStatus.textContent = 'Không có hoạt động nào để hiển thị.';
-                userActivities = [];
-                renderDetailedStatsTable();
-                return;
-            }
+    const selectedRunnerId = runnerRecentActivitiesFilter.value;
+    let actualAthleteIdsToFilter = [];
 
-            console.log('Loading recent activities for filtered athlete IDs:', actualAthleteIdsToFilter, 'and club:', selectedClubNameForRecentActivities);
+    if (selectedRunnerId === 'all') {
+        actualAthleteIdsToFilter = runnerCredentialsToFilter
+            .filter(cred => cred.athlete_id)
+            .map(cred => String(cred.athlete_id));
+    } else {
+        const specificRunner = runnerCredentialsToFilter.find(cred => String(cred.athlete_id) === selectedRunnerId);
+        if (specificRunner) {
+            actualAthleteIdsToFilter = [selectedRunnerId];
+        } else {
+            actualAthleteIdsToFilter = [];
+        }
+    }
 
-            const numActivitiesToDisplay = parseInt(numRecentActivitiesInput.value, 10) || 10;
-            const selectedTypes = selectedActivityTypesRecent;
-            
-            const startDateInput = startDateRecent.value;
-            const endDateInput = endDateRecent.value;
+    if (actualAthleteIdsToFilter.length === 0) {
+        recentActivitiesSummaryArea.innerHTML = '<p class="card p-4 text-gray-500 text-center col-span-full">Không tìm thấy hoạt động nào phù hợp với các bộ lọc đã chọn. Vui lòng thêm và kết nối runner hoặc điều chỉnh bộ lọc.</p>';
+        recentActivitiesStatus.textContent = 'Không có hoạt động nào để hiển thị.';
+        userActivities = [];
+        renderDetailedStatsTable();
+        return;
+    }
 
-            let filterStartDate = null;
-            let filterEndDate = null;
+    console.log('Đang tải hoạt động gần đây cho các Athlete ID đã lọc:', actualAthleteIdsToFilter, 'và câu lạc bộ:', selectedClubNameForRecentActivities);
 
-            if (startDateInput) {
-                const parts = startDateInput.split('-');
-                const year = parseInt(parts[0]);
-                const month = parseInt(parts[1]) - 1;
-                const day = parseInt(parts[2]);
-                const localStartDate = new Date(year, month, day);
-                filterStartDate = localStartDate.toISOString();
-            }
+    const numActivitiesToDisplay = parseInt(numRecentActivitiesInput.value, 10) || 10;
+    const selectedTypes = selectedActivityTypesRecent;
 
-            if (endDateInput) {
-                const parts = endDateInput.split('-');
-                const year = parseInt(parts[0]);
-                const month = parseInt(parts[1]) - 1;
-                const day = parseInt(parts[2]);
-                const localEndDate = new Date(year, month, day);
-                localEndDate.setDate(localEndDate.getDate() + 1); 
-                filterEndDate = localEndDate.toISOString();
-            }
+    const startDateInput = startDateRecent.value;
+    const endDateInput = endDateRecent.value;
 
-            try {
-                let query = supabaseClientInstance
-                    .from('activities')
-                    .select('strava_activity_id, name, type, distance, moving_time, total_elevation_gain, start_date, average_speed, average_heartrate, user_id');
-                    
-                query = query.in('user_id', actualAthleteIdsToFilter); 
+    let filterStartDate = null;
+    let filterEndDate = null;
 
-                if (selectedTypes.length > 0) {
-                    query = query.in('type', selectedTypes); 
-                }
-                if (filterStartDate) {
-                    query = query.gte('start_date', filterStartDate);
-                }
-                if (filterEndDate) {
-                    query = query.lt('start_date', filterEndDate);
-                }
+    if (startDateInput) {
+        const parts = startDateInput.split('-');
+        const year = parseInt(parts[0]);
+        const month = parseInt(parts[1]) - 1;
+        const day = parseInt(parts[2]);
+        const localStartDate = new Date(year, month, day);
+        filterStartDate = localStartDate.toISOString();
+    }
 
-                const { data, error } = await query
-                    .order('start_date', { ascending: false })
-                    .limit(numActivitiesToDisplay);
+    if (endDateInput) {
+        const parts = endDateInput.split('-');
+        const year = parseInt(parts[0]);
+        const month = parseInt(parts[1]) - 1;
+        const day = parseInt(parts[2]);
+        const localEndDate = new Date(year, month, day);
+        localEndDate.setDate(localEndDate.getDate() + 1);
+        filterEndDate = localEndDate.toISOString();
+    }
 
-                if (error) {
-                    console.error('Lỗi khi tải hoạt động gần đây từ Supabase:', error);
-                    recentActivitiesStatus.textContent = `Lỗi khi tải hoạt động: ${error.message}`;
-                    showAlert(`Lỗi khi tải hoạt động gần đây: ${error.message}`);
-                    return; 
-                }
-                
-                console.log('Data returned from Supabase for recent activities (all runners):', data);
+    try {
+        let query = supabaseClientInstance
+            .from('activities')
+            .select('strava_activity_id, name, type, distance, moving_time, total_elevation_gain, start_date, average_speed, average_heartrate, user_id');
 
-                if (data && data.length > 0) {
-                    userActivities = data; // Store globally
-                    renderActivitySummary(userActivities); // GỌI HÀM RENDER TÓM TẮT
-                    recentActivitiesStatus.textContent = `Đã tải ${data.length} hoạt động gần đây cho các runner đã chọn.`;
-                } else {
-                    recentActivitiesSummaryArea.innerHTML = '<p class="card p-4 text-gray-500 text-center col-span-full">Không tìm thấy hoạt động nào gần đây cho các runner hoặc với bộ lọc đã chọn.</p>';
-                    recentActivitiesStatus.textContent = 'Không có hoạt động nào để hiển thị.';
-                    userActivities = [];
-                }
-                renderDetailedStatsTable(); // Always update detailed stats table
-            } catch (error) {
-                console.error('Lỗi khi tải hoạt động gần đây từ Supabase:', error);
-                recentActivitiesStatus.textContent = `Lỗi khi tải hoạt động: ${error.message}`;
-                showAlert(`Lỗi khi tải hoạt động gần đây: ${error.message}`);
-            }
-        });
+        query = query.in('user_id', actualAthleteIdsToFilter);
+
+        if (selectedTypes.length > 0) {
+            query = query.in('type', selectedTypes);
+        }
+        if (filterStartDate) {
+            query = query.gte('start_date', filterStartDate);
+        }
+        if (filterEndDate) {
+            query = query.lt('start_date', filterEndDate);
+        }
+
+        const { data, error } = await query
+            .order('start_date', { ascending: false })
+            .limit(numActivitiesToDisplay);
+
+        if (error) {
+            console.error('Lỗi khi tải hoạt động gần đây từ Supabase:', error);
+            recentActivitiesStatus.textContent = `Lỗi khi tải hoạt động: ${error.message}`;
+            showAlert(`Lỗi khi tải hoạt động gần đây: ${error.message}`);
+            return;
+        }
+
+        console.log('Dữ liệu trả về từ Supabase cho hoạt động gần đây (tất cả runner):', data);
+
+        if (data && data.length > 0) {
+            userActivities = data; // Lưu trữ toàn cục
+            renderActivitySummary(userActivities); // GỌI HÀM RENDER TÓM TẮT
+            recentActivitiesStatus.textContent = `Đã tải ${data.length} hoạt động gần đây cho các runner đã chọn.`;
+        } else {
+            recentActivitiesSummaryArea.innerHTML = '<p class="card p-4 text-gray-500 text-center col-span-full">Không tìm thấy hoạt động nào gần đây cho các runner hoặc với bộ lọc đã chọn.</p>';
+            recentActivitiesStatus.textContent = 'Không có hoạt động nào để hiển thị.';
+            userActivities = [];
+        }
+        renderDetailedStatsTable(); // Luôn cập nhật bảng thống kê chi tiết
+    } catch (error) {
+        console.error('Lỗi khi tải hoạt động gần đây từ Supabase:', error);
+        recentActivitiesStatus.textContent = `Lỗi khi tải hoạt động: ${error.message}`;
+        showAlert(`Lỗi khi tải hoạt động gần đây: ${error.message}`);
+    }
+});
  // Event listener for "Xem thống kê theo tuần" button
         viewStatsBtn.addEventListener('click', async () => {
             if (!currentAppUserId) { 
