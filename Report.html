@@ -1024,7 +1024,7 @@
                     query = query.in('type', selectedActivityTypesReport);
                 }
 
-                // --- ĐÃ SỬA ĐỔI: Điều chỉnh bộ lọc ngày bắt đầu để lọc chính xác từ đầu ngày Việt Nam ---
+                // Điều chỉnh bộ lọc ngày bắt đầu để lọc chính xác từ đầu ngày Việt Nam
                 if (reportStartDateInput.value) {
                     const selectedStartDate = new Date(reportStartDateInput.value);
                     // Đặt thời gian là đầu ngày (00:00:00.000) theo múi giờ địa phương của trình duyệt.
@@ -1032,7 +1032,6 @@
                     selectedStartDate.setHours(0, 0, 0, 0); 
                     query = query.gte('start_date', selectedStartDate.toISOString());
                 }
-                // --- KẾT THÚC SỬA ĐỔI ---
                 
                 // Điều chỉnh bộ lọc ngày kết thúc để lọc chính xác theo cuối ngày Việt Nam
                 if (reportEndDateInput.value) {
@@ -1157,7 +1156,7 @@
                     <td>${runnerClub}</td>
                     <td>${activity.name}</td>
                     <td>${activity.type}</td>
-                    <td>${new Date(activity.start_date).toLocaleDateString('vi-VN')}</td>
+                    <td>${new Date(activity.start_date).toLocaleString('vi-VN', { dateStyle: 'short', timeStyle: 'short' })}</td>
                     <td>${(activity.distance / 1000).toFixed(2)}</td>
                     <td>${formatTime(activity.moving_time)}</td>
                     <td>${formatPaceForTable(activity.average_speed)}</td>
@@ -1288,6 +1287,20 @@
                     weeklyActivitiesTitle.textContent = `Hoạt động trong tuần ${d.week.replace(/-W/, 'W')}:`;
                     displayActivitiesInModal(activitiesInWeek); // New function to display
                 });
+
+            // Add text labels for weekly distance chart
+            svg.selectAll(".weekly-bubble-text")
+                .data(weeklyStats)
+                .enter().append("text")
+                .attr("class", "weekly-bubble-text")
+                .attr("x", d => x(d.week) + x.bandwidth() / 2)
+                .attr("y", d => y(d.totalDistance))
+                .text(d => `${(d.totalDistance / 1000).toFixed(0)}km`) // Display KM value
+                .attr("dy", "0.35em")
+                .attr("text-anchor", "middle")
+                .attr("font-size", d => Math.max(8, radiusScale(d.totalDistance) / 3)) // Dynamic font size
+                .attr("fill", "black") // Set text color to black
+                .attr("pointer-events", "none");
 
             svg.append("text")
                 .attr("transform", `translate(${width / 2}, ${height - 10})`)
@@ -1589,16 +1602,14 @@
                 .domain([0, maxValue || 1])
                 .range([minRadius, maxRadius]); // Adjust range based on desired bubble sizes
 
-            const colorScale = d3.scaleSequential(d3.interpolateYlGnBu)
-                .domain([minValue || 0, maxValue || 1]);
-
+            // Tăng cường độ mạnh của force để giãn các bong bóng ra xa hơn
             const simulation = d3.forceSimulation(data)
-                .force("x", d3.forceX(width / 2).strength(0.05))
-                .force("y", d3.forceY(height / 2).strength(0.05))
-                .force("collide", d3.forceCollide(d => radiusScale(d[valueKey]) + 2))
+                .force("x", d3.forceX(width / 2).strength(0.15)) // Tăng strength X
+                .force("y", d3.forceY(height / 2).strength(0.15)) // Tăng strength Y
+                .force("collide", d3.forceCollide(d => radiusScale(d[valueKey]) + 4)) // Tăng khoảng cách va chạm
                 .stop();
 
-            for (let i = 0; i < 120; ++i) simulation.tick(); // Run simulation for a fixed number of ticks
+            for (let i = 0; i < 200; ++i) simulation.tick(); // Chạy simulation nhiều lần hơn để đạt trạng thái ổn định
 
             let tooltip = d3.select("body").select(".tooltip");
             if (tooltip.empty()) {
@@ -1631,10 +1642,25 @@
                 .attr("x", d => d.x)
                 .attr("y", d => d.y)
                 .text(d => d[nameKey])
-                .attr("dy", "0.35em")
-                .attr("font-size", d => Math.max(8, radiusScale(d[valueKey]) / 3.5)) // Dynamic font size
-                .attr("fill", "white")
+                .attr("dy", "-0.3em") // Điều chỉnh vị trí chữ để thêm dòng KM
+                .attr("font-size", d => Math.max(8, radiusScale(d[valueKey]) / 4)) // Dynamic font size
+                .attr("fill", "black") // Set text color to black
                 .attr("pointer-events", "none");
+
+            // Thêm dòng hiển thị KM
+            svg.selectAll(".bubble-km-text")
+                .data(data)
+                .enter().append("text")
+                .attr("class", "bubble-text bubble-km-text") // Sử dụng lại class bubble-text
+                .attr("x", d => d.x)
+                .attr("y", d => d.y)
+                .text(d => `${d[valueKey].toFixed(1)} KM`) // Hiển thị số KM
+                .attr("dy", "1em") // Điều chỉnh vị trí để nằm dưới tên
+                .attr("text-anchor", "middle")
+                .attr("font-size", d => Math.max(8, radiusScale(d[valueKey]) / 4.5)) // Dynamic font size
+                .attr("fill", "black") // Set text color to black
+                .attr("pointer-events", "none");
+
 
             svg.append("text")
                 .attr("x", width / 2)
