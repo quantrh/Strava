@@ -610,7 +610,7 @@
     <script>
         // Supabase configuration
         const SUPABASE_URL = 'https://rmbsxccrwrktbjlnezpu.supabase.co'; // Replace with your Supabase URL
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJtYnN4Y2Nyd3JrdGJqbG5lenB1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg2MjczNjQsImV4cCI6MjA2NDIwMzM2NH0.ydCqificftdtn1niRciFCifeuo8aX6SDGti-hCY5Z_Y'; // Replace with your Supabase Anon Key
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJtYnN4Y2Nyd3JrdGJqbG5lenB1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg2MjczNjQsImV4cCI6MjA2NDIwMzM2NH0.ydCqificftdtn1niRciFCifeuo8aX6SDGjti-hCY5Z_Y'; // Replace with your Supabase Anon Key
 
         // Supabase Edge Function URL to fetch activities (from original report.html)
         // const GET_STATS_API_URL = 'https://rmbsxccrwrktbjlnezpu.supabase.co/functions/v1/get-user-activities'; // Original
@@ -1239,6 +1239,13 @@
             const maxDistance = d3.max(weeklyStats, d => d.totalDistance);
             const minDistance = d3.min(weeklyStats, d => d.totalDistance);
 
+            // Defensive check for D3 functions
+            if (typeof d3.scaleSequential !== 'function' || typeof d3.interpolateViridis !== 'function') {
+                console.error("D3 scales or interpolators are not available. Cannot draw weekly distance chart.");
+                weeklyDistanceChartContainer.innerHTML = `<p class="text-red-500 text-center">Lỗi: Không thể vẽ biểu đồ. Thư viện D3.js hoặc các thành phần của nó không khả dụng.</p>`;
+                return; // Exit if D3 components are missing
+            }
+
             const radiusScale = d3.scaleSqrt()
                 .domain([0, maxDistance || 1])
                 .range([10, 40]);
@@ -1610,6 +1617,13 @@
             const maxValue = d3.max(data, d => d[valueKey]);
             const minValue = d3.min(data, d => d[valueKey]);
 
+            // Defensive check for D3 functions
+            if (typeof d3.scaleSequential !== 'function' || typeof d3.interpolateViridis !== 'function') {
+                console.error("D3 scales or interpolators are not available. Cannot draw bubble chart for " + title);
+                container.innerHTML = `<p class="text-red-500 text-center">Lỗi: Không thể vẽ biểu đồ. Thư viện D3.js hoặc các thành phần của nó không khả dụng.</p>`;
+                return; // Exit if D3 components are missing
+            }
+
             const maxRadius = width < 768 ? 30 : 60; // Max radius for bubbles
             const minRadius = width < 768 ? 8 : 15; // Min radius for bubbles
 
@@ -1631,6 +1645,9 @@
                 tooltip = d3.select("body").append("div")
                     .attr("class", "tooltip");
             }
+
+            const colorScale = d3.scaleSequential(d3.interpolateViridis)
+                .domain([maxValue || 1, minValue || 0]);
 
             const bubbles = svg.selectAll(".bubble")
                 .data(data)
