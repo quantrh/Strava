@@ -599,10 +599,13 @@
     <script>
         // Supabase configuration
         const SUPABASE_URL = 'https://rmbsxccrwrktbjlnezpu.supabase.co'; // Replace with your Supabase URL
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJtYnN4Y2Nyd3JrdGJqbG5lenB1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg2MjczNjQsImV4cCI6MjA2NDIwMzM2NH0.ydCqificftdtn1niRciFCifeuo8aX6SDGti-hCY5Z_Y'; // Replace with your Supabase Anon Key
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJtYnN4Y2Nyd3JrdGJqbG5lenB1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg2MjczNjQsImV4cCI6MjA2NDIwMzM2NH0.ydCqificftdtn1niRciFCifeuo8aX6SDGjti-hCY5Z_Y'; // Replace with your Supabase Anon Key
 
         // Supabase Edge Function URL to fetch activities (from original report.html)
-        const GET_STATS_API_URL = 'https://rmbsxccrwrktbjlnezpu.supabase.co/functions/v1/get-user-activities';
+        // const GET_STATS_API_URL = 'https://rmbsxccrwrktbjlnezpu.supabase.co/functions/v1/get-user-activities'; // Original
+        // New: Edge Function for Gemini analysis
+        const ANALYZE_ACTIVITIES_EDGE_FUNCTION_URL = 'https://rmbsxccrwrktbjlnezpu.supabase.co/functions/v1/analyze-activities-with-gemini';
+
 
         let supabaseClientInstance;
         let allRunnerCredentials = []; // Used for filtering and display (from original report.html)
@@ -2007,6 +2010,7 @@
 
         /**
          * Fetches training suggestions from the Gemini API based on current activity data.
+         * Now calls the Supabase Edge Function to handle the Gemini API call securely.
          */
         async function getTrainingSuggestions() {
             if (allActivitiesData.length === 0) {
@@ -2020,67 +2024,59 @@
             trainingSuggestionsStatus.textContent = 'Đang tạo gợi ý luyện tập thông minh...';
 
             try {
-                // Collect relevant data for the prompt
-                const totalDistance = (parseFloat(totalDistanceSpan.textContent) || 0).toFixed(2); // in KM
-                const totalMovingTime = totalMovingTimeSpan.textContent;
-                const averageOverallPace = averageOverallPaceSpan.textContent;
-                const totalActivities = totalActivitiesSpan.textContent;
-
-                // Determine the most common activity type
-                const activityTypeCounts = {};
-                allActivitiesData.forEach(activity => {
-                    activityTypeCounts[activity.type] = (activityTypeCounts[activity.type] || 0) + 1;
-                });
-                let mostCommonActivityType = 'chạy bộ'; // Default
-                let maxCount = 0;
-                for (const type in activityTypeCounts) {
-                    if (activityTypeCounts[type] > maxCount) {
-                        maxCount = activityTypeCounts[type];
-                        mostCommonActivityType = type;
-                    }
+                // Get the current session to extract the access token
+                const { data: { session }, error: sessionError } = await supabaseClientInstance.auth.getSession();
+                if (sessionError || !session?.access_token) {
+                    throw new Error('Không tìm thấy phiên đăng nhập Supabase. Vui lòng đăng nhập lại.');
                 }
 
-                // Prepare the prompt for the LLM
-                const prompt = `Tôi có dữ liệu hoạt động ${mostCommonActivityType} gần đây như sau:
-                - Tổng quãng đường: ${totalDistance} km
-                - Tổng thời gian di chuyển: ${totalMovingTime}
-                - Tốc độ trung bình tổng thể: ${averageOverallPace}
-                - Tổng số hoạt động: ${totalActivities}
-                
-                Dựa trên những thông tin này, hãy đưa ra một vài lời khuyên cá nhân hóa để tôi cải thiện việc ${mostCommonActivityType} của mình. Hãy tập trung vào việc cải thiện hiệu suất, tránh chấn thương, và giữ động lực. Phản hồi bằng tiếng Việt và sử dụng định dạng Markdown để dễ đọc.`;
+                // Prepare data to send to the Edge Function
+                const payload = {
+                    activities: allActivitiesData.map(activity => ({
+                        // Simplify activities data for the LLM prompt to only include necessary fields
+                        name: activity.name,
+                        type: activity.type,
+                        distance_km: parseFloat(activity.distance_km),
+                        moving_time: activity.moving_time, // in seconds
+                        average_speed: activity.average_speed, // in m/s
+                        average_heartrate: activity.average_heartrate,
+                        start_date: activity.start_date.toISOString(), // Send ISO string
+                        total_elevation_gain: activity.total_elevation_gain
+                    })),
+                    // If you want to include runnerCredentialId for the Edge Function's security check, you can get it from local storage or context.
+                    // For this generic summary, it might not be strictly necessary for the LLM prompt itself,
+                    // but the Edge Function might require it for its internal security checks.
+                    // Let's assume the first activity's user_id can be mapped to a runner credential ID
+                    runnerCredentialId: allRunnerCredentials.find(rc => String(rc.athlete_id) === String(allActivitiesData[0]?.user_id))?.id,
+                    clientTimezone: Intl.DateTimeFormat().resolvedOptions().timeZone // Get client's current timezone
+                };
 
-                let chatHistory = [];
-                chatHistory.push({ role: "user", parts: [{ text: prompt }] });
-                const payload = { contents: chatHistory };
-                // Fetch API key from environment variable
-                const apiKey = typeof __api_key !== 'undefined' ? __api_key : ''; 
-
-                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
-                
-                const response = await fetch(apiUrl, {
+                // Call the Supabase Edge Function
+                const response = await fetch(ANALYZE_ACTIVITIES_EDGE_FUNCTION_URL, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${session.access_token}` // Send user's access token
+                    },
                     body: JSON.stringify(payload)
                 });
 
                 const result = await response.json();
                 
-                if (result.candidates && result.candidates.length > 0 &&
-                    result.candidates[0].content && result.candidates[0].content.parts &&
-                    result.candidates[0].content.parts.length > 0) {
-                    const text = result.candidates[0].content.parts[0].text;
-                    trainingSuggestionsContent.innerHTML = marked.parse(text); // Render Markdown
+                if (response.ok && result.success) {
+                    trainingSuggestionsContent.innerHTML = marked.parse(result.analysis); // Render Markdown
                     trainingSuggestionsStatus.textContent = 'Gợi ý đã sẵn sàng!';
                 } else {
-                    trainingSuggestionsContent.innerHTML = '<p class="text-red-500">Không thể nhận được gợi ý luyện tập. Vui lòng thử lại.</p>';
+                    const errorMessage = result.error || 'Không thể nhận được gợi ý luyện tập từ Edge Function.';
+                    trainingSuggestionsContent.innerHTML = `<p class="text-red-500">${errorMessage}</p>`;
                     trainingSuggestionsStatus.textContent = 'Lỗi khi tạo gợi ý.';
-                    console.error('Unexpected API response structure:', result);
+                    console.error('Error from Edge Function:', result);
                 }
 
             } catch (error) {
-                console.error('Error fetching training suggestions:', error);
-                trainingSuggestionsContent.innerHTML = `<p class="text-red-500">Đã xảy ra lỗi khi tạo gợi ý: ${error.message}</p>`;
-                trainingSuggestionsStatus.textContent = 'Lỗi khi tạo gợi ý.';
+                console.error('Error calling Edge Function for training suggestions:', error);
+                trainingSuggestionsContent.innerHTML = `<p class="text-red-500">Đã xảy ra lỗi khi gọi Edge Function: ${error.message}</p>`;
+                trainingSuggestionsStatus.textContent = 'Lỗi khi gọi gợi ý.';
                 showAlert(`Lỗi khi tạo gợi ý luyện tập: ${error.message}`);
             } finally {
                 trainingSuggestionsLoader.classList.add('hidden'); // Hide loader
@@ -2221,7 +2217,7 @@
                 if (allActivitiesData.length > 0) {
                     renderDistanceCharts(allActivitiesData); // D3.js charts
                     renderWeeklyDistanceChart(allActivitiesData); // D3.js chart
-                    renderChartJSCharts(allActivitiesData); // Chart.js charts
+                    renderChartJSCharts(allActivitiesData); // Chart.js chartsaa
                 }
             });
 
