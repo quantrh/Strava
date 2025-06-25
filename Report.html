@@ -300,11 +300,11 @@
             background-color: #005a57;
         }
 
-        #custom-alert, #custom-confirm-modal {
+        #custom-alert, #custom-confirm-modal, #training-suggestions-modal {
             background-color: rgba(0, 0, 0, 0.5);
             /* display: flex; <-- REMOVED this line as 'hidden' class handles it */
             align-items: center;
-            justify-content: center;
+            justify-content-center;
         }
 
         /* Collapsible content styles */
@@ -327,7 +327,10 @@
                 <img src="https://placehold.co/80x80/006B68/FFFFFF?text=RUN" alt="Logo BIDV Running Club" class="h-20 w-auto rounded-md">
                 <h1 class="text-2xl font-bold text-white">Báo cáo hoạt động chạy bộ - FOR RUNNER LOVER</h1>
             </div>
-            <nav>
+            <nav class="flex items-center space-x-4"> <!-- Added flex and space-x-4 for proper spacing -->
+                <button id="back-to-home-btn" class="btn-primary">
+                    <i class="fas fa-home"></i> Quay về
+                </button>
                 <button id="logout-btn" class="btn-danger">
                     <i class="fas fa-sign-out-alt"></i> Đăng xuất
                 </button>
@@ -406,6 +409,10 @@
                             <p id="totalActivities" class="text-2xl font-bold"></p>
                         </div>
                     </div>
+                    <button id="get-training-suggestions-btn" class="btn-primary w-full mt-6 flex items-center justify-center">
+                        <i class="fas fa-magic mr-2"></i> ✨Gợi ý Luyện tập Thông minh
+                        <span id="training-suggestions-loader" class="loader hidden"></span>
+                    </button>
                 </div>
             </div>
 
@@ -556,6 +563,19 @@
         </div>
     </div>
 
+    <!-- Training Suggestions Modal -->
+    <div id="training-suggestions-modal" class="modal hidden">
+        <div class="modal-content" style="max-width: 600px;">
+            <span class="close-button" id="close-training-suggestions-modal-btn">&times;</span>
+            <h3 class="text-2xl font-bold mb-4 text-gray-800">Gợi ý Luyện tập từ AI</h3>
+            <div id="training-suggestions-content" class="prose max-w-none">
+                <!-- AI suggestions will be loaded here -->
+            </div>
+            <p id="training-suggestions-status" class="mt-4 text-sm text-gray-600"></p>
+        </div>
+    </div>
+
+
     <!-- Custom Alert/Confirm Modals -->
     <div id="custom-alert" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-content-center z-50">
         <div class="bg-white p-6 rounded-lg shadow-xl max-w-sm w-full text-center">
@@ -579,7 +599,7 @@
     <script>
         // Supabase configuration
         const SUPABASE_URL = 'https://rmbsxccrwrktbjlnezpu.supabase.co'; // Replace with your Supabase URL
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJtYnN4Y2Nyd3JrdGJqbG5lenB1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg2MjczNjQsImV4cCI6MjA2NDIwMzM2NH0.ydCqificftdtn1niRciFCifeuo8aX6SDGti-hCY5Z_Y'; // Replace with your Supabase Anon Key
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJtYnN4Y2Nyd3JrdGJqbG5lenB1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg2MjczNjQsImV4cCI6MjA2NDIwMzM2NH0.ydCqificftdtn1niRciFCifeuo8aX6SDGjti-hCY5Z_Y'; // Replace with your Supabase Anon Key
 
         // Supabase Edge Function URL to fetch activities (from original report.html)
         const GET_STATS_API_URL = 'https://rmbsxccrwrktbjlnezpu.supabase.co/functions/v1/get-user-activities';
@@ -600,6 +620,7 @@
         // DOM Elements
         const currentUserEmailSpan = document.getElementById('current-user-email');
         const logoutBtn = document.getElementById('logout-btn');
+        const backToHomeBtn = document.getElementById('back-to-home-btn'); // Added back to home button
 
         // Filter elements (from original report.html's filter section)
         const reportRunnerFilter = document.getElementById('report-runner-filter');
@@ -616,6 +637,15 @@
         const totalMovingTimeSpan = document.getElementById('totalMovingTime');
         const averageOverallPaceSpan = document.getElementById('averageOverallPace');
         const totalActivitiesSpan = document.getElementById('totalActivities');
+
+        // New Gemini API related elements
+        const getTrainingSuggestionsBtn = document.getElementById('get-training-suggestions-btn');
+        const trainingSuggestionsLoader = document.getElementById('training-suggestions-loader');
+        const trainingSuggestionsModal = document.getElementById('training-suggestions-modal');
+        const closeTrainingSuggestionsModalBtn = document.getElementById('close-training-suggestions-modal-btn');
+        const trainingSuggestionsContent = document.getElementById('training-suggestions-content');
+        const trainingSuggestionsStatus = document.getElementById('training-suggestions-status');
+
 
         // D3.js chart specific elements (from original report.html)
         const distanceByRunnerChart = document.getElementById('distance-by-runner-chart'); 
@@ -1340,7 +1370,7 @@
             // (Difference in milliseconds between the Vietnam-aligned Thursday and the start of its ISO year + 1 day) / milliseconds in 7 days
             const weekNo = Math.ceil((((vietnamAlignedUtcDate - yearStart) / 86400000) + 1) / 7);
 
-            // Return the ISO week string in YYYY-WNN format
+            // Return the ISO week string inYYYY-WNN format
             return `${isoWeekYear}-W${String(weekNo).padStart(2, '0')}`;
         }
 
@@ -1815,7 +1845,7 @@
                 ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height); // Clear canvas
                 ctx.font = '16px Inter';
                 ctx.fillStyle = '#6b7280';
-                ctx.fillText("Không có dữ liệu nhịp tim/tốc độ để hiển thị.", 10, 50);
+                ctx.fillText("Không có dữ liệu nhịp tim/tốc độ để hiển ý.", 10, 50);
                 return;
             }
 
@@ -1975,6 +2005,91 @@
             }
         }
 
+        /**
+         * Fetches training suggestions from the Gemini API based on current activity data.
+         */
+        async function getTrainingSuggestions() {
+            if (allActivitiesData.length === 0) {
+                showAlert('Không có dữ liệu hoạt động để tạo gợi ý luyện tập. Vui lòng tải dữ liệu trước.');
+                return;
+            }
+
+            trainingSuggestionsLoader.classList.remove('hidden'); // Show loader
+            getTrainingSuggestionsBtn.disabled = true; // Disable button
+            trainingSuggestionsContent.innerHTML = ''; // Clear previous content
+            trainingSuggestionsStatus.textContent = 'Đang tạo gợi ý luyện tập thông minh...';
+
+            try {
+                // Collect relevant data for the prompt
+                const totalDistance = (parseFloat(totalDistanceSpan.textContent) || 0).toFixed(2); // in KM
+                const totalMovingTime = totalMovingTimeSpan.textContent;
+                const averageOverallPace = averageOverallPaceSpan.textContent;
+                const totalActivities = totalActivitiesSpan.textContent;
+
+                // Determine the most common activity type
+                const activityTypeCounts = {};
+                allActivitiesData.forEach(activity => {
+                    activityTypeCounts[activity.type] = (activityTypeCounts[activity.type] || 0) + 1;
+                });
+                let mostCommonActivityType = 'chạy bộ'; // Default
+                let maxCount = 0;
+                for (const type in activityTypeCounts) {
+                    if (activityTypeCounts[type] > maxCount) {
+                        maxCount = activityTypeCounts[type];
+                        mostCommonActivityType = type;
+                    }
+                }
+
+                // Prepare the prompt for the LLM
+                const prompt = `Tôi có dữ liệu hoạt động ${mostCommonActivityType} gần đây như sau:
+                - Tổng quãng đường: ${totalDistance} km
+                - Tổng thời gian di chuyển: ${totalMovingTime}
+                - Tốc độ trung bình tổng thể: ${averageOverallPace}
+                - Tổng số hoạt động: ${totalActivities}
+                
+                Dựa trên những thông tin này, hãy đưa ra một vài lời khuyên cá nhân hóa để tôi cải thiện việc ${mostCommonActivityType} của mình. Hãy tập trung vào việc cải thiện hiệu suất, tránh chấn thương, và giữ động lực. Phản hồi bằng tiếng Việt và sử dụng định dạng Markdown để dễ đọc.`;
+
+                let chatHistory = [];
+                chatHistory.push({ role: "user", parts: [{ text: prompt }] });
+                const payload = { contents: chatHistory };
+                // Fetch API key from environment variable
+                const apiKey = typeof __api_key !== 'undefined' ? __api_key : ''; 
+
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+                
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await response.json();
+                
+                if (result.candidates && result.candidates.length > 0 &&
+                    result.candidates[0].content && result.candidates[0].content.parts &&
+                    result.candidates[0].content.parts.length > 0) {
+                    const text = result.candidates[0].content.parts[0].text;
+                    trainingSuggestionsContent.innerHTML = marked.parse(text); // Render Markdown
+                    trainingSuggestionsStatus.textContent = 'Gợi ý đã sẵn sàng!';
+                } else {
+                    trainingSuggestionsContent.innerHTML = '<p class="text-red-500">Không thể nhận được gợi ý luyện tập. Vui lòng thử lại.</p>';
+                    trainingSuggestionsStatus.textContent = 'Lỗi khi tạo gợi ý.';
+                    console.error('Unexpected API response structure:', result);
+                }
+
+            } catch (error) {
+                console.error('Error fetching training suggestions:', error);
+                trainingSuggestionsContent.innerHTML = `<p class="text-red-500">Đã xảy ra lỗi khi tạo gợi ý: ${error.message}</p>`;
+                trainingSuggestionsStatus.textContent = 'Lỗi khi tạo gợi ý.';
+                showAlert(`Lỗi khi tạo gợi ý luyện tập: ${error.message}`);
+            } finally {
+                trainingSuggestionsLoader.classList.add('hidden'); // Hide loader
+                getTrainingSuggestionsBtn.disabled = false; // Enable button
+                trainingSuggestionsModal.classList.remove('hidden'); // Show modal
+                trainingSuggestionsModal.style.display = 'flex'; // Ensure it's visible
+            }
+        }
+
 
         // --- Supabase Authentication Check for Report Page ---
         async function checkAuthAndLoadReport() {
@@ -1984,7 +2099,7 @@
                     console.warn('No active Supabase session found. Redirecting to Index1.html');
                     showAlert('Bạn cần đăng nhập để truy cập trang báo cáo. Đang chuyển hướng về trang đăng nhập...');
                     setTimeout(() => {
-                        window.location.href = 'Index1.html';
+                        window.location.href = 'https://quantrh.github.io/Strava/index1.html'; // Changed to direct link
                     }, 2000); // Redirect after 2 seconds
                     return;
                 }
@@ -2010,7 +2125,7 @@
                 console.error('Error during authentication check:', authError.message);
                 showAlert(`Lỗi xác thực: ${authError.message}. Đang chuyển hướng về trang đăng nhập...`);
                 setTimeout(() => {
-                    window.location.href = 'Index1.html';
+                    window.location.href = 'https://quantrh.github.io/Strava/index1.html'; // Changed to direct link
                 }, 2000);
             }
         }
@@ -2041,13 +2156,18 @@
                         localStorage.removeItem('strava_authenticated');
                         showAlert('Đăng xuất thành công. Đang chuyển hướng về trang đăng nhập...');
                         setTimeout(() => {
-                            window.location.href = 'Index1.html';
+                            window.location.href = 'https://quantrh.github.io/Strava/index1.html'; // Changed to direct link
                         }, 1500);
                     } catch (error) {
                         console.error('Lỗi đăng xuất:', error.message);
                         showAlert(`Lỗi khi đăng xuất: ${error.message}`);
                     }
                 }
+            });
+
+            // Event listener for the new "Quay về" button
+            backToHomeBtn.addEventListener('click', () => {
+                window.location.href = 'https://quantrh.github.io/Strava/index1.html';
             });
 
             // Event listener for the Apply Filters button (to fetch data from Supabase)
@@ -2072,6 +2192,16 @@
             closeWeeklyActivitiesModalBtn.addEventListener('click', () => {
                 weeklyActivitiesModal.style.display = 'none';
             });
+            // Close button for the new training suggestions modal
+            closeTrainingSuggestionsModalBtn.addEventListener('click', () => {
+                trainingSuggestionsModal.classList.add('hidden');
+                trainingSuggestionsModal.style.display = 'none';
+            });
+
+
+            // --- Gemini API Feature: Get Training Suggestions ---
+            getTrainingSuggestionsBtn.addEventListener('click', getTrainingSuggestions);
+
 
             // Scroll-to-top button logic
             const scrollToTopBtn = document.getElementById('scroll-to-top-btn');
@@ -2117,5 +2247,7 @@
             }
         };
     </script>
+    <!-- Add marked.js for Markdown rendering -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 </body>
 </html>
