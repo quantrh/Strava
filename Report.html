@@ -448,13 +448,13 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
                 <div class="card p-6">
                     <h3 class="text-xl font-semibold mb-4 text-green-700">Quãng đường (KM) theo Runner</h3>
-                    <div id="distance-by-runner-chart" class="mt-4 border rounded-md p-2 min-h-[150px] flex items-center justify-center">
+                    <div id="distance-by-runner-chart" class="mt-4 border rounded-md p-2 min-h-[150px] flex items-center justify-content-center">
                         <p class="text-gray-500 text-sm">Biểu đồ quãng đường theo Runner sẽ hiển thị ở đây.</p>
                     </div>
                 </div>
                 <div class="card p-6">
                     <h3 class="text-xl font-semibold mb-4 text-yellow-700">Quãng đường (KM) theo CLB</h3>
-                    <div id="distance-by-club-chart" class="mt-4 border rounded-md p-2 min-h-[150px] flex items-center justify-center">
+                    <div id="distance-by-club-chart" class="mt-4 border rounded-md p-2 min-h-[150px] flex items-center justify-content-center">
                         <p class="text-gray-500 text-sm">Biểu đồ quãng đường theo CLB sẽ hiển thị ở đây.</p>
                     </div>
                 </div>
@@ -495,7 +495,7 @@
             <!-- Biểu đồ thống kê theo tuần -->
             <div class="card mt-8 p-6">
                 <h3 class="text-xl font-semibold mb-4 text-red-700"><i class="fas fa-chart-line"></i> Thống kê quãng đường theo tuần</h3>
-                <div id="weekly-distance-chart-container" class="border rounded-md p-2 min-h-[300px] flex items-center justify-center">
+                <div id="weekly-distance-chart-container" class="border rounded-md p-2 min-h-[300px] flex items-center justify-content-center">
                     <p class="text-gray-500 text-sm">Biểu đồ thống kê quãng đường theo tuần sẽ hiển thị ở đây.</p>
                 </div>
                 <p id="weekly-chart-status" class="mt-4 text-sm text-gray-600 text-center"></p>
@@ -1024,16 +1024,22 @@
                     query = query.in('type', selectedActivityTypesReport);
                 }
 
+                // --- ĐÃ SỬA ĐỔI: Điều chỉnh bộ lọc ngày bắt đầu để lọc chính xác từ đầu ngày Việt Nam ---
                 if (reportStartDateInput.value) {
-                    query = query.gte('start_date', reportStartDateInput.value + 'T00:00:00.000Z');
+                    const selectedStartDate = new Date(reportStartDateInput.value);
+                    // Đặt thời gian là đầu ngày (00:00:00.000) theo múi giờ địa phương của trình duyệt.
+                    // Sau đó, khi gọi .toISOString(), nó sẽ tự động chuyển đổi sang UTC.
+                    selectedStartDate.setHours(0, 0, 0, 0); 
+                    query = query.gte('start_date', selectedStartDate.toISOString());
                 }
+                // --- KẾT THÚC SỬA ĐỔI ---
                 
-                // Fix: Adjusted end date filtering to correctly include activities up to the end of the selected day
+                // Điều chỉnh bộ lọc ngày kết thúc để lọc chính xác theo cuối ngày Việt Nam
                 if (reportEndDateInput.value) {
                     const selectedEndDate = new Date(reportEndDateInput.value);
-                    // Set to the end of the day (23:59:59.999) in UTC to ensure all activities on this day are included
-                    // Supabase's 'timestamp with time zone' column stores UTC, so comparison should be done in UTC.
-                    selectedEndDate.setUTCHours(23, 59, 59, 999); 
+                    // Đặt thời gian là cuối ngày (23:59:59.999) theo múi giờ địa phương của trình duyệt.
+                    // Sau đó, khi gọi .toISOString(), nó sẽ tự động chuyển đổi sang UTC.
+                    selectedEndDate.setHours(23, 59, 59, 999); 
                     query = query.lte('start_date', selectedEndDate.toISOString());
                 }
 
