@@ -462,11 +462,16 @@
 
             <!-- Bảng chi tiết hoạt động (Collapsible) -->
             <div id="detailed-activities-section" class="card mt-8 p-6">
-                <div id="detailed-activities-header" class="flex justify-between items-center cursor-pointer mb-4">
-                    <h3 class="text-xl font-semibold text-blue-700">
-                        <i class="fas fa-list mr-2"></i> Chi tiết các hoạt động
-                    </h3>
-                    <i id="detailed-activities-toggle-icon" class="fas fa-chevron-down text-gray-600 transition-transform duration-300"></i>
+                <div class="flex justify-between items-center mb-4">
+                    <div id="detailed-activities-header" class="flex items-center cursor-pointer">
+                        <h3 class="text-xl font-semibold text-blue-700">
+                            <i class="fas fa-list mr-2"></i> Chi tiết các hoạt động
+                        </h3>
+                        <i id="detailed-activities-toggle-icon" class="fas fa-chevron-down text-gray-600 transition-transform duration-300 ml-2"></i>
+                    </div>
+                    <button id="download-detailed-activities-excel" class="btn-secondary ml-4">
+                        <i class="fas fa-download mr-2"></i> Tải Excel
+                    </button>
                 </div>
                 <div id="detailed-activities-content" class="collapsible-content overflow-x-auto">
                     <table id="detailed-activities-table" class="data-table">
@@ -503,7 +508,12 @@
 
              <!-- Bảng thống kê chi tiết & Tiền phạt/Thưởng -->
              <div class="card mt-8 p-6">
-                <h3 class="text-xl font-semibold mb-4 text-teal-700"><i class="fas fa-calculator"></i> Thống kê tiền phạt/thưởng</h3>
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-xl font-semibold text-teal-700"><i class="fas fa-calculator"></i> Thống kê tiền phạt/thưởng</h3>
+                    <button id="download-penalty-bonus-excel" class="btn-secondary ml-4">
+                        <i class="fas fa-download mr-2"></i> Tải Excel
+                    </button>
+                </div>
                 <div class="mb-4 flex gap-4 items-end">
                     <div class="flex-1">
                         <label for="penalty-per-km-gt10" class="block text-gray-700 text-sm font-bold mb-2">Số tiền nộp cho 1KM (nghìn VNĐ) khi thiếu > 10KM:</label>
@@ -596,10 +606,11 @@
 
     <button id="scroll-to-top-btn" title="Go to top">▲</button>
 
+    <script src="https://unpkg.com/xlsx/dist/xlsx.full.min.js"></script>
     <script>
         // Supabase configuration
         const SUPABASE_URL = 'https://rmbsxccrwrktbjlnezpu.supabase.co'; // Replace with your Supabase URL
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJtYnN4Y2Nyd3JrdGJqbG5lenB1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg2MjczNjQsImV4cCI6MjA2NDIwMzM2NH0.ydCqificftdtn1niRciFCifeuo8aX6SDGti-hCY5Z_Y'; // Replace with your Supabase Anon Key
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJtYnN4Y2Nyd3JrdGJqbG5lenB1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg2MjczNjQsImV4cCI6MjA2NDIwMzM2NH0.ydCqificftdtn1niRciFCifeuo8aX6SDGjti-hCY5Z_Y'; // Replace with your Supabase Anon Key
 
         // Supabase Edge Function URL to fetch activities (from original report.html)
         // const GET_STATS_API_URL = 'https://rmbsxccrwrktbjlnezpu.supabase.co/functions/v1/get-user-activities'; // Original
@@ -657,6 +668,8 @@
         // Detailed Activities Table elements (from original report.html)
         const detailedActivitiesTableBody = document.querySelector('#detailed-activities-table tbody');
         const detailedActivitiesStatus = document.getElementById('detailed-activities-status');
+        const downloadDetailedActivitiesExcelBtn = document.getElementById('download-detailed-activities-excel');
+
 
         // Weekly Distance Chart elements (from original report.html)
         const weeklyDistanceChartContainer = document.getElementById('weekly-distance-chart-container');
@@ -668,6 +681,8 @@
         const targetKmPerWeekInput = document.getElementById('target-km-per-week');
         const penaltyBonusTableBody = document.querySelector('#penalty-bonus-table tbody');
         const penaltyBonusStatus = document.getElementById('penalty-bonus-status');
+        const downloadPenaltyBonusExcelBtn = document.getElementById('download-penalty-bonus-excel');
+
 
         // Weekly Activities Modal elements (from original report.html)
         const weeklyActivitiesModal = document.getElementById('weekly-activities-modal');
@@ -2122,6 +2137,52 @@
         }
 
 
+        /**
+         * Converts table data to an array of objects suitable for XLSX.
+         * @param {HTMLTableElement} tableElement - The table DOM element.
+         * @returns {Array<Object>} An array of objects, where each object represents a row.
+         */
+        function tableToJson(tableElement) {
+            const data = [];
+            const headers = [];
+            
+            // Get headers
+            tableElement.querySelectorAll('thead th').forEach(header => {
+                headers.push(header.textContent.trim());
+            });
+
+            // Get rows
+            tableElement.querySelectorAll('tbody tr').forEach(row => {
+                const rowData = {};
+                row.querySelectorAll('td').forEach((cell, index) => {
+                    // Use headers as keys. If there are more cells than headers, use a generic key.
+                    const header = headers[index] || `Column ${index + 1}`;
+                    rowData[header] = cell.textContent.trim();
+                });
+                data.push(rowData);
+            });
+            return data;
+        }
+
+        /**
+         * Downloads data as an XLSX file.
+         * @param {Array<Object>} data - Array of objects to export.
+         * @param {string} fileName - The desired file name (e.g., 'report.xlsx').
+         * @param {string} sheetName - The name of the sheet within the workbook.
+         */
+        function downloadExcel(data, fileName, sheetName) {
+            if (!data || data.length === 0) {
+                showAlert('Không có dữ liệu để xuất ra Excel.');
+                return;
+            }
+
+            const ws = XLSX.utils.json_to_sheet(data);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, sheetName);
+            XLSX.writeFile(wb, fileName);
+        }
+
+
         // --- Supabase Authentication Check for Report Page ---
         async function checkAuthAndLoadReport() {
             try {
@@ -2233,6 +2294,19 @@
 
             // --- Gemini API Feature: Get Training Suggestions ---
             getTrainingSuggestionsBtn.addEventListener('click', getTrainingSuggestions);
+
+            // Excel Download buttons
+            downloadDetailedActivitiesExcelBtn.addEventListener('click', () => {
+                const table = document.getElementById('detailed-activities-table');
+                const dataToExport = tableToJson(table);
+                downloadExcel(dataToExport, 'chi_tiet_hoat_dong.xlsx', 'ChiTietHoatDong');
+            });
+
+            downloadPenaltyBonusExcelBtn.addEventListener('click', () => {
+                const table = document.getElementById('penalty-bonus-table');
+                const dataToExport = tableToJson(table);
+                downloadExcel(dataToExport, 'thong_ke_phat_thuong.xlsx', 'ThongKePhatThuong');
+            });
 
 
             // Scroll-to-top button logic
