@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản lý Webhook Strava - FOR RUNNER LOVER</title>
+    <!-- Tải Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Tải Font Awesome để sử dụng icon -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        /* Định nghĩa màu thương hiệu BIDV (từ ứng dụng của bạn) */
+        :root {
+            --bidv-green: #006b68;
+            --bidv-yellow: #FFC62F;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f2f5;
+            color: #333;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .container {
+            max-width: 800px;
+            width: 100%;
+            background-color: #fff;
+            border-radius: 0.75rem; /* rounded-lg */
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); /* shadow-xl */
+            padding: 1.5rem; /* p-6 */
+        }
+
+        /* Styling cho button (tham khảo từ ứng dụng của bạn và thêm hiệu ứng cơ bản) */
+        button {
+            transition: all 0.2s ease-in-out;
+            cursor: pointer;
+            border: none;
+            outline: none;
+        }
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        button:active {
+            transform: translateY(0);
+            box-shadow: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="mb-6 text-center">
+            <h1 class="text-3xl font-bold text-bidv-green flex items-center justify-center">
+                <i class="fas fa-tools mr-4 text-bidv-yellow"></i> Quản lý Webhook Strava API
+            </h1>
+            <p class="text-gray-600 mt-2">Đăng ký, xem và xóa các đăng ký webhook của Strava để nhận thông báo hoạt động.</p>
+        </header>
+
+        <section id="webhook-management-section" class="mb-8 p-6 bg-white rounded-lg border border-gray-200">
+            <h2 class="text-2xl font-bold text-bidv-green flex items-center mb-4">
+                <i class="fas fa-link mr-3 text-bidv-yellow"></i> Thiết lập Webhook
+            </h2>
+            <div class="mb-4">
+                <label for="webhookCallbackUrl" class="block text-gray-700 text-sm font-bold mb-2">
+                    URL Callback Webhook:
+                </label>
+                <input type="text" id="webhookCallbackUrl" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline bg-gray-100 cursor-not-allowed"
+                    value="https://rmbsxccrwrktbjlnezpu.supabase.co/functions/v1/strava-webhook" placeholder="Ví dụ: https://your-project-ref.supabase.co/functions/v1/strava-webhook" disabled>
+                <p class="text-xs text-gray-500 mt-1">
+                    <i class="fas fa-info-circle mr-1"></i>
+                    Đây là URL của Edge Function webhook của bạn. **Bạn CẦN thay thế placeholder này bằng URL thực tế của Edge Function `strava-webhook` của bạn trong mã nguồn.**
+                </p>
+            </div>
+            <div class="mb-4">
+                <label for="webhookVerifyToken" class="block text-gray-700 text-sm font-bold mb-2">
+                    Verify Token (Webhook):
+                </label>
+                <input type="text" id="webhookVerifyToken" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                    placeholder="Nhập verify token bảo mật của bạn">
+                <p class="text-xs text-gray-500 mt-1">
+                    <i class="fas fa-exclamation-triangle mr-1"></i>
+                    Token này phải **khớp chính xác** với `WEBHOOK_VERIFY_TOKEN` bạn đã đặt trong Supabase Secrets.
+                </p>
+            </div>
+
+            <div class="flex flex-col md:flex-row gap-4 mb-4">
+                <button id="registerWebhookBtn" class="bg-bidv-green hover:bg-green-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline flex-grow">
+                    <i class="fas fa-plus-circle mr-2"></i> Đăng ký Webhook
+                </button>
+                <button id="viewWebhooksBtn" class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline flex-grow">
+                    <i class="fas fa-eye mr-2"></i> Xem Đăng ký Webhook Hiện tại
+                </button>
+                <button id="deleteWebhookBtn" class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline flex-grow">
+                    <i class="fas fa-trash-alt mr-2"></i> Xóa Webhook (đầu tiên)
+                </button>
+            </div>
+
+            <div id="webhookStatus" class="mt-4 p-3 border rounded text-sm hidden"></div>
+        </section>
+    </div>
+
+    <script>
+        // Hằng số cho Strava Webhook
+        const STRAVA_CLIENT_ID = '55949';
+        const STRAVA_CLIENT_SECRET = '3e91534f066a75f6aeff53a15c0da815bee7d291';
+        // URL của Edge Function nhận thông báo từ Strava (đã được cấu hình trong Supabase)
+        const WEBHOOK_CALLBACK_URL = 'https://rmbsxccrwrktbjlnezpu.supabase.co/functions/v1/strava-webhook';
+        // URL của Edge Function mới để quản lý (đăng ký, xem, xóa) webhook, tránh lỗi CORS
+        const WEBHOOK_ADMIN_FUNCTION_URL = 'https://rmbsxccrwrktbjlnezpu.supabase.co/functions/v1/strava-webhook-admin';
+
+        const WEBHOOK_VERIFY_TOKEN_KEY = 'strava_webhook_verify_token'; // Key để lưu token cục bộ trong localStorage
+
+        // Tham chiếu đến các phần tử UI
+        const webhookCallbackUrlInput = document.getElementById('webhookCallbackUrl');
+        const webhookVerifyTokenInput = document.getElementById('webhookVerifyToken');
+        const registerWebhookBtn = document.getElementById('registerWebhookBtn');
+        const viewWebhooksBtn = document.getElementById('viewWebhooksBtn');
+        const deleteWebhookBtn = document.getElementById('deleteWebhookBtn');
+        const webhookStatusDiv = document.getElementById('webhookStatus');
+
+        /**
+         * Cập nhật trạng thái hiển thị cho div thông báo.
+         * @param {string} message - Tin nhắn hiển thị.
+         * @param {string} type - Loại tin nhắn ('success', 'error', 'info', 'warning').
+         */
+        function updateStatus(message, type) {
+            webhookStatusDiv.textContent = message;
+            webhookStatusDiv.classList.remove('hidden', 'bg-green-100', 'text-green-700', 'bg-red-100', 'text-red-700', 'bg-blue-100', 'text-blue-700', 'bg-yellow-100', 'text-yellow-700');
+            switch (type) {
+                case 'success':
+                    webhookStatusDiv.classList.add('bg-green-100', 'text-green-700');
+                    break;
+                case 'error':
+                    webhookStatusDiv.classList.add('bg-red-100', 'text-red-700');
+                    break;
+                case 'info':
+                    webhookStatusDiv.classList.add('bg-blue-100', 'text-blue-700');
+                    break;
+                case 'warning':
+                    webhookStatusDiv.classList.add('bg-yellow-100', 'text-yellow-700');
+                    break;
+                default:
+                    webhookStatusDiv.classList.add('bg-gray-100', 'text-gray-700');
+            }
+        }
+
+        /**
+         * Gửi yêu cầu đăng ký webhook mới tới Strava thông qua Edge Function admin.
+         */
+        async function registerStravaWebhook() {
+            const verifyToken = webhookVerifyTokenInput.value.trim();
+
+            if (!verifyToken) {
+                updateStatus('Vui lòng nhập Verify Token.', 'warning');
+                return;
+            }
+
+            // Lưu verify token vào localStorage để sử dụng sau này
+            localStorage.setItem(WEBHOOK_VERIFY_TOKEN_KEY, verifyToken);
+
+            updateStatus('Đang đăng ký webhook...', 'info');
+
+            try {
+                // Gọi Edge Function admin để đăng ký webhook
+                const response = await fetch(`${WEBHOOK_ADMIN_FUNCTION_URL}/register`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        callback_url: WEBHOOK_CALLBACK_URL,
+                        verify_token: verifyToken,
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    updateStatus(`Đăng ký webhook thành công! ID: ${data.id}, Resource State: ${data.resource_state}`, 'success');
+                    console.log('Webhook registered:', data);
+                } else {
+                    updateStatus(`Lỗi khi đăng ký webhook: ${data.error || response.statusText}`, 'error');
+                    console.error('Error registering webhook:', data);
+                }
+            } catch (error) {
+                updateStatus(`Lỗi kết nối: ${error.message}`, 'error');
+                console.error('Network error during webhook registration:', error);
+            }
+        }
+
+        /**
+         * Xem các đăng ký webhook hiện có từ Strava thông qua Edge Function admin.
+         */
+        async function viewStravaWebhooks() {
+            updateStatus('Đang tải đăng ký webhook...', 'info');
+
+            try {
+                // Gọi Edge Function admin để xem các webhook
+                const response = await fetch(`${WEBHOOK_ADMIN_FUNCTION_URL}/list`);
+                const data = await response.json();
+
+                if (response.ok) {
+                    if (data && data.length > 0) {
+                        let statusHtml = '<strong>Các đăng ký Webhook hiện tại:</strong><br>';
+                        data.forEach(sub => {
+                            statusHtml += `ID: <span class="font-semibold">${sub.id}</span>, Resource State: <span class="font-semibold">${sub.resource_state}</span>, Callback URL: <span class="font-semibold">${sub.callback_url}</span><br>`;
+                        });
+                        webhookStatusDiv.innerHTML = statusHtml;
+                        webhookStatusDiv.classList.remove('hidden', 'bg-blue-100', 'text-blue-700', 'bg-red-100', 'text-red-700', 'bg-yellow-100', 'text-yellow-700');
+                        webhookStatusDiv.classList.add('bg-green-100', 'text-green-700'); // Giữ màu xanh lá
+                    } else {
+                        updateStatus('Không tìm thấy đăng ký webhook nào.', 'warning');
+                    }
+                    console.log('Current webhooks:', data);
+                } else {
+                    updateStatus(`Lỗi khi xem webhook: ${data.error || response.statusText}`, 'error');
+                    console.error('Error viewing webhooks:', data);
+                }
+            } catch (error) {
+                updateStatus(`Lỗi kết nối: ${error.message}`, 'error');
+                console.error('Network error during webhook view:', error);
+            }
+        }
+
+        /**
+         * Xóa đăng ký webhook đầu tiên tìm thấy từ Strava thông qua Edge Function admin.
+         */
+        async function deleteStravaWebhook() {
+            updateStatus('Đang xóa webhook...', 'info');
+
+            try {
+                // Đầu tiên, gọi Edge Function admin để lấy danh sách các webhook để tìm ID cần xóa
+                const listResponse = await fetch(`${WEBHOOK_ADMIN_FUNCTION_URL}/list`);
+                const listData = await listResponse.json();
+
+                if (!listResponse.ok || !listData || listData.length === 0) {
+                    updateStatus(`Không tìm thấy webhook để xóa hoặc lỗi khi liệt kê: ${listData.error || listResponse.statusText}`, 'warning');
+                    console.error('No webhook to delete or error listing:', listData);
+                    return;
+                }
+
+                // Giả sử chúng ta chỉ quản lý một webhook hoặc xóa cái đầu tiên tìm thấy
+                const subscriptionIdToDelete = listData[0].id;
+                console.log(`Đang cố gắng xóa đăng ký ID: ${subscriptionIdToDelete}`);
+
+                // Gọi Edge Function admin để xóa webhook
+                const deleteResponse = await fetch(`${WEBHOOK_ADMIN_FUNCTION_URL}/delete/${subscriptionIdToDelete}`, {
+                    method: 'DELETE',
+                });
+
+                const deleteResult = await deleteResponse.json();
+
+                if (deleteResponse.ok) {
+                    updateStatus(`Webhook ID ${subscriptionIdToDelete} đã được xóa thành công.`, 'success');
+                    console.log(`Webhook ${subscriptionIdToDelete} deleted.`, deleteResult);
+                } else {
+                    updateStatus(`Lỗi khi xóa webhook: ${deleteResult.error || deleteResponse.statusText}`, 'error');
+                    console.error('Error deleting webhook:', deleteResult);
+                }
+            } catch (error) {
+                updateStatus(`Lỗi kết nối: ${error.message}`, 'error');
+                console.error('Network error during webhook deletion:', error);
+            }
+        }
+
+        // Khi trang tải xong
+        window.onload = () => {
+            // Đặt giá trị mặc định cho Verify Token
+            webhookVerifyTokenInput.value = 'my_super_secret_token_123';
+
+            // Khôi phục verify token đã lưu từ localStorage (sẽ ghi đè giá trị mặc định nếu có)
+            const savedVerifyToken = localStorage.getItem(WEBHOOK_VERIFY_TOKEN_KEY);
+            if (savedVerifyToken) {
+                webhookVerifyTokenInput.value = savedVerifyToken;
+            }
+
+            // Gán URL Callback Webhook thực tế vào input (chỉ hiển thị, không cho sửa)
+            webhookCallbackUrlInput.value = WEBHOOK_CALLBACK_URL;
+
+            // Gán sự kiện cho các nút
+            registerWebhookBtn.addEventListener('click', registerStravaWebhook);
+            viewWebhooksBtn.addEventListener('click', viewStravaWebhooks);
+            deleteWebhookBtn.addEventListener('click', deleteStravaWebhook);
+        };
+    </script>
+</body>
+</html>
