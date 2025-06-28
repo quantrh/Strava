@@ -568,8 +568,19 @@
     <div id="food-suggestion-modal" class="modal-overlay hidden">
         <div class="modal-content w-11/12 md:w-2/3 lg:w-1/2">
             <h2 class="text-2xl font-semibold mb-6 text-[#006B68]" data-key="foodSuggestionModalTitle">Gợi Ý Món Ăn ✨</h2>
+
+            <!-- Thêm ô nhập liệu địa chỉ và nút -->
+            <div class="mb-4">
+                <label for="address-input-for-food" class="block text-sm font-medium text-gray-700 mb-1" data-key="addressInputLabel">Hoặc nhập địa chỉ cụ thể:</label>
+                <input type="text" id="address-input-for-food" placeholder="Ví dụ: 123 Đường ABC, Quận 1, TP.HCM" class="input-field mb-2" />
+                <button id="get-food-suggestions-by-address-btn" class="btn-primary flex items-center justify-center w-full sm:w-auto">
+                    🍜 <span data-key="searchByAddressBtn">Tìm kiếm theo địa chỉ này</span>
+                </button>
+            </div>
+
             <div id="food-suggestion-content">
-                </div>
+                <!-- Nội dung gợi ý món ăn sẽ được điền vào đây -->
+            </div>
             <div class="flex justify-end mt-6">
                 <button type="button" id="close-food-suggestion-btn" class="btn-primary" data-key="closeBtn">Đóng</button>
             </div>
@@ -623,7 +634,12 @@
         // Translations object
         const translations = {
             'vi': {
-                appTitle: 'QUẢN LÝ QUỸ NHÓM',
+               
+				 // ...
+				addressInputLabel: 'Hoặc nhập địa chỉ cụ thể:',
+				searchByAddressBtn: 'Tìm kiếm theo địa chỉ này',
+				// ...
+				appTitle: 'QUẢN LÝ QUỸ NHÓM',
                 fundBalanceTitle: 'Số Dư Quỹ Chung',
                 unitCurrency: 'VNĐ',
                 addMemberBtn: 'Thêm Thành Viên',
@@ -760,7 +776,12 @@
                 defaultExpenseTypes: 'Ăn uống, Đi lại, Mua sắm, Giải trí, Y tế, Giáo dục, Khác', // New translation for default expense types
             },
             'en': {
-                appTitle: 'GROUP FUND MANAGEMENT',
+                // ...
+				addressInputLabel: 'Or enter a specific address:',
+				searchByAddressBtn: 'Search by this address',
+				// ...
+				
+				appTitle: 'GROUP FUND MANAGEMENT',
                 fundBalanceTitle: 'Overall Fund Balance',
                 unitCurrency: 'VND',
                 addMemberBtn: 'Add Member',
@@ -899,6 +920,9 @@
         };
 
         // DOM Elements
+		// ... các biến khác
+		const addressInputForFood = document.getElementById('address-input-for-food'); // NEW
+		const getFoodSuggestionsByAddressBtn = document.getElementById('get-food-suggestions-by-address-btn'); // NEW
         const fundBalanceDisplay = document.getElementById('fund-balance-display');
         const errorMessageDisplay = document.getElementById('error-message-display');
         const addMemberSection = document.getElementById('add-member-section');
@@ -2857,73 +2881,73 @@
                 }
 
                 // New function to generate food suggestions
-                async function generateFoodSuggestions(latitude, longitude) {
-                    isGeneratingFoodSuggestions = true;
-                    foodSuggestionContent.innerHTML = `
-                        <div class="flex flex-col items-center justify-center p-8">
-                            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-[#006B68]"></div>
-                            <p class="mt-4 text-gray-600">${translations[currentLanguage].generatingFoodSuggestions}</p>
-                        </div>
-                    `;
-                    hideErrorMessage(); // Clear previous errors for food suggestions
+			 async function generateFoodSuggestions(latitude, longitude, addressString = null) {
+				isGeneratingFoodSuggestions = true;
+				foodSuggestionContent.innerHTML = `
+					<div class="flex flex-col items-center justify-center p-8">
+						<div class="animate-spin rounded-full h-12 w-12 border-b-2 border-[#006B68]"></div>
+						<p class="mt-4 text-gray-600">${translations[currentLanguage].generatingFoodSuggestions}</p>
+					</div>
+				`;
+				hideErrorMessage(); // Clear previous errors for food suggestions
 
-                    // Prepare data for the Edge Function
-                    let activitiesData = {
-                        type: 'food_suggestions',
-                        latitude: latitude,
-                        longitude: longitude,
-                        currentLanguage: currentLanguage
-                    };
+				// Prepare data for the Edge Function
+				let activitiesData = {
+					type: 'food_suggestions',
+					latitude: latitude,
+					longitude: longitude,
+					addressString: addressString, // Truyền addressString (có thể là null)
+					currentLanguage: currentLanguage
+				};
 
-                    console.log("Sending food suggestion data to Edge Function:", activitiesData);
+				console.log("Sending food suggestion data to Edge Function:", activitiesData);
 
-                    try {
-                        // Gọi hàm Edge Function mới: process-ai-requests
-                        const result = await callSupabaseEdgeFunction('process-ai-requests', activitiesData);
+				try {
+					// Gọi hàm Edge Function mới: process-ai-requests
+					const result = await callSupabaseEdgeFunction('process-ai-requests', activitiesData);
 
-                        if (result.success && result.analysis) {
-                        //    const suggestions = JSON.parse(result.analysis); // Assume analysis is already JSON from Edge Function
-			const suggestions = result.analysis; // Dữ liệu từ Edge Function đã là đối tượng JSON đã được phân tích
+					if (result.success && result.analysis) {
+						const suggestions = result.analysis; // Dữ liệu từ Edge Function đã là đối tượng JSON đã được phân tích
 
-                            let htmlContent = '<div class="space-y-4">';
-                            if (suggestions.length > 0) {
-                                suggestions.forEach(s => {
-                                    // Construct Google Maps search link using the restaurant name
-                                    const googleMapsSearchLink = s.name ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(s.name)}` : '#';
+						let htmlContent = '<div class="space-y-4">';
+						if (suggestions.length > 0) {
+							suggestions.forEach(s => {
+								// Construct Google Maps search link using the restaurant name
+								const googleMapsSearchLink = s.name ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(s.name)}` : '#';
 
-                                    htmlContent += `
-                                        <div class="p-4 border border-gray-200 rounded-lg shadow-sm bg-white">
-                                            <h3 class="text-lg font-semibold text-[#006B68]">${s.name}</h3>
-                                            <p class="text-sm text-gray-600"><strong>${translations[currentLanguage].addressLabel}</strong> ${s.address || 'N/A'}</p>
-                                            <p class="text-sm text-gray-600"><strong>${translations[currentLanguage].phoneLabel}</strong> ${s.phoneNumber || 'N/A'}</p>
-                                            <p class="text-sm text-gray-600"><strong>${translations[currentLanguage].ratingLabel}</strong> ${s.starRating ? `${s.starRating} ⭐` : 'N/A'}</p>
-                                            <p class="text-sm text-gray-600"><strong>${translations[currentLanguage].distanceLabel}</strong> ${s.estimatedDistance || 'N/A'}</p>
-                                            ${s.description ? `<p class="text-sm text-gray-700 mt-2"><strong>${translations[currentLanguage].descriptionLabelShort}</strong> ${s.description}</p>` : ''}
-                                            ${s.menuContent ? `<p class="text-sm text-gray-700"><strong>${translations[currentLanguage].menuLabel}</strong> ${s.menuContent}</p>` : ''}
-                                            ${s.name ? `<a href="${googleMapsSearchLink}" target="_blank" class="text-blue-500 hover:underline text-sm flex items-center mt-2">
-                                                <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"></path></svg>
-                                                ${translations[currentLanguage].viewOnMaps}
-                                            </a>` : ''}
-                                        </div>
-                                    `;
-                                });
-                            } else {
-                                htmlContent += `<p class="text-center text-gray-500">${translations[currentLanguage].noFoodSuggestions}</p>`;
-                            }
-                            htmlContent += '</div>'; // Close space-y-4 div
-                            foodSuggestionContent.innerHTML = htmlContent;
-                        } else {
-                            foodSuggestionContent.innerHTML = `<p class="text-center text-gray-500">${translations[currentLanguage].noFoodSuggestions}</p>`;
-                            console.error("Supabase Edge Function response indicated failure:", result);
-                        }
-                    } catch (error) {
-                        console.error("Error generating food suggestions:", error);
-                        showErrorMessage(`${translations[currentLanguage].aiCallError} ${error.message}. ${translations[currentLanguage].foodSuggestionError}`);
-                        foodSuggestionContent.innerHTML = `<p class="text-center text-gray-500">${translations[currentLanguage].foodSuggestionError}</p>`;
-                    } finally {
-                        isGeneratingFoodSuggestions = false;
-                    }
-                }
+								htmlContent += `
+									<div class="p-4 border border-gray-200 rounded-lg shadow-sm bg-white">
+										<h3 class="text-lg font-semibold text-[#006B68]">${s.name}</h3>
+										<p class="text-sm text-gray-600"><strong>${translations[currentLanguage].addressLabel}</strong> ${s.address || 'N/A'}</p>
+										<p class="text-sm text-gray-600"><strong>${translations[currentLanguage].phoneLabel}</strong> ${s.phoneNumber || 'N/A'}</p>
+										<p class="text-sm text-gray-600"><strong>${translations[currentLanguage].ratingLabel}</strong> ${s.starRating ? `${s.starRating} ⭐` : 'N/A'}</p>
+										<p class="text-sm text-gray-600"><strong>${translations[currentLanguage].distanceLabel}</strong> ${s.estimatedDistance || 'N/A'}</p>
+										${s.description ? `<p class="text-sm text-gray-700 mt-2"><strong>${translations[currentLanguage].descriptionLabelShort}</strong> ${s.description}</p>` : ''}
+										${s.menuContent ? `<p class="text-sm text-gray-700"><strong>${translations[currentLanguage].menuLabel}</strong> ${s.menuContent}</p>` : ''}
+										${s.name ? `<a href="${googleMapsSearchLink}" target="_blank" class="text-blue-500 hover:underline text-sm flex items-center mt-2">
+											<svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"></path></svg>
+											${translations[currentLanguage].viewOnMaps}
+										</a>` : ''}
+									</div>
+								`;
+							});
+						} else {
+							htmlContent += `<p class="text-center text-gray-500">${translations[currentLanguage].noFoodSuggestions}</p>`;
+						}
+						htmlContent += '</div>'; // Close space-y-4 div
+						foodSuggestionContent.innerHTML = htmlContent;
+					} else {
+						foodSuggestionContent.innerHTML = `<p class="text-center text-gray-500">${translations[currentLanguage].noFoodSuggestions}</p>`;
+						console.error("Supabase Edge Function response indicated failure:", result);
+					}
+				} catch (error) {
+					console.error("Error generating food suggestions:", error);
+					showErrorMessage(`${translations[currentLanguage].aiCallError} ${error.message}. ${translations[currentLanguage].foodSuggestionError}`);
+					foodSuggestionContent.innerHTML = `<p class="text-center text-gray-500">${translations[currentLanguage].foodSuggestionError}</p>`;
+				} finally {
+					isGeneratingFoodSuggestions = false;
+				}
+			}	
 
                 // Removed: callSupabaseVisionEdgeFunction is no longer needed.
                 // All AI calls go through callSupabaseEdgeFunction now.
@@ -3120,6 +3144,19 @@
 
                 // Food Suggestion Modal buttons
                 closeFoodSuggestionBtn.onclick = () => foodSuggestionModal.classList.add('hidden');
+				
+				// NEW: Nút tìm kiếm theo địa chỉ
+					getFoodSuggestionsByAddressBtn.onclick = () => {
+						const address = addressInputForFood.value.trim();
+						if (address) {
+							generateFoodSuggestions(null, null, address); // Gửi chuỗi địa chỉ, không có lat/lon
+						} else {
+							showErrorMessage(translations[currentLanguage].locationError); // Hoặc một thông báo lỗi phù hợp hơn
+							foodSuggestionContent.innerHTML = `<p class="text-center text-red-500">${translations[currentLanguage].locationError}</p>`;
+							isGeneratingFoodSuggestions = false;
+						}
+					};
+
 
                 // Image/Camera Upload
                 aiDescribeBtn.onclick = () => {
@@ -3209,48 +3246,98 @@
                     renderSelectedMemberReport();
                 };
 
-                // --- Geolocation for Food Suggestions ---
-                function getGeolocationAndSuggestFood() {
-                    if (navigator.geolocation) {
-                        navigator.geolocation.getCurrentPosition(
-                            (position) => {
-                                const latitude = position.coords.latitude;
-                                const longitude = position.coords.longitude;
-                                latitudeInput.value = latitude;
-                                longitudeInput.value = longitude;
-                                console.log(`Got location: Lat ${latitude}, Lon ${longitude}`);
-                                generateFoodSuggestions(latitude, longitude);
-                            },
-                            (error) => {
-                                let errorMessage = translations[currentLanguage].locationError;
-                                switch (error.code) {
-                                    case error.PERMISSION_DENIED:
-                                        errorMessage = translations[currentLanguage].permissionDenied;
-                                        break;
-                                    case error.POSITION_UNAVAILABLE:
-                                        errorMessage = translations[currentLanguage].positionUnavailable;
-                                        break;
-                                    case error.TIMEOUT:
-                                        errorMessage = translations[currentLanguage].timeout;
-                                        break;
-                                }
-                                showErrorMessage(errorMessage);
-                                foodSuggestionContent.innerHTML = `<p class="text-center text-red-500">${errorMessage}</p>`;
-                                isGeneratingFoodSuggestions = false;
-                            },
-                            {
-                                enableHighAccuracy: true,
-                                timeout: 10000,
-                                maximumAge: 0
-                            }
-                        );
-                    } else {
-                        const errorMessage = translations[currentLanguage].geolocationNotSupported;
-                        showErrorMessage(errorMessage);
-                        foodSuggestionContent.innerHTML = `<p class="text-center text-red-500">${errorMessage}</p>`;
-                        isGeneratingFoodSuggestions = false;
-                    }
-                }
+				// NEW: Function to convert coordinates to a human-readable address using AI
+				async function convertCoordinatesToAddress(latitude, longitude) {
+					try {
+						const geocodePrompt = `Chuyển đổi tọa độ GPS (latitude: ${latitude}, longitude: ${longitude}) thành một địa chỉ đường phố đầy đủ ở Việt Nam (bao gồm số nhà, tên đường, phường/xã, quận/huyện, thành phố). Phản hồi chỉ là một chuỗi địa chỉ. Nếu không tìm thấy địa chỉ cụ thể, trả về "Vị trí không xác định".`;
+
+						let activitiesData = {
+							type: 'geocode_coordinates', // Loại hoạt động mới cho Edge Function
+							prompt: geocodePrompt, // Gửi prompt trực tiếp cho Edge Function
+							currentLanguage: currentLanguage
+						};
+
+						const result = await callSupabaseEdgeFunction('process-ai-requests', activitiesData);
+
+						if (result.success && result.analysis) {
+							return result.analysis; // analysis sẽ là chuỗi địa chỉ
+						} else {
+							console.warn("AI không thể chuyển đổi tọa độ thành địa chỉ:", result.error || "Phản hồi không thành công.");
+							return null;
+						}
+					} catch (error) {
+						console.error("Lỗi khi gọi AI để chuyển đổi tọa độ thành địa chỉ:", error);
+						return null;
+					}
+				}
+
+              // --- Geolocation for Food Suggestions ---
+				function getGeolocationAndSuggestFood() {
+					// Xóa nội dung gợi ý cũ và hiển thị spinner/thông báo đang tải
+					foodSuggestionContent.innerHTML = `
+						<div class="flex flex-col items-center justify-center p-8">
+							<div class="animate-spin rounded-full h-12 w-12 border-b-2 border-[#006B68]"></div>
+							<p class="mt-4 text-gray-600">${translations[currentLanguage].generatingFoodSuggestions}</p>
+						</div>
+					`;
+					hideErrorMessage(); // Clear previous errors for food suggestions
+					addressInputForFood.value = ''; // Clear address input initially
+
+					if (navigator.geolocation) {
+						navigator.geolocation.getCurrentPosition(
+							(position) => {
+								const latitude = position.coords.latitude;
+								const longitude = position.coords.longitude;
+								console.log(`Got location: Lat ${latitude}, Lon ${longitude}`);
+
+								// Cố gắng chuyển đổi tọa độ thành địa chỉ để điền vào ô input (Đây là lời gọi AI mới)
+								convertCoordinatesToAddress(latitude, longitude)
+									.then(address => {
+										if (address) {
+											addressInputForFood.value = address; // Điền địa chỉ vào ô input
+										}
+										// Sau khi lấy được địa chỉ (hoặc không), tiến hành gợi ý món ăn bằng tọa độ
+										generateFoodSuggestions(latitude, longitude, null); // Gửi tọa độ, không có chuỗi địa chỉ
+									})
+									.catch(error => {
+										console.error("Lỗi khi chuyển đổi tọa độ thành địa chỉ:", error);
+										// Vẫn tiếp tục gợi ý món ăn bằng tọa độ ngay cả khi không chuyển đổi được địa chỉ
+										generateFoodSuggestions(latitude, longitude, null);
+									});
+							},
+							(error) => {
+								let errorMessage = translations[currentLanguage].locationError;
+								switch (error.code) {
+									case error.PERMISSION_DENIED:
+										errorMessage = translations[currentLanguage].permissionDenied;
+										break;
+									case error.POSITION_UNAVAILABLE:
+										errorMessage = translations[currentLanguage].positionUnavailable;
+										break;
+									case error.TIMEOUT:
+										errorMessage = translations[currentLanguage].timeout;
+										break;
+								}
+								showErrorMessage(errorMessage);
+								foodSuggestionContent.innerHTML = `<p class="text-center text-red-500">${errorMessage}</p>`;
+								isGeneratingFoodSuggestions = false;
+								// Mặc định để trống ô địa chỉ nếu GPS không khả dụng và không thể tự động điền
+								addressInputForFood.value = '';
+							},
+							{
+								enableHighAccuracy: true,
+								timeout: 10000,
+								maximumAge: 0
+							}
+						);
+					} else {
+						const errorMessage = translations[currentLanguage].geolocationNotSupported;
+						showErrorMessage(errorMessage);
+						foodSuggestionContent.innerHTML = `<p class="text-center text-red-500">${errorMessage}</p>`;
+						isGeneratingFoodSuggestions = false;
+						addressInputForFood.value = ''; // Để trống ô địa chỉ nếu không hỗ trợ GPS
+					}
+				}
 
                 // --- Scroll to Top Button Logic ---
                 window.onscroll = function() {
