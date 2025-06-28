@@ -2928,6 +2928,7 @@
                 // All AI calls go through callSupabaseEdgeFunction now.
 
                 // Call Gemini Vision API (now via single Supabase Edge Function 'process-ai-requests')
+               // Call Gemini Vision API (now via single Supabase Edge Function 'process-ai-requests')
                 async function callGeminiVisionAPI(base64ImageData) {
                     cameraLoadingSpinner.classList.remove('hidden');
                     descriptionInput.value = translations[currentLanguage].generatingInsights; // Show loading text
@@ -2956,7 +2957,20 @@
                         const result = await callSupabaseEdgeFunction('process-ai-requests', payload);
 
                         if (result.success && result.analysis) {
-                            const parsedAnalysis = JSON.parse(result.analysis);
+                            // --- Bắt đầu sửa lỗi SyntaxError: Unexpected token '`' ---
+                            let cleanedAnalysis = result.analysis;
+                            // Kiểm tra và loại bỏ các dấu backtick Markdown nếu có
+                            if (cleanedAnalysis.startsWith('```json')) {
+                                cleanedAnalysis = cleanedAnalysis.substring('```json'.length);
+                            }
+                            if (cleanedAnalysis.endsWith('```')) {
+                                cleanedAnalysis = cleanedAnalysis.substring(0, cleanedAnalysis.length - '```'.length);
+                            }
+                            // Loại bỏ các ký tự xuống dòng thừa ở đầu và cuối sau khi cắt
+                            cleanedAnalysis = cleanedAnalysis.trim();
+                            // --- Kết thúc sửa lỗi SyntaxError ---
+
+                            const parsedAnalysis = JSON.parse(cleanedAnalysis); // Parse the cleaned string
                             descriptionInput.value = parsedAnalysis.description || '';
                             // Try to set the expense type if it exists in the current list
                             if (parsedAnalysis.expense_type_suggestion && expenseTypes.some(et => et.expense_type === parsedAnalysis.expense_type_suggestion)) {
