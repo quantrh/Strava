@@ -2762,7 +2762,7 @@
                 async function callSupabaseEdgeFunction(functionName, dataPayload) {
                     try {
                         const session = await supabase.auth.getSession();
-                        const accessToken = session?.data?.session?.access_token;
+                        let accessToken = session?.data?.session?.access_token;
                         const clientTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
                         if (!accessToken) {
@@ -2826,7 +2826,10 @@
                             description: t.description,
                             date: t.date,
                             contributingMemberName: t.type === 'contribution' ? getMemberName(t.contributingMemberId) : null,
-                            involvedMemberNames: t.type === 'expense' ? getInvolvedMembersNames(t.involvedMemberIds) : [],
+                           // Dòng đã sửa để gửi một mảng các tên thành viên
+                            involvedMemberNames: t.type === 'expense' && t.involvedMemberIds
+                                ? t.involvedMemberIds.map(id => getMemberName(id))
+                                : [],
                             expenseType: t.type === 'expense' ? t.expense_type : null
                         })).slice(-10).sort((a, b) => new Date(a.date) - new Date(b.date)), // Last 10, sorted by date
                         currentLanguage: currentLanguage
