@@ -2930,33 +2930,47 @@
                 // Call Gemini Vision API (now via single Supabase Edge Function 'process-ai-requests')
                // Call Gemini Vision API (now via single Supabase Edge Function 'process-ai-requests')
               // Call Gemini Vision API (now via single Supabase Edge Function 'process-ai-requests')
+               // Call Gemini Vision API (now via single Supabase Edge Function 'process-ai-requests')
+              // Call Gemini Vision API (now via single Supabase Edge Function 'process-ai-requests')
                 async function callGeminiVisionAPI(base64ImageData) {
                     cameraLoadingSpinner.classList.remove('hidden');
                     // Hiển thị thông báo đang xử lý trên input mô tả
                     descriptionInput.value = translations[currentLanguage].generatingInsights; 
                     aiDescribeBtn.disabled = true;
 
-                    // Chuẩn bị prompt chi tiết hơn cho phân tích hình ảnh
-                    // Prompt này sẽ được gửi nguyên văn tới Edge Function và Edge Function sẽ thêm expenseTypesList vào
-                    const prompt = `Bạn là một trợ lý tài chính. Hãy mô tả hình ảnh này một cách chi tiết và sau đó đề xuất mô tả giao dịch phù hợp cho ứng dụng quản lý quỹ nhóm. Dựa trên hình ảnh, hãy gợi ý một "Loại Chi Tiêu" phù hợp từ danh sách sau, nếu không phù hợp, hãy gợi ý loại "Khác".
-                    
-                    Định dạng phản hồi JSON:
-                    {
-                        "description": "Mô tả chi tiết từ hình ảnh và đề xuất mô tả giao dịch.",
-                        "amount": "Số tiền (chỉ số, không đơn vị, ví dụ: 150000). Nếu không chắc chắn, để trống hoặc 0.",
-                        "transactionType": "Loại giao dịch ('contribution' cho đóng góp, 'expense' cho chi tiêu). Nếu không chắc chắn, để trống.",
-                        "location": "Tên địa điểm (ví dụ: tên nhà hàng, quán cà phê). Nếu không có, để trống.",
-                        "category": "Loại chi tiêu/đóng góp (ví dụ: 'ăn uống', 'đi lại', 'đóng quỹ', 'khác').",
-                        "date": "Ngày và giờ giao dịch định dạng 2025-MM-DDTHH:MM (ví dụ: 2025-06-28T14:30). Nếu chỉ có ngày, dùng 00:00 cho giờ. Nếu không chắc chắn, để trống."
-                    }
-                    `;
+                    // --- PHẦN ĐƯỢC XÓA BỎ TRÊN FRONTEND ---
+                    // XÓA BỎ TOÀN BỘ KHỐI KHỞI TẠO 'prompt' NÀY, 
+                    // VÌ BACKEND (EDGE FUNCTION) SẼ TỰ TẠO PROMPT.
+                    /*
+                    const prompt = `Bạn là một trợ lý tài chính. Mô tả nội dung hình ảnh một cách chi tiết để tạo một giao dịch. 
+                            Hãy trích xuất và cung cấp các thông tin sau dưới dạng đối tượng JSON:
+                            - "description": Mô tả ngắn gọn về nội dung hình ảnh, mục đích chi tiêu hoặc đóng góp.
+                            - "amount": Số tiền (chỉ số, không đơn vị, ví dụ: 150000). Nếu không chắc chắn, để trống hoặc 0.
+                            - "transactionType": Loại giao dịch ('contribution' cho đóng góp, 'expense' cho chi tiêu). Nếu không chắc chắn, để trống.
+                            - "location": Tên địa điểm (ví dụ: tên nhà hàng, quán cà phê). Nếu không có, để trống.
+                            - "category": Loại chi tiêu/đóng góp (ví dụ: 'ăn uống', 'đi lại', 'đóng quỹ', 'khác').
+                            - "date": Ngày và giờ giao dịch định dạng 2025-MM-DDTHH:MM (ví dụ: 2025-06-28T14:30). Nếu chỉ có ngày, dùng 00:00 cho giờ. Nếu không chắc chắn, để trống.
+
+                            Ví dụ phản hồi JSON:
+                            {
+                              "description": "Chi phí ăn tối tại nhà hàng ABC",
+                              "amount": "250000",
+                              "transactionType": "expense",
+                              "location": "Nhà hàng ABC",
+                              "category": "ăn uống",
+                              "date": "2025-06-27T19:00"
+                            }`;
+                    */
+                    // --- KẾT THÚC PHẦN ĐƯỢC XÓA BỎ TRÊN FRONTEND ---
                     
                     const payload = {
                         type: 'image_description', // Loại hoạt động cho Edge Function
                         image: base64ImageData,
-                        prompt: prompt, // Gửi prompt đầy đủ bao gồm cấu trúc JSON mong muốn
+                        // XÓA BỎ DÒNG 'prompt' NÀY:
+                        // prompt: prompt, 
                         currentLanguage: currentLanguage, // Truyền ngôn ngữ để Edge Function sử dụng prompt đúng
-                        expenseTypes: expenseTypes.map(et => et.expense_type) // Truyền danh sách loại chi tiêu hiện có để AI lựa chọn
+                        // XÓA BỎ DÒNG 'expenseTypes' NÀY, VÌ BACKEND SẼ TỰ LẤY TỪ SUPABASE:
+                        // expenseTypes: expenseTypes.map(et => et.expense_type) 
                     };
 
                     try {
@@ -2964,89 +2978,97 @@
                         const result = await callSupabaseEdgeFunction('process-ai-requests', payload);
 
                         if (result.success && result.analysis) {
-                            // *** PHẦN SỬA ĐỔI QUAN TRỌNG: result.analysis giờ đã là một đối tượng JSON ***
                             const parsedAnalysis = result.analysis; 
                             console.log("Phản hồi AI đã được phân tích:", parsedAnalysis);
 
                             descriptionInput.value = parsedAnalysis.description || '';
                             amountInput.value = parsedAnalysis.amount ? formatNumberForInput(parsedAnalysis.amount) : '';
                             
-                            // Thiết lập loại giao dịch
                             if (parsedAnalysis.transactionType) {
                                 transactionTypeSelect.value = parsedAnalysis.transactionType;
-                                transactionTypeSelect.dispatchEvent(new Event('change')); // Kích hoạt sự kiện change để cập nhật UI
-                            }
-
-                            // Thiết lập địa điểm
-                            // Bạn cần một input cho location nếu muốn lưu trữ nó
-                            // Ví dụ: document.getElementById('location-input').value = parsedAnalysis.location || '';
-                            
-                            // Thiết lập ngày và giờ
-                            if (parsedAnalysis.date) {
-                                transactionDateInput.value = parsedAnalysis.date;
+                                transactionTypeSelect.dispatchEvent(new Event('change')); 
                             } else {
-                                // Nếu AI không cung cấp ngày, đặt ngày hiện tại
-                                const now = new Date();
-                                const year = now.getFullYear();
-                                const month = (now.getMonth() + 1).toString().padStart(2, '0');
-                                const day = now.getDate().toString().padStart(2, '0');
-                                const hours = now.getHours().toString().padStart(2, '0');
-                                const minutes = now.getMinutes().toString().padStart(2, '0');
-                                transactionDateInput.value = `${year}-${month}-${day}T${hours}:${minutes}`;
+                                transactionTypeSelect.value = 'expense';
+                                transactionTypeSelect.dispatchEvent(new Event('change')); 
                             }
 
-                            // Cố gắng thiết lập loại chi tiêu nếu nó tồn tại trong danh sách hiện tại
+                            console.log("Địa điểm từ AI:", parsedAnalysis.location || 'Không có');
+                            
+                            // *** PHẦN XỬ LÝ CATEGORY (NÊN GIỮ NGUYÊN) ***
+                            // Logic này sẽ hoạt động đúng với category từ AI,
+                            // miễn là Edge Function đã được cập nhật để trả về category chính xác.
                             if (parsedAnalysis.category && expenseTypes.some(et => et.expense_type === parsedAnalysis.category)) {
                                 expenseTypeSelect.value = parsedAnalysis.category;
                             } else {
-                                // Nếu không tìm thấy, thử mặc định là "Khác" nếu nó tồn tại, nếu không thì giữ nguyên
                                 const otherOption = expenseTypes.find(et => et.expense_type === translations[currentLanguage].otherCategory);
                                 if (otherOption) {
                                     expenseTypeSelect.value = otherOption.expense_type;
                                 } else {
-                                    // Hoặc có thể chọn giá trị rỗng nếu không tìm thấy "Khác"
                                     expenseTypeSelect.value = ''; 
                                 }
                             }
 
+                            if (parsedAnalysis.date) {
+                                try {
+                                    const dateObj = new Date(parsedAnalysis.date);
+                                    if (!isNaN(dateObj.getTime())) { 
+                                        const year = dateObj.getFullYear();
+                                        const month = (dateObj.getMonth() + 1).toString().padStart(2, '0');
+                                        const day = dateObj.getDate().toString().padStart(2, '0');
+                                        const hours = dateObj.getHours().toString().padStart(2, '0');
+                                        const minutes = dateObj.getMinutes().toString().padStart(2, '0');
+                                        transactionDateInput.value = `${year}-${month}-${day}T${hours}:${minutes}`;
+                                    } else {
+                                        console.warn("Ngày từ AI không hợp lệ:", parsedAnalysis.date);
+                                        setDefaultCurrentDateTime(transactionDateInput);
+                                    }
+                                } catch (e) {
+                                    console.error("Lỗi khi phân tích ngày từ AI:", e);
+                                    setDefaultCurrentDateTime(transactionDateInput);
+                                }
+                            } else {
+                                setDefaultCurrentDateTime(transactionDateInput);
+                            }
+
+                            addTransactionSection.classList.remove('hidden');
+                            scrollToSection('add-transaction-section');
+
                         } else {
                             descriptionInput.value = translations[currentLanguage].noImageDescription;
-                            // Xóa các trường khác nếu không có phân tích thành công
                             amountInput.value = '';
-                            transactionTypeSelect.value = 'expense'; // Mặc định là chi tiêu
+                            transactionTypeSelect.value = 'expense'; 
                             transactionTypeSelect.dispatchEvent(new Event('change'));
-                            // Đặt ngày hiện tại
-                            const now = new Date();
-                            const year = now.getFullYear();
-                            const month = (now.getMonth() + 1).toString().padStart(2, '0');
-                            const day = now.getDate().toString().padStart(2, '0');
-                            const hours = now.getHours().toString().padStart(2, '0');
-                            const minutes = now.getMinutes().toString().padStart(2, '0');
-                            transactionDateInput.value = `${year}-${month}-${day}T${hours}:${minutes}`;
+                            setDefaultCurrentDateTime(transactionDateInput);
                             expenseTypeSelect.value = '';
+                            showErrorMessage(result.error || translations[currentLanguage].noImageDescription);
                         }
                     } catch (error) {
                         console.error("Lỗi khi gọi Gemini Vision API qua Edge Function:", error);
                         showErrorMessage(`${translations[currentLanguage].aiCallError} ${error.message}`);
                         descriptionInput.value = translations[currentLanguage].noImageDescription;
-                        // Xóa các trường khác nếu có lỗi
                         amountInput.value = '';
                         transactionTypeSelect.value = 'expense';
                         transactionTypeSelect.dispatchEvent(new Event('change'));
-                        // Đặt ngày hiện tại
-                        const now = new Date();
-                        const year = now.getFullYear();
-                        const month = (now.getMonth() + 1).toString().padStart(2, '0');
-                        const day = now.getDate().toString().padStart(2, '0');
-                        const hours = now.getHours().toString().padStart(2, '0');
-                        const minutes = now.getMinutes().toString().padStart(2, '0');
-                        transactionDateInput.value = `${year}-${month}-${day}T${hours}:${minutes}`;
+                        setDefaultCurrentDateTime(transactionDateInput);
                         expenseTypeSelect.value = '';
                     } finally {
                         cameraLoadingSpinner.classList.add('hidden');
                         aiDescribeBtn.disabled = false;
-                        cameraModal.classList.add('hidden'); // Đóng modal sau khi xử lý
+                        cameraModal.classList.add('hidden');
                     }
+                }
+
+
+
+                // Hàm tiện ích để đặt ngày giờ hiện tại
+                function setDefaultCurrentDateTime(inputElement) {
+                    const now = new Date();
+                    const year = now.getFullYear();
+                    const month = (now.getMonth() + 1).toString().padStart(2, '0');
+                    const day = now.getDate().toString().padStart(2, '0');
+                    const hours = now.getHours().toString().padStart(2, '0');
+                    const minutes = now.getMinutes().toString().padStart(2, '0');
+                    inputElement.value = `${year}-${month}-${day}T${hours}:${minutes}`;
                 }
 
                 // --- Event Listeners ---
