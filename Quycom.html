@@ -1251,6 +1251,31 @@
                 members = membersData;
                 transactions = transactionsData;
                 expenseTypes = expenseTypesData; // Store expense types
+				
+				// If no expense types exist, populate with default ones
+                if (expenseTypes.length === 0) {
+                    console.log("No expense types found, populating with default data...");
+                    const defaultExpenseTypes = translations[currentLanguage].defaultExpenseTypes.split(', ').map(name => ({
+                        expense_type: name,
+                        Type: 'expense' // Mặc định là loại 'expense'
+                    }));
+                    // Thêm loại đóng góp mặc định
+                    defaultExpenseTypes.unshift({
+                        expense_type: translations[currentLanguage].contributionType,
+                        Type: 'contribution'
+                    });
+
+                    const { data: newExpenseTypes, error: newExpenseTypesError } = await supabase
+                        .from('expensetype')
+                        .insert(defaultExpenseTypes)
+                        .select();
+
+                    if (newExpenseTypesError) {
+                        console.error("Error inserting default expense types:", newExpenseTypesError);
+                        throw newExpenseTypesError;
+                    }
+                    expenseTypes = newExpenseTypes;
+                }
 
                 // If no members exist, populate with default data (only members and transactions)
                 if (members.length === 0) {
@@ -1270,14 +1295,21 @@
 
                     // Create initial transactions using the IDs of newly inserted members
                     // Ensure expense types used here exist in your actual expensetype table or handle "Khác"
-                    const defaultExpenseType = expenseTypes.length > 0 ? expenseTypes[0].expense_type : 'Ăn uống'; // Use first type or 'Ăn uống' as a common default
+                    // Lấy loại đóng góp mặc định (nếu có)
+                    const defaultContributionTypeObj = expenseTypes.find(et => et.Type === 'contribution');
+                    const defaultContributionType = defaultContributionTypeObj ? defaultContributionTypeObj.expense_type : 'Đóng góp';
+
+                    // Lấy loại chi tiêu mặc định (nếu có)
+                    const defaultExpenseTypeObj = expenseTypes.find(et => et.Type === 'expense');
+                    const defaultExpenseType = defaultExpenseTypeObj ? defaultExpenseTypeObj.expense_type : 'Ăn uống';
+
                     const initialTransactions = [
-                        { type: 'contribution', amount: 500000, description: 'Đóng góp ban đầu', date: new Date().toISOString(), contributingMemberId: newMembers[0].id, latitude: null, longitude: null, expense_type: null },
-                        { type: 'contribution', amount: 300000, description: 'Đóng góp thêm', date: new Date().toISOString(), contributingMemberId: newMembers[1].id, latitude: null, longitude: null, expense_type: null },
-                        { type: 'expense', amount: 150000, description: 'Mua đồ ăn nhẹ', date: new Date().toISOString(), involvedMemberIds: [newMembers[0].id, newMembers[1].id, newMembers[2].id], latitude: null, longitude: null, expense_type: 'Ăn uống' },
-                        { type: 'contribution', amount: 200000, description: 'Đóng góp tháng 5', date: new Date().toISOString(), contributingMemberId: newMembers[2].id, latitude: null, longitude: null, expense_type: null },
-                        { type: 'expense', amount: 250000, description: 'Tiền nước uống', date: new Date().toISOString(), involvedMemberIds: [newMembers[0].id, newMembers[2].id], latitude: null, longitude: null, expense_type: 'Ăn uống' },
-                        { type: 'expense', amount: 300000, description: 'Đặt cơm trưa', date: new Date().toISOString(), involvedMemberIds: [newMembers[0].id, newMembers[1].id, newMembers[2].id], latitude: null, longitude: null, expense_type: 'Ăn uống' },
+                        { type: 'contribution', amount: 500000, description: 'Đóng góp ban đầu', date: new Date().toISOString(), contributingMemberId: newMembers[0].id, latitude: null, longitude: null, expense_type: defaultContributionType }, // Sử dụng loại đóng góp
+                        { type: 'contribution', amount: 300000, description: 'Đóng góp thêm', date: new Date().toISOString(), contributingMemberId: newMembers[1].id, latitude: null, longitude: null, expense_type: defaultContributionType }, // Sử dụng loại đóng góp
+                        { type: 'expense', amount: 150000, description: 'Mua đồ ăn nhẹ', date: new Date().toISOString(), involvedMemberIds: [newMembers[0].id, newMembers[1].id, newMembers[2].id], latitude: null, longitude: null, expense_type: defaultExpenseType },
+                        { type: 'contribution', amount: 200000, description: 'Đóng góp tháng 5', date: new Date().toISOString(), contributingMemberId: newMembers[2].id, latitude: null, longitude: null, expense_type: defaultContributionType }, // Sử dụng loại đóng góp
+                        { type: 'expense', amount: 250000, description: 'Tiền nước uống', date: new Date().toISOString(), involvedMemberIds: [newMembers[0].id, newMembers[2].id], latitude: null, longitude: null, expense_type: defaultExpenseType },
+                        { type: 'expense', amount: 300000, description: 'Đặt cơm trưa', date: new Date().toISOString(), involvedMemberIds: [newMembers[0].id, newMembers[1].id, newMembers[2].id], latitude: null, longitude: null, expense_type: defaultExpenseType },
                     ];
                     const { data: newTransactions, error: newTransactionsError } = await supabase
                         .from('transactions')
@@ -1744,7 +1776,8 @@
                     involvedMemberIds: type === 'expense' ? selectedExpenseMembers : [],
                     latitude: latitude,
                     longitude: longitude,
-                    expense_type: type === 'expense' ? expenseType : null, // New: Save expense type
+                    // Dòng này đã được sửa để lưu expense_type cho cả contribution và expense
+                    expense_type: expenseType, // Sửa thành: luôn lưu expenseType, không chỉ khi là 'expense'
                 };
                 const { data, error } = await supabase
                     .from('transactions')
@@ -1830,38 +1863,36 @@
 						populateExpenseTypeSelect(editExpenseTypeSelect, editTransactionTypeSelect.value); 
 			}
 			// THÊM HÀM MỚI NÀY SAU HÀM populateSelectors()
-			function populateExpenseTypeSelect(selectElement, transactionType) { // Thêm transactionType ở đây
-				selectElement.innerHTML = '';
-				
-				let filteredExpenseTypes = [];
-				if (transactionType) {
-					// Lọc expenseTypes dựa trên trường "Type" (chữ T hoa) từ schema của bạn
-					filteredExpenseTypes = expenseTypes.filter(type => type.Type === transactionType);
-				} else {
-					// Nếu không có transactionType được cung cấp (ví dụ, khi tải lần đầu và chưa có lựa chọn),
-					// chúng ta sẽ hiển thị tùy chọn mặc định "Chọn loại chi tiêu" và không có loại cụ thể nào.
-					filteredExpenseTypes = []; 
-				}
+			// Hàm để điền các loại chi tiêu/thu nhập vào dropdown
+            function populateExpenseTypeSelect(selectElement, transactionType) {
+                selectElement.innerHTML = '';
+                
+                let filteredTypes = [];
+                // Lọc các loại chi tiêu/thu nhập dựa trên 'Type' của chúng trong bảng expensetype
+                if (transactionType) {
+                    filteredTypes = expenseTypes.filter(type => type.Type === transactionType);
+                } else {
+                    // Nếu không có transactionType, hiển thị tất cả các loại (hoặc không hiển thị gì)
+                    filteredTypes = expenseTypes;
+                }
 
-				if (filteredExpenseTypes.length === 0) {
-					const noOptionsMessage = translations[currentLanguage].selectExpenseType;
-					selectElement.innerHTML = `<option value="">${noOptionsMessage}</option>`; 
-				} else {
-					const defaultOption = document.createElement('option');
-					defaultOption.value = '';
-					defaultOption.textContent = translations[currentLanguage].selectExpenseType;
-					selectElement.appendChild(defaultOption);
+                if (filteredTypes.length === 0) {
+                    const noOptionsMessage = translations[currentLanguage].selectExpenseType;
+                    selectElement.innerHTML = `<option value="">${noOptionsMessage}</option>`;
+                } else {
+                    const defaultOption = document.createElement('option');
+                    defaultOption.value = '';
+                    defaultOption.textContent = translations[currentLanguage].selectExpenseType;
+                    selectElement.appendChild(defaultOption);
 
-					filteredExpenseTypes.forEach(type => {
-						const option = document.createElement('option');
-						option.value = type.expense_type;
-						option.textContent = type.expense_type;
-						selectElement.appendChild(option);
-					});
-					// Không tự động chọn mặc định ở đây, để user chọn hoặc dựa vào logic set giá trị cụ thể
-					// (như trong showEditTransactionModal)
-				}
-			}
+                    filteredTypes.forEach(type => {
+                        const option = document.createElement('option');
+                        option.value = type.expense_type;
+                        option.textContent = type.expense_type;
+                        selectElement.appendChild(option);
+                    });
+                }
+            }
 
 
 					// Toggles visibility and required attributes of contributing/involved member fields and expense type field based on transaction type
@@ -1883,8 +1914,9 @@
 				if (expenseTypeLabelElement) {
 					expenseTypeLabelElement.textContent = "Loại thu";
 				}
-				populateExpenseTypeSelect(expenseTypeSelect, 'contribution'); // Truyền 'contribution'
+			populateExpenseTypeSelect(expenseTypeSelect, 'contribution'); // Truyền 'contribution'
 				expenseTypeSelect.value = ''; // Làm sạch giá trị sau khi populate
+				
 				
 			} else { // Expense
 				contributingMemberDiv.classList.add('hidden');
@@ -1951,8 +1983,10 @@ if (transaction.type === 'contribution') {
     if (expenseTypeLabelElement) {
         expenseTypeLabelElement.textContent = "Loại thu"; // Đổi nhãn thành "Loại thu"
     }
-    populateExpenseTypeSelect(editExpenseTypeSelect, 'contribution'); // Populate với 'contribution' types
+   populateExpenseTypeSelect(editExpenseTypeSelect, 'contribution'); // Populate với 'contribution' types
+    // Sử dụng transaction.expense_type cho cả contribution và expense
     editExpenseTypeSelect.value = transaction.expense_type || ''; // Set giá trị nếu có
+    
     
 } else { // Expense
     editContributingMemberDiv.classList.add('hidden');
@@ -1978,6 +2012,7 @@ if (transaction.type === 'contribution') {
         expenseTypeLabelElement.textContent = translations[currentLanguage].expenseTypeLabel; // Đặt lại nhãn ban đầu
     }
     populateExpenseTypeSelect(editExpenseTypeSelect, 'expense'); // Populate với 'expense' types
+    // Sử dụng transaction.expense_type cho cả contribution và expense
     editExpenseTypeSelect.value = transaction.expense_type || ''; // Set giá trị nếu có
 }
         }
@@ -1995,29 +2030,24 @@ if (transaction.type === 'contribution') {
 					checkbox.removeAttribute('required');
 				});
 				
-				// HIỂN THỊ edit-expense_type cho Đóng Góp và đổi nhãn
+			// HIỂN THỊ edit-expense_type cho Đóng Góp và đổi nhãn
 				editExpenseTypeDiv.classList.remove('hidden'); 
 				editExpenseTypeSelect.setAttribute('required', 'true'); 
 				if (editExpenseTypeLabelElement) {
 					editExpenseTypeLabelElement.textContent = "Loại thu"; // Đổi nhãn thành "Loại thu"
 				}
-				populateExpenseTypeSelect(editExpenseTypeSelect); // Gọi hàm mới để populate
+				populateExpenseTypeSelect(editExpenseTypeSelect, 'contribution'); // Truyền 'contribution'
 				editExpenseTypeSelect.value = ''; // Thêm dòng này để làm sạch giá trị
 				
 			} else { // Expense
-				editContributingMemberDiv.classList.add('hidden');
-				editMemberSelect.removeAttribute('required');
-				editMemberSelect.value = '';
-				editInvolvedMembersDiv.classList.remove('hidden');
-				// For expense, at least one checkbox should be implicitly required by validation logic
-				
+				// ...
 				// HIỂN THỊ edit-expense_type cho Chi Tiêu và đổi nhãn
 				editExpenseTypeDiv.classList.remove('hidden'); 
 				editExpenseTypeSelect.setAttribute('required', 'true'); 
 				if (editExpenseTypeLabelElement) {
 					editExpenseTypeLabelElement.textContent = translations[currentLanguage].expenseTypeLabel; // Đặt lại nhãn ban đầu
 				}
-				populateExpenseTypeSelect(editExpenseTypeSelect); // Gọi hàm mới để populate
+				populateExpenseTypeSelect(editExpenseTypeSelect, 'expense'); // Truyền 'expense'
 				// Ensure expense type is populated if not already, and select a default if available
 				if (editExpenseTypeSelect.value === '' && expenseTypes.length > 0) {
 					editExpenseTypeSelect.value = expenseTypes[0].expense_type;
@@ -2088,7 +2118,8 @@ if (transaction.type === 'contribution') {
                         involvedMemberIds: type === 'expense' ? involvedMemberIds : [],
                         latitude: latitude,
                         longitude: longitude,
-                        expense_type: type === 'expense' ? expenseType : null, // New: Update expense type
+                        // Dòng này đã được sửa để cập nhật expense_type cho cả contribution và expense
+                        expense_type: expenseType, // Sửa thành: luôn cập nhật expenseType
                     })
                     .eq('id', editingTransaction.id);
                 if (error) throw error;
@@ -2663,15 +2694,16 @@ if (transaction.type === 'contribution') {
                     return translations[currentLanguage].otherCategory;
                 }
 
-                // Calculates total income and expense for each category
+				// Tính toán tổng thu nhập và chi phí cho từng danh mục
                 function calculateCategoryBalances() {
                     const incomeCategories = new Map();
                     const expenseCategories = new Map();
 
                     transactions.forEach(t => {
                         if (t.type === 'contribution') {
-                            // Contributions don't have expense_type, so we can categorize them generally
-                            incomeCategories.set(translations[currentLanguage].contributionType, (incomeCategories.get(translations[currentLanguage].contributionType) || 0) + t.amount);
+                            // Đối với contribution, sử dụng expense_type nếu có, nếu không thì dùng 'Đóng góp' chung
+                            const category = t.expense_type && t.expense_type !== null ? t.expense_type : translations[currentLanguage].contributionType;
+                            incomeCategories.set(category, (incomeCategories.get(category) || 0) + t.amount);
                         } else if (t.type === 'expense') {
                             const category = extractCategory(t);
                             expenseCategories.set(category, (expenseCategories.get(category) || 0) + t.amount);
