@@ -332,6 +332,11 @@
                 </select>
             </div>
 
+            <div id="expense-type-div" class="col-span-full hidden">
+                <label for="expense-type-select" class="block text-sm font-medium text-gray-700 mb-1" data-key="expenseTypeLabel">Loại Chi Tiêu</label>
+                <select id="expense-type-select" name="expenseType" class="input-field"></select>
+            </div>
+
             <div id="contributing-member-div" class="col-span-full">
                 <label for="member-select" class="block text-sm font-medium text-gray-700 mb-1" data-key="contributingMemberLabel">Thành Viên Đóng Góp</label>
                 <select id="member-select" name="contributingMember" class="input-field" required></select>
@@ -347,6 +352,13 @@
                 <label for="amount" class="block text-sm font-medium text-gray-700 mb-1" data-key="amountLabel">Số Tiền (VNĐ)</label>
                 <input type="text" id="amount-input" name="amount" data-key="amountPlaceholder" placeholder="Số tiền" class="input-field text-right" required />
             </div>
+            
+            <!-- New: Date input field -->
+            <div>
+                <label for="transaction-date" class="block text-sm font-medium text-gray-700 mb-1" data-key="transactionDateLabel">Ngày Giao Dịch</label>
+                <input type="datetime-local" id="transaction-date-input" name="transactionDate" class="input-field" required />
+            </div>
+
             <div>
                 <label for="description" class="block text-sm font-medium text-gray-700 mb-1" data-key="descriptionLabel">Mô Tả</label>
                 <textarea id="description-input" name="description" data-key="descriptionPlaceholder" placeholder="Mô tả giao dịch" class="input-field resize-y overflow-auto" rows="3" required></textarea>
@@ -354,7 +366,11 @@
                     <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M4 5a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2V7a2 2 0 00-2-2h-1.586a1 1 0 01-.707-.293l-1.147-1.146A2 2 0 009.172 3H6a2 2 0 00-2 2zM14 8a2 2 0 11-4 0 2 2 0 014 0z" clip-rule="evenodd"></path></svg>
                     <span data-key="aiDescribeBtn">Mô tả AI từ Ảnh/Camera</span>
                 </button>
-                </div>
+            </div>
+            <!-- Hidden input for GPS coordinates -->
+            <input type="hidden" id="latitude-input" name="latitude">
+            <input type="hidden" id="longitude-input" name="longitude">
+
             <div class="col-span-full">
                 <button type="submit" class="btn-primary w-full" data-key="recordTransactionBtn">Ghi Lại Giao Dịch</button>
             </div>
@@ -455,6 +471,11 @@
                     </select>
                 </div>
 
+                <div id="edit-expense-type-div" class="col-span-full hidden">
+                    <label for="edit-expense-type-select" class="block text-sm font-medium text-gray-700 mb-1" data-key="expenseTypeLabel">Loại Chi Tiêu</label>
+                    <select id="edit-expense-type-select" name="editExpenseType" class="input-field"></select>
+                </div>
+
                 <div id="edit-contributing-member-div" class="col-span-full">
                     <label for="edit-member-select" class="block text-sm font-medium text-gray-700 mb-1" data-key="contributingMemberLabel">Thành Viên Đóng Góp</label>
                     <select id="edit-member-select" name="editContributingMember" class="input-field" required></select>
@@ -470,10 +491,19 @@
                     <label for="edit-amount" class="block text-sm font-medium text-gray-700 mb-1" data-key="amountLabel">Số Tiền (VNĐ)</label>
                     <input type="text" id="edit-amount-input" name="editAmount" data-key="amountPlaceholder" placeholder="Số tiền" class="input-field text-right" required />
                 </div>
+                <!-- New: Date input field for edit modal -->
+                <div>
+                    <label for="edit-transaction-date" class="block text-sm font-medium text-gray-700 mb-1" data-key="transactionDateLabel">Ngày Giao Dịch</label>
+                    <input type="datetime-local" id="edit-transaction-date-input" name="editTransactionDate" class="input-field" required />
+                </div>
                 <div>
                     <label for="edit-description" class="block text-sm font-medium text-gray-700 mb-1" data-key="descriptionLabel">Mô Tả</label>
                     <textarea id="edit-description-input" name="editDescription" data-key="descriptionPlaceholder" placeholder="Mô tả giao dịch" class="input-field resize-y overflow-auto" rows="3" required></textarea>
-                    </div>
+                </div>
+                <!-- Hidden inputs for GPS coordinates in edit modal -->
+                <input type="hidden" id="edit-latitude-input" name="editLatitude">
+                <input type="hidden" id="edit-longitude-input" name="editLongitude">
+
                 <div class="col-span-full flex flex-col sm:flex-row justify-end gap-4 mt-4">
                     <button type="button" id="cancel-edit-transaction-btn" class="btn-secondary w-full sm:w-auto" data-key="cancelBtn">Hủy</button>
                     <button type="submit" class="btn-primary w-full sm:w-auto" data-key="saveChangesBtn">Lưu Thay Đổi</button>
@@ -574,13 +604,17 @@
 
     <script>
         // Supabase Client Initialization
+        // IMPORTANT: In the Canvas environment, leave SUPABASE_ANON_KEY empty.
+        // It will be automatically provided at runtime.
         const SUPABASE_URL = 'https://rmbsxccrwrktbjlnezpu.supabase.co'; // Replace with your actual Supabase URL
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJtYnN4Y2Nyd3JrdGJqbG5lenB1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg2MjczNjQsImV4cCI6MjA2NDIwMzM2NH0.ydCqificftdtn1niRciFCifeuo8aX6SDGti-hCY5Z_Y'; // Replace with your actual Supabase Anon Key
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJtYnN4Y2Nyd3JrdGJqbG5lenB1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg2MjczNjQsImV4cCI6MjA2NDIwMzM2NH0.ydCqificftdtn1niRciFCifeuo8aX6SDGti-hCY5Z_Y'; // This should be an empty string in Canvas to use provided key
+
         let supabase;
 
         // Global state variables (mimicking React state)
         let members = [];
         let transactions = [];
+        let expenseTypes = []; // New global state for expense types
         let fundBalance = 0;
         let currentErrorMessage = '';
         let selectedMemberForDetails = null;
@@ -611,10 +645,13 @@
                 transactionTypeLabel: 'Loại Giao Dịch',
                 contributionOption: '💵 Đóng Góp',
                 expenseOption: '🍺 Chi Tiêu',
+                expenseTypeLabel: 'Loại Chi Tiêu', // New translation key
+                selectExpenseType: 'Chọn loại chi tiêu', // New translation key
                 contributingMemberLabel: 'Thành Viên Đóng Góp',
                 involvedMembersLabel: 'Thành Viên Tham Gia Chi Tiêu',
                 amountLabel: 'Số Tiền (VNĐ)',
                 amountPlaceholder: 'Số tiền',
+                transactionDateLabel: 'Ngày Giao Dịch', // New translation key
                 descriptionLabel: 'Mô Tả',
                 descriptionPlaceholder: 'Mô tả giao dịch',
                 aiDescribeBtn: 'Mô tả AI từ Ảnh/Camera',
@@ -642,6 +679,7 @@
                 dateHeader: 'Ngày',
                 typeHeader: 'Loại',
                 descriptionHeader: 'Mô Tả',
+                expenseTypeHeader: 'Loại Chi Tiêu', // New translation key
                 relatedMembersHeader: 'Thành Viên Liên Quan',
                 amountHeader: 'Số Tiền (VNĐ)',
                 memberReportsTitle: 'Báo Cáo Từng Thành Viên',
@@ -689,7 +727,7 @@
                 aiDescriptionModalTitle: 'Mô tả giao dịch bằng AI',
                 supaLoadError: 'Lỗi: Thư viện Supabase chưa được tải. Vui lòng kiểm tra kết nối mạng.',
                 supabaseConfigWarning: 'Cảnh báo: URL hoặc Khóa Supabase vẫn là giá trị mặc định. Vui lòng thay thế bằng thông tin dự án thực của bạn.',
-                supabaseTableError: 'Lỗi: Các bảng dữ liệu (members, transactions) chưa được tạo trong Supabase. Vui lòng chạy các script SQL đã cung cấp trước đó.',
+                supabaseTableError: 'Lỗi: Các bảng dữ liệu (members, transactions, expensetype) chưa được tạo trong Supabase. Vui lòng chạy các script SQL đã cung cấp trước đó.', // Updated
                 dataLoadError: 'Lỗi khi tải dữ liệu:',
                 emptyMemberName: 'Tên thành viên không được để trống.',
                 addMemberError: 'Lỗi khi thêm thành viên:',
@@ -743,10 +781,13 @@
                 transactionTypeLabel: 'Transaction Type',
                 contributionOption: '💵 Contribution',
                 expenseOption: '🍺 Expense',
+                expenseTypeLabel: 'Expense Type', // New translation key
+                selectExpenseType: 'Select expense type', // New translation key
                 contributingMemberLabel: 'Contributing Member',
                 involvedMembersLabel: 'Involved Members (Expense)',
                 amountLabel: 'Amount (VNĐ)',
                 amountPlaceholder: 'Amount',
+                transactionDateLabel: 'Transaction Date', // New translation key
                 descriptionLabel: 'Description',
                 descriptionPlaceholder: 'Transaction description',
                 aiDescribeBtn: 'AI Describe from Image/Camera',
@@ -774,6 +815,7 @@
                 dateHeader: 'Date',
                 typeHeader: 'Type',
                 descriptionHeader: 'Description',
+                expenseTypeHeader: 'Expense Type', // New translation key
                 relatedMembersHeader: 'Related Members',
                 amountHeader: 'Amount (VNĐ)',
                 memberReportsTitle: 'Individual Member Reports',
@@ -821,7 +863,7 @@
                 aiDescriptionModalTitle: 'AI Transaction Description',
                 supaLoadError: 'Error: Supabase library not loaded. Please check network connection.',
                 supabaseConfigWarning: 'Warning: Supabase URL or Key still default. Please replace with your actual project info.',
-                supabaseTableError: 'Error: Data tables (members, transactions) not created in Supabase. Please run the provided SQL scripts.',
+                supabaseTableError: 'Error: Data tables (members, transactions, expensetype) not created in Supabase. Please run the provided SQL scripts.', // Updated
                 dataLoadError: 'Error loading data:',
                 emptyMemberName: 'Member name cannot be empty.',
                 addMemberError: 'Error adding member:',
@@ -844,7 +886,7 @@
                 selectMemberForExport: 'Please select a member to export the report.',
                 fileSaverLoadError: 'FileSaver.js library not loaded. Please try again later.',
                 selectMemberForWordExport: 'Please select a member to export the Word report.',
-                apiError: 'API Error:',
+                apiError: 'Lỗi API:',
                 noImageDescription: 'Could not get image description from AI. Please try again.',
                 aiCallError: 'Error calling AI:',
                 scrollToTopBtn: ' ↑',
@@ -895,12 +937,17 @@
         const memberNameInput = document.getElementById('member-name-input');
         const addTransactionForm = document.getElementById('add-transaction-form');
         const transactionTypeSelect = document.getElementById('transaction-type');
+        const expenseTypeDiv = document.getElementById('expense-type-div'); // New
+        const expenseTypeSelect = document.getElementById('expense-type-select'); // New
         const contributingMemberDiv = document.getElementById('contributing-member-div');
         const memberSelect = document.getElementById('member-select');
         const involvedMembersDiv = document.getElementById('involved-members-div');
         const involvedMembersCheckboxes = document.getElementById('involved-members-checkboxes');
         const amountInput = document.getElementById('amount-input');
+        const transactionDateInput = document.getElementById('transaction-date-input'); // New: Date input
         const descriptionInput = document.getElementById('description-input');
+        const latitudeInput = document.getElementById('latitude-input'); // New: Latitude input
+        const longitudeInput = document.getElementById('longitude-input'); // New: Longitude input
         const aiDescribeBtn = document.getElementById('ai-describe-btn');
 
         // Camera/Image Upload Elements
@@ -913,12 +960,17 @@
         let editingTransaction = null;
         const editTransactionForm = document.getElementById('edit-transaction-form');
         const editTransactionTypeSelect = document.getElementById('edit-transaction-type');
+        const editExpenseTypeDiv = document.getElementById('edit-expense-type-div'); // New
+        const editExpenseTypeSelect = document.getElementById('edit-expense-type-select'); // New
         const editContributingMemberDiv = document.getElementById('edit-contributing-member-div');
         const editMemberSelect = document.getElementById('edit-member-select');
         const editInvolvedMembersDiv = document.getElementById('edit-involved-members-div');
         const editInvolvedMembersCheckboxes = document.getElementById('edit-involved-members-checkboxes');
         const editAmountInput = document.getElementById('edit-amount-input');
+        const editTransactionDateInput = document.getElementById('edit-transaction-date-input'); // New: Edit date input
         const editDescriptionInput = document.getElementById('edit-description-input');
+        const editLatitudeInput = document.getElementById('edit-latitude-input'); // New: Edit latitude input
+        const editLongitudeInput = document.getElementById('edit-longitude-input'); // New: Edit longitude input
         const cancelEditTransactionBtn = document.getElementById('cancel-edit-transaction-btn');
 
         // Member Details Modal Elements
@@ -1012,7 +1064,12 @@
             if (typeof num !== 'number' || isNaN(num)) {
                 return '';
             }
-            return num.toLocaleString(currentLanguage === 'vi' ? 'vi-VN' : 'en-US');
+            // Round to the nearest integer (đồng)
+            const roundedNum = Math.round(num);
+            return roundedNum.toLocaleString(currentLanguage === 'vi' ? 'vi-VN' : 'en-US', {
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 0
+            });
         }
 
         // Parses a formatted number string back to a raw number
@@ -1021,8 +1078,8 @@
             const locale = currentLanguage === 'vi' ? 'vi-VN' : 'en-US';
             const formatter = new Intl.NumberFormat(locale, { useGrouping: true, minimumFractionDigits: 0 });
             // Use a number that has both grouping and decimal to correctly identify separators
+            // Note: For parsing back, we need to be careful with actual locale separators
             const parts = formatter.formatToParts(1000.50); 
-
             let thousandsSeparator = '';
             let decimalSeparator = '';
 
@@ -1056,7 +1113,12 @@
         // Formats a number string with thousands separators for input fields
         function formatNumberForInput(value) {
             const rawNumber = parseFormattedNumber(value);
-            return rawNumber.toLocaleString(currentLanguage === 'vi' ? 'vi-VN' : 'en-US');
+            // Always round to integer for input display as well
+            const roundedNum = Math.round(rawNumber);
+            return roundedNum.toLocaleString(currentLanguage === 'vi' ? 'vi-VN' : 'en-US', {
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 0
+            });
         }
 
         // Displays an error message
@@ -1105,11 +1167,16 @@
                 showErrorMessage(translations[currentLanguage].supaLoadError);
                 return;
             }
-            if (SUPABASE_URL === 'YOUR_SUPABASE_URL' || SUPABASE_ANON_KEY === 'YOUR_SUPABASE_ANON_KEY') {
-                showErrorMessage(translations[currentLanguage].supabaseConfigWarning);
-                return;
+            // For Canvas environment, check if __supabase_key is available
+            // If running outside Canvas, SUPABASE_ANON_KEY should be set manually
+            const anonKey = typeof __supabase_key !== 'undefined' ? __supabase_key : SUPABASE_ANON_KEY;
+
+            if (!anonKey || SUPABASE_URL === 'https://rmbsxccrwrktbjlnezpu.supabase.co1') { // Check for default URL
+                 showErrorMessage(translations[currentLanguage].supabaseConfigWarning);
+                 return;
             }
-            supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+            supabase = window.supabase.createClient(SUPABASE_URL, anonKey);
             console.log("Supabase client initialized.");
             fetchData(); // Fetch initial data after initialization
             setupRealtimeSubscriptions(); // Set up real-time listeners
@@ -1147,10 +1214,25 @@
                     throw transactionsError;
                 }
 
+                // Fetch expense types (New) - DO NOT AUTO-POPULATE IF EMPTY
+                const { data: expenseTypesData, error: expenseTypesError } = await supabase
+                    .from('expensetype')
+                    .select('*');
+
+                if (expenseTypesError) {
+                    if (expenseTypesError.message.includes('relation "public.expensetype" does not exist')) {
+                        showErrorMessage(translations[currentLanguage].supabaseTableError);
+                    } else {
+                        showErrorMessage(`${translations[currentLanguage].dataLoadError} ${translations[currentLanguage].expenseTypeLabel.toLowerCase()}: ${expenseTypesError.message}`);
+                    }
+                    throw expenseTypesError;
+                }
+
                 members = membersData;
                 transactions = transactionsData;
+                expenseTypes = expenseTypesData; // Store expense types
 
-                // If no members exist, populate with default data
+                // If no members exist, populate with default data (only members and transactions)
                 if (members.length === 0) {
                     console.log("No members found, populating with default data...");
                     const initialMembers = [
@@ -1167,13 +1249,15 @@
                     members = newMembers;
 
                     // Create initial transactions using the IDs of newly inserted members
+                    // Ensure expense types used here exist in your actual expensetype table or handle "Khác"
+                    const defaultExpenseType = expenseTypes.length > 0 ? expenseTypes[0].expense_type : 'Khác'; // Use first type or 'Khác'
                     const initialTransactions = [
-                        { type: 'contribution', amount: 500000, description: 'Đóng góp ban đầu', date: new Date().toLocaleString(), contributingMemberId: newMembers[0].id },
-                        { type: 'contribution', amount: 300000, description: 'Đóng góp thêm', date: new Date().toLocaleString(), contributingMemberId: newMembers[1].id },
-                        { type: 'expense', amount: 150000, description: 'Mua đồ ăn nhẹ', date: new Date().toLocaleString(), involvedMemberIds: [newMembers[0].id, newMembers[1].id, newMembers[2].id] },
-                        { type: 'contribution', amount: 200000, description: 'Đóng góp tháng 5', date: new Date().toLocaleString(), contributingMemberId: newMembers[2].id },
-                        { type: 'expense', amount: 250000, description: 'Tiền nước uống', date: new Date().toLocaleString(), involvedMemberIds: [newMembers[0].id, newMembers[2].id] },
-                        { type: 'expense', amount: 300000, description: 'Đặt cơm trưa', date: new Date().toLocaleString(), involvedMemberIds: [newMembers[0].id, newMembers[1].id, newMembers[2].id] },
+                        { type: 'contribution', amount: 500000, description: 'Đóng góp ban đầu', date: new Date().toISOString(), contributingMemberId: newMembers[0].id, latitude: null, longitude: null, expense_type: null },
+                        { type: 'contribution', amount: 300000, description: 'Đóng góp thêm', date: new Date().toISOString(), contributingMemberId: newMembers[1].id, latitude: null, longitude: null, expense_type: null },
+                        { type: 'expense', amount: 150000, description: 'Mua đồ ăn nhẹ', date: new Date().toISOString(), involvedMemberIds: [newMembers[0].id, newMembers[1].id, newMembers[2].id], latitude: null, longitude: null, expense_type: 'Ăn uống' },
+                        { type: 'contribution', amount: 200000, description: 'Đóng góp tháng 5', date: new Date().toISOString(), contributingMemberId: newMembers[2].id, latitude: null, longitude: null, expense_type: null },
+                        { type: 'expense', amount: 250000, description: 'Tiền nước uống', date: new Date().toISOString(), involvedMemberIds: [newMembers[0].id, newMembers[2].id], latitude: null, longitude: null, expense_type: 'Ăn uống' },
+                        { type: 'expense', amount: 300000, description: 'Đặt cơm trưa', date: new Date().toISOString(), involvedMemberIds: [newMembers[0].id, newMembers[1].id, newMembers[2].id], latitude: null, longitude: null, expense_type: 'Ăn uống' },
                     ];
                     const { data: newTransactions, error: newTransactionsError } = await supabase
                         .from('transactions')
@@ -1213,6 +1297,15 @@
                     fetchData(); // Re-fetch data on any change
                 })
                 .subscribe();
+            
+            // New: Real-time subscription for expensetype table
+            supabase
+                .channel('public:expensetype')
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'expensetype' }, payload => {
+                    console.log('Expense type change received!', payload);
+                    fetchData(); // Re-fetch data on any change
+                })
+                .subscribe();
         }
 
         // Shows/hides a loading indicator
@@ -1236,6 +1329,7 @@
             renderMemberReportDropdown(); // Update member report dropdown
             renderMemberBalancePieChart(); // Update pie chart
             renderCategoryPieCharts(); // Render the new category pie charts
+            populateSelectors(); // Populate new expense type dropdowns
         }
 
         // Calculates fund and member balances
@@ -1375,6 +1469,7 @@
                             <th>${translations[currentLanguage].dateHeader}</th>
                             <th>${translations[currentLanguage].typeHeader}</th>
                             <th>${translations[currentLanguage].descriptionHeader}</th>
+                            <th>${translations[currentLanguage].expenseTypeHeader}</th> <!-- New Column -->
                             <th>${translations[currentLanguage].relatedMembersHeader}</th>
                             <th class="table-header text-right-aligned">${translations[currentLanguage].amountHeader}</th>
                             <th>${translations[currentLanguage].actionHeader}</th>
@@ -1382,7 +1477,7 @@
                     </thead>
                     <tbody>
             `;
-            transactions.slice().reverse().forEach(t => { // Display latest first
+            transactions.slice().sort((a, b) => new Date(b.date) - new Date(a.date)).forEach(t => { // Display latest first, sorted by actual date
                 // For the general transaction list, always display the total amount of the expense
                 const displayedAmount = t.amount;
                 const typeText = t.type === 'contribution' ? translations[currentLanguage].contributionOption.replace('💵 ', '') : translations[currentLanguage].expenseOption.replace('🍺 ', '');
@@ -1393,11 +1488,16 @@
                     ? getMemberName(t.contributingMemberId)
                     : getInvolvedMembersNames(t.involvedMemberIds);
 
+                const transactionDate = new Date(t.date).toLocaleDateString(currentLanguage === 'vi' ? 'vi-VN' : 'en-US', {
+                    year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit'
+                });
+
                 tableHtml += `
                     <tr class="table-row">
-                        <td>${t.date}</td>
+                        <td>${transactionDate}</td>
                         <td><span class="px-2 py-1 rounded-full text-xs font-semibold ${typeClass}">${typeText}</span></td>
                         <td>${t.description}</td>
+                        <td>${t.type === 'expense' && t.expense_type ? t.expense_type : 'N/A'}</td> <!-- Display expense type -->
                         <td>${memberNames}</td>
                         <td class="text-right-aligned ${amountClass}">${t.type === 'contribution' ? '+' : '-'}${formatNumberForDisplay(displayedAmount)}</td>
                         <td class="flex flex-col sm:flex-row gap-2">
@@ -1483,9 +1583,12 @@
                     type: settlementType,
                     amount: settlementAmount,
                     description: description,
-                    date: new Date().toLocaleString(),
+                    date: new Date().toISOString(), // Use ISO string for consistency
                     contributingMemberId: settlementType === 'contribution' ? memberToSettle.id : null,
                     involvedMemberIds: settlementType === 'expense' ? [memberToSettle.id] : [],
+                    latitude: null, // Default to null for settlement transactions
+                    longitude: null, // Default to null for settlement transactions
+                    expense_type: settlementType === 'expense' ? translations[currentLanguage].otherCategory : null, // Default for settlement expense
                 };
                 const { data, error } = await supabase
                     .from('transactions')
@@ -1568,12 +1671,15 @@
 
             const type = transactionTypeSelect.value;
             const amount = parseFormattedNumber(amountInput.value); // Use the new parseFormattedNumber
-            console.log("Amount to be saved (add transaction):", amount); // Log for debugging
+            const transactionDate = transactionDateInput.value; // Get the date from the input
             const description = descriptionInput.value.trim();
             const contributingMemberId = memberSelect.value;
             const selectedExpenseMembers = Array.from(involvedMembersCheckboxes.querySelectorAll('input:checked')).map(input => input.value);
+            const latitude = latitudeInput.value ? parseFloat(latitudeInput.value) : null;
+            const longitude = longitudeInput.value ? parseFloat(longitudeInput.value) : null;
+            const expenseType = expenseTypeSelect.value; // New: Get expense type
 
-            if (isNaN(amount) || amount <= 0 || !description) {
+            if (isNaN(amount) || amount <= 0 || !description || !transactionDate) {
                 showErrorMessage(translations[currentLanguage].invalidAmountDesc);
                 if (submitButton) {
                     submitButton.disabled = false;
@@ -1597,6 +1703,15 @@
                 }
                 return;
             }
+            if (type === 'expense' && !expenseType) { // New validation for expense type
+                showErrorMessage(translations[currentLanguage].selectExpenseType);
+                if (submitButton) {
+                    submitButton.disabled = false;
+                    submitButton.textContent = translations[currentLanguage].recordTransactionBtn;
+                }
+                return;
+            }
+
             hideErrorMessage();
 
             try {
@@ -1604,9 +1719,12 @@
                     type: type,
                     amount: amount,
                     description: description,
-                    date: new Date().toLocaleString(),
+                    date: new Date(transactionDate).toISOString(), // Convert to ISO string for Supabase
                     contributingMemberId: type === 'contribution' ? contributingMemberId : null,
                     involvedMemberIds: type === 'expense' ? selectedExpenseMembers : [],
+                    latitude: latitude,
+                    longitude: longitude,
+                    expense_type: type === 'expense' ? expenseType : null, // New: Save expense type
                 };
                 const { data, error } = await supabase
                     .from('transactions')
@@ -1629,42 +1747,104 @@
             }
         };
 
-        // Populates the member dropdowns and checkboxes for transaction forms
-        function populateMemberSelectors() {
-            // For Add Transaction Form
+        // Populates the member dropdowns and checkboxes for transaction forms (and expense types)
+        function populateSelectors() {
+            // For Add Transaction Form - Members
             memberSelect.innerHTML = '';
             involvedMembersCheckboxes.innerHTML = '';
 
             if (members.length === 0) {
                 memberSelect.innerHTML = `<option value="">${translations[currentLanguage].noMembers}</option>`;
                 involvedMembersCheckboxes.innerHTML = `<p class="text-gray-500 text-sm">${translations[currentLanguage].noMembers}</p>`;
-                return;
+            } else {
+                members.forEach(member => {
+                    // For dropdown (contributing member)
+                    const option = document.createElement('option');
+                    option.value = member.id;
+                    option.textContent = member.name;
+                    memberSelect.appendChild(option);
+
+                    // For checkboxes (involved members)
+                    const label = document.createElement('label');
+                    label.className = 'inline-flex items-center cursor-pointer';
+                    label.innerHTML = `
+                        <input type="checkbox" class="form-checkbox h-4 w-4 text-[#006B68] transition duration-150 ease-in-out rounded focus:ring-[#006B68]" value="${member.id}">
+                        <span class="ml-2 text-sm text-gray-700">${member.name}</span>
+                    `;
+                    involvedMembersCheckboxes.appendChild(label);
+                });
+                // Set default selected member for contribution if available
+                if (members.length > 0) {
+                    memberSelect.value = members[0].id;
+                }
             }
 
-            members.forEach(member => {
-                // For dropdown (contributing member)
-                const option = document.createElement('option');
-                option.value = member.id;
-                option.textContent = member.name;
-                memberSelect.appendChild(option);
+            // For Add Transaction Form - Expense Types (New)
+            expenseTypeSelect.innerHTML = '';
+            if (expenseTypes.length === 0) {
+                expenseTypeSelect.innerHTML = `<option value="">${translations[currentLanguage].selectExpenseType} (${translations[currentLanguage].noCategoriesAvailable})</option>`;
+            } else {
+                const defaultOption = document.createElement('option');
+                defaultOption.value = '';
+                defaultOption.textContent = translations[currentLanguage].selectExpenseType;
+                expenseTypeSelect.appendChild(defaultOption);
 
-                // For checkboxes (involved members)
-                const label = document.createElement('label');
-                label.className = 'inline-flex items-center cursor-pointer';
-                label.innerHTML = `
-                    <input type="checkbox" class="form-checkbox h-4 w-4 text-[#006B68] transition duration-150 ease-in-out rounded focus:ring-[#006B68]" value="${member.id}">
-                    <span class="ml-2 text-sm text-gray-700">${member.name}</span>
-                `;
-                involvedMembersCheckboxes.appendChild(label);
-            });
+                expenseTypes.forEach(type => {
+                    const option = document.createElement('option');
+                    option.value = type.expense_type;
+                    option.textContent = type.expense_type;
+                    expenseTypeSelect.appendChild(option);
+                });
+                // Set the default selected expense type if there are entries
+                if (expenseTypes.length > 0) {
+                    expenseTypeSelect.value = expenseTypes[0].expense_type; // Select the first one
+                }
+            }
 
-            // Set default selected member for contribution if available
-            if (members.length > 0) {
-                memberSelect.value = members[0].id;
+            // For Edit Transaction Form - Members (similar logic for edit modal)
+            editMemberSelect.innerHTML = '';
+            editInvolvedMembersCheckboxes.innerHTML = '';
+
+            if (members.length === 0) {
+                editMemberSelect.innerHTML = `<option value="">${translations[currentLanguage].noMembers}</option>`;
+                editInvolvedMembersCheckboxes.innerHTML = `<p class="text-gray-500 text-sm">${translations[currentLanguage].noMembers}</p>`;
+            } else {
+                members.forEach(member => {
+                    const option = document.createElement('option');
+                    option.value = member.id;
+                    option.textContent = member.name;
+                    editMemberSelect.appendChild(option);
+
+                    const label = document.createElement('label');
+                    label.className = 'inline-flex items-center cursor-pointer';
+                    label.innerHTML = `
+                        <input type="checkbox" class="form-checkbox h-4 w-4 text-[#006B68] transition duration-150 ease-in-out rounded focus:ring-[#006B68]" value="${member.id}">
+                        <span class="ml-2 text-sm text-gray-700">${member.name}</span>
+                    `;
+                    editInvolvedMembersCheckboxes.appendChild(label);
+                });
+            }
+
+            // For Edit Transaction Form - Expense Types (New)
+            editExpenseTypeSelect.innerHTML = '';
+            if (expenseTypes.length === 0) {
+                editExpenseTypeSelect.innerHTML = `<option value="">${translations[currentLanguage].selectExpenseType} (${translations[currentLanguage].noCategoriesAvailable})</option>`;
+            } else {
+                const defaultOption = document.createElement('option');
+                defaultOption.value = '';
+                defaultOption.textContent = translations[currentLanguage].selectExpenseType;
+                editExpenseTypeSelect.appendChild(defaultOption);
+
+                expenseTypes.forEach(type => {
+                    const option = document.createElement('option');
+                    option.value = type.expense_type;
+                    option.textContent = type.expense_type;
+                    editExpenseTypeSelect.appendChild(option);
+                });
             }
         }
 
-        // Toggles visibility and required attributes of contributing/involved member fields based on transaction type
+        // Toggles visibility and required attributes of contributing/involved member fields and expense type field based on transaction type
         transactionTypeSelect.onchange = () => {
             if (transactionTypeSelect.value === 'contribution') {
                 contributingMemberDiv.classList.remove('hidden');
@@ -1674,13 +1854,22 @@
                     checkbox.checked = false; // Clear selected expense members
                     checkbox.removeAttribute('required'); // Remove required from expense members
                 });
-            } else {
+                expenseTypeDiv.classList.add('hidden'); // Hide expense type for contribution
+                expenseTypeSelect.removeAttribute('required'); // Remove required from expense type
+                expenseTypeSelect.value = ''; // Clear expense type
+            } else { // Expense
                 contributingMemberDiv.classList.add('hidden');
                 memberSelect.removeAttribute('required'); // Remove required from contributing member
                 memberSelect.value = ''; // Clear contributing member
                 involvedMembersDiv.classList.remove('hidden');
                 // For expense, at least one checkbox should be implicitly required by validation logic
                 // No need to set 'required' on individual checkboxes, as the form submission logic handles it.
+                expenseTypeDiv.classList.remove('hidden'); // Show expense type for expense
+                expenseTypeSelect.setAttribute('required', 'true'); // Make expense type required
+                // Ensure expense type is populated if not already, and select a default if available
+                if (expenseTypeSelect.value === '' && expenseTypes.length > 0) {
+                    expenseTypeSelect.value = expenseTypes[0].expense_type;
+                }
             }
         };
 
@@ -1693,35 +1882,19 @@
             // Populate form fields
             editTransactionTypeSelect.value = transaction.type;
             editAmountInput.value = formatNumberForInput(transaction.amount.toString());
+            // Format the date for datetime-local input
+            const transactionDate = new Date(transaction.date);
+            const year = transactionDate.getFullYear();
+            const month = (transactionDate.getMonth() + 1).toString().padStart(2, '0');
+            const day = transactionDate.getDate().toString().padStart(2, '0');
+            const hours = transactionDate.getHours().toString().padStart(2, '0');
+            const minutes = transactionDate.getMinutes().toString().padStart(2, '0');
+            editTransactionDateInput.value = `${year}-${month}-${day}T${hours}:${minutes}`;
+
             editDescriptionInput.value = transaction.description;
-
-            // Populate member selectors for edit modal
-            editMemberSelect.innerHTML = '';
-            editInvolvedMembersCheckboxes.innerHTML = '';
-
-            if (members.length === 0) {
-                editMemberSelect.innerHTML = `<option value="">${translations[currentLanguage].noMembers}</option>`;
-                editInvolvedMembersCheckboxes.innerHTML = `<p class="text-gray-500 text-sm">${translations[currentLanguage].noMembers}</p>`;
-                return;
-            }
-
-            members.forEach(member => {
-                // For dropdown (contributing member)
-                const option = document.createElement('option');
-                option.value = member.id;
-                option.textContent = member.name;
-                editMemberSelect.appendChild(option);
-
-                // For checkboxes (involved members)
-                const label = document.createElement('label');
-                label.className = 'inline-flex items-center cursor-pointer';
-                label.innerHTML = `
-                    <input type="checkbox" class="form-checkbox h-4 w-4 text-[#006B68] transition duration-150 ease-in-out rounded focus:ring-[#006B68]" value="${member.id}">
-                    <span class="ml-2 text-sm text-gray-700">${member.name}</span>
-                `;
-                editInvolvedMembersCheckboxes.appendChild(label);
-            });
-
+            editLatitudeInput.value = transaction.latitude || '';
+            editLongitudeInput.value = transaction.longitude || '';
+            
             // Set initial selection based on transaction type and manage required attributes
             if (transaction.type === 'contribution') {
                 editContributingMemberDiv.classList.remove('hidden');
@@ -1731,15 +1904,28 @@
                     checkbox.removeAttribute('required');
                 });
                 editMemberSelect.value = transaction.contributingMemberId || '';
-            } else {
+                editExpenseTypeDiv.classList.add('hidden'); // Hide expense type for contribution
+                editExpenseTypeSelect.removeAttribute('required'); // Remove required from expense type
+                editExpenseTypeSelect.value = ''; // Clear expense type
+            } else { // Expense
                 editContributingMemberDiv.classList.add('hidden');
                 editMemberSelect.removeAttribute('required');
                 editMemberSelect.value = '';
                 editInvolvedMembersDiv.classList.remove('hidden');
-                transaction.involvedMemberIds.forEach(id => {
-                    const checkbox = editInvolvedMembersCheckboxes.querySelector(`input[value="${id}"]`);
-                    if (checkbox) checkbox.checked = true;
+                // Clear all checkboxes first
+                editInvolvedMembersCheckboxes.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+                    checkbox.checked = false;
                 });
+                // Then check the ones involved in this transaction
+                if (transaction.involvedMemberIds) {
+                    transaction.involvedMemberIds.forEach(id => {
+                        const checkbox = editInvolvedMembersCheckboxes.querySelector(`input[value="${id}"]`);
+                        if (checkbox) checkbox.checked = true;
+                    });
+                }
+                editExpenseTypeDiv.classList.remove('hidden'); // Show expense type for expense
+                editExpenseTypeSelect.setAttribute('required', 'true'); // Make expense type required
+                editExpenseTypeSelect.value = transaction.expense_type || ''; // Set expense type (New)
             }
         }
 
@@ -1753,12 +1939,21 @@
                     checkbox.checked = false;
                     checkbox.removeAttribute('required');
                 });
-            } else {
+                editExpenseTypeDiv.classList.add('hidden'); // Hide expense type for contribution
+                editExpenseTypeSelect.removeAttribute('required'); // Remove required from expense type
+                editExpenseTypeSelect.value = ''; // Clear expense type
+            } else { // Expense
                 editContributingMemberDiv.classList.add('hidden');
                 editMemberSelect.removeAttribute('required');
                 editMemberSelect.value = '';
                 editInvolvedMembersDiv.classList.remove('hidden');
                 // For expense, at least one checkbox should be implicitly required by validation logic
+                editExpenseTypeDiv.classList.remove('hidden'); // Show expense type for expense
+                editExpenseTypeSelect.setAttribute('required', 'true'); // Make expense type required
+                 // Ensure expense type is populated if not already, and select a default if available
+                if (editExpenseTypeSelect.value === '' && expenseTypes.length > 0) {
+                    editExpenseTypeSelect.value = expenseTypes[0].expense_type;
+                }
             }
         };
 
@@ -1775,12 +1970,15 @@
 
             const type = editTransactionTypeSelect.value;
             const amount = parseFormattedNumber(editAmountInput.value); // Use the new parseFormattedNumber
-            console.log("Amount to be saved (edit transaction):", amount); // Log for debugging
+            const transactionDate = editTransactionDateInput.value; // Get the date from the input
             const description = editDescriptionInput.value.trim();
             const contributingMemberId = editMemberSelect.value;
             const involvedMemberIds = Array.from(editInvolvedMembersCheckboxes.querySelectorAll('input:checked')).map(input => input.value);
+            const latitude = editLatitudeInput.value ? parseFloat(editLatitudeInput.value) : null;
+            const longitude = editLongitudeInput.value ? parseFloat(editLongitudeInput.value) : null;
+            const expenseType = editExpenseTypeSelect.value; // New: Get expense type
 
-            if (isNaN(amount) || amount <= 0 || !description) {
+            if (isNaN(amount) || amount <= 0 || !description || !transactionDate) {
                 showErrorMessage(translations[currentLanguage].editInvalidAmountDesc);
                 if (submitButton) {
                     submitButton.disabled = false;
@@ -1804,6 +2002,15 @@
                 }
                 return;
             }
+            if (type === 'expense' && !expenseType) { // New validation for expense type
+                showErrorMessage(translations[currentLanguage].selectExpenseType);
+                if (submitButton) {
+                    submitButton.disabled = false;
+                    submitButton.textContent = translations[currentLanguage].saveChangesBtn;
+                }
+                return;
+            }
+
             hideErrorMessage();
 
             try {
@@ -1813,8 +2020,12 @@
                         type: type,
                         amount: amount,
                         description: description,
+                        date: new Date(transactionDate).toISOString(), // Convert to ISO string for Supabase
                         contributingMemberId: type === 'contribution' ? contributingMemberId : null,
                         involvedMemberIds: type === 'expense' ? involvedMemberIds : [],
+                        latitude: latitude,
+                        longitude: longitude,
+                        expense_type: type === 'expense' ? expenseType : null, // New: Update expense type
                     })
                     .eq('id', editingTransaction.id);
                 if (error) throw error;
@@ -1902,6 +2113,7 @@
                                 <th>${translations[currentLanguage].dateHeader}</th>
                                 <th>${translations[currentLanguage].typeHeader}</th>
                                 <th>${translations[currentLanguage].descriptionHeader}</th>
+                                <th>${translations[currentLanguage].expenseTypeHeader}</th> <!-- New Column -->
                                 <th class="table-header text-right-aligned">${translations[currentLanguage].amountHeader}</th>
                             </tr>
                         </thead>
@@ -1916,12 +2128,16 @@
                     const typeText = t.type === 'contribution' ? translations[currentLanguage].contributionOption.replace('💵 ', '') : translations[currentLanguage].expenseOption.replace('🍺 ', '');
                     const typeClass = t.type === 'contribution' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800';
                     const amountClass = t.type === 'contribution' ? 'balance-positive' : 'balance-negative';
+                    const transactionDate = new Date(t.date).toLocaleDateString(currentLanguage === 'vi' ? 'vi-VN' : 'en-US', {
+                        year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit'
+                    });
 
                         tableHtml += `
                             <tr class="table-row">
-                                <td>${t.date}</td>
+                                <td>${transactionDate}</td>
                                 <td><span class="px-2 py-1 rounded-full text-xs font-semibold ${typeClass}">${typeText}</span></td>
                                 <td>${t.description}</td>
+                                <td>${t.type === 'expense' && t.expense_type ? t.expense_type : 'N/A'}</td> <!-- Display expense type -->
                                 <td class="text-right-aligned ${amountClass}">${t.type === 'contribution' ? '+' : '-'}${formatNumberForDisplay(displayedAmount)}</td>
                             </tr>
                         `;
@@ -1950,13 +2166,14 @@
                                 <th class="table-header">${translations[currentLanguage].dateHeader}</th>
                                 <th class="table-header">${translations[currentLanguage].typeHeader}</th>
                                 <th class="table-header">${translations[currentLanguage].descriptionHeader}</th>
+                                <th class="table-header">${translations[currentLanguage].expenseTypeHeader}</th> <!-- New Column -->
                                 <th class="table-header">${translations[currentLanguage].relatedMembersHeader}</th>
                                 <th class="table-header text-right-aligned">${translations[currentLanguage].amountHeader}</th>
                             </tr>
                         </thead>
                         <tbody>
                 `;
-                transactions.slice().reverse().forEach(t => {
+                transactions.slice().sort((a, b) => new Date(b.date) - new Date(a.date)).forEach(t => {
                     // For the fund report, always display the total amount of the expense
                     const displayedAmount = t.amount;
                     const typeText = t.type === 'contribution' ? translations[currentLanguage].contributionOption.replace('💵 ', '') : translations[currentLanguage].expenseOption.replace('🍺 ', '');
@@ -1966,12 +2183,16 @@
                     const memberNames = t.type === 'contribution'
                         ? getMemberName(t.contributingMemberId)
                         : getInvolvedMembersNames(t.involvedMemberIds);
+                    const transactionDate = new Date(t.date).toLocaleDateString(currentLanguage === 'vi' ? 'vi-VN' : 'en-US', {
+                        year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit'
+                    });
 
                     tableHtml += `
                         <tr class="table-row">
-                            <td>${t.date}</td>
+                            <td>${transactionDate}</td>
                             <td><span class="px-2 py-1 rounded-full text-xs font-semibold ${typeClass}">${typeText}</span></td>
                             <td>${t.description}</td>
+                            <td>${t.type === 'expense' && t.expense_type ? t.expense_type : 'N/A'}</td> <!-- Display expense type -->
                             <td>${memberNames}</td>
                             <td class="text-right-aligned ${amountClass}">${t.type === 'contribution' ? '+' : '-'}${formatNumberForDisplay(displayedAmount)}</td>
                         </tr>
@@ -2029,6 +2250,7 @@
                                 <th class="table-header">${translations[currentLanguage].dateHeader}</th>
                                 <th class="table-header">${translations[currentLanguage].typeHeader}</th>
                                 <th class="table-header">${translations[currentLanguage].descriptionHeader}</th>
+                                <th class="table-header">${translations[currentLanguage].expenseTypeHeader}</th> <!-- New Column -->
                                 <th class="table-header text-right-aligned">${translations[currentLanguage].amountHeader}</th>
                             </tr>
                         </thead>
@@ -2043,12 +2265,16 @@
                     const typeText = t.type === 'contribution' ? translations[currentLanguage].contributionOption.replace('💵 ', '') : translations[currentLanguage].expenseOption.replace('🍺 ', '');
                     const typeClass = t.type === 'contribution' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800';
                     const amountClass = t.type === 'contribution' ? 'balance-positive' : 'balance-negative';
+                    const transactionDate = new Date(t.date).toLocaleDateString(currentLanguage === 'vi' ? 'vi-VN' : 'en-US', {
+                        year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit'
+                    });
 
                         tableHtml += `
                             <tr class="table-row">
-                                <td>${t.date}</td>
+                                <td>${transactionDate}</td>
                                 <td><span class="px-2 py-1 rounded-full text-xs font-semibold ${typeClass}">${typeText}</span></td>
                                 <td>${t.description}</td>
+                                <td>${t.type === 'expense' && t.expense_type ? t.expense_type : 'N/A'}</td> <!-- Display expense type -->
                                 <td class="text-right-aligned ${amountClass}">${t.type === 'contribution' ? '+' : '-'}${formatNumberForDisplay(displayedAmount)}</td>
                             </tr>
                         `;
@@ -2067,13 +2293,17 @@
                         return;
                     }
 
-                    const reportData = transactions.slice().reverse().map(t => {
+                    const reportData = transactions.slice().sort((a, b) => new Date(a.date) - new Date(b.date)).map(t => {
                         // For Excel export of fund report, use the total amount
                         const displayedAmount = t.amount;
+                        const transactionDate = new Date(t.date).toLocaleDateString(currentLanguage === 'vi' ? 'vi-VN' : 'en-US', {
+                            year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit'
+                        });
                         return {
-                            [translations[currentLanguage].dateHeader]: t.date,
+                            [translations[currentLanguage].dateHeader]: transactionDate,
                             [translations[currentLanguage].typeHeader]: t.type === 'contribution' ? translations[currentLanguage].contributionType : translations[currentLanguage].expenseType,
                             [translations[currentLanguage].descriptionHeader]: t.description,
+                            [translations[currentLanguage].expenseTypeHeader]: t.type === 'expense' && t.expense_type ? t.expense_type : 'N/A', // New
                             [translations[currentLanguage].relatedMembersHeader]: t.type === 'contribution' ? getMemberName(t.contributingMemberId) : getInvolvedMembersNames(t.involvedMemberIds),
                             [`${translations[currentLanguage].amountHeader} (${translations[currentLanguage].unitCurrency})`]: (t.type === 'contribution' ? '+' : '-') + formatNumberForDisplay(displayedAmount),
                         };
@@ -2100,7 +2330,7 @@
                     const memberTransactions = transactions.filter(t =>
                         (t.type === 'contribution' && t.contributingMemberId === selectedMemberId) ||
                         (t.type === 'expense' && t.involvedMemberIds && t.involvedMemberIds.includes(selectedMemberId))
-                    ).sort((a, b) => new Date(b.date) - new Date(a.date));
+                    ).sort((a, b) => new Date(a.date) - new Date(b.date));
 
                     const reportData = memberTransactions.map(t => {
                         let displayedAmount = t.amount;
@@ -2108,10 +2338,14 @@
                         if (t.type === 'expense' && t.involvedMemberIds && t.involvedMemberIds.length > 0) {
                             displayedAmount = t.amount / t.involvedMemberIds.length;
                         }
+                        const transactionDate = new Date(t.date).toLocaleDateString(currentLanguage === 'vi' ? 'vi-VN' : 'en-US', {
+                            year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit'
+                        });
                         return {
-                            [translations[currentLanguage].dateHeader]: t.date,
+                            [translations[currentLanguage].dateHeader]: transactionDate,
                             [translations[currentLanguage].typeHeader]: t.type === 'contribution' ? translations[currentLanguage].contributionType : translations[currentLanguage].expenseType,
                             [translations[currentLanguage].descriptionHeader]: t.description,
+                            [translations[currentLanguage].expenseTypeHeader]: t.type === 'expense' && t.expense_type ? t.expense_type : 'N/A', // New
                             [`${translations[currentLanguage].amountHeader} (${translations[currentLanguage].unitCurrency})`]: (t.type === 'contribution' ? '+' : '-') + formatNumberForDisplay(displayedAmount),
                         };
                     });
@@ -2285,7 +2519,7 @@
                         '#607D8B', // Blue Grey
                     ];
 
-                    const chartData = members.filter(m => m.balance !== 0);
+                    const chartData = members.filter(m => Math.abs(m.balance) > 0.01); // Filter out members with effectively zero balance
                     const totalAbsoluteBalance = chartData.reduce((sum, m) => sum + Math.abs(m.balance), 0);
 
                     if (chartData.length === 0) {
@@ -2358,10 +2592,12 @@
 
                 // --- Pie Charts for Categories (Income and Expense) ---
 
-                // Extracts category from transaction description
-                function extractCategory(description) {
-                    const match = description.match(/\(Phân loại: ([^)]+)\)/);
-                    return match ? match[1].trim() : translations[currentLanguage].otherCategory;
+                // Extracts category from transaction expense_type (New)
+                function extractCategory(transaction) {
+                    if (transaction.type === 'expense' && transaction.expense_type) {
+                        return transaction.expense_type;
+                    }
+                    return translations[currentLanguage].otherCategory;
                 }
 
                 // Calculates total income and expense for each category
@@ -2370,10 +2606,11 @@
                     const expenseCategories = new Map();
 
                     transactions.forEach(t => {
-                        const category = extractCategory(t.description);
                         if (t.type === 'contribution') {
-                            incomeCategories.set(category, (incomeCategories.get(category) || 0) + t.amount);
+                            // Contributions don't have expense_type, so we can categorize them generally
+                            incomeCategories.set(translations[currentLanguage].contributionType, (incomeCategories.get(translations[currentLanguage].contributionType) || 0) + t.amount);
                         } else if (t.type === 'expense') {
+                            const category = extractCategory(t);
                             expenseCategories.set(category, (expenseCategories.get(category) || 0) + t.amount);
                         }
                     });
@@ -2538,7 +2775,7 @@
 
                     // Construct prompt for LLM
                     let prompt = `Given the following fund transactions and current fund balance for a group's meal fund, provide a concise summary of the fund's financial health and suggest 3-5 actionable tips for better fund management. The response should be in ${currentLanguage === 'vi' ? 'Vietnamese' : 'English'} and formatted using Markdown (e.g., use ## for headings, - for list items, ** for bold).
-
+                    
 Current Fund Balance: ${formatNumberForDisplay(fundBalance)} ${translations[currentLanguage].unitCurrency}
 
 Recent Transactions:\n`;
@@ -2546,13 +2783,18 @@ Recent Transactions:\n`;
                     if (transactions.length === 0) {
                         prompt += `${translations[currentLanguage].noTransactions}.\n`;
                     } else {
-                        transactions.slice(-10).reverse().forEach(t => { // Last 10 transactions
+                        transactions.slice(-10).sort((a, b) => new Date(a.date) - new Date(b.date)).forEach(t => { // Last 10 transactions, sorted by date
                             const memberNames = t.type === 'contribution'
                                 ? getMemberName(t.contributingMemberId)
                                 : (t.involvedMemberIds && t.involvedMemberIds.length > 0
                                     ? t.involvedMemberIds.map(id => getMemberName(id)).join(', ')
                                     : translations[currentLanguage].allMembers);
-                            prompt += `- ${t.date} | ${translations[currentLanguage].typeHeader}: ${t.type === 'contribution' ? translations[currentLanguage].contributionType : translations[currentLanguage].expenseType} | ${translations[currentLanguage].amountHeader}: ${formatNumberForDisplay(t.amount)} ${translations[currentLanguage].unitCurrency} | ${translations[currentLanguage].descriptionHeader}: ${t.description} | ${translations[currentLanguage].relatedMembersHeader}: ${memberNames}\n`;
+                            const transactionDate = new Date(t.date).toLocaleDateString(currentLanguage === 'vi' ? 'vi-VN' : 'en-US', {
+                                year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit'
+                            });
+                            // Include expense type in the prompt for AI (New)
+                            const expenseTypeDetail = t.type === 'expense' && t.expense_type ? ` | ${translations[currentLanguage].expenseTypeHeader}: ${t.expense_type}` : '';
+                            prompt += `- ${transactionDate} | ${translations[currentLanguage].typeHeader}: ${t.type === 'contribution' ? translations[currentLanguage].contributionType : translations[currentLanguage].expenseType} | ${translations[currentLanguage].amountHeader}: ${formatNumberForDisplay(t.amount)} ${translations[currentLanguage].unitCurrency} | ${translations[currentLanguage].descriptionHeader}: ${t.description}${expenseTypeDetail} | ${translations[currentLanguage].relatedMembersHeader}: ${memberNames}\n`;
                         });
                     }
 
@@ -2562,7 +2804,7 @@ Recent Transactions:\n`;
                         let chatHistory = [];
                         chatHistory.push({ role: "user", parts: [{ text: prompt }] });
                         const payload = { contents: chatHistory };
-                        const apiKey = "AIzaSyBaLi7TzZJ9SwmHilU24SRcV2i7lU6gqdQ"; // Leave as empty string for Canvas to provide
+                        const apiKey = ""; // Leave as empty string for Canvas to provide
                         const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
 
                         const response = await fetch(apiUrl, {
@@ -2656,7 +2898,7 @@ Recent Transactions:\n`;
                                 }
                             }
                         };
-                        const apiKey = "AIzaSyBaLi7TzZJ9SwmHilU24SRcV2i7lU6gqdQ"; // Leave as empty string for Canvas to provide
+                        const apiKey = ""; // Leave as empty string for Canvas to provide
                         const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
 
                         const response = await fetch(apiUrl, {
@@ -2717,11 +2959,17 @@ Recent Transactions:\n`;
 
                 // Calls Gemini Vision API
                 async function callGeminiVisionAPI(base64ImageData, mimeType) {
+                    // Get current expense types from the global state
+                    // Use a fallback if expenseTypes is empty
+                    const availableExpenseTypes = expenseTypes.length > 0 
+                        ? expenseTypes.map(et => et.expense_type).join(', ')
+                        : translations[currentLanguage].defaultExpenseTypes; // Fallback to a default list or instruct user
+
                     const prompt = `Describe the content of this image concisely for the purpose of clarifying what is being spent or received.
                     Examples of expenses: drinking coffee, eating rice, eating vermicelli, eating Thai food, eating hotpot.
                     Examples of contributions: Van A submitted money via bank transfer from BIDV bank.
                     Information about the location if present in the image (e.g., restaurant name).
-                    Categorize the income/expense related to money submission and types of food/drink. Examples: 'fund contribution', 'eating rice', 'drinking coffee', 'eating pho', 'eating vermicelli', 'eating Japanese food', 'eating Thai food'.
+                    Categorize the income/expense related to money submission and types of food/drink into one of the following expense types: ${availableExpenseTypes}. If the image is a contribution, indicate 'fund contribution'.
                     If there's an amount in the image, put the amount in the amount field (number only, no unit).
                     If there's information about income or expense, select the corresponding transaction type as 'contribution' or 'expense'. If unsure, leave it blank.
 
@@ -2731,7 +2979,7 @@ Recent Transactions:\n`;
                       "amount": "Amount (number only, no unit, if available)",
                       "transactionType": "Transaction type ('contribution' or 'expense', if identifiable)",
                       "location": "Location (if available)",
-                      "category": "Category (e.g., 'fund contribution', 'eating rice', 'drinking coffee')"
+                      "category": "Category (must be one of the provided expense types or 'fund contribution')"
                     }
                     The response should be in ${currentLanguage === 'vi' ? 'Vietnamese' : 'English'}.
                     `;
@@ -2768,7 +3016,7 @@ Recent Transactions:\n`;
                                 }
                             }
                         };
-                        const apiKey = "AIzaSyBaLi7TzZJ9SwmHilU24SRcV2i7lU6gqdQ";
+                        const apiKey = ""; // Leave as empty string for Canvas to provide
                         const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
 
                         const response = await fetch(apiUrl, {
@@ -2796,9 +3044,6 @@ Recent Transactions:\n`;
                             if (parsedResult.location) {
                                 fullDescription += ` (${currentLanguage === 'vi' ? 'Địa điểm' : 'Location'}: ${parsedResult.location})`;
                             }
-                            if (parsedResult.category) {
-                                fullDescription += ` (${currentLanguage === 'vi' ? 'Phân loại' : 'Category'}: ${parsedResult.category})`;
-                            }
                             descriptionInput.value = fullDescription.trim();
 
                             const extractedAmount = parseFloat(parsedResult.amount.replace(/\D/g, ''));
@@ -2808,7 +3053,18 @@ Recent Transactions:\n`;
 
                             if (parsedResult.transactionType === 'contribution' || parsedResult.transactionType === 'expense') {
                                 transactionTypeSelect.value = parsedResult.transactionType;
-                                transactionTypeSelect.dispatchEvent(new Event('change'));
+                                transactionTypeSelect.dispatchEvent(new Event('change')); // Trigger change to show/hide fields
+
+                                if (parsedResult.transactionType === 'expense' && parsedResult.category) {
+                                    // Set expense type if it matches one of the available types
+                                    const matchingExpenseType = expenseTypes.find(et => et.expense_type === parsedResult.category);
+                                    if (matchingExpenseType) {
+                                        expenseTypeSelect.value = matchingExpenseType.expense_type;
+                                    } else {
+                                        // Default to 'Khác' or 'Other' if not found
+                                        expenseTypeSelect.value = translations[currentLanguage].otherCategory;
+                                    }
+                                }
                             }
 
                         } else {
@@ -2844,8 +3100,34 @@ Recent Transactions:\n`;
                     addTransactionSection.classList.remove('hidden');
                     amountInput.value = '';
                     descriptionInput.value = '';
+                    // Set current date and time for transaction date input
+                    const now = new Date();
+                    const year = now.getFullYear();
+                    const month = (now.getMonth() + 1).toString().padStart(2, '0');
+                    const day = now.getDate().toString().padStart(2, '0');
+                    const hours = now.getHours().toString().padStart(2, '0');
+                    const minutes = now.getMinutes().toString().padStart(2, '0');
+                    transactionDateInput.value = `${year}-${month}-${day}T${hours}:${minutes}`;
+
+                    // Attempt to get current geolocation
+                    if (navigator.geolocation) {
+                        navigator.geolocation.getCurrentPosition((position) => {
+                            latitudeInput.value = position.coords.latitude;
+                            longitudeInput.value = position.coords.longitude;
+                            console.log("GPS coordinates obtained:", position.coords.latitude, position.coords.longitude);
+                        }, (error) => {
+                            console.warn("Could not get GPS coordinates:", error.message);
+                            latitudeInput.value = ''; // Clear if not obtained
+                            longitudeInput.value = ''; // Clear if not obtained
+                        });
+                    } else {
+                        console.warn("Geolocation is not supported by this browser.");
+                        latitudeInput.value = '';
+                        longitudeInput.value = '';
+                    }
+
                     transactionTypeSelect.value = 'contribution';
-                    populateMemberSelectors();
+                    populateSelectors(); // Call the updated populate function
                     transactionTypeSelect.dispatchEvent(new Event('change'));
                     scrollToSection('add-transaction-section');
                 };
