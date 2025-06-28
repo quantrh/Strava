@@ -1768,130 +1768,147 @@
         };
 
         // Populates the member dropdowns and checkboxes for transaction forms (and expense types)
-        function populateSelectors() {
-            // For Add Transaction Form - Members
-            memberSelect.innerHTML = '';
-            involvedMembersCheckboxes.innerHTML = '';
+				   function populateSelectors() {
+				// For Add Transaction Form - Members
+				memberSelect.innerHTML = '';
+				involvedMembersCheckboxes.innerHTML = '';
 
-            if (members.length === 0) {
-                memberSelect.innerHTML = `<option value="">${translations[currentLanguage].noMembers}</option>`;
-                involvedMembersCheckboxes.innerHTML = `<p class="text-gray-500 text-sm">${translations[currentLanguage].noMembers}</p>`;
-            } else {
-                members.forEach(member => {
-                    // For dropdown (contributing member)
-                    const option = document.createElement('option');
-                    option.value = member.id;
-                    option.textContent = member.name;
-                    memberSelect.appendChild(option);
+				if (members.length === 0) {
+					memberSelect.innerHTML = `<option value="">${translations[currentLanguage].noMembers}</option>`;
+					involvedMembersCheckboxes.innerHTML = `<p class="text-gray-500 text-sm">${translations[currentLanguage].noMembers}</p>`;
+				} else {
+					members.forEach(member => {
+						// For dropdown (contributing member)
+						const option = document.createElement('option');
+						option.value = member.id;
+						option.textContent = member.name;
+						memberSelect.appendChild(option);
 
-                    // For checkboxes (involved members)
-                    const label = document.createElement('label');
-                    label.className = 'inline-flex items-center cursor-pointer';
-                    label.innerHTML = `
-                        <input type="checkbox" class="form-checkbox h-4 w-4 text-[#006B68] transition duration-150 ease-in-out rounded focus:ring-[#006B68]" value="${member.id}">
-                        <span class="ml-2 text-sm text-gray-700">${member.name}</span>
-                    `;
-                    involvedMembersCheckboxes.appendChild(label);
-                });
-                // Set default selected member for contribution if available
-                if (members.length > 0) {
-                    memberSelect.value = members[0].id;
-                }
-            }
+						// For checkboxes (involved members)
+						const label = document.createElement('label');
+						label.className = 'inline-flex items-center cursor-pointer';
+						label.innerHTML = `
+							<input type="checkbox" class="form-checkbox h-4 w-4 text-[#006B68] transition duration-150 ease-in-out rounded focus:ring-[#006B68]" value="${member.id}">
+							<span class="ml-2 text-sm text-gray-700">${member.name}</span>
+						`;
+						involvedMembersCheckboxes.appendChild(label);
+					});
+					// Set default selected member for contribution if available
+					if (members.length > 0) {
+						memberSelect.value = members[0].id;
+					}
+				}
 
-            // For Add Transaction Form - Expense Types (New)
-            expenseTypeSelect.innerHTML = '';
-            if (expenseTypes.length === 0) {
-                expenseTypeSelect.innerHTML = `<option value="">${translations[currentLanguage].selectExpenseType} (${translations[currentLanguage].noCategoriesAvailable})</option>`;
-            } else {
-                const defaultOption = document.createElement('option');
-                defaultOption.value = '';
-                defaultOption.textContent = translations[currentLanguage].selectExpenseType;
-                expenseTypeSelect.appendChild(defaultOption);
+				// Gọi hàm populate riêng cho expenseTypeSelect với loại giao dịch mặc định của form thêm
+				populateExpenseTypeSelect(expenseTypeSelect, transactionTypeSelect.value); 
 
-                expenseTypes.forEach(type => {
-                    const option = document.createElement('option');
-                    option.value = type.expense_type;
-                    option.textContent = type.expense_type;
-                    expenseTypeSelect.appendChild(option);
-                });
-                // Set the default selected expense type if there are entries
-                if (expenseTypes.length > 0) {
-                    expenseTypeSelect.value = expenseTypes[0].expense_type;
-                }
-            }
+				// For Edit Transaction Form - Members (similar logic for edit modal)
+				editMemberSelect.innerHTML = '';
+				editInvolvedMembersCheckboxes.innerHTML = '';
 
-            // For Edit Transaction Form - Members (similar logic for edit modal)
-            editMemberSelect.innerHTML = '';
-            editInvolvedMembersCheckboxes.innerHTML = '';
+				if (members.length === 0) {
+					editMemberSelect.innerHTML = `<option value="">${translations[currentLanguage].noMembers}</option>`;
+					editInvolvedMembersCheckboxes.innerHTML = `<p class="text-gray-500 text-sm">${translations[currentLanguage].noMembers}</p>`;
+				} else {
+					members.forEach(member => {
+						const option = document.createElement('option');
+						option.value = member.id;
+						option.textContent = member.name;
+						editMemberSelect.appendChild(option);
 
-            if (members.length === 0) {
-                editMemberSelect.innerHTML = `<option value="">${translations[currentLanguage].noMembers}</option>`;
-                editInvolvedMembersCheckboxes.innerHTML = `<p class="text-gray-500 text-sm">${translations[currentLanguage].noMembers}</p>`;
-            } else {
-                members.forEach(member => {
-                    const option = document.createElement('option');
-                    option.value = member.id;
-                    option.textContent = member.name;
-                    editMemberSelect.appendChild(option);
+						const label = document.createElement('label');
+						label.className = 'inline-flex items-center cursor-pointer';
+						label.innerHTML = `
+							<input type="checkbox" class="form-checkbox h-4 w-4 text-[#006B68] transition duration-150 ease-in-out rounded focus:ring-[#006B68]" value="${member.id}">
+							<span class="ml-2 text-sm text-gray-700">${member.name}</span>
+						`;
+						editInvolvedMembersCheckboxes.appendChild(label);
+					});
+				}
 
-                    const label = document.createElement('label');
-                    label.className = 'inline-flex items-center cursor-pointer';
-                    label.innerHTML = `
-                        <input type="checkbox" class="form-checkbox h-4 w-4 text-[#006B68] transition duration-150 ease-in-out rounded focus:ring-[#006B68]" value="${member.id}">
-                        <span class="ml-2 text-sm text-gray-700">${member.name}</span>
-                    `;
-                    editInvolvedMembersCheckboxes.appendChild(label);
-                });
-            }
+					// Gọi hàm populate riêng cho editExpenseTypeSelect với loại giao dịch mặc định của form sửa
+						populateExpenseTypeSelect(editExpenseTypeSelect, editTransactionTypeSelect.value); 
+			}
+			// THÊM HÀM MỚI NÀY SAU HÀM populateSelectors()
+			function populateExpenseTypeSelect(selectElement, transactionType) { // Thêm transactionType ở đây
+				selectElement.innerHTML = '';
+				
+				let filteredExpenseTypes = [];
+				if (transactionType) {
+					// Lọc expenseTypes dựa trên trường "Type" (chữ T hoa) từ schema của bạn
+					filteredExpenseTypes = expenseTypes.filter(type => type.Type === transactionType);
+				} else {
+					// Nếu không có transactionType được cung cấp (ví dụ, khi tải lần đầu và chưa có lựa chọn),
+					// chúng ta sẽ hiển thị tùy chọn mặc định "Chọn loại chi tiêu" và không có loại cụ thể nào.
+					filteredExpenseTypes = []; 
+				}
 
-            // For Edit Transaction Form - Expense Types (New)
-            editExpenseTypeSelect.innerHTML = '';
-            if (expenseTypes.length === 0) {
-                editExpenseTypeSelect.innerHTML = `<option value="">${translations[currentLanguage].selectExpenseType} (${translations[currentLanguage].noCategoriesAvailable})</option>`;
-            } else {
-                const defaultOption = document.createElement('option');
-                defaultOption.value = '';
-                defaultOption.textContent = translations[currentLanguage].selectExpenseType;
-                editExpenseTypeSelect.appendChild(defaultOption);
+				if (filteredExpenseTypes.length === 0) {
+					const noOptionsMessage = translations[currentLanguage].selectExpenseType;
+					selectElement.innerHTML = `<option value="">${noOptionsMessage}</option>`; 
+				} else {
+					const defaultOption = document.createElement('option');
+					defaultOption.value = '';
+					defaultOption.textContent = translations[currentLanguage].selectExpenseType;
+					selectElement.appendChild(defaultOption);
 
-                expenseTypes.forEach(type => {
-                    const option = document.createElement('option');
-                    option.value = type.expense_type;
-                    option.textContent = type.expense_type;
-                    editExpenseTypeSelect.appendChild(option);
-                });
-            }
-        }
+					filteredExpenseTypes.forEach(type => {
+						const option = document.createElement('option');
+						option.value = type.expense_type;
+						option.textContent = type.expense_type;
+						selectElement.appendChild(option);
+					});
+					// Không tự động chọn mặc định ở đây, để user chọn hoặc dựa vào logic set giá trị cụ thể
+					// (như trong showEditTransactionModal)
+				}
+			}
 
-        // Toggles visibility and required attributes of contributing/involved member fields and expense type field based on transaction type
-        transactionTypeSelect.onchange = () => {
-            if (transactionTypeSelect.value === 'contribution') {
-                contributingMemberDiv.classList.remove('hidden');
-                memberSelect.setAttribute('required', 'true'); // Make contributing member required
-                involvedMembersDiv.classList.add('hidden');
-                involvedMembersCheckboxes.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
-                    checkbox.checked = false; // Clear selected expense members
-                    checkbox.removeAttribute('required'); // Remove required from expense members
-                });
-                expenseTypeDiv.classList.add('hidden'); // Hide expense type for contribution
-                expenseTypeSelect.removeAttribute('required'); // Remove required from expense type
-                expenseTypeSelect.value = ''; // Clear expense type
-            } else { // Expense
-                contributingMemberDiv.classList.add('hidden');
-                memberSelect.removeAttribute('required'); // Remove required from contributing member
-                memberSelect.value = ''; // Clear contributing member
-                involvedMembersDiv.classList.remove('hidden');
-                // For expense, at least one checkbox should be implicitly required by validation logic
-                // No need to set 'required' on individual checkboxes, as the form submission logic handles it.
-                expenseTypeDiv.classList.remove('hidden'); // Show expense type for expense
-                expenseTypeSelect.setAttribute('required', 'true'); // Make expense type required
-                // Ensure expense type is populated if not already, and select a default if available
-                if (expenseTypeSelect.value === '' && expenseTypes.length > 0) {
-                    expenseTypeSelect.value = expenseTypes[0].expense_type;
-                }
-            }
-        };
+
+					// Toggles visibility and required attributes of contributing/involved member fields and expense type field based on transaction type
+			transactionTypeSelect.onchange = () => {
+			const expenseTypeLabelElement = expenseTypeDiv.querySelector('label[data-key="expenseTypeLabel"]');
+			const selectedTransactionType = transactionTypeSelect.value; // Lấy giá trị đã chọn
+
+			if (selectedTransactionType === 'contribution') {
+				contributingMemberDiv.classList.remove('hidden');
+				memberSelect.setAttribute('required', 'true');
+				involvedMembersDiv.classList.add('hidden');
+				involvedMembersCheckboxes.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+					checkbox.checked = false;
+					checkbox.removeAttribute('required');
+				});
+				
+				expenseTypeDiv.classList.remove('hidden'); 
+				expenseTypeSelect.setAttribute('required', 'true');
+				if (expenseTypeLabelElement) {
+					expenseTypeLabelElement.textContent = "Loại thu";
+				}
+				populateExpenseTypeSelect(expenseTypeSelect, 'contribution'); // Truyền 'contribution'
+				expenseTypeSelect.value = ''; // Làm sạch giá trị sau khi populate
+				
+			} else { // Expense
+				contributingMemberDiv.classList.add('hidden');
+				memberSelect.removeAttribute('required');
+				memberSelect.value = '';
+				involvedMembersDiv.classList.remove('hidden');
+				
+				expenseTypeDiv.classList.remove('hidden'); 
+				expenseTypeSelect.setAttribute('required', 'true');
+				if (expenseTypeLabelElement) {
+					expenseTypeLabelElement.textContent = translations[currentLanguage].expenseTypeLabel;
+				}
+				populateExpenseTypeSelect(expenseTypeSelect, 'expense'); // Truyền 'expense'
+				// Sau khi populate, nếu có giá trị cũ không hợp lệ thì sẽ bị làm trống,
+				// sau đó bạn có thể chọn mặc định nếu muốn
+				// Lấy giá trị mặc định của loại chi tiêu từ danh sách đã lọc
+				const defaultExpenseOption = expenseTypes.find(et => et.Type === 'expense');
+				if (defaultExpenseOption) {
+					 expenseTypeSelect.value = defaultExpenseOption.expense_type;
+				} else {
+					 expenseTypeSelect.value = ''; // Để trống nếu không có loại chi tiêu nào
+				}
+			}
+		};
 
         // Shows the edit transaction modal
         function showEditTransactionModal(transaction) {
@@ -1916,66 +1933,97 @@
             editLongitudeInput.value = transaction.longitude || '';
             
             // Set initial selection based on transaction type and manage required attributes
-            if (transaction.type === 'contribution') {
-                editContributingMemberDiv.classList.remove('hidden');
-                editMemberSelect.setAttribute('required', 'true');
-                editInvolvedMembersDiv.classList.add('hidden');
-                editInvolvedMembersCheckboxes.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
-                    checkbox.removeAttribute('required');
-                });
-                editMemberSelect.value = transaction.contributingMemberId || '';
-                editExpenseTypeDiv.classList.add('hidden'); // Hide expense type for contribution
-                editExpenseTypeSelect.removeAttribute('required'); // Remove required from expense type
-                editExpenseTypeSelect.value = ''; // Clear expense type
-            } else { // Expense
-                editContributingMemberDiv.classList.add('hidden');
-                editMemberSelect.removeAttribute('required');
-                editMemberSelect.value = '';
-                editInvolvedMembersDiv.classList.remove('hidden');
-                // Clear all checkboxes first
-                editInvolvedMembersCheckboxes.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
-                    checkbox.checked = false;
-                });
-                // Then check the ones involved in this transaction
-                if (transaction.involvedMemberIds) {
-                    transaction.involvedMemberIds.forEach(id => {
-                        const checkbox = editInvolvedMembersCheckboxes.querySelector(`input[value="${id}"]`);
-                        if (checkbox) checkbox.checked = true;
-                    });
-                }
-                editExpenseTypeDiv.classList.remove('hidden'); // Show expense type for expense
-                editExpenseTypeSelect.setAttribute('required', 'true'); // Make expense type required
-                editExpenseTypeSelect.value = transaction.expense_type || ''; // Set expense type (New)
-            }
+          // Set initial selection based on transaction type and manage required attributes
+const expenseTypeLabelElement = editExpenseTypeDiv.querySelector('label[data-key="expenseTypeLabel"]'); // Lấy label cho modal sửa
+
+if (transaction.type === 'contribution') {
+    editContributingMemberDiv.classList.remove('hidden');
+    editMemberSelect.setAttribute('required', 'true');
+    editInvolvedMembersDiv.classList.add('hidden');
+    editInvolvedMembersCheckboxes.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+        checkbox.removeAttribute('required');
+    });
+    editMemberSelect.value = transaction.contributingMemberId || '';
+    
+    // Hiển thị expense_type cho contribution và đổi nhãn
+    editExpenseTypeDiv.classList.remove('hidden'); 
+    editExpenseTypeSelect.setAttribute('required', 'true'); 
+    if (expenseTypeLabelElement) {
+        expenseTypeLabelElement.textContent = "Loại thu"; // Đổi nhãn thành "Loại thu"
+    }
+    populateExpenseTypeSelect(editExpenseTypeSelect, 'contribution'); // Populate với 'contribution' types
+    editExpenseTypeSelect.value = transaction.expense_type || ''; // Set giá trị nếu có
+    
+} else { // Expense
+    editContributingMemberDiv.classList.add('hidden');
+    editMemberSelect.removeAttribute('required');
+    editMemberSelect.value = '';
+    editInvolvedMembersDiv.classList.remove('hidden');
+    // Clear all checkboxes first
+    editInvolvedMembersCheckboxes.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+        checkbox.checked = false;
+    });
+    // Then check the ones involved in this transaction
+    if (transaction.involvedMemberIds) {
+        transaction.involvedMemberIds.forEach(id => {
+            const checkbox = editInvolvedMembersCheckboxes.querySelector(`input[value="${id}"]`);
+            if (checkbox) checkbox.checked = true;
+        });
+    }
+    
+    // Hiển thị expense_type cho expense và đổi nhãn
+    editExpenseTypeDiv.classList.remove('hidden'); 
+    editExpenseTypeSelect.setAttribute('required', 'true'); 
+    if (expenseTypeLabelElement) {
+        expenseTypeLabelElement.textContent = translations[currentLanguage].expenseTypeLabel; // Đặt lại nhãn ban đầu
+    }
+    populateExpenseTypeSelect(editExpenseTypeSelect, 'expense'); // Populate với 'expense' types
+    editExpenseTypeSelect.value = transaction.expense_type || ''; // Set giá trị nếu có
+}
         }
 
         // Toggles visibility and required attributes of contributing/involved member fields in edit modal
-        editTransactionTypeSelect.onchange = () => {
-            if (editTransactionTypeSelect.value === 'contribution') {
-                editContributingMemberDiv.classList.remove('hidden');
-                editMemberSelect.setAttribute('required', 'true');
-                editInvolvedMembersDiv.classList.add('hidden');
-                editInvolvedMembersCheckboxes.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
-                    checkbox.checked = false;
-                    checkbox.removeAttribute('required');
-                });
-                editExpenseTypeDiv.classList.add('hidden'); // Hide expense type for contribution
-                editExpenseTypeSelect.removeAttribute('required'); // Remove required from expense type
-                editExpenseTypeSelect.value = ''; // Clear expense type
-            } else { // Expense
-                editContributingMemberDiv.classList.add('hidden');
-                editMemberSelect.removeAttribute('required');
-                editMemberSelect.value = '';
-                editInvolvedMembersDiv.classList.remove('hidden');
-                // For expense, at least one checkbox should be implicitly required by validation logic
-                editExpenseTypeDiv.classList.remove('hidden'); // Show expense type for expense
-                editExpenseTypeSelect.setAttribute('required', 'true'); // Make expense type required
-                 // Ensure expense type is populated if not already, and select a default if available
-                if (editExpenseTypeSelect.value === '' && expenseTypes.length > 0) {
-                    editExpenseTypeSelect.value = expenseTypes[0].expense_type;
-                }
-            }
-        };
+		editTransactionTypeSelect.onchange = () => {
+			const editExpenseTypeLabelElement = editExpenseTypeDiv.querySelector('label[data-key="expenseTypeLabel"]'); // Lấy phần tử label
+			
+			if (editTransactionTypeSelect.value === 'contribution') {
+				editContributingMemberDiv.classList.remove('hidden');
+				editMemberSelect.setAttribute('required', 'true');
+				editInvolvedMembersDiv.classList.add('hidden');
+				editInvolvedMembersCheckboxes.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+					checkbox.checked = false;
+					checkbox.removeAttribute('required');
+				});
+				
+				// HIỂN THỊ edit-expense_type cho Đóng Góp và đổi nhãn
+				editExpenseTypeDiv.classList.remove('hidden'); 
+				editExpenseTypeSelect.setAttribute('required', 'true'); 
+				if (editExpenseTypeLabelElement) {
+					editExpenseTypeLabelElement.textContent = "Loại thu"; // Đổi nhãn thành "Loại thu"
+				}
+				populateExpenseTypeSelect(editExpenseTypeSelect); // Gọi hàm mới để populate
+				editExpenseTypeSelect.value = ''; // Thêm dòng này để làm sạch giá trị
+				
+			} else { // Expense
+				editContributingMemberDiv.classList.add('hidden');
+				editMemberSelect.removeAttribute('required');
+				editMemberSelect.value = '';
+				editInvolvedMembersDiv.classList.remove('hidden');
+				// For expense, at least one checkbox should be implicitly required by validation logic
+				
+				// HIỂN THỊ edit-expense_type cho Chi Tiêu và đổi nhãn
+				editExpenseTypeDiv.classList.remove('hidden'); 
+				editExpenseTypeSelect.setAttribute('required', 'true'); 
+				if (editExpenseTypeLabelElement) {
+					editExpenseTypeLabelElement.textContent = translations[currentLanguage].expenseTypeLabel; // Đặt lại nhãn ban đầu
+				}
+				populateExpenseTypeSelect(editExpenseTypeSelect); // Gọi hàm mới để populate
+				// Ensure expense type is populated if not already, and select a default if available
+				if (editExpenseTypeSelect.value === '' && expenseTypes.length > 0) {
+					editExpenseTypeSelect.value = expenseTypes[0].expense_type;
+				}
+			}
+		};
 
         // Handles saving edited transaction
         editTransactionForm.onsubmit = async (e) => {
@@ -2014,22 +2062,17 @@
                 }
                 return;
             }
-            if (type === 'expense' && involvedMemberIds.length === 0) {
-                showErrorMessage(translations[currentLanguage].editSelectInvolvedMembers);
-                if (submitButton) {
-                    submitButton.disabled = false;
-                    submitButton.textContent = translations[currentLanguage].saveChangesBtn;
-                }
-                return;
-            }
-            if (type === 'expense' && !expenseType) { // New validation for expense type
-                showErrorMessage(translations[currentLanguage].selectExpenseType);
-                if (submitButton) {
-                    submitButton.disabled = false;
-                    submitButton.textContent = translations[currentLanguage].saveChangesBtn;
-                }
-                return;
-            }
+           // Validation cho expenseType (dù là đóng góp hay chi tiêu, nếu hiển thị thì required)
+		// Validation cho expenseType (dù là đóng góp hay chi tiêu, nếu hiển thị thì required)
+					if (editExpenseTypeDiv.classList.contains('hidden') === false && !expenseType) { 
+						showErrorMessage(translations[currentLanguage].selectExpenseType);
+						if (submitButton) {
+							submitButton.disabled = false;
+							submitButton.textContent = translations[currentLanguage].saveChangesBtn;
+						}
+						return;
+					}
+            
 
             hideErrorMessage();
 
