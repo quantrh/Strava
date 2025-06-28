@@ -152,12 +152,6 @@
             margin-top: 1rem;
             display: none; /* Hidden by default */
         }
-        #camera-controls {
-            display: flex;
-            gap: 1rem;
-            width: 100%;
-            justify-content: center;
-        }
         #camera-loading-spinner {
             display: none; /* Hidden by default */
             border: 4px solid rgba(0, 0, 0, 0.1);
@@ -763,11 +757,12 @@
                 confirmDeleteMember: 'Bạn có chắc chắn muốn xóa thành viên "{memberName}" này không? Mọi giao dịch liên quan sẽ bị xóa.', // New translation key
                 deleteMemberError: 'Lỗi khi xóa thành viên:', // New translation key
                 memberBalanceNotZero: 'Không thể xóa thành viên có số dư khác 0. Vui lòng thanh toán số dư trước.', // New translation key
+                defaultExpenseTypes: 'Ăn uống, Đi lại, Mua sắm, Giải trí, Y tế, Giáo dục, Khác', // New translation for default expense types
             },
             'en': {
                 appTitle: 'GROUP FUND MANAGEMENT',
                 fundBalanceTitle: 'Overall Fund Balance',
-                unitCurrency: 'VNĐ',
+                unitCurrency: 'VND',
                 addMemberBtn: 'Add Member',
                 addTransactionBtn: 'Add Transaction',
                 viewHistoryBtn: 'View History',
@@ -785,7 +780,7 @@
                 selectExpenseType: 'Select expense type', // New translation key
                 contributingMemberLabel: 'Contributing Member',
                 involvedMembersLabel: 'Involved Members (Expense)',
-                amountLabel: 'Amount (VNĐ)',
+                amountLabel: 'Amount (VND)',
                 amountPlaceholder: 'Amount',
                 transactionDateLabel: 'Transaction Date', // New translation key
                 descriptionLabel: 'Description',
@@ -817,7 +812,7 @@
                 descriptionHeader: 'Description',
                 expenseTypeHeader: 'Expense Type', // New translation key
                 relatedMembersHeader: 'Related Members',
-                amountHeader: 'Amount (VNĐ)',
+                amountHeader: 'Amount (VND)',
                 memberReportsTitle: 'Individual Member Reports',
                 selectMemberReportLabel: 'Select Member:',
                 selectMemberToReport: 'Please select a member to view the report.',
@@ -886,7 +881,7 @@
                 selectMemberForExport: 'Please select a member to export the report.',
                 fileSaverLoadError: 'FileSaver.js library not loaded. Please try again later.',
                 selectMemberForWordExport: 'Please select a member to export the Word report.',
-                apiError: 'Lỗi API:',
+                apiError: 'API Error:',
                 noImageDescription: 'Could not get image description from AI. Please try again.',
                 aiCallError: 'Error calling AI:',
                 scrollToTopBtn: ' ↑',
@@ -899,6 +894,7 @@
                 confirmDeleteMember: 'Are you sure you want to delete member "{memberName}"? All related transactions will be deleted.', // New translation key
                 deleteMemberError: 'Error deleting member:', // New translation key
                 memberBalanceNotZero: 'Cannot delete member with non-zero balance. Please settle up the balance first.', // New translation key
+                defaultExpenseTypes: 'Food, Transport, Shopping, Entertainment, Health, Education, Other', // New translation for default expense types
             }
         };
 
@@ -1250,7 +1246,7 @@
 
                     // Create initial transactions using the IDs of newly inserted members
                     // Ensure expense types used here exist in your actual expensetype table or handle "Khác"
-                    const defaultExpenseType = expenseTypes.length > 0 ? expenseTypes[0].expense_type : 'Khác'; // Use first type or 'Khác'
+                    const defaultExpenseType = expenseTypes.length > 0 ? expenseTypes[0].expense_type : 'Ăn uống'; // Use first type or 'Ăn uống' as a common default
                     const initialTransactions = [
                         { type: 'contribution', amount: 500000, description: 'Đóng góp ban đầu', date: new Date().toISOString(), contributingMemberId: newMembers[0].id, latitude: null, longitude: null, expense_type: null },
                         { type: 'contribution', amount: 300000, description: 'Đóng góp thêm', date: new Date().toISOString(), contributingMemberId: newMembers[1].id, latitude: null, longitude: null, expense_type: null },
@@ -1797,7 +1793,7 @@
                 });
                 // Set the default selected expense type if there are entries
                 if (expenseTypes.length > 0) {
-                    expenseTypeSelect.value = expenseTypes[0].expense_type; // Select the first one
+                    expenseTypeSelect.value = expenseTypes[0].expense_type;
                 }
             }
 
@@ -2723,7 +2719,7 @@
                 }
 
 
-                // --- Gemini API Integration ---
+                // --- Gemini API Integration (via Supabase Edge Functions) ---
 
                 // Simple Markdown to HTML converter
                 function markdownToHtml(markdown) {
@@ -2762,6 +2758,53 @@
                     return html;
                 }
 
+                // NEW: Function to call a Supabase Edge Function
+                async function callSupabaseEdgeFunction(functionName, dataPayload) {
+                    try {
+                        const session = await supabase.auth.getSession();
+                        const accessToken = session?.data?.session?.access_token;
+                        const clientTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+                        if (!accessToken) {
+                            // Attempt anonymous sign-in if no session. This might fail if RLS requires authenticated users.
+                            const { data, error } = await supabase.auth.signInAnonymously();
+                            if (error) {
+                                throw new Error(`Anonymous sign-in failed: ${error.message}`);
+                            }
+                            // If anonymous sign-in is successful, retrieve the new session
+                            const newSession = await supabase.auth.getSession();
+                            if (!newSession?.data?.session?.access_token) {
+                                throw new Error("Could not obtain access token after anonymous sign-in.");
+                            }
+                            accessToken = newSession.data.session.access_token;
+                        }
+
+                        const edgeFunctionUrl = `${SUPABASE_URL}/functions/v1/${functionName}`;
+
+                        const response = await fetch(edgeFunctionUrl, {
+                            method: 'POST',
+                            headers: {
+                                'Authorization': `Bearer ${accessToken}`,
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({
+                                activities: dataPayload, // Pass our custom payload as 'activities'
+                                clientTimezone: clientTimezone // Pass timezone for context
+                            }),
+                        });
+
+                        if (!response.ok) {
+                            const errorData = await response.json();
+                            throw new Error(`Edge Function error: ${errorData.error || response.statusText}`);
+                        }
+
+                        return await response.json();
+                    } catch (error) {
+                        console.error(`Error calling Supabase Edge Function ${functionName}:`, error);
+                        throw error; // Re-throw to be handled by calling functions
+                    }
+                }
+
 
                 async function generateFundInsights() {
                     isGeneratingInsights = true;
@@ -2773,61 +2816,36 @@
                     `;
                     hideErrorMessage(); // Clear previous errors for insights
 
-                    // Construct prompt for LLM
-                    let prompt = `Given the following fund transactions and current fund balance for a group's meal fund, provide a concise summary of the fund's financial health and suggest 3-5 actionable tips for better fund management. The response should be in ${currentLanguage === 'vi' ? 'Vietnamese' : 'English'} and formatted using Markdown (e.g., use ## for headings, - for list items, ** for bold).
-                    
-Current Fund Balance: ${formatNumberForDisplay(fundBalance)} ${translations[currentLanguage].unitCurrency}
+                    // Prepare data for the Edge Function
+                    let activitiesData = {
+                        type: 'fund_insights',
+                        fundBalance: fundBalance,
+                        transactions: transactions.map(t => ({
+                            type: t.type,
+                            amount: t.amount,
+                            description: t.description,
+                            date: t.date,
+                            contributingMemberName: t.type === 'contribution' ? getMemberName(t.contributingMemberId) : null,
+                            involvedMemberNames: t.type === 'expense' ? getInvolvedMembersNames(t.involvedMemberIds) : [],
+                            expenseType: t.type === 'expense' ? t.expense_type : null
+                        })).slice(-10).sort((a, b) => new Date(a.date) - new Date(b.date)), // Last 10, sorted by date
+                        currentLanguage: currentLanguage
+                    };
 
-Recent Transactions:\n`;
-
-                    if (transactions.length === 0) {
-                        prompt += `${translations[currentLanguage].noTransactions}.\n`;
-                    } else {
-                        transactions.slice(-10).sort((a, b) => new Date(a.date) - new Date(b.date)).forEach(t => { // Last 10 transactions, sorted by date
-                            const memberNames = t.type === 'contribution'
-                                ? getMemberName(t.contributingMemberId)
-                                : (t.involvedMemberIds && t.involvedMemberIds.length > 0
-                                    ? t.involvedMemberIds.map(id => getMemberName(id)).join(', ')
-                                    : translations[currentLanguage].allMembers);
-                            const transactionDate = new Date(t.date).toLocaleDateString(currentLanguage === 'vi' ? 'vi-VN' : 'en-US', {
-                                year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit'
-                            });
-                            // Include expense type in the prompt for AI (New)
-                            const expenseTypeDetail = t.type === 'expense' && t.expense_type ? ` | ${translations[currentLanguage].expenseTypeHeader}: ${t.expense_type}` : '';
-                            prompt += `- ${transactionDate} | ${translations[currentLanguage].typeHeader}: ${t.type === 'contribution' ? translations[currentLanguage].contributionType : translations[currentLanguage].expenseType} | ${translations[currentLanguage].amountHeader}: ${formatNumberForDisplay(t.amount)} ${translations[currentLanguage].unitCurrency} | ${translations[currentLanguage].descriptionHeader}: ${t.description}${expenseTypeDetail} | ${translations[currentLanguage].relatedMembersHeader}: ${memberNames}\n`;
-                        });
-                    }
-
-                    console.log("Sending prompt to Gemini API:", prompt);
+                    console.log("Sending fund insights data to Edge Function:", activitiesData);
 
                     try {
-                        let chatHistory = [];
-                        chatHistory.push({ role: "user", parts: [{ text: prompt }] });
-                        const payload = { contents: chatHistory };
-                        const apiKey = ""; // Leave as empty string for Canvas to provide
-                        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+                        // Gọi hàm Edge Function mới: process-ai-requests
+                        const result = await callSupabaseEdgeFunction('process-ai-requests', activitiesData);
 
-                        const response = await fetch(apiUrl, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify(payload)
-                        });
-
-                        const result = await response.json();
-                        console.log("Gemini API response:", result);
-
-                        if (result.candidates && result.candidates.length > 0 &&
-                            result.candidates[0].content && result.candidates[0].content.parts &&
-                            result.candidates[0].content.parts.length > 0) {
-                            const markdownText = result.candidates[0].content.parts[0].text;
-                            // Convert Markdown to HTML before setting innerHTML
-                            fundInsightsContent.innerHTML = markdownToHtml(markdownText);
+                        if (result.success && result.analysis) {
+                            fundInsightsContent.innerHTML = markdownToHtml(result.analysis);
                         } else {
                             fundInsightsContent.innerHTML = `<p class="text-center text-gray-500">${translations[currentLanguage].noInsights}</p>`;
-                            console.error("Unexpected Gemini API response structure:", result);
+                            console.error("Supabase Edge Function response indicated failure:", result);
                         }
                     } catch (error) {
-                        console.error("Error calling Gemini API:", error);
+                        console.error("Error generating fund insights:", error);
                         showErrorMessage(`${translations[currentLanguage].aiCallError} ${error.message}. ${translations[currentLanguage].aiConnectionError}`);
                         fundInsightsContent.innerHTML = `<p class="text-center text-gray-500">${translations[currentLanguage].aiConnectionError}</p>`;
                     } finally {
@@ -2846,75 +2864,22 @@ Recent Transactions:\n`;
                     `;
                     hideErrorMessage(); // Clear previous errors for food suggestions
 
-                    let prompt = `Based on my current GPS location (latitude: ${latitude}, longitude: ${longitude}), suggest 3-10 popular dishes and good restaurants nearby.
-                    For each suggestion, provide the following information:
-                    - Restaurant Name
-                    - Full Address (including house number, street name, ward/commune, district, city).
-                    - Phone Number (if available)
-                    - Star Rating (e.g., 4.5)
-                    - Estimated Distance from my location (e.g., 1.2 km)
-                    - Brief description of the restaurant or signature dish.
-                    - Main menu content or a few prominent dishes.
+                    // Prepare data for the Edge Function
+                    let activitiesData = {
+                        type: 'food_suggestions',
+                        latitude: latitude,
+                        longitude: longitude,
+                        currentLanguage: currentLanguage
+                    };
 
-                    The response must be a JSON array, each element being an object containing the above information. Example:
-                    [
-                      {
-                        "name": "Restaurant Name",
-                        "address": "Full restaurant address",
-                        "phoneNumber": "Phone number",
-                        "starRating": 4.5,
-                        "estimatedDistance": "1.2 km",
-                        "description": "Restaurant description",
-                        "menuContent": "Prominent dishes: Dish A, Dish B, Dish C"
-                      }
-                    ]
-                    The response should be in ${currentLanguage === 'vi' ? 'Vietnamese' : 'English'}.
-                    `;
-
-                    console.log("Sending food suggestion prompt to Gemini API:", prompt);
+                    console.log("Sending food suggestion data to Edge Function:", activitiesData);
 
                     try {
-                        let chatHistory = [];
-                        chatHistory.push({ role: "user", parts: [{ text: prompt }] });
-                        const payload = {
-                            contents: chatHistory,
-                            generationConfig: {
-                                responseMimeType: "application/json",
-                                responseSchema: {
-                                    type: "ARRAY",
-                                    items: {
-                                        type: "OBJECT",
-                                        properties: {
-                                            "name": { "type": "STRING" },
-                                            "address": { "type": "STRING" },
-                                            "phoneNumber": { "type": "STRING" },
-                                            "starRating": { "type": "NUMBER" },
-                                            "estimatedDistance": { "type": "STRING" },
-                                            "description": { "type": "STRING" },
-                                            "menuContent": { "type": "STRING" }
-                                        },
-                                        "propertyOrdering": ["name", "address", "phoneNumber", "starRating", "estimatedDistance", "description", "menuContent"]
-                                    }
-                                }
-                            }
-                        };
-                        const apiKey = ""; // Leave as empty string for Canvas to provide
-                        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+                        // Gọi hàm Edge Function mới: process-ai-requests
+                        const result = await callSupabaseEdgeFunction('process-ai-requests', activitiesData);
 
-                        const response = await fetch(apiUrl, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify(payload)
-                        });
-
-                        const result = await response.json();
-                        console.log("Gemini API food suggestion response:", result);
-
-                        if (result.candidates && result.candidates.length > 0 &&
-                            result.candidates[0].content && result.candidates[0].content.parts &&
-                            result.candidates[0].content.parts.length > 0) {
-                            const jsonText = result.candidates[0].content.parts[0].text;
-                            const suggestions = JSON.parse(jsonText);
+                        if (result.success && result.analysis) {
+                            const suggestions = JSON.parse(result.analysis); // Assume analysis is already JSON from Edge Function
 
                             let htmlContent = '<div class="space-y-4">';
                             if (suggestions.length > 0) {
@@ -2931,176 +2896,100 @@ Recent Transactions:\n`;
                                             <p class="text-sm text-gray-600"><strong>${translations[currentLanguage].distanceLabel}</strong> ${s.estimatedDistance || 'N/A'}</p>
                                             ${s.description ? `<p class="text-sm text-gray-700 mt-2"><strong>${translations[currentLanguage].descriptionLabelShort}</strong> ${s.description}</p>` : ''}
                                             ${s.menuContent ? `<p class="text-sm text-gray-700"><strong>${translations[currentLanguage].menuLabel}</strong> ${s.menuContent}</p>` : ''}
-                                            ${s.name ? `<a href="${googleMapsSearchLink}" target="_blank" class="text-blue-500 hover:underline text-sm mt-2 block">${translations[currentLanguage].viewOnMaps}</a>` : ''}
+                                            ${s.name ? `<a href="${googleMapsSearchLink}" target="_blank" class="text-blue-500 hover:underline text-sm flex items-center mt-2">
+                                                <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"></path></svg>
+                                                ${translations[currentLanguage].viewOnMaps}
+                                            </a>` : ''}
                                         </div>
                                     `;
                                 });
                             } else {
                                 htmlContent += `<p class="text-center text-gray-500">${translations[currentLanguage].noFoodSuggestions}</p>`;
                             }
-                            htmlContent += '</div>';
+                            htmlContent += '</div>'; // Close space-y-4 div
                             foodSuggestionContent.innerHTML = htmlContent;
-
                         } else {
                             foodSuggestionContent.innerHTML = `<p class="text-center text-gray-500">${translations[currentLanguage].noFoodSuggestions}</p>`;
-                            console.error("Unexpected Gemini API food suggestion response structure:", result);
+                            console.error("Supabase Edge Function response indicated failure:", result);
                         }
                     } catch (error) {
-                        console.error("Error calling Gemini API for food suggestions:", error);
-                        showErrorMessage(`${translations[currentLanguage].aiCallError} ${error.message}. ${translations[currentLanguage].aiConnectionError}`);
-                        foodSuggestionContent.innerHTML = `<p class="text-center text-gray-500">${translations[currentLanguage].aiConnectionError}</p>`;
+                        console.error("Error generating food suggestions:", error);
+                        showErrorMessage(`${translations[currentLanguage].aiCallError} ${error.message}. ${translations[currentLanguage].foodSuggestionError}`);
+                        foodSuggestionContent.innerHTML = `<p class="text-center text-gray-500">${translations[currentLanguage].foodSuggestionError}</p>`;
                     } finally {
                         isGeneratingFoodSuggestions = false;
                     }
                 }
 
+                // Removed: callSupabaseVisionEdgeFunction is no longer needed.
+                // All AI calls go through callSupabaseEdgeFunction now.
 
-                // --- Image Upload and AI Description Functions ---
+                // Call Gemini Vision API (now via single Supabase Edge Function 'process-ai-requests')
+                async function callGeminiVisionAPI(base64ImageData) {
+                    cameraLoadingSpinner.classList.remove('hidden');
+                    descriptionInput.value = translations[currentLanguage].generatingInsights; // Show loading text
+                    aiDescribeBtn.disabled = true;
 
-                // Calls Gemini Vision API
-                async function callGeminiVisionAPI(base64ImageData, mimeType) {
-                    // Get current expense types from the global state
-                    // Use a fallback if expenseTypes is empty
-                    const availableExpenseTypes = expenseTypes.length > 0 
-                        ? expenseTypes.map(et => et.expense_type).join(', ')
-                        : translations[currentLanguage].defaultExpenseTypes; // Fallback to a default list or instruct user
-
-                    const prompt = `Describe the content of this image concisely for the purpose of clarifying what is being spent or received.
-                    Examples of expenses: drinking coffee, eating rice, eating vermicelli, eating Thai food, eating hotpot.
-                    Examples of contributions: Van A submitted money via bank transfer from BIDV bank.
-                    Information about the location if present in the image (e.g., restaurant name).
-                    Categorize the income/expense related to money submission and types of food/drink into one of the following expense types: ${availableExpenseTypes}. If the image is a contribution, indicate 'fund contribution'.
-                    If there's an amount in the image, put the amount in the amount field (number only, no unit).
-                    If there's information about income or expense, select the corresponding transaction type as 'contribution' or 'expense'. If unsure, leave it blank.
-
-                    The response must be a JSON object with the following fields:
+                    // Prepare a more detailed prompt for image analysis
+                    const prompt = `Bạn là một trợ lý tài chính. Hãy mô tả hình ảnh này một cách chi tiết và sau đó đề xuất mô tả giao dịch phù hợp cho ứng dụng quản lý quỹ nhóm. Dựa trên hình ảnh, hãy gợi ý một "Loại Chi Tiêu" phù hợp từ danh sách sau, nếu không phù hợp, hãy gợi ý loại "Khác": ${translations[currentLanguage].defaultExpenseTypes}.
+                    
+                    Định dạng phản hồi JSON:
                     {
-                      "description": "Concise description of the image content",
-                      "amount": "Amount (number only, no unit, if available)",
-                      "transactionType": "Transaction type ('contribution' or 'expense', if identifiable)",
-                      "location": "Location (if available)",
-                      "category": "Category (must be one of the provided expense types or 'fund contribution')"
+                        "description": "Mô tả chi tiết từ hình ảnh và đề xuất mô tả giao dịch.",
+                        "expense_type_suggestion": "Loại Chi Tiêu gợi ý từ danh sách đã cho."
                     }
-                    The response should be in ${currentLanguage === 'vi' ? 'Vietnamese' : 'English'}.
                     `;
+                    
+                    const payload = {
+                        type: 'image_description', // Thêm trường type mới
+                        image: base64ImageData,
+                        prompt: prompt,
+                        currentLanguage: currentLanguage, // Pass language for context
+                        expenseTypes: expenseTypes.map(et => et.expense_type) // Pass existing expense types for better categorization
+                    };
 
                     try {
-                        let chatHistory = [];
-                        const payload = {
-                            contents: [
-                                {
-                                    role: "user",
-                                    parts: [
-                                        { text: prompt },
-                                        {
-                                            inlineData: {
-                                                mimeType: mimeType,
-                                                data: base64ImageData
-                                            }
-                                        }
-                                    ]
-                                }
-                            ],
-                            generationConfig: {
-                                responseMimeType: "application/json",
-                                responseSchema: {
-                                    type: "OBJECT",
-                                    properties: {
-                                        "description": { "type": "STRING" },
-                                        "amount": { "type": "STRING" },
-                                        "transactionType": { "type": "STRING" },
-                                        "location": { "type": "STRING" },
-                                        "category": { "type": "STRING" }
-                                    },
-                                    "propertyOrdering": ["description", "amount", "transactionType", "location", "category"]
+                        // Gọi hàm Edge Function chung: process-ai-requests
+                        const result = await callSupabaseEdgeFunction('process-ai-requests', payload);
+
+                        if (result.success && result.analysis) {
+                            const parsedAnalysis = JSON.parse(result.analysis);
+                            descriptionInput.value = parsedAnalysis.description || '';
+                            // Try to set the expense type if it exists in the current list
+                            if (parsedAnalysis.expense_type_suggestion && expenseTypes.some(et => et.expense_type === parsedAnalysis.expense_type_suggestion)) {
+                                expenseTypeSelect.value = parsedAnalysis.expense_type_suggestion;
+                            } else {
+                                // If not found, try to default to "Khác" if it exists, otherwise keep current
+                                const otherOption = expenseTypes.find(et => et.expense_type === translations[currentLanguage].otherCategory);
+                                if (otherOption) {
+                                    expenseTypeSelect.value = otherOption.expense_type;
                                 }
                             }
-                        };
-                        const apiKey = ""; // Leave as empty string for Canvas to provide
-                        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
-
-                        const response = await fetch(apiUrl, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify(payload)
-                        });
-
-                        const result = await response.json();
-                        console.log("Gemini Vision API response:", result);
-
-                        if (result.error) {
-                            showErrorMessage(`${translations[currentLanguage].apiError} ${result.error.message}. ${translations[currentLanguage].aiConnectionError}`);
-                            console.error("Gemini Vision API Error:", result.error);
-                            return;
-                        }
-
-                        if (result.candidates && result.candidates.length > 0 &&
-                            result.candidates[0].content && result.candidates[0].content.parts &&
-                            result.candidates[0].content.parts.length > 0) {
-                            const jsonString = result.candidates[0].content.parts[0].text;
-                            const parsedResult = JSON.parse(jsonString);
-
-                            let fullDescription = parsedResult.description || '';
-                            if (parsedResult.location) {
-                                fullDescription += ` (${currentLanguage === 'vi' ? 'Địa điểm' : 'Location'}: ${parsedResult.location})`;
-                            }
-                            descriptionInput.value = fullDescription.trim();
-
-                            const extractedAmount = parseFloat(parsedResult.amount.replace(/\D/g, ''));
-                            if (!isNaN(extractedAmount) && extractedAmount > 0) {
-                                amountInput.value = formatNumberForInput(extractedAmount.toString());
-                            }
-
-                            if (parsedResult.transactionType === 'contribution' || parsedResult.transactionType === 'expense') {
-                                transactionTypeSelect.value = parsedResult.transactionType;
-                                transactionTypeSelect.dispatchEvent(new Event('change')); // Trigger change to show/hide fields
-
-                                if (parsedResult.transactionType === 'expense' && parsedResult.category) {
-                                    // Set expense type if it matches one of the available types
-                                    const matchingExpenseType = expenseTypes.find(et => et.expense_type === parsedResult.category);
-                                    if (matchingExpenseType) {
-                                        expenseTypeSelect.value = matchingExpenseType.expense_type;
-                                    } else {
-                                        // Default to 'Khác' or 'Other' if not found
-                                        expenseTypeSelect.value = translations[currentLanguage].otherCategory;
-                                    }
-                                }
-                            }
-
                         } else {
-                            showErrorMessage(translations[currentLanguage].noImageDescription);
-                            console.error("Unexpected Gemini Vision API response structure:", result);
+                            descriptionInput.value = translations[currentLanguage].noImageDescription;
                         }
                     } catch (error) {
-                        console.error("Error calling Gemini Vision API:", error);
-                        showErrorMessage(`${translations[currentLanguage].aiCallError} ${error.message}. ${translations[currentLanguage].aiConnectionError}`);
+                        console.error("Error calling Gemini Vision API via Edge Function:", error);
+                        showErrorMessage(`${translations[currentLanguage].aiCallError} ${error.message}`);
+                        descriptionInput.value = translations[currentLanguage].noImageDescription;
                     } finally {
-                        cameraLoadingSpinner.style.display = 'none';
-                        cameraModal.classList.add('hidden');
+                        cameraLoadingSpinner.classList.add('hidden');
+                        aiDescribeBtn.disabled = false;
+                        cameraModal.classList.add('hidden'); // Close modal after processing
                     }
                 }
 
 
                 // --- Event Listeners ---
 
-                // Language switch buttons
-                langViBtn.addEventListener('click', () => setLanguage('vi'));
-                langEnBtn.addEventListener('click', () => setLanguage('en'));
-
-                // Main Navigation Buttons
-                document.getElementById('add-member-btn').onclick = () => {
-                    hideAllSections();
-                    addMemberSection.classList.remove('hidden');
-                    memberNameInput.value = '';
-                    scrollToSection('add-member-section');
-                };
-
+                // Navigation buttons
+                document.getElementById('add-member-btn').onclick = () => { hideAllSections(); addMemberSection.classList.remove('hidden'); scrollToSection('add-member-section'); };
                 document.getElementById('add-transaction-btn').onclick = () => {
                     hideAllSections();
                     addTransactionSection.classList.remove('hidden');
-                    amountInput.value = '';
-                    descriptionInput.value = '';
-                    // Set current date and time for transaction date input
+                    transactionTypeSelect.value = 'contribution'; // Default to contribution
+                    transactionTypeSelect.onchange(); // Trigger change to set correct fields
+                    // Set current date and time
                     const now = new Date();
                     const year = now.getFullYear();
                     const month = (now.getMonth() + 1).toString().padStart(2, '0');
@@ -3108,166 +2997,168 @@ Recent Transactions:\n`;
                     const hours = now.getHours().toString().padStart(2, '0');
                     const minutes = now.getMinutes().toString().padStart(2, '0');
                     transactionDateInput.value = `${year}-${month}-${day}T${hours}:${minutes}`;
-
-                    // Attempt to get current geolocation
-                    if (navigator.geolocation) {
-                        navigator.geolocation.getCurrentPosition((position) => {
-                            latitudeInput.value = position.coords.latitude;
-                            longitudeInput.value = position.coords.longitude;
-                            console.log("GPS coordinates obtained:", position.coords.latitude, position.coords.longitude);
-                        }, (error) => {
-                            console.warn("Could not get GPS coordinates:", error.message);
-                            latitudeInput.value = ''; // Clear if not obtained
-                            longitudeInput.value = ''; // Clear if not obtained
-                        });
-                    } else {
-                        console.warn("Geolocation is not supported by this browser.");
-                        latitudeInput.value = '';
-                        longitudeInput.value = '';
-                    }
-
-                    transactionTypeSelect.value = 'contribution';
-                    populateSelectors(); // Call the updated populate function
-                    transactionTypeSelect.dispatchEvent(new Event('change'));
                     scrollToSection('add-transaction-section');
                 };
-
-                document.getElementById('view-transactions-btn').onclick = () => {
-                    hideAllSections();
-                    transactionsSection.classList.remove('hidden');
-                    renderTransactionList();
-                    scrollToSection('transactions-section');
-                };
-
-                document.getElementById('show-report-selection-btn').onclick = () => {
-                    hideAllSections();
-                    reportSelectionModal.classList.remove('hidden');
-                };
-
+                document.getElementById('view-transactions-btn').onclick = () => { hideAllSections(); transactionsSection.classList.remove('hidden'); renderTransactionList(); scrollToSection('transactions-section'); };
+                document.getElementById('show-report-selection-btn').onclick = () => { hideAllSections(); reportSelectionModal.classList.remove('hidden'); };
                 document.getElementById('get-insights-btn').onclick = () => {
                     hideAllSections();
                     fundInsightsModal.classList.remove('hidden');
                     generateFundInsights();
                 };
-
                 document.getElementById('get-food-suggestions-btn').onclick = () => {
                     hideAllSections();
                     foodSuggestionModal.classList.remove('hidden');
-                    if (navigator.geolocation) {
-                        navigator.geolocation.getCurrentPosition((position) => {
-                            generateFoodSuggestions(position.coords.latitude, position.coords.longitude);
-                        }, (error) => {
-                            console.error("Error getting location:", error);
-                            let errorMessage = translations[currentLanguage].locationError;
-                            if (error.code === error.PERMISSION_DENIED) {
-                                errorMessage = translations[currentLanguage].permissionDenied;
-                            } else if (error.code === error.POSITION_UNAVAILABLE) {
-                                errorMessage = translations[currentLanguage].positionUnavailable;
-                            } else if (error.code === error.TIMEOUT) {
-                                errorMessage = translations[currentLanguage].timeout;
-                            }
-                            foodSuggestionContent.innerHTML = `<p class="text-center text-red-500">${errorMessage}</p>`;
-                            showErrorMessage(errorMessage);
-                        });
-                    } else {
-                        const errorMessage = translations[currentLanguage].geolocationNotSupported;
-                        foodSuggestionContent.innerHTML = `<p class="text-center text-red-500">${errorMessage}</p>`;
-                        showErrorMessage(errorMessage);
-                    }
+                    getGeolocationAndSuggestFood();
                 };
 
-                // Report Selection Modal Buttons
-                selectFundReportBtn.onclick = () => {
-                    hideAllSections();
-                    fundReportSection.classList.remove('hidden');
-                    reportSelectionModal.classList.add('hidden');
-                    renderFundReport();
-                    scrollToSection('fund-report-section');
-                };
+                // Report Selection Modal buttons
+                selectFundReportBtn.onclick = () => { hideAllSections(); fundReportSection.classList.remove('hidden'); renderFundReport(); scrollToSection('fund-report-section'); };
+                selectMemberReportBtn.onclick = () => { hideAllSections(); memberReportsSection.classList.remove('hidden'); renderMemberReportDropdown(); scrollToSection('member-reports-section'); };
+                closeReportSelectionBtn.onclick = () => reportSelectionModal.classList.add('hidden');
 
-                selectMemberReportBtn.onclick = () => {
-                    hideAllSections();
-                    memberReportsSection.classList.remove('hidden');
-                    reportSelectionModal.classList.add('hidden');
-                    renderMemberReportDropdown();
-                    scrollToSection('member-reports-section');
-                };
+                // Edit Transaction Modal buttons
+                cancelEditTransactionBtn.onclick = () => { editTransactionModal.classList.add('hidden'); editingTransaction = null; };
 
-                closeReportSelectionBtn.onclick = () => {
-                    reportSelectionModal.classList.add('hidden');
-                };
+                // Member Details Modal buttons
+                closeMemberDetailsBtn.onclick = () => { memberDetailsModal.classList.add('hidden'); selectedMemberForDetails = null; };
 
-                // Edit Transaction Modal Buttons
-                cancelEditTransactionBtn.onclick = () => {
-                    editTransactionModal.classList.add('hidden');
-                    editingTransaction = null;
-                    hideErrorMessage();
-                };
+                // Insights Modal buttons
+                closeInsightsBtn.onclick = () => fundInsightsModal.classList.add('hidden');
 
-                // Member Details Modal Button
-                closeMemberDetailsBtn.onclick = () => {
-                    memberDetailsModal.classList.add('hidden');
-                    selectedMemberForDetails = null;
-                };
+                // Food Suggestion Modal buttons
+                closeFoodSuggestionBtn.onclick = () => foodSuggestionModal.classList.add('hidden');
 
-                // Close Insights Modal Button
-                closeInsightsBtn.onclick = () => {
-                    fundInsightsModal.classList.add('hidden');
-                    fundInsightsContent.innerHTML = '';
-                };
-
-                // Close Food Suggestion Modal Button
-                closeFoodSuggestionBtn.onclick = () => {
-                    foodSuggestionModal.classList.add('hidden');
-                    foodSuggestionContent.innerHTML = '';
-                };
-
-                // Member Report Dropdown Change
-                selectMemberReportDropdown.onchange = renderSelectedMemberReport;
-
-                // Amount input formatting for add and edit forms
-                amountInput.addEventListener('input', (e) => {
-                    e.target.value = formatNumberForInput(e.target.value);
-                });
-                editAmountInput.addEventListener('input', (e) => {
-                    e.target.value = formatNumberForInput(e.target.value);
-                });
-
-                // --- Image Upload Modal Event Listeners ---
+                // Image/Camera Upload
                 aiDescribeBtn.onclick = () => {
-                    hideErrorMessage();
+                    hideAllSections();
                     cameraModal.classList.remove('hidden');
                     uploadedImagePreview.classList.add('hidden');
-                    cameraLoadingSpinner.style.display = 'none';
-                    imageUploadInput.value = '';
-                    imageUploadInput.click();
+                    imageUploadInput.value = ''; // Clear previous selection
+                    imageUploadInput.click(); // Trigger file input click
                 };
 
                 imageUploadInput.onchange = (event) => {
                     const file = event.target.files[0];
-                    if (!file) {
-                        cameraModal.classList.add('hidden');
-                        return;
+                    if (file) {
+                        const reader = new FileReader();
+                        reader.onloadstart = () => {
+                            cameraLoadingSpinner.classList.remove('hidden');
+                            uploadedImagePreview.classList.add('hidden');
+                        };
+                        reader.onloadend = () => {
+                            uploadedImagePreview.src = reader.result;
+                            uploadedImagePreview.classList.remove('hidden');
+                            // Extract base64 part for API call
+                            const base64Data = reader.result.split(',')[1];
+                            callGeminiVisionAPI(base64Data);
+                        };
+                        reader.onerror = (error) => {
+                            console.error("Error reading file:", error);
+                            showErrorMessage("Lỗi đọc file hình ảnh.");
+                            cameraLoadingSpinner.classList.add('hidden');
+                        };
+                        reader.readAsDataURL(file);
                     }
-
-                    const reader = new FileReader();
-                    reader.onload = (e) => {
-                        uploadedImagePreview.src = e.target.result;
-                        uploadedImagePreview.classList.remove('hidden');
-                        cameraLoadingSpinner.style.display = 'block';
-
-                        const base64Image = e.target.result;
-                        const mimeType = file.type;
-                        const base64DataOnly = base64Image.split(',')[1];
-                        callGeminiVisionAPI(base64DataOnly, mimeType);
-                    };
-                    reader.readAsDataURL(file);
                 };
-
                 cancelCameraBtn.onclick = () => {
                     cameraModal.classList.add('hidden');
+                    cameraLoadingSpinner.classList.add('hidden');
                     imageUploadInput.value = '';
                 };
+
+
+                // Input formatting for amount fields
+                amountInput.oninput = (e) => {
+                    const originalCursorPos = e.target.selectionStart;
+                    const originalLength = e.target.value.length;
+
+                    let cleanedValue = e.target.value.replace(/[^0-9]/g, ''); // Remove non-digits
+                    if (cleanedValue.startsWith('0') && cleanedValue.length > 1) { // Remove leading zero if not single '0'
+                        cleanedValue = parseInt(cleanedValue, 10).toString();
+                    }
+                    if (cleanedValue === '') {
+                        e.target.value = '';
+                        return;
+                    }
+                    const formattedValue = formatNumberForInput(cleanedValue);
+                    e.target.value = formattedValue;
+
+                    // Adjust cursor position
+                    const newLength = formattedValue.length;
+                    const diff = newLength - originalLength;
+                    e.target.setSelectionRange(originalCursorPos + diff, originalCursorPos + diff);
+                };
+
+                editAmountInput.oninput = (e) => {
+                    const originalCursorPos = e.target.selectionStart;
+                    const originalLength = e.target.value.length;
+
+                    let cleanedValue = e.target.value.replace(/[^0-9]/g, ''); // Remove non-digits
+                    if (cleanedValue.startsWith('0') && cleanedValue.length > 1) { // Remove leading zero if not single '0'
+                        cleanedValue = parseInt(cleanedValue, 10).toString();
+                    }
+                    if (cleanedValue === '') {
+                        e.target.value = '';
+                        return;
+                    }
+                    const formattedValue = formatNumberForInput(cleanedValue);
+                    e.target.value = formattedValue;
+
+                    // Adjust cursor position
+                    const newLength = formattedValue.length;
+                    const diff = newLength - originalLength;
+                    e.target.setSelectionRange(originalCursorPos + diff, originalCursorPos + diff);
+                };
+
+
+                // Handle change for member report dropdown
+                selectMemberReportDropdown.onchange = () => {
+                    renderSelectedMemberReport();
+                };
+
+                // --- Geolocation for Food Suggestions ---
+                function getGeolocationAndSuggestFood() {
+                    if (navigator.geolocation) {
+                        navigator.geolocation.getCurrentPosition(
+                            (position) => {
+                                const latitude = position.coords.latitude;
+                                const longitude = position.coords.longitude;
+                                latitudeInput.value = latitude;
+                                longitudeInput.value = longitude;
+                                console.log(`Got location: Lat ${latitude}, Lon ${longitude}`);
+                                generateFoodSuggestions(latitude, longitude);
+                            },
+                            (error) => {
+                                let errorMessage = translations[currentLanguage].locationError;
+                                switch (error.code) {
+                                    case error.PERMISSION_DENIED:
+                                        errorMessage = translations[currentLanguage].permissionDenied;
+                                        break;
+                                    case error.POSITION_UNAVAILABLE:
+                                        errorMessage = translations[currentLanguage].positionUnavailable;
+                                        break;
+                                    case error.TIMEOUT:
+                                        errorMessage = translations[currentLanguage].timeout;
+                                        break;
+                                }
+                                showErrorMessage(errorMessage);
+                                foodSuggestionContent.innerHTML = `<p class="text-center text-red-500">${errorMessage}</p>`;
+                                isGeneratingFoodSuggestions = false;
+                            },
+                            {
+                                enableHighAccuracy: true,
+                                timeout: 10000,
+                                maximumAge: 0
+                            }
+                        );
+                    } else {
+                        const errorMessage = translations[currentLanguage].geolocationNotSupported;
+                        showErrorMessage(errorMessage);
+                        foodSuggestionContent.innerHTML = `<p class="text-center text-red-500">${errorMessage}</p>`;
+                        isGeneratingFoodSuggestions = false;
+                    }
+                }
 
                 // --- Scroll to Top Button Logic ---
                 window.onscroll = function() {
