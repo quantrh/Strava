@@ -372,6 +372,16 @@
                         </div>
                     </div>
 
+                    <div class="mb-4">
+                        <label for="report-min-pace" class="block text-gray-700 text-sm font-bold mb-2">Pace (phút/km) lớn hơn hoặc bằng:</label>
+                        <input type="number" id="report-min-pace" class="form-input" placeholder="Ví dụ: 5.5 (5 phút 30 giây/km)" step="0.1">
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="report-min-distance" class="block text-gray-700 text-sm font-bold mb-2">Quãng đường (km) lớn hơn hoặc bằng:</label>
+                        <input type="number" id="report-min-distance" class="form-input" placeholder="Ví dụ: 10" step="0.1">
+                    </div>
+
                     <div class="mb-4 flex gap-4">
                         <div class="flex-1">
                             <label for="report-start-date" class="block text-gray-700 text-sm font-bold mb-2">Từ ngày:</label>
@@ -627,6 +637,9 @@
         let selectedRunnerIdReport = 'all'; 
         let selectedClubNameReport = 'all'; 
         let selectedActivityTypesReport = []; 
+        let minPaceFilter = null; // New filter for minimum pace (seconds/km)
+        let minDistanceFilter = null; // New filter for minimum distance (km)
+
 
         // Chart.js instances (from report origin.html)
         let distanceChart, paceDistributionChart, heartRatePaceChart, activityTypeChart;
@@ -641,6 +654,8 @@
         const reportClubFilter = document.getElementById('report-club-filter');
         const multiSelectDisplayReport = document.getElementById('multi-select-display-report');
         const multiSelectOptionsReport = document.getElementById('multi-select-options-report');
+        const reportMinPaceInput = document.getElementById('report-min-pace'); // New pace filter input
+        const reportMinDistanceInput = document.getElementById('report-min-distance'); // New distance filter input
         const reportStartDateInput = document.getElementById('report-start-date');
         const reportEndDateInput = document.getElementById('report-end-date');
         const applyReportFiltersBtn = document.getElementById('apply-report-filters-btn');
@@ -991,6 +1006,10 @@
             // Initialize activity type filter
             populateActivityTypeFilters();
             updateMultiSelectDisplay(multiSelectDisplayReport, selectedActivityTypesReport, multiSelectOptionsReport);
+
+            // Restore pace and distance filter values
+            reportMinPaceInput.value = minPaceFilter !== null ? minPaceFilter : '';
+            reportMinDistanceInput.value = minDistanceFilter !== null ? minDistanceFilter : '';
         }
 
         /**
@@ -1037,6 +1056,23 @@
 
                 if (selectedActivityTypesReport.length > 0) {
                     query = query.in('type', selectedActivityTypesReport);
+                }
+
+                // Apply new pace filter (average_speed is in m/s, convert min/km to m/s)
+                // pace (min/km) = 60 / (speed in km/h) = 60 / (speed_ms * 3.6)
+                // speed_ms = 1000 / pace_seconds_per_km
+                // So, if user enters min pace in min/km, we need to convert it to max average_speed in m/s
+                if (minPaceFilter !== null && minPaceFilter > 0) {
+                    // Convert minPace (min/km) to max_speed (m/s)
+                    // minPace (min/km) = minPace * 60 (seconds/km)
+                    // max_speed_ms = 1000 / (minPace * 60)
+                    const maxSpeedMs = 1000 / (minPaceFilter * 60);
+                    query = query.lte('average_speed', maxSpeedMs); // Lower speed means higher pace
+                }
+
+                // Apply new distance filter (distance is in meters, convert km to meters)
+                if (minDistanceFilter !== null && minDistanceFilter > 0) {
+                    query = query.gte('distance', minDistanceFilter * 1000); // Convert km to meters
                 }
 
                 // Điều chỉnh bộ lọc ngày bắt đầu để lọc chính xác từ đầu ngày Việt Nam
@@ -1862,7 +1898,7 @@
                         x: {
                             title: {
                                 display: true,
-                                text: 'Tốc độ trung bình (phút/km)',
+                                text: 'Tốc độ trung bình (phút/km)', // Updated label for clarity
                                 color: '#4b5563'
                             },
                             ticks: {
@@ -2293,6 +2329,14 @@
             // Multi-select activity type changes are handled by global click listener
             reportStartDateInput.addEventListener('change', () => { /* value changed */ });
             reportEndDateInput.addEventListener('change', () => { /* value changed */ });
+
+            // New filter inputs event listeners
+            reportMinPaceInput.addEventListener('input', (e) => {
+                minPaceFilter = e.target.value !== '' ? parseFloat(e.target.value) : null;
+            });
+            reportMinDistanceInput.addEventListener('input', (e) => {
+                minDistanceFilter = e.target.value !== '' ? parseFloat(e.target.value) : null;
+            });
 
             // Penalty/Bonus calculation inputs trigger re-render of all reports (not a new fetch)
             penaltyPerKmGt10Input.addEventListener('input', renderAllReports);
