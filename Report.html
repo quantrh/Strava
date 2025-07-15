@@ -373,7 +373,7 @@
                     </div>
 
                     <div class="mb-4">
-                        <label for="report-min-pace" class="block text-gray-700 text-sm font-bold mb-2">Pace (phút/km) lớn hơn hoặc bằng:</label>
+                        <label for="report-min-pace" class="block text-gray-700 text-sm font-bold mb-2">Pace (phút/km) nhỏ hơn hoặc bằng:</label>
                         <input type="number" id="report-min-pace" class="form-input" placeholder="Ví dụ: 5.5 (5 phút 30 giây/km)" step="0.1">
                     </div>
 
@@ -1063,11 +1063,12 @@
                 // speed_ms = 1000 / pace_seconds_per_km
                 // So, if user enters min pace in min/km, we need to convert it to max average_speed in m/s
                 if (minPaceFilter !== null && minPaceFilter > 0) {
-                    // Convert minPace (min/km) to max_speed (m/s)
+                    // Convert minPace (min/km) to min_speed (m/s)
                     // minPace (min/km) = minPace * 60 (seconds/km)
-                    // max_speed_ms = 1000 / (minPace * 60)
-                    const maxSpeedMs = 1000 / (minPaceFilter * 60);
-                    query = query.lte('average_speed', maxSpeedMs); // Lower speed means higher pace
+                    // min_speed_ms = 1000 / (minPace * 60)
+                    const minSpeedMs = 1000 / (minPaceFilter * 60);
+                    // Change from lte to gte for pace <= X (meaning speed >= Y)
+                    query = query.gte('average_speed', minSpeedMs); 
                 }
 
                 // Apply new distance filter (distance is in meters, convert km to meters)
@@ -2253,16 +2254,30 @@
                 currentUserEmailSpan.textContent = session.user.email;
                 await fetchAllRunnerCredentials(); // Load all runner credentials
                 await fetchClubs(); // Load all clubs
-                populateFilters(); // Populate dropdowns
+                
+                // Load filter states from local storage
+                selectedRunnerIdReport = localStorage.getItem('report_runner_filter') || 'all';
+                selectedClubNameReport = localStorage.getItem('report_club_filter') || 'all';
+                try {
+                    const savedActivityTypes = localStorage.getItem('report_activity_types');
+                    selectedActivityTypesReport = savedActivityTypes ? JSON.parse(savedActivityTypes) : [];
+                } catch (e) {
+                    console.error('Error parsing saved activity types from local storage:', e);
+                    selectedActivityTypesReport = [];
+                }
+                minPaceFilter = localStorage.getItem('report_min_pace') ? parseFloat(localStorage.getItem('report_min_pace')) : null;
+                minDistanceFilter = localStorage.getItem('report_min_distance') ? parseFloat(localStorage.getItem('report_min_distance')) : null;
 
-                // Set default dates to past 7 days
+                populateFilters(); // Populate dropdowns and inputs with loaded/default values
+
+                // Set default dates to past 6 days from today (inclusive 7 days)
                 const today = new Date();
                 const endDate = today.toISOString().split('T')[0];
                 reportEndDateInput.value = endDate;
 
-                const sevenDaysAgo = new Date(today);
-                sevenDaysAgo.setDate(today.getDate() - 7);
-                const startDate = sevenDaysAgo.toISOString().split('T')[0];
+                const sixDaysAgo = new Date(today);
+                sixDaysAgo.setDate(today.getDate() - 6); // Changed to 6 days ago for a 7-day inclusive range
+                const startDate = sixDaysAgo.toISOString().split('T')[0];
                 reportStartDateInput.value = startDate;
 
                 await fetchAndRenderReportData(); // Initial data load from Supabase
@@ -2299,6 +2314,13 @@
                         localStorage.removeItem('strava_runner_name');
                         localStorage.removeItem('strava_runner_credential_id');
                         localStorage.removeItem('strava_authenticated');
+                        // Clear saved filters from local storage on logout
+                        localStorage.removeItem('report_runner_filter');
+                        localStorage.removeItem('report_club_filter');
+                        localStorage.removeItem('report_activity_types');
+                        localStorage.removeItem('report_min_pace');
+                        localStorage.removeItem('report_min_distance');
+
                         showAlert('Đăng xuất thành công. Đang chuyển hướng về trang đăng nhập...');
                         setTimeout(() => {
                             window.location.href = 'https://quantrh.github.io/Strava/index1.html'; // Changed to direct link
@@ -2317,7 +2339,16 @@
             });
 
             // Event listener for the Apply Filters button (to fetch data from Supabase)
-            applyReportFiltersBtn.addEventListener('click', fetchAndRenderReportData);
+            applyReportFiltersBtn.addEventListener('click', () => {
+                // Save current filter states to local storage before applying
+                localStorage.setItem('report_runner_filter', selectedRunnerIdReport);
+                localStorage.setItem('report_club_filter', selectedClubNameReport);
+                localStorage.setItem('report_activity_types', JSON.stringify(selectedActivityTypesReport));
+                localStorage.setItem('report_min_pace', minPaceFilter !== null ? minPaceFilter.toString() : '');
+                localStorage.setItem('report_min_distance', minDistanceFilter !== null ? minDistanceFilter.toString() : '');
+                
+                fetchAndRenderReportData();
+            });
 
             // Filter changes don't trigger direct fetch, only update selected values
             reportRunnerFilter.addEventListener('change', (e) => {
