@@ -1971,33 +1971,24 @@ async function saveCredential(event) {
                     applySettingsVisibility(false); 
 
                 } else {
-                    // Trạng thái: Đã đăng nhập Strava nhưng token hết hạn/không hợp lệ
-                    console.log('  Strava token has expired or is missing. Re-authentication may be needed.');
-                    authStatus.textContent = 'Token Strava đã hết hạn, vui lòng làm mới hoặc đăng nhập lại.';
-                    showAlert('Phiên Strava đã hết hạn. Vui lòng đăng xuất và chọn lại Runner để kết nối.');
-                    clearStravaSession(); // Xóa phiên Strava cũ
-                    // KHÔNG GỌI checkStravaAuthState() đệ quy ở đây để tránh lặp vô hạn.
-                    // Chúng ta sẽ đặt trạng thái UI ngay lập tức.
+                    // TRẠNG THÁI MỚI: Đã đăng nhập Strava nhưng access token có thể đã hết hạn.
+                    // Edge Function sẽ cố gắng làm mới token khi được gọi.
+                    console.log('  Strava access token may have expired. Relying on Edge Function to refresh.');
+                    authStatus.textContent = 'Phiên Strava có thể đã hết hạn. Ứng dụng sẽ tự động thử làm mới khi bạn thực hiện tác vụ.';
+                    // KHÔNG GỌI showAlert() ở đây.
+                    // KHÔNG GỌI clearStravaSession() ở đây. Giữ lại refresh token và các thông tin khác.
                     
-                    // HIỂN THỊ CÁC SECTION CÀI ĐẶT và đặt nút "Ẩn cài đặt" (để người dùng có thể kết nối lại)
-                    applySettingsVisibility(true);
+                    // Giữ UI ở trạng thái "đã đăng nhập", nhưng có thể có cảnh báo.
+                    currentRunnerNameSpan.textContent = currentRunnerName;
+                    currentRunnerDisplay.classList.remove('hidden');
+                    connectStravaBtn.style.display = 'none'; // Vẫn ẩn nút kết nối
+                    disconnectStravaBtn.classList.remove('hidden'); // Vẫn hiển thị nút ngắt kết nối
+                    userInfo.textContent = `Chào mừng, Runner: ${currentRunnerName} (Strava ID: ${currentAthleteId})`; 
 
-                    // Reset UI cho trạng thái chưa đăng nhập Strava
-                    currentRunnerDisplay.classList.add('hidden');
-                    connectStravaBtn.style.display = 'block'; 
-                    disconnectStravaBtn.classList.add('hidden');
-                    userInfo.textContent = ''; 
-                    recentActivitiesContainer.innerHTML = '<div class="card p-4 text-gray-500 text-center col-span-full">Nhấn "Tải hoạt động gần đây" để xem.</div>';
-                    document.getElementById('bubble-chart-container').innerHTML = '<p class="text-gray-500 text-center">Nhấn "Xem thống kê theo tuần" để hiển thị biểu đồ.</p>';
-                    const table = document.getElementById('detailed-stats-table');
-                    Array.from(table.children).forEach(child => {
-                        if (child.tagName === 'TBODY') { 
-                            table.removeChild(child);
-                        }
-                    });
-                    const newTbody = document.createElement('tbody');
-                    table.appendChild(newTbody);
-                    detailedStatsStatus.textContent = 'Chưa có dữ liệu để hiển thị.';
+                    // Nếu người dùng đã đăng nhập vào ứng dụng và Strava (ngay cả khi access token đã hết hạn),
+                    // chúng ta nên giữ cài đặt bị ẩn theo mặc định, cho phép người dùng tương tác
+                    // với các tính năng chính. Nếu một cuộc gọi API thực sự thất bại, thì chúng ta sẽ hiển thị cài đặt.
+                    applySettingsVisibility(false); // Giữ cài đặt bị ẩn nếu chúng đã bị ẩn trước đó.
                 }
             } else {
                 // Trạng thái: Chưa đăng nhập Strava hoặc không có thông tin phiên
@@ -2280,6 +2271,13 @@ async function saveCredential(event) {
                 } else {
                     dataStatus.textContent = `Lỗi khi tải hoạt động: ${result.error || 'Không xác định'}`;
                     showAlert(`Lỗi khi tải hoạt động: ${result.error || 'Không xác định'}`);
+
+                    // NEW: Check for specific error indicating refresh token failure
+                    if (result.error && (result.error.includes('invalid_grant') || result.error.includes('refresh token expired') || result.error.includes('refresh token revoked'))) {
+                        showAlert('Phiên Strava của bạn đã hết hạn hoàn toàn. Vui lòng đăng xuất và kết nối lại Strava.');
+                        clearStravaSession();
+                        checkStravaAuthState(); // This will update UI to show connect button and settings
+                    }
                 }
             } catch (error) {
                 console.error('Lỗi khi tải hoạt động:', error);
@@ -2353,6 +2351,13 @@ async function saveCredential(event) {
                 } else {
                     downloadForOtherStatus.textContent = `Lỗi khi tải hoạt động cho ${runnerToDownloadName}: ${result.error || 'Không xác định'}`;
                     showAlert(`Lỗi khi tải hoạt động cho ${runnerToDownloadName}: ${result.error || 'Không xác định'}`);
+
+                    // NEW: Check for specific error indicating refresh token failure
+                    if (result.error && (result.error.includes('invalid_grant') || result.error.includes('refresh token expired') || result.error.includes('refresh token revoked'))) {
+                        showAlert('Phiên Strava của bạn đã hết hạn hoàn toàn. Vui lòng đăng xuất và kết nối lại Strava.');
+                        clearStravaSession();
+                        checkStravaAuthState(); // This will update UI to show connect button and settings
+                    }
                 }
             } catch (error) {
                 console.error(`Lỗi khi tải hoạt động cho ${runnerToDownloadName}:`, error);
@@ -2615,6 +2620,13 @@ loadRecentActivitiesBtn.addEventListener('click', async () => {
                         } else {
                             console.error(`Lỗi khi tải thống kê cho ${runner.runner_name} (credential ID: ${runnerId}):`, result.error || 'Không xác định');
                             showAlert(`Lỗi khi tải thống kê cho ${runner.runner_name}: ${result.error || 'Không xác định'}`);
+                            
+                            // NEW: Check for specific error indicating refresh token failure
+                            if (result.error && (result.error.includes('invalid_grant') || result.error.includes('refresh token expired') || result.error.includes('refresh token revoked'))) {
+                                showAlert('Phiên Strava của bạn đã hết hạn hoàn toàn. Vui lòng đăng xuất và kết nối lại Strava.');
+                                clearStravaSession();
+                                checkStravaAuthState(); // This will update UI to show connect button and settings
+                            }
                             return { weeklyStats: [], detailedActivities: [] };
                         }
                     } catch (error) {
@@ -3071,6 +3083,13 @@ async function fetchActivitiesForWeek(isoWeek, athleteId) {
             console.error('Lỗi khi tải hoạt động chi tiết cho tuần:', result.error || 'Không xác định');
             weeklyActivitiesStatus.textContent = `Lỗi: ${result.error || 'Không xác định'}`;
             showAlert(`Lỗi khi tải hoạt động chi tiết: ${result.error || 'Không xác định'}`);
+
+            // NEW: Check for specific error indicating refresh token failure
+            if (result.error && (result.error.includes('invalid_grant') || result.error.includes('refresh token expired') || result.error.includes('refresh token revoked'))) {
+                showAlert('Phiên Strava của bạn đã hết hạn hoàn toàn. Vui lòng đăng xuất và kết nối lại Strava.');
+                clearStravaSession();
+                checkStravaAuthState(); // This will update UI to show connect button and settings
+            }
         }
         // --- KẾT THÚC PHẦN ĐÃ CHỈNH SỬA QUAN TRỌNG ---
 
@@ -3177,7 +3196,7 @@ function getISOWeekString(d) {
             // Filter data to include all connected runners (those with an athlete_id), regardless of app user owner.
             let filteredData = data.filter(d => {
                 const runner = allRunnerCredentials.find(c => String(c.athlete_id) === String(d.athlete_id));
-                // Bỏ điều kiện lọc theo owner_uid để hiển thị tất cả dữ liệu
+                // Bỏ điều kiện lọc theo owner_uid để map tất cả các runner có athlete_id
                 return runner; // Chỉ cần đảm bảo runner tồn tại (tức là đã kết nối Strava)
             });
 
@@ -3437,6 +3456,13 @@ analyzeActivitiesBtn.addEventListener('click', async () => {
             llmAnalysisContent.innerHTML = `<p class="text-red-500">Không thể nhận được phân tích từ AI. Lỗi: ${result.error || 'Không xác định'}. Vui lòng thử lại.</p>`;
             llmAnalysisStatus.textContent = 'Lỗi khi nhận phân tích từ AI.';
             console.error('Lỗi từ Edge Function hoặc cấu trúc phản hồi AI không mong đợi:', result);
+
+            // NEW: Check for specific error indicating refresh token failure
+            if (result.error && (result.error.includes('invalid_grant') || result.error.includes('refresh token expired') || result.error.includes('refresh token revoked'))) {
+                showAlert('Phiên Strava của bạn đã hết hạn hoàn toàn. Vui lòng đăng xuất và kết nối lại Strava.');
+                clearStravaSession();
+                checkStravaAuthState(); // This will update UI to show connect button and settings
+            }
         }
 
     } catch (error) {
