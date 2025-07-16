@@ -1710,7 +1710,7 @@ async function updateAppAuthUI(user) {
         async function openCredentialModal(id = null) {
             credentialForm.reset();
             credentialIdInput.value = '';
-            modalTitle.textContent = 'Thêm Runner mới'; 
+            modalTitle.textContent = 'Thêm thông tin đăng nhập Runner'; 
             runnerNameInput.readOnly = false; // Ensure it's editable for new runner
 
             // Set default redirect URI to the fixed value
@@ -1933,7 +1933,7 @@ async function saveCredential(event) {
             console.log('checkStravaAuthState - Checking Strava auth state from localStorage...');
             console.log('  isAuthenticated (Strava):', isAuthenticated);
             console.log('  currentRunnerCredentialId (Credential ID):', currentRunnerCredentialId);
-            console.log('  currentAthleteId (Strava ID):', currentAthleteId);
+            console.log('  currentAthleteId (Strava ID):', currentAthleteId); 
             console.log('  currentRunnerName:', currentRunnerName);
 
             // Các biến stravaAuthHeader và stravaAuthToggleIcon không cần thiết ở đây nữa
@@ -2228,13 +2228,19 @@ async function saveCredential(event) {
             }
 
             const dataStatus = document.getElementById('data-status');
+            // Reset màu sắc và nội dung trước khi tải
+            dataStatus.classList.remove('text-green-600', 'text-red-500');
+            dataStatus.classList.add('text-gray-600');
             dataStatus.textContent = 'Đang tải dữ liệu hoạt động từ Strava ...';
+            dataStatus.classList.add('text-red-500'); // Tô đỏ thông báo đang tải
 
             const activitiesLimit = parseInt(activitiesLimitInput.value, 10);
 
             if (isNaN(activitiesLimit) || activitiesLimit <= 0 || activitiesLimit > 200) {
                 showAlert('Vui lòng nhập số lượng hoạt động hợp lệ (1-200). Strava chỉ hỗ trợ tải tối đa 200 hoạt động.');
                 dataStatus.textContent = '';
+                dataStatus.classList.remove('text-red-500'); // Xóa màu đỏ nếu lỗi nhập liệu
+                dataStatus.classList.add('text-gray-600');
                 return;
             }
             
@@ -2247,6 +2253,8 @@ async function saveCredential(event) {
                 if (sessionError || !session?.access_token) {
                     showAlert('Lỗi: Không tìm thấy phiên đăng nhập Supabase. Vui lòng đăng nhập lại.');
                     dataStatus.textContent = 'Lỗi xác thực: Không tìm thấy phiên đăng nhập.';
+                    dataStatus.classList.remove('text-green-600', 'text-gray-600');
+                    dataStatus.classList.add('text-red-500'); // Tô đỏ thông báo lỗi
                     return;
                 }
 
@@ -2266,10 +2274,15 @@ async function saveCredential(event) {
 
                 if (response.ok && result.success) {
                     dataStatus.textContent = `Đã tải và lưu ${result.count} hoạt động thành công!`;
+                    dataStatus.classList.remove('text-red-500', 'text-gray-600');
+                    dataStatus.classList.add('text-green-600'); // Tô xanh thông báo thành công
                     showAlert(`Đã tải và lưu ${result.count} hoạt động thành công!`);
                     await loadRecentActivitiesBtn.click(); 
                 } else {
                     dataStatus.textContent = `Lỗi khi tải hoạt động: ${result.error || 'Không xác định'}`;
+                    dataStatus.classList.remove('text-green-600', 'text-gray-600');
+                    dataStatus.classList.add('text-red-500'); // Tô đỏ thông báo lỗi
+
                     showAlert(`Lỗi khi tải hoạt động: ${result.error || 'Không xác định'}`);
 
                     // NEW: Check for specific error indicating refresh token failure
@@ -2282,6 +2295,8 @@ async function saveCredential(event) {
             } catch (error) {
                 console.error('Lỗi khi tải hoạt động:', error);
                 dataStatus.textContent = 'Lỗi mạng hoặc máy chủ khi tải hoạt động.';
+                dataStatus.classList.remove('text-green-600', 'text-gray-600');
+                dataStatus.classList.add('text-red-500'); // Tô đỏ thông báo lỗi
                 showAlert('Lỗi mạng hoặc máy chủ khi tải hoạt động.');
             }
         });
@@ -2319,13 +2334,19 @@ async function saveCredential(event) {
                 return;
             }
 
+            // Reset màu sắc và nội dung trước khi tải
+            downloadForOtherStatus.classList.remove('text-green-600', 'text-red-500');
+            downloadForOtherStatus.classList.add('text-gray-600');
             downloadForOtherStatus.textContent = `Đang tải dữ liệu hoạt động cho ${runnerToDownloadName} từ Strava ...`;
+            downloadForOtherStatus.classList.add('text-red-500'); // Tô đỏ thông báo đang tải
 
             try {
                 const { data: { session }, error: sessionError } = await supabaseClientInstance.auth.getSession();
                 if (sessionError || !session?.access_token) {
                     showAlert('Lỗi: Không tìm thấy phiên đăng nhập Supabase. Vui lòng đăng nhập lại.');
                     downloadForOtherStatus.textContent = 'Lỗi xác thực: Không tìm thấy phiên đăng nhập.';
+                    downloadForOtherStatus.classList.remove('text-green-600', 'text-gray-600');
+                    downloadForOtherStatus.classList.add('text-red-500'); // Tô đỏ thông báo lỗi
                     return;
                 }
 
@@ -2347,9 +2368,13 @@ async function saveCredential(event) {
 
                 if (response.ok && result.success) {
                     downloadForOtherStatus.textContent = `Đã tải và lưu ${result.count} hoạt động cho ${runnerToDownloadName} thành công!`;
+                    downloadForOtherStatus.classList.remove('text-red-500', 'text-gray-600');
+                    downloadForOtherStatus.classList.add('text-green-600'); // Tô xanh thông báo thành công
                     showAlert(`Đã tải và lưu ${result.count} hoạt động cho ${runnerToDownloadName} thành công!`);
                 } else {
                     downloadForOtherStatus.textContent = `Lỗi khi tải hoạt động cho ${runnerToDownloadName}: ${result.error || 'Không xác định'}`;
+                    downloadForOtherStatus.classList.remove('text-green-600', 'text-gray-600');
+                    downloadForOtherStatus.classList.add('text-red-500'); // Tô đỏ thông báo lỗi
                     showAlert(`Lỗi khi tải hoạt động cho ${runnerToDownloadName}: ${result.error || 'Không xác định'}`);
 
                     // NEW: Check for specific error indicating refresh token failure
@@ -2362,6 +2387,8 @@ async function saveCredential(event) {
             } catch (error) {
                 console.error(`Lỗi khi tải hoạt động cho ${runnerToDownloadName}:`, error);
                 downloadForOtherStatus.textContent = 'Lỗi mạng hoặc máy chủ khi tải hoạt động.';
+                downloadForOtherStatus.classList.remove('text-green-600', 'text-gray-600');
+                downloadForOtherStatus.classList.add('text-red-500'); // Tô đỏ thông báo lỗi
                 showAlert('Lỗi mạng hoặc máy chủ khi tải hoạt động.');
             }
         });
