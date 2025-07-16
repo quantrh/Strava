@@ -1535,7 +1535,7 @@ async function updateAppAuthUI(user) {
 
         /**
          * Handles user sign-up or sign-in.
-         * @param {Event} event - Form submission event.
+         * @param {Event}  - Form submission event.
          */
         async function handleAuth(event) {
             event.preventDefault();
@@ -1767,7 +1767,7 @@ async function updateAppAuthUI(user) {
  * Saves (adds or updates) runner credentials to Supabase.
  * For new runners, it initiates the Strava OAuth flow.
  * For existing runners, it only updates the name and other details.
- * @param {Event} event - Form submission event.
+ * @param {Event}  - Form submission event.
  */
 async function saveCredential(event) {
     event.preventDefault();
@@ -1840,7 +1840,7 @@ async function saveCredential(event) {
                     phone_number: phoneNumber,
                     runner_email: runnerEmail,
                     date_of_birth: dateOfBirth || null,
-                    weight_kg: isNaN(weightKg) ? null : weightKg,
+                    weight_kg: isNaN(weightKg) ? null : weightKg, // Cho phép null nếu không phải số hợp lệ
                     shirt_size: shirtSize || null,
                     running_team: runningTeam,
                     gender: gender,
@@ -1987,29 +1987,29 @@ async function saveCredential(event) {
 
                 } else {
                     // Trạng thái: Đã đăng nhập Strava nhưng token hết hạn/không hợp lệ
-                    console.log('  Strava token has expired or is missing. Re-authentication may be needed.');
-                    authStatus.textContent = 'Token Strava đã hết hạn, vui lòng đăng nhập lại Strava hoặc nhấn "Làm mới Token Strava".';
-                    authStatus.classList.remove('text-gray-600');
-                    authStatus.classList.add('text-red-500'); // Lỗi màu đỏ
-                    showAlert('Phiên Strava đã hết hạn. Vui lòng đăng xuất và chọn lại Runner để kết nối.');
-                    clearStravaSession(); // Xóa phiên Strava cũ
-                    // KHÔNG GỌC checkStravaAuthState() đệ quy ở đây để tránh lặp vô hạn.
-                    // Chúng ta sẽ đặt trạng thái UI ngay lập tức.
-                    
-                    // HIỂN THỊ CÁC SECTION CÀI ĐẶT và đặt nút "Ẩn cài đặt" (để người dùng có thể kết nối lại)
+                    console.log('  Strava token has expired or is missing. An automatic refresh will be attempted on data fetch.');
+                    authStatus.textContent = 'Token Strava đã hết hạn. Hệ thống sẽ tự động làm mới khi bạn tải dữ liệu.';
+                    authStatus.classList.remove('text-red-500');
+                    authStatus.classList.add('text-orange-500'); // Cảnh báo màu cam nhẹ hơn
+
+                    // Do the user manages refresh automatically, we don't need to force re-authentication or alert them here.
+                    // We still clear the session to ensure consistency, but the UI won't force a manual re-login flow immediately.
+                    clearStravaSession();
+
+                    // Keep settings visible so user can manually re-connect if auto-refresh fails later.
                     applySettingsVisibility(true);
 
-                    // Reset UI cho trạng thái chưa đăng nhập Strava
+                    // Reset UI for Strava-related displays as if not authenticated, but without forcing re-login alert.
                     currentRunnerDisplay.classList.add('hidden');
-                    connectStravaBtn.style.display = 'block'; 
+                    connectStravaBtn.style.display = 'block';
                     disconnectStravaBtn.classList.add('hidden');
-                    refreshStravaTokenBtn.classList.add('hidden'); // Ẩn nút làm mới
-                    userInfo.textContent = ''; 
+                    refreshStravaTokenBtn.classList.add('hidden'); // Hide manual refresh button if token is expired
+                    userInfo.textContent = '';
                     recentActivitiesContainer.innerHTML = '<div class="card p-4 text-gray-500 text-center col-span-full">Nhấn "Tải hoạt động gần đây" để xem.</div>';
                     document.getElementById('bubble-chart-container').innerHTML = '<p class="text-gray-500 text-center">Nhấn "Xem thống kê theo tuần" để hiển thị biểu đồ.</p>';
                     const table = document.getElementById('detailed-stats-table');
                     Array.from(table.children).forEach(child => {
-                        if (child.tagName === 'TBODY') { 
+                        if (child.tagName === 'TBODY') {
                             table.removeChild(child);
                         }
                     });
@@ -2017,43 +2017,9 @@ async function saveCredential(event) {
                     table.appendChild(newTbody);
                     detailedStatsStatus.textContent = 'Chưa có dữ liệu để hiển thị.';
                 }
-            } else {
-                // Trạng thái: Chưa đăng nhập Strava hoặc không có thông tin phiên
-                console.log('  Not logged into Strava or session info is missing.');
-                clearStravaSession(); // Đảm bảo xóa mọi thứ liên quan đến Strava
-                
-                // Tải lại các thông tin runner và club (luôn cần thiết)
-                await fetchAndSetRunnerCredentials(); 
-                await renderCredentialsUI();
-                await fetchClubs(); 
-                populateClubDropdowns(); 
+            } // This `}` closes the `if (isAuthenticated && ...)` block.
+        } // <--- ĐÃ THÊM DẤU ĐÓNG NGOẶC NHỌN THIẾU Ở ĐÂY
 
-                authStatus.textContent = 'Vui lòng chọn Runner và đăng nhập với Strava.';
-                authStatus.classList.remove('text-orange-500', 'text-red-500');
-                authStatus.classList.add('text-gray-600');
-                currentRunnerDisplay.classList.add('hidden');
-                connectStravaBtn.style.display = 'block'; // Hiển thị nút "Connect with Strava"
-                disconnectStravaBtn.classList.add('hidden'); // Ẩn nút "Đăng xuất Strava"
-                refreshStravaTokenBtn.classList.add('hidden'); // Ẩn nút làm mới
-                
-                // Ẩn các section nội dung chính (phần này đã được xử lý trong updateAppAuthUI)
-                userInfo.textContent = ''; 
-                recentActivitiesContainer.innerHTML = '<div class="card p-4 text-gray-500 text-center col-span-full">Nhấn "Tải hoạt động gần đây" để xem.</div>';
-                document.getElementById('bubble-chart-container').innerHTML = '<p class="text-gray-500 text-center">Nhấn "Xem thống kê theo tuần" để hiển thị biểu đồ.</p>';
-                const table = document.getElementById('detailed-stats-table');
-                Array.from(table.children).forEach(child => {
-                    if (child.tagName === 'TBODY') { 
-                        table.removeChild(child);
-                    }
-                });
-                const newTbody = document.createElement('tbody');
-                table.appendChild(newTbody);
-                detailedStatsStatus.textContent = 'Chưa có dữ liệu để hiển thị.';
-
-                // HIỂN THỊ CÁC SECTION CÀI ĐẶT và đặt nút "Ẩn cài đặt"
-                applySettingsVisibility(true);
-            }
-        }
         /**
          * Clears all Strava session data from local storage.
          * This logs the user out of Strava within the app.
@@ -2693,7 +2659,7 @@ loadRecentActivitiesBtn.addEventListener('click', async () => {
                         console.error(`Skipping fetch for runner ${runner.runner_name || 'Unknown'} due to missing or invalid credential ID.`);
                         return { weeklyStats: [], detailedActivities: [] };
                     }
-                    const payload = { runnerCredentialId: runnerId };
+                    const payload = { runnerCredentialId: runner.id };
                     console.log(`[viewStatsBtn] Sending payload to ${GET_STATS_API_URL}:`, payload);
                     try {
                         const response = await fetch(GET_STATS_API_URL, {
