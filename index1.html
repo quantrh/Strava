@@ -1933,92 +1933,123 @@ async function saveCredential(event) {
 
       /**
          * Checks the current Strava authentication status from localStorage and updates the UI.
+         * @param {string|null} [selectedCredentialId=null] - Optional ID of a runner credential to activate.
          */
-        async function checkStravaAuthState() {
-            // This function confirms that saving the session to localStorage works as requested.
-            currentRunnerCredentialId = localStorage.getItem('strava_runner_credential_id'); 
-            isAuthenticated = localStorage.getItem('strava_authenticated') === 'true';
-            currentAthleteId = localStorage.getItem('strava_athlete_id');
-            currentRunnerName = localStorage.getItem('strava_runner_name');
+        async function checkStravaAuthState(selectedCredentialId = null) {
+            let credentialToUse = selectedCredentialId || localStorage.getItem('strava_runner_credential_id');
+            let runnerToActivate = null;
 
-            console.log('checkStravaAuthState - Checking Strava auth state from localStorage...');
-            console.log('  isAuthenticated (Strava):', isAuthenticated);
-            console.log('  currentRunnerCredentialId (Credential ID):', currentRunnerCredentialId);
-            console.log('  currentAthleteId (Strava ID):', currentAthleteId);
-            console.log('  currentRunnerName:', currentRunnerName);
+            if (credentialToUse) {
+                // Ensure allRunnerCredentials is populated before trying to find
+                if (allRunnerCredentials.length === 0) {
+                    await fetchAndSetRunnerCredentials(); // Fetch if not already loaded
+                }
+                runnerToActivate = allRunnerCredentials.find(rc => rc.id === credentialToUse);
+            }
 
-            // Các biến stravaAuthHeader và stravaAuthToggleIcon không cần thiết ở đây nữa
-            // vì việc ẩn/hiện toàn bộ section cha sẽ được quản lý bởi applySettingsVisibility.
+            console.log('checkStravaAuthState - Checking Strava auth state...');
+            console.log('  Credential to use:', credentialToUse);
+            console.log('  Runner to activate:', runnerToActivate ? runnerToActivate.runner_name : 'None');
 
-            if (isAuthenticated && currentRunnerCredentialId && currentAthleteId && currentRunnerName) {
-                // Đảm bảo dữ liệu runner và clubs được tải và UI được cập nhật
-                await fetchAndSetRunnerCredentials();
-                await renderCredentialsUI(); 
-                await fetchClubs();
-                populateClubDropdowns();
+            if (runnerToActivate) {
+                currentRunnerCredentialId = runnerToActivate.id;
+                currentAthleteId = runnerToActivate.athlete_id;
+                currentRunnerName = runnerToActivate.runner_name;
+                isAuthenticated = false; // Assume not authenticated until proven otherwise
 
+                const storedAccessToken = localStorage.getItem('strava_access_token');
+                const storedRefreshToken = localStorage.getItem('strava_refresh_token');
+                const storedExpiresAt = localStorage.getItem('strava_expires_at');
+
+                // Check if the stored tokens in localStorage match the currently selected runner and are valid
+                if (storedAccessToken && storedRefreshToken && storedExpiresAt &&
+                    localStorage.getItem('strava_runner_credential_id') === currentRunnerCredentialId &&
+                    Date.now() < parseInt(storedExpiresAt, 10)) {
+                    isAuthenticated = true;
+                    console.log('checkStravaAuthState: Found valid stored session for selected runner in localStorage.');
+                } else if (runnerToActivate.athlete_id && runnerToActivate.refresh_token) {
+                    // If no valid session in localStorage, but the runner in DB has athlete_id and refresh_token,
+                    // then consider them "potentially authenticated" and allow refresh attempt.
+                    isAuthenticated = true; // Set to true to allow refresh attempt
+                    console.log('checkStravaAuthState: Runner in DB has tokens, but localStorage session is invalid/missing. Will attempt refresh.');
+                } else {
+                    console.log('checkStravaAuthState: Selected runner is not connected to Strava or has no valid tokens in DB.');
+                    isAuthenticated = false;
+                }
+
+                // Save the *active* runner's details to localStorage for persistence across sessions
+                localStorage.setItem('strava_runner_credential_id', currentRunnerCredentialId);
+                localStorage.setItem('strava_athlete_id', currentAthleteId || '');
+                localStorage.setItem('strava_runner_name', currentRunnerName || '');
+                localStorage.setItem('strava_authenticated', isAuthenticated.toString());
+
+                // Set the dropdown value to the currently active runner
+                if (runnerSelect && currentRunnerCredentialId) {
+                    runnerSelect.value = currentRunnerCredentialId;
+                }
+
+            } else {
+                // No runner selected or found, clear session
+                clearStravaSession();
+                isAuthenticated = false;
+                currentRunnerCredentialId = null;
+                currentAthleteId = null;
+                currentRunnerName = null;
+                if (runnerSelect) {
+                    runnerSelect.value = ''; // Reset dropdown
+                }
+            }
+
+            // Update UI based on the final isAuthenticated state
+            if (isAuthenticated && currentAthleteId) {
+                authStatus.textContent = 'Đã đăng nhập với Strava.';
+                authStatus.classList.remove('text-orange-500', 'text-red-500');
+                authStatus.classList.add('text-gray-600');
+                currentRunnerNameSpan.textContent = currentRunnerName;
+                currentRunnerDisplay.classList.remove('hidden');
+                connectStravaBtn.style.display = 'none';
+                disconnectStravaBtn.classList.remove('hidden');
+                refreshStravaTokenBtn.classList.remove('hidden');
+                userInfo.textContent = `Chào mừng, Runner: ${currentRunnerName} (Strava ID: ${currentAthleteId})`;
+                applySettingsVisibility(false);
+
+                // If the token is about to expire or has expired, show a specific message
                 const expiresAt = localStorage.getItem('strava_expires_at');
                 const now = Date.now();
-
-                // Kiểm tra nếu token sắp hết hạn (ví dụ: trong vòng 10 phút)
-                // và hiển thị cảnh báo, khuyến khích làm mới thủ công.
                 const TEN_MINUTES_IN_MILLIS = 10 * 60 * 1000;
                 if (expiresAt && (parseInt(expiresAt, 10) - now) < TEN_MINUTES_IN_MILLIS && (parseInt(expiresAt, 10) - now) > 0) {
                     authStatus.textContent = 'Token Strava sắp hết hạn. Vui lòng nhấn "Làm mới Token Strava" hoặc tải lại dữ liệu.';
                     authStatus.classList.remove('text-gray-600');
-                    authStatus.classList.add('text-orange-500'); // Cảnh báo màu cam
-                } else if (expiresAt && now < parseInt(expiresAt, 10)) {
-                    // Trạng thái: Đã đăng nhập Strava thành công và token hợp lệ
-                    console.log('  Valid Strava token found. Logged into Strava.');
-                    authStatus.textContent = 'Đã đăng nhập với Strava.';
-                    authStatus.classList.remove('text-orange-500');
-                    authStatus.classList.add('text-gray-600');
-                    currentRunnerNameSpan.textContent = currentRunnerName;
-                    currentRunnerDisplay.classList.remove('hidden');
-                    connectStravaBtn.style.display = 'none'; // Ẩn nút "Connect with Strava"
-                    disconnectStravaBtn.classList.remove('hidden'); // Hiển thị nút "Đăng xuất Strava"
-                    refreshStravaTokenBtn.classList.remove('hidden'); // Hiển thị nút "Làm mới Token Strava"
-                    
-                    // Hiển thị các section nội dung chính (phần này đã được xử lý trong updateAppAuthUI)
-                    userInfo.textContent = `Chào mừng, Runner: ${currentRunnerName} (Strava ID: ${currentAthleteId})`; 
-                    
-                    // ẨN CÁC SECTION CÀI ĐẶT và đặt nút "Hiện cài đặt"
-                    applySettingsVisibility(false); 
-
-                } else {
-                    // Trạng thái: Đã đăng nhập Strava nhưng token hết hạn/không hợp lệ
-                    console.log('  Strava token has expired or is missing. An automatic refresh will be attempted on data fetch.');
+                    authStatus.classList.add('text-orange-500');
+                } else if (expiresAt && now >= parseInt(expiresAt, 10)) {
                     authStatus.textContent = 'Token Strava đã hết hạn. Hệ thống sẽ tự động làm mới khi bạn tải dữ liệu.';
                     authStatus.classList.remove('text-red-500');
-                    authStatus.classList.add('text-orange-500'); // Cảnh báo màu cam nhẹ hơn
-
-                    // Do the user manages refresh automatically, we don't need to force re-authentication or alert them here.
-                    // We still clear the session to ensure consistency, but the UI won't force a manual re-login flow immediately.
-                    clearStravaSession();
-
-                    // Keep settings visible so user can manually re-connect if auto-refresh fails later.
-                    applySettingsVisibility(true);
-
-                    // Reset UI for Strava-related displays as if not authenticated, but without forcing re-login alert.
-                    currentRunnerDisplay.classList.add('hidden');
-                    connectStravaBtn.style.display = 'block';
-                    disconnectStravaBtn.classList.add('hidden');
-                    refreshStravaTokenBtn.classList.add('hidden'); // Hide manual refresh button if token is expired
-                    userInfo.textContent = '';
-                    recentActivitiesContainer.innerHTML = '<div class="card p-4 text-gray-500 text-center col-span-full">Nhấn "Tải hoạt động gần đây" để xem.</div>';
-                    document.getElementById('bubble-chart-container').innerHTML = '<p class="text-gray-500 text-center">Nhấn "Xem thống kê theo tuần" để hiển thị biểu đồ.</p>';
-                    const table = document.getElementById('detailed-stats-table');
-                    Array.from(table.children).forEach(child => {
-                        if (child.tagName === 'TBODY') {
-                            table.removeChild(child);
-                        }
-                    });
-                    const newTbody = document.createElement('tbody');
-                    table.appendChild(newTbody);
-                    detailedStatsStatus.textContent = 'Chưa có dữ liệu để hiển thị.';
+                    authStatus.classList.add('text-orange-500');
                 }
-            } // This `}` closes the `if (isAuthenticated && ...)` block.
-        } // <--- ĐÃ THÊM DẤU ĐÓNG NGOẶC NHỌN THIẾU Ở ĐÂY
+
+            } else {
+                authStatus.textContent = 'Chưa đăng nhập Strava.';
+                authStatus.classList.remove('text-orange-500');
+                authStatus.classList.add('text-gray-600');
+                currentRunnerDisplay.classList.add('hidden');
+                connectStravaBtn.style.display = 'block';
+                disconnectStravaBtn.classList.add('hidden');
+                refreshStravaTokenBtn.classList.add('hidden');
+                userInfo.textContent = '';
+                recentActivitiesContainer.innerHTML = '<div class="card p-4 text-gray-500 text-center col-span-full">Nhấn "Tải hoạt động gần đây" để xem.</div>';
+                document.getElementById('bubble-chart-container').innerHTML = '<p class="text-gray-500 text-center">Nhấn "Xem thống kê theo tuần" để hiển thị biểu đồ.</p>';
+                const table = document.getElementById('detailed-stats-table');
+                Array.from(table.children).forEach(child => {
+                    if (child.tagName === 'TBODY') {
+                        table.removeChild(child);
+                    }
+                });
+                const newTbody = document.createElement('tbody');
+                table.appendChild(newTbody);
+                detailedStatsStatus.textContent = 'Chưa có dữ liệu để hiển thị.';
+                applySettingsVisibility(true); // Keep settings visible if not connected
+            }
+        }
 
         /**
          * Clears all Strava session data from local storage.
@@ -2232,6 +2263,21 @@ async function saveCredential(event) {
                     return false;
                 }
 
+                // Fetch the runner's credentials from the database to get the latest refresh_token
+                const { data: runnerCred, error: fetchCredError } = await supabaseClientInstance
+                    .from('runner_credentials')
+                    .select('refresh_token, athlete_id')
+                    .eq('id', currentRunnerCredentialId)
+                    .single();
+
+                if (fetchCredError || !runnerCred || !runnerCred.refresh_token || !runnerCred.athlete_id) {
+                    showAlert('Lỗi: Không tìm thấy token làm mới hoặc thông tin vận động viên cho runner đã chọn. Vui lòng kết nối lại Strava.');
+                    authStatus.textContent = 'Không có token làm mới. Vui lòng kết nối lại Strava.';
+                    clearStravaSession(); // Clear potentially stale session
+                    checkStravaAuthState(); // Update UI
+                    return false;
+                }
+
                 console.log(`[Client] Calling refresh-strava-token Edge Function for runnerCredentialId: ${currentRunnerCredentialId}`);
                 const response = await fetch(REFRESH_STRAVA_TOKEN_API_URL, {
                     method: 'POST',
@@ -2241,7 +2287,9 @@ async function saveCredential(event) {
                     },
                     body: JSON.stringify({
                         runnerCredentialId: currentRunnerCredentialId,
-                        client_id: APP_STRAVA_CLIENT_ID // Pass client_id to Edge Function
+                        client_id: APP_STRAVA_CLIENT_ID,
+                        // Pass the refresh token fetched from the database
+                        refresh_token: runnerCred.refresh_token
                     }),
                 });
 
@@ -2250,26 +2298,27 @@ async function saveCredential(event) {
                 if (response.ok && result.success) {
                     // Update localStorage with new tokens from Edge Function response
                     localStorage.setItem('strava_access_token', result.access_token);
-                    localStorage.setItem('strava_refresh_token', result.refresh_token);
+                    localStorage.setItem('strava_refresh_token', result.refresh_token); // Save new refresh token
                     localStorage.setItem('strava_expires_at', result.expires_at);
                     localStorage.setItem('strava_authenticated', 'true'); // Confirm authenticated
+                    localStorage.setItem('strava_athlete_id', result.athlete_id); // Ensure athlete_id is also updated/persisted
+                    localStorage.setItem('strava_runner_name', currentRunnerName); // Keep runner name consistent
 
                     showAlert('Làm mới token Strava thành công!');
-                    checkStravaAuthState(); // Update UI
+                    await checkStravaAuthState(); // Update UI
                     return true;
                 } else {
                     console.error('[Client] Error from refresh-strava-token Edge Function:', result.error);
                     showAlert(`Lỗi làm mới token Strava: ${result.error || 'Không xác định'}. Vui lòng thử lại hoặc đăng nhập lại Strava.`);
-                    // If refresh fails, clear session to force re-authentication
                     clearStravaSession();
-                    checkStravaAuthState();
+                    await checkStravaAuthState();
                     return false;
                 }
             } catch (err) {
                 console.error('Lỗi mạng hoặc máy chủ khi làm mới token Strava:', err);
                 showAlert(`Lỗi mạng hoặc máy chủ khi làm mới token Strava: ${err.message}.`);
                 clearStravaSession();
-                checkStravaAuthState();
+                await checkStravaAuthState();
                 return false;
             }
         }
@@ -3527,9 +3576,9 @@ analyzeActivitiesBtn.addEventListener('click', async () => {
             console.log('Supabase Anon Key (first 10 chars):', SUPABASE_ANON_KEY.substring(0, 10) + '...');
 
             // Supabase Auth Listener
-            supabaseClientInstance.auth.onAuthStateChange((event, session) => {
+            supabaseClientInstance.auth.onAuthStateChange(async (event, session) => { // Made async
                 console.log('Supabase Auth state changed:', event, session);
-                updateAppAuthUI(session?.user || null);
+                await updateAppAuthUI(session?.user || null); // Await this call
             });
 
             // Set up event listeners for app authentication forms
@@ -3585,6 +3634,51 @@ analyzeActivitiesBtn.addEventListener('click', async () => {
             clubRecentActivitiesFilter.addEventListener('change', () => {
                 selectedClubNameForRecentActivities = clubRecentActivitiesFilter.value;
                 loadRecentActivitiesBtn.click();
+            });
+
+            // NEW: Add change listener for runner-select dropdown
+            runnerSelect.addEventListener('change', async () => {
+                const selectedCredentialId = runnerSelect.value;
+                if (selectedCredentialId) {
+                    // Find the selected runner's full details
+                    const selectedRunner = allRunnerCredentials.find(cred => cred.id === selectedCredentialId);
+                    if (selectedRunner) {
+                        // Update global variables
+                        currentRunnerCredentialId = selectedRunner.id;
+                        currentAthleteId = selectedRunner.athlete_id;
+                        currentRunnerName = selectedRunner.runner_name;
+
+                        // Save the selected runner's credential ID to localStorage immediately
+                        localStorage.setItem('strava_runner_credential_id', currentRunnerCredentialId);
+
+                        // Now, call checkStravaAuthState to update UI based on this selection.
+                        // checkStravaAuthState will then read from localStorage or try to refresh if needed.
+                        await checkStravaAuthState();
+
+                        // If the selected runner is not yet connected to Strava (no athlete_id),
+                        // ensure the "Connect with Strava" button is visible and prompt user.
+                        if (!selectedRunner.athlete_id) {
+                            showAlert(`Runner "${selectedRunner.runner_name}" chưa được kết nối với Strava. Vui lòng nhấn nút "Connect with Strava" để ủy quyền.`);
+                            connectStravaBtn.style.display = 'block'; // Ensure connect button is visible
+                            disconnectStravaBtn.classList.add('hidden');
+                            refreshStravaTokenBtn.classList.add('hidden');
+                            authStatus.textContent = 'Runner đã chọn chưa kết nối Strava.';
+                            authStatus.classList.remove('text-orange-500');
+                            authStatus.classList.add('text-red-500');
+                        } else {
+                            // If it has an athlete_id, check its actual auth state
+                            // This is already handled by checkStravaAuthState
+                        }
+                    } else {
+                        console.error('Không tìm thấy runner đã chọn trong allRunnerCredentials.');
+                        clearStravaSession();
+                        await checkStravaAuthState(); // Reset UI
+                    }
+                } else {
+                    // No runner selected (e.g., "-- Chọn Runner --" option)
+                    clearStravaSession();
+                    await checkStravaAuthState(); // Reset UI
+                }
             });
 
 
