@@ -1,0 +1,28 @@
+# file: .github/workflows/scheduled-strava-fetch.yml
+name: Fetch Strava Activities Daily
+
+on:
+  schedule:
+    # Chạy lúc 7:00 sáng (00:00 UTC) và 20:00 tối (13:00 UTC) theo giờ Việt Nam
+    # (Lưu ý: GitHub Actions sử dụng múi giờ UTC. Việt Nam là UTC+7)
+    - cron: '0 0 * * *'  # 7:00 AM ICT (00:00 UTC)
+    - cron: '0 13 * * *' # 8:00 PM ICT (13:00 UTC)
+
+jobs:
+  fetch_activities:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Call Supabase Edge Function
+        env:
+          EDGE_FUNCTION_URL: ${{ secrets.SUPABASE_EDGE_FUNCTION_URL }}
+          SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          echo "Calling Edge Function at $EDGE_FUNCTION_URL"
+          curl -X POST \
+            -H "Authorization: Bearer $SERVICE_ROLE_KEY" \
+            -H "Content-Type: application/json" \
+            -d '{}' \
+            $EDGE_FUNCTION_URL
