@@ -1430,6 +1430,7 @@ function applySettingsVisibility(isVisible) {
  * @param {Object|null} user - The Supabase user object or null if logged out.
  */
 async function updateAppAuthUI(user) {
+     console.log('DEBUG: updateAppAuthUI được gọi. User:', user ? user.email : 'null');
     if (user) {
         currentAppUserId = user.id;
         appUserStatus.textContent = `Đã đăng nhập: ${user.email || 'Khách'}`;
@@ -1509,7 +1510,7 @@ async function updateAppAuthUI(user) {
 
         // 4. Set initial state of settings button and sections to visible on LOGOUT.
         applySettingsVisibility(true);
-
+console.log('DEBUG: Người dùng chưa đăng nhập ứng dụng. Ẩn các phần liên quan.');
         return;
     }
 }
@@ -1917,6 +1918,7 @@ async function saveCredential(event) {
          * Checks the current Strava authentication status from localStorage and updates the UI.
          */
         async function checkStravaAuthState() {
+            console.log('DEBUG: checkStravaAuthState được gọi.');
             const storedAccessToken = localStorage.getItem('strava_access_token');
             const storedRefreshToken = localStorage.getItem('strava_refresh_token');
             const storedAthleteId = localStorage.getItem('strava_athlete_id');
@@ -2828,8 +2830,10 @@ loadRecentActivitiesBtn.addEventListener('click', async () => {
          * @returns {Promise<Object[]>} Array of club objects.
          */
         async function fetchClubs() {
+            console.log('DEBUG: fetchClubs được gọi.');
             if (!supabaseClientInstance) {
                 console.error('Supabase client is not initialized for fetching clubs.');
+                console.error('DEBUG: Lỗi: Supabase client chưa được khởi tạo khi fetchClubs được gọi.');
                 return [];
             }
             try {
@@ -2839,12 +2843,14 @@ loadRecentActivitiesBtn.addEventListener('click', async () => {
                     .order('name', { ascending: true });
                 if (error) throw error;
                 allClubs = data;
+                console.log('DEBUG: Đã tìm nạp các câu lạc bộ:', allClubs);
                 console.log('Fetched clubs:', allClubs);
                 return allClubs;
             } catch (error) {
                 // Đây là nơi lỗi "Invalid API key" thường xuất hiện nếu khóa không đúng
                 // hoặc chính sách RLS trên bảng 'clubs' không cho phép 'select'.
                 console.error('Error fetching clubs:', error.message);
+                console.error('DEBUG: Lỗi khi tìm nạp các câu lạc bộ:', error.message);
                 showAlert(`Lỗi khi tải danh sách câu lạc bộ: ${error.message}. Vui lòng kiểm tra API Key và chính sách RLS trên bảng 'clubs' trong Supabase.`);
                 allClubs = [];
                 return [];
@@ -2855,6 +2861,7 @@ loadRecentActivitiesBtn.addEventListener('click', async () => {
          * Populates the club filter dropdowns and the runner-team select in the modal.
          */
         function populateClubDropdowns() {
+           console.log('DEBUG: populateClubDropdowns được gọi. allClubs hiện tại:', allClubs);
             runnerTeamSelect.innerHTML = '<option value="">-- Chọn đội chạy --</option>';
             allClubs.forEach(club => {
                 const option = document.createElement('option');
@@ -3489,6 +3496,7 @@ analyzeActivitiesBtn.addEventListener('click', async () => {
 
         // When the page loads
         window.onload = async () => {
+             console.log('DEBUG: window.onload được kích hoạt.');
             if (typeof window.supabase === 'undefined') {
                 showAlert('Lỗi: Thư viện Supabase không được tải. Vui lòng kiểm tra kết nối internet hoặc URL CDN.');
                 console.error('Thư viện Supabase không được định nghĩa. Vui lòng kiểm tra thẻ script CDN Supabase.');
