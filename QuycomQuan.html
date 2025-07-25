@@ -260,6 +260,12 @@
             </svg>
             Tạo Lịch
         </a>
+        <a href="#" id="logout-btn">
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+            </svg>
+            Đăng xuất
+        </a>
     </div>
 
     <!-- Logo and Title (pushed to the right) -->
@@ -615,6 +621,7 @@
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJtYnN4Y2Nyd3JrdGJqbG5lenB1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg2MjczNjQsImV4cCI6MjA2NDIwMzM2NH0.ydCqificftdtn1niRciFCifeuo8aX6SDGti-hCY5Z_Y'; // This should be an empty string in Canvas to use provided key
 
         let supabase;
+        let currentUser = null; // Biến để lưu thông tin người dùng hiện tại
 
         // Global state variables (mimicking React state)
         let members = [];
@@ -940,6 +947,7 @@
         // Language switch buttons
         const langViBtn = document.getElementById('lang-vi-btn');
         const langEnBtn = document.getElementById('lang-en-btn');
+        const logoutBtn = document.getElementById('logout-btn'); // Nút đăng xuất
 
         // Modals
         const editTransactionModal = document.getElementById('edit-transaction-modal');
@@ -1181,29 +1189,43 @@
 
         // --- Supabase and Data Management ---
 
-        // Initializes Supabase client
+        // Initializes Supabase client and checks authentication
         function initializeSupabase() {
             if (typeof window.supabase === 'undefined') {
                 showErrorMessage(translations[currentLanguage].supaLoadError);
                 return;
             }
-            // For Canvas environment, check if __supabase_key is available
-            // If running outside Canvas, SUPABASE_ANON_KEY should be set manually
             const anonKey = typeof __supabase_key !== 'undefined' ? __supabase_key : SUPABASE_ANON_KEY;
 
-            if (!anonKey || SUPABASE_URL === 'https://rmbsxccrwrktbjlnezpu.supabase.co1') { // Check for default URL
+            if (!anonKey || SUPABASE_URL === 'https://1rmbsxccrwrktbjlnezpu.supabase.co') { // Check for default URL
                  showErrorMessage(translations[currentLanguage].supabaseConfigWarning);
                  return;
             }
 
             supabase = window.supabase.createClient(SUPABASE_URL, anonKey);
             console.log("Supabase client initialized.");
-            fetchData(); // Fetch initial data after initialization
-            setupRealtimeSubscriptions(); // Set up real-time listeners
+
+            // Listen for auth state changes
+            supabase.auth.onAuthStateChanged((event, session) => {
+                if (session) {
+                    currentUser = session.user;
+                    console.log("User logged in:", currentUser.email);
+                    fetchData(); // Fetch data only when user is authenticated
+                    setupRealtimeSubscriptions(); // Set up real-time listeners
+                } else {
+                    currentUser = null;
+                    console.log("No user logged in, redirecting to login.html");
+                    window.location.href = 'login.html'; // Redirect to login page
+                }
+            });
         }
 
         // Fetches all data from Supabase
         async function fetchData() {
+            if (!currentUser) {
+                console.log("Not authenticated, skipping data fetch.");
+                return;
+            }
             showLoading(true);
             try {
                 // Fetch members
@@ -1334,6 +1356,8 @@
 
         // Sets up real-time subscriptions for members and transactions
         function setupRealtimeSubscriptions() {
+            if (!currentUser) return; // Only set up subscriptions if authenticated
+
             supabase
                 .channel('public:members')
                 .on('postgres_changes', { event: '*', schema: 'public', table: 'members' }, payload => {
@@ -2965,6 +2989,7 @@ if (transaction.type === 'contribution') {
 					</div>
 				`;
 				hideErrorMessage(); // Clear previous errors for food suggestions
+				addressInputForFood.value = ''; // Clear address input initially
 
 				// Prepare data for the Edge Function
 				let activitiesData = {
@@ -3427,11 +3452,23 @@ if (transaction.type === 'contribution') {
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                 };
 
+                // Handle Logout
+                logoutBtn.onclick = async () => {
+                    const { error } = await supabase.auth.signOut();
+                    if (error) {
+                        console.error("Error logging out:", error.message);
+                        showErrorMessage(`Lỗi đăng xuất: ${error.message}`);
+                    } else {
+                        console.log("Logged out successfully.");
+                        // The onAuthStateChanged listener will handle redirection to login.html
+                    }
+                };
+
 
                 // Initial data fetch and UI render when DOM is fully loaded
                 document.addEventListener('DOMContentLoaded', () => {
                     setLanguage(currentLanguage); // Set initial language
-                    initializeSupabase();
+                    initializeSupabase(); // This will handle auth check and then fetchData
                 });
             </script>
 <script>
