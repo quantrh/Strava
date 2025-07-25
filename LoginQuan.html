@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Đăng nhập - Quản lý Quỹ Nhóm</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .card {
+            background-color: #fff;
+            border-radius: 1rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            padding: 2.5rem;
+        }
+        .btn-primary {
+            background-color: #006B68; /* BIDV Brand Blue */
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.75rem;
+            font-weight: 600;
+            transition: background-color 0.2s;
+        }
+        .btn-primary:hover { background-color: #005A58; /* Darker BIDV Blue */ }
+        .input-field {
+            border: 1px solid #D1D5DB;
+            border-radius: 0.5rem;
+            padding: 0.75rem 1rem;
+            width: 100%;
+        }
+        .error-message {
+            background-color: #FEE2E2;
+            color: #DC2626;
+            padding: 0.75rem;
+            border-radius: 0.5rem;
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+        .success-message {
+            background-color: #D1FAE5;
+            color: #065F46;
+            padding: 0.75rem;
+            border-radius: 0.5rem;
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
+
+    <div class="card w-full max-w-md">
+        <h1 class="text-3xl font-bold text-center text-[#006B68] mb-8">Đăng nhập vào Quản lý Quỹ Nhóm</h1>
+
+        <div id="message-display" class="hidden mb-4"></div>
+
+        <form id="login-form" class="space-y-4">
+            <div>
+                <label for="login-email" class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                <input type="email" id="login-email" placeholder="Email của bạn" class="input-field" required>
+            </div>
+            <div>
+                <label for="login-password" class="block text-sm font-medium text-gray-700 mb-1">Mật khẩu</label>
+                <input type="password" id="login-password" placeholder="Mật khẩu của bạn" class="input-field" required>
+            </div>
+            <button type="submit" class="btn-primary w-full">Đăng nhập</button>
+            <p class="text-center text-sm text-gray-600">
+                <a href="#" id="forgot-password-link" class="text-[#006B68] hover:underline">Quên mật khẩu?</a>
+            </p>
+        </form>
+
+        <div class="mt-8 text-center">
+            <p class="text-gray-700 mb-4">Chưa có tài khoản?</p>
+            <form id="signup-form" class="space-y-4">
+                <div>
+                    <label for="signup-email" class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                    <input type="email" id="signup-email" placeholder="Email được mời của bạn" class="input-field" required>
+                </div>
+                <div>
+                    <label for="signup-password" class="block text-sm font-medium text-gray-700 mb-1">Mật khẩu</label>
+                    <input type="password" id="signup-password" placeholder="Tạo mật khẩu" class="input-field" required>
+                </div>
+                <button type="submit" class="btn-primary w-full">Đăng ký (chỉ dành cho người được mời)</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Supabase Client Initialization
+        // IMPORTANT: In the Canvas environment, leave SUPABASE_ANON_KEY empty.
+        // It will be automatically provided at runtime.
+        const SUPABASE_URL = 'https://rmbsxccrwrktbjlnezpu.supabase.co'; // Replace with your actual Supabase URL
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJtYnN4Y2Nyd3JrdGJqbG5lenB1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg2MjczNjQsImV4cCI6MjA2NDIwMzM2NH0.ydCqificftdtn1niRciFCifeuo8aX6SDGti-hCY5Z_Y'; // This should be an empty string in Canvas to use provided key
+
+        let supabase;
+
+        const loginForm = document.getElementById('login-form');
+        const loginEmailInput = document.getElementById('login-email');
+        const loginPasswordInput = document.getElementById('login-password');
+        const signupForm = document.getElementById('signup-form');
+        const signupEmailInput = document.getElementById('signup-email');
+        const signupPasswordInput = document.getElementById('signup-password');
+        const forgotPasswordLink = document.getElementById('forgot-password-link');
+        const messageDisplay = document.getElementById('message-display');
+
+        function showMessage(message, type = 'error') {
+            messageDisplay.textContent = message;
+            messageDisplay.classList.remove('hidden', 'error-message', 'success-message');
+            if (type === 'error') {
+                messageDisplay.classList.add('error-message');
+            } else {
+                messageDisplay.classList.add('success-message');
+            }
+        }
+
+        function hideMessage() {
+            messageDisplay.classList.add('hidden');
+        }
+
+        // Initialize Supabase
+        document.addEventListener('DOMContentLoaded', () => {
+            if (typeof window.supabase === 'undefined') {
+                showMessage('Lỗi: Thư viện Supabase chưa được tải. Vui lòng kiểm tra kết nối mạng.', 'error');
+                return;
+            }
+            const anonKey = typeof __supabase_key !== 'undefined' ? __supabase_key : SUPABASE_ANON_KEY;
+
+            if (!anonKey || SUPABASE_URL === 'https://rmbsxccrwrktbjlnezpu.supabase.co') { // Check for default URL
+                 showMessage('Cảnh báo: URL hoặc Khóa Supabase vẫn là giá trị mặc định. Vui lòng thay thế bằng thông tin dự án thực của bạn.', 'error');
+                 return;
+            }
+
+            supabase = window.supabase.createClient(SUPABASE_URL, anonKey);
+            console.log("Supabase client initialized for login.");
+
+            // Check if user is already logged in and redirect
+            supabase.auth.getSession().then(({ data: { session } }) => {
+                if (session) {
+                    window.location.href = 'QuycomQuan.html'; // Redirect to main app if already logged in
+                }
+            });
+
+            // Handle Login - Moved inside DOMContentLoaded
+            loginForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                hideMessage();
+                const email = loginEmailInput.value;
+                const password = loginPasswordInput.value;
+
+                const { data, error } = await supabase.auth.signInWithPassword({
+                    email: email,
+                    password: password,
+                });
+
+                if (error) {
+                    showMessage(`Đăng nhập thất bại: ${error.message}`, 'error');
+                } else if (data.user) {
+                    showMessage('Đăng nhập thành công! Đang chuyển hướng...', 'success');
+                    setTimeout(() => {
+                        window.location.href = 'QuycomQuan.html';
+                    }, 1500);
+                }
+            });
+
+            // Handle Signup (Invited Users Only) - Moved inside DOMContentLoaded
+            signupForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                hideMessage();
+                const email = signupEmailInput.value;
+                const password = signupPasswordInput.value;
+
+                // Step 1: Check if the email is in the invited_users table
+                try {
+                    // IMPORTANT: For RLS to work here, your 'invited_users' table needs a policy
+                    // that allows 'anon' role to SELECT rows where 'email' matches the provided email.
+                    // This is a security consideration; a more robust solution would involve a Supabase Edge Function.
+                    const { data, error: invitedError } = await supabase
+                        .from('invited_users')
+                        .select('email')
+                        .eq('email', email)
+                        .single(); // Use .single() to expect 0 or 1 result
+
+                    if (invitedError && invitedError.code !== 'PGRST116') { // PGRST116 means "No rows found"
+                        throw invitedError; // Other errors
+                    }
+
+                    if (!data) { // If data is null, email was not found in invited_users
+                        showMessage('Email này không có trong danh sách được mời. Vui lòng liên hệ quản trị viên.', 'error');
+                        return;
+                    }
+
+                    // Step 2: If email is invited, proceed with Supabase signup
+                    const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+                        email: email,
+                        password: password,
+                    });
+
+                    if (signUpError) {
+                        showMessage(`Đăng ký thất bại: ${signUpError.message}`, 'error');
+                    } else if (signUpData.user) {
+                        showMessage('Đăng ký thành công! Vui lòng kiểm tra email của bạn để xác nhận tài khoản.', 'success');
+                        signupEmailInput.value = '';
+                        signupPasswordInput.value = '';
+                    } else if (signUpData.session === null && signUpData.user === null) {
+                        // This case happens if email confirmation is required but no session is created immediately
+                        showMessage('Đăng ký thành công! Vui lòng kiểm tra email của bạn để xác nhận tài khoản.', 'success');
+                        signupEmailInput.value = '';
+                        signupPasswordInput.value = '';
+                    }
+                } catch (error) {
+                    console.error("Signup process error:", error);
+                    showMessage(`Đăng ký thất bại: ${error.message}`, 'error');
+                }
+            });
+
+            // Handle Forgot Password - Moved inside DOMContentLoaded
+            forgotPasswordLink.addEventListener('click', async (e) => {
+                e.preventDefault();
+                hideMessage();
+                const email = loginEmailInput.value; // Use the email from the login input
+
+                if (!email) {
+                    showMessage('Vui lòng nhập email của bạn vào ô đăng nhập để đặt lại mật khẩu.', 'error');
+                    return;
+                }
+
+                const { error } = await supabase.auth.resetPasswordForEmail(email, {
+                    redirectTo: window.location.origin + '/reset-password.html' // You might need a dedicated reset password page
+                });
+
+                if (error) {
+                    showMessage(`Đặt lại mật khẩu thất bại: ${error.message}`, 'error');
+                } else {
+                    showMessage('Hướng dẫn đặt lại mật khẩu đã được gửi đến email của bạn. Vui lòng kiểm tra hộp thư đến.', 'success');
+                }
+            });
+        });
+    </script>
+</body>
+</html>
