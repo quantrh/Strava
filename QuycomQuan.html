@@ -620,8 +620,9 @@
         const SUPABASE_URL = 'https://rmbsxccrwrktbjlnezpu.supabase.co'; // Replace with your actual Supabase URL
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJtYnN4Y2Nyd3JrdGJqbG5lenB1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg2MjczNjQsImV4cCI6MjA2NDIwMzM2NH0.ydCqificftdtn1niRciFCifeuo8aX6SDGti-hCY5Z_Y'; // This should be an empty string in Canvas to use provided key
 
-        let supabase;
+        let supabase = null; // Khởi tạo là null
         let currentUser = null; // Biến để lưu thông tin người dùng hiện tại
+        let isAuthChecked = false; // Thêm biến mới để theo dõi trạng thái xác thực ban đầu
 
         // Global state variables (mimicking React state)
         let members = [];
@@ -781,6 +782,7 @@
                 deleteMemberError: 'Lỗi khi xóa thành viên:', // New translation key
                 memberBalanceNotZero: 'Không thể xóa thành viên có số dư khác 0. Vui lòng thanh toán số dư trước.', // New translation key
                 defaultExpenseTypes: 'Food, Transport, Shopping, Entertainment, Health, Education, Other', // New translation for default expense types
+                appNotReady: 'Ứng dụng chưa sẵn sàng. Vui lòng chờ hoặc đăng nhập lại.', // NEW: Thêm khóa dịch mới
             }
         };
 
@@ -1050,31 +1052,44 @@
         function initializeSupabase() {
             if (typeof window.supabase === 'undefined') {
                 showErrorMessage(translations[currentLanguage].supaLoadError);
-                return;
+                console.error("Supabase JS library not loaded.");
+                return; // Vẫn thoát nếu thư viện Supabase không được tải
             }
             const anonKey = typeof __supabase_key !== 'undefined' ? __supabase_key : SUPABASE_ANON_KEY;
 
-            if (!anonKey || SUPABASE_URL === 'https://rmbsxccrwrktbjlnezpu.supabase.co') { // Check for default URL
-                 showErrorMessage(translations[currentLanguage].supabaseConfigWarning);
-                 return;
+            if (!anonKey || SUPABASE_URL === 'https://rmbsxccrwrktbjlnezpu.supabase.co') {
+                 // Đây là cảnh báo, không phải lỗi chặn khởi tạo
+                 console.warn(translations[currentLanguage].supabaseConfigWarning);
             }
 
-            supabase = window.supabase.createClient(SUPABASE_URL, anonKey);
-            console.log("Supabase client initialized.");
+            try {
+                supabase = window.supabase.createClient(SUPABASE_URL, anonKey);
+                console.log("Supabase client initialized.");
 
-            // Listen for auth state changes
-            supabase.auth.onAuthStateChanged((event, session) => {
-                if (session) {
-                    currentUser = session.user;
-                    console.log("User logged in:", currentUser.email);
-                    fetchData(); // Fetch data only when user is authenticated
-                    setupRealtimeSubscriptions(); // Set up real-time listeners
-                } else {
-                    currentUser = null;
-                    console.log("No user logged in, redirecting to login.html");
-                    window.location.href = 'login.html'; // Redirect to login page
-                }
-            });
+                // Lắng nghe thay đổi trạng thái xác thực
+                supabase.auth.onAuthStateChanged((event, session) => {
+                    currentUser = session ? session.user : null;
+                    isAuthChecked = true; // Đánh dấu rằng trạng thái xác thực đã được kiểm tra
+
+                    if (currentUser) {
+                        console.log("User logged in:", currentUser.email);
+                        fetchData(); // Chỉ tải dữ liệu khi người dùng đã xác thực
+                        setupRealtimeSubscriptions(); // Thiết lập lắng nghe thời gian thực
+                    } else {
+                        console.log("No user logged in, redirecting to login.html");
+                        // Chỉ chuyển hướng nếu đây là lần kiểm tra ban đầu và chưa ở trang đăng nhập
+                        if (window.location.pathname !== '/login.html' && window.location.pathname !== '/login' && !session) {
+                            window.location.href = 'login.html';
+                        } else if (!session) { // Nếu đã ở trang đăng nhập và không có phiên
+                            console.log("User is on login page and not authenticated.");
+                        }
+                    }
+                });
+            } catch (e) {
+                console.error("Error initializing Supabase client:", e.message);
+                showErrorMessage(`Lỗi khởi tạo Supabase: ${e.message}`);
+                supabase = null; // Đảm bảo supabase là null nếu tạo client thất bại
+            }
         }
 
         // Fetches all data from Supabase
@@ -1500,9 +1515,31 @@
         // Handles adding a new member
         addMemberForm.onsubmit = async (e) => {
             e.preventDefault();
+            const submitButton = e.submitter;
+            if (submitButton) {
+                submitButton.disabled = true;
+                submitButton.textContent = 'Đang xử lý...';
+            }
+
+            // THÊM ĐOẠN KIỂM TRA NÀY
+            if (!supabase || !currentUser || !isAuthChecked) {
+                showErrorMessage(translations[currentLanguage].appNotReady);
+                console.error("Supabase client or user not ready for add member operation.");
+                if (submitButton) {
+                    submitButton.disabled = false;
+                    submitButton.textContent = translations[currentLanguage].addBtn;
+                }
+                return;
+            }
+            // KẾT THÚC ĐOẠN KIỂM TRA
+
             const name = memberNameInput.value.trim();
             if (!name) {
                 showErrorMessage(translations[currentLanguage].emptyMemberName);
+                if (submitButton) { // Đảm bảo nút được bật lại nếu có lỗi
+                    submitButton.disabled = false;
+                    submitButton.textContent = translations[currentLanguage].addBtn;
+                }
                 return;
             }
             hideErrorMessage();
@@ -1521,11 +1558,24 @@
             } catch (error) {
                 console.error("Error adding member:", error.message);
                 showErrorMessage(`${translations[currentLanguage].addMemberError} ${error.message}`);
+            } finally {
+                if (submitButton) {
+                    submitButton.disabled = false;
+                    submitButton.textContent = translations[currentLanguage].addBtn;
+                }
             }
         };
 
         // Handles settling up a member's balance
         async function settleUpMember(memberId) {
+            // THÊM ĐOẠN KIỂM TRA NÀY
+            if (!supabase || !currentUser || !isAuthChecked) {
+                showErrorMessage(translations[currentLanguage].appNotReady);
+                console.error("Supabase client or user not ready for settle up operation.");
+                return;
+            }
+            // KẾT THÚC ĐOẠN KIỂM TRA
+
             const memberToSettle = members.find(m => m.id === memberId);
             if (!memberToSettle || Math.abs(memberToSettle.balance) < 0.01) return; // Use a small epsilon for zero check
 
@@ -1558,6 +1608,14 @@
 
         // Shows confirmation modal for deleting a member
         function confirmDeleteMember(member) {
+            // THÊM ĐOẠN KIỂM TRA NÀY
+            if (!supabase || !currentUser || !isAuthChecked) {
+                showErrorMessage(translations[currentLanguage].appNotReady);
+                console.error("Supabase client or user not ready for delete member confirmation.");
+                return;
+            }
+            // KẾT THÚC ĐOẠN KIỂM TRA
+
             // Check if balance is effectively zero (within a small tolerance)
             if (Math.abs(member.balance) > 0.01) {
                 showErrorMessage(translations[currentLanguage].memberBalanceNotZero);
@@ -1573,6 +1631,15 @@
 
         // Handles deletion of member after confirmation
         async function deleteMemberConfirmed() {
+            // THÊM ĐOẠN KIỂM TRA NÀY
+            if (!supabase || !currentUser || !isAuthChecked) {
+                showErrorMessage(translations[currentLanguage].appNotReady);
+                console.error("Supabase client or user not ready for delete member operation.");
+                confirmationModal.classList.add('hidden'); // Hide modal if not ready
+                return;
+            }
+            // KẾT THÚC ĐOẠN KIỂM TRA
+
             if (memberToDelete) {
                 try {
                     console.log(`Attempting to delete transactions for member: ${memberToDelete.name} (ID: ${memberToDelete.id})`);
@@ -1623,6 +1690,18 @@
                 submitButton.disabled = true; // Disable the button immediately
                 submitButton.textContent = 'Đang lưu...'; // Optional: show loading text
             }
+
+            // THÊM ĐOẠN KIỂM TRA NÀY
+            if (!supabase || !currentUser || !isAuthChecked) {
+                showErrorMessage(translations[currentLanguage].appNotReady);
+                console.error("Supabase client or user not ready for add transaction operation.");
+                if (submitButton) {
+                    submitButton.disabled = false;
+                    submitButton.textContent = translations[currentLanguage].recordTransactionBtn;
+                }
+                return;
+            }
+            // KẾT THÚC ĐOẠN KIỂM TRA
 
             const type = transactionTypeSelect.value;
             const amount = parseFormattedNumber(amountInput.value); // Use the new parseFormattedNumber
@@ -1849,6 +1928,14 @@
 
         // Shows the edit transaction modal
         function showEditTransactionModal(transaction) {
+            // THÊM ĐOẠN KIỂM TRA NÀY
+            if (!supabase || !currentUser || !isAuthChecked) {
+                showErrorMessage(translations[currentLanguage].appNotReady);
+                console.error("Supabase client or user not ready for show edit transaction modal.");
+                return;
+            }
+            // KẾT THÚC ĐOẠN KIỂM TRA
+
             editingTransaction = transaction; // Store the transaction globally
             editTransactionModal.classList.remove('hidden');
             hideErrorMessage();
@@ -1971,6 +2058,18 @@ if (transaction.type === 'contribution') {
                 submitButton.textContent = 'Đang lưu...'; // Optional: show loading text
             }
 
+            // THÊM ĐOẠN KIỂM TRA NÀY
+            if (!supabase || !currentUser || !isAuthChecked) {
+                showErrorMessage(translations[currentLanguage].appNotReady);
+                console.error("Supabase client or user not ready for edit transaction operation.");
+                if (submitButton) {
+                    submitButton.disabled = false;
+                    submitButton.textContent = translations[currentLanguage].saveChangesBtn;
+                }
+                return;
+            }
+            // KẾT THÚC ĐOẠN KIỂM TRA
+
             const type = editTransactionTypeSelect.value;
             const amount = parseFormattedNumber(editAmountInput.value); // Use the new parseFormattedNumber
             const transactionDate = editTransactionDateInput.value; // Get the date from the input
@@ -2046,6 +2145,14 @@ if (transaction.type === 'contribution') {
 
         // Shows confirmation modal for deleting a transaction
         function confirmDeleteTransaction(transaction) {
+            // THÊM ĐOẠN KIỂM TRA NÀY
+            if (!supabase || !currentUser || !isAuthChecked) {
+                showErrorMessage(translations[currentLanguage].appNotReady);
+                console.error("Supabase client or user not ready for delete transaction confirmation.");
+                return;
+            }
+            // KẾT THÚC ĐOẠN KIỂM TRA
+
             transactionToDelete = transaction;
             const message = translations[currentLanguage].confirmDeleteTransaction.replace('{description}', transaction.description);
             confirmationMessage.textContent = message;
@@ -2056,6 +2163,15 @@ if (transaction.type === 'contribution') {
 
         // Handles deletion of transaction after confirmation
         async function deleteTransactionConfirmed() {
+            // THÊM ĐOẠN KIỂM TRA NÀY
+            if (!supabase || !currentUser || !isAuthChecked) {
+                showErrorMessage(translations[currentLanguage].appNotReady);
+                console.error("Supabase client or user not ready for delete transaction operation.");
+                confirmationModal.classList.add('hidden'); // Hide modal if not ready
+                return;
+            }
+            // KẾT THÚC ĐOẠN KIỂM TRA
+
             if (transactionToDelete) {
                 try {
                     console.log(`Attempting to delete transaction: ${transactionToDelete.description} (ID: ${transactionToDelete.id})`);
@@ -2088,6 +2204,14 @@ if (transaction.type === 'contribution') {
 
         // --- Member Details Modal ---
         function showMemberDetailsModal(member) {
+            // THÊM ĐOẠN KIỂM TRA NÀY
+            if (!supabase || !currentUser || !isAuthChecked) {
+                showErrorMessage(translations[currentLanguage].appNotReady);
+                console.error("Supabase client or user not ready for show member details modal.");
+                return;
+            }
+            // KẾT THÚC ĐOẠN KIỂM TRA
+
             selectedMemberForDetails = member;
             memberDetailsModal.classList.remove('hidden');
             hideErrorMessage();
@@ -2157,6 +2281,14 @@ if (transaction.type === 'contribution') {
 
             // Renders the Fund Report table
             function renderFundReport() {
+                // THÊM ĐOẠN KIỂM TRA NÀY
+                if (!supabase || !currentUser || !isAuthChecked) {
+                    fundReportTableContainer.innerHTML = `<p class="text-center text-red-500">${translations[currentLanguage].appNotReady}</p>`;
+                    console.error("Supabase client or user not ready for render fund report.");
+                    return;
+                }
+                // KẾT THÚC ĐOẠN KIỂM TRA
+
                 if (transactions.length === 0) {
                     fundReportTableContainer.innerHTML = `<p class="text-center text-gray-500">${translations[currentLanguage].noTransactionsReport}</p>`;
                     return;
@@ -2210,6 +2342,14 @@ if (transaction.type === 'contribution') {
 
             // Renders the Member Report dropdown
             function renderMemberReportDropdown() {
+                // THÊM ĐOẠN KIỂM TRA NÀY
+                if (!supabase || !currentUser || !isAuthChecked) {
+                    selectMemberReportDropdown.innerHTML = `<option value="">${translations[currentLanguage].appNotReady}</option>`;
+                    console.error("Supabase client or user not ready for render member report dropdown.");
+                    return;
+                }
+                // KẾT THÚC ĐOẠN KIỂM TRA
+
                 selectMemberReportDropdown.innerHTML = '';
                 if (members.length === 0) {
                     selectMemberReportDropdown.innerHTML = `<option value="">${translations[currentLanguage].noMembers}</option>`;
@@ -2230,6 +2370,14 @@ if (transaction.type === 'contribution') {
 
             // Renders the report for the currently selected member
             function renderSelectedMemberReport() {
+                // THÊM ĐOẠN KIỂM TRA NÀY
+                if (!supabase || !currentUser || !isAuthChecked) {
+                    memberReportTableContainer.innerHTML = `<p class="text-center text-red-500">${translations[currentLanguage].appNotReady}</p>`;
+                    console.error("Supabase client or user not ready for render selected member report.");
+                    return;
+                }
+                // KẾT THÚC ĐOẠN KIỂM TRA
+
                 const selectedMemberId = selectMemberReportDropdown.value;
                 if (!selectedMemberId) {
                     memberReportTableContainer.innerHTML = `<p class="text-center text-gray-500">${translations[currentLanguage].selectMemberToReport}</p>`;
@@ -2291,6 +2439,14 @@ if (transaction.type === 'contribution') {
 
                 // Export Fund Report to Excel
                 exportFundReportExcelBtn.onclick = () => {
+                    // THÊM ĐOẠN KIỂM TRA NÀY
+                    if (!supabase || !currentUser || !isAuthChecked) {
+                        showErrorMessage(translations[currentLanguage].appNotReady);
+                        console.error("Supabase client or user not ready for export fund report to excel.");
+                        return;
+                    }
+                    // KẾT THÚC ĐOẠN KIỂM TRA
+
                     if (typeof window.XLSX === 'undefined') {
                         showErrorMessage(translations[currentLanguage].xlsxLoadError);
                         return;
@@ -2320,6 +2476,14 @@ if (transaction.type === 'contribution') {
 
                 // Export Member Report to Excel
                 exportMemberReportExcelBtn.onclick = () => {
+                    // THÊM ĐOẠN KIỂM TRA NÀY
+                    if (!supabase || !currentUser || !isAuthChecked) {
+                        showErrorMessage(translations[currentLanguage].appNotReady);
+                        console.error("Supabase client or user not ready for export member report to excel.");
+                        return;
+                    }
+                    // KẾT THÚC ĐOẠN KIỂM TRA
+
                     if (typeof window.XLSX === 'undefined') {
                         showErrorMessage(translations[currentLanguage].xlsxLoadError);
                         return;
@@ -2439,6 +2603,14 @@ if (transaction.type === 'contribution') {
 
                 // Export Fund Report to Word
                 exportFundReportWordBtn.onclick = () => {
+                    // THÊM ĐOẠN KIỂM TRA NÀY
+                    if (!supabase || !currentUser || !isAuthChecked) {
+                        showErrorMessage(translations[currentLanguage].appNotReady);
+                        console.error("Supabase client or user not ready for export fund report to word.");
+                        return;
+                    }
+                    // KẾT THÚC ĐOẠN KIỂM TRA
+
                     if (typeof window.saveAs === 'undefined') {
                         showErrorMessage(translations[currentLanguage].fileSaverLoadError);
                         return;
@@ -2455,6 +2627,14 @@ if (transaction.type === 'contribution') {
 
                 // Export Member Report to Word
                 exportMemberReportWordBtn.onclick = () => {
+                    // THÊM ĐOẠN KIỂM TRA NÀY
+                    if (!supabase || !currentUser || !isAuthChecked) {
+                        showErrorMessage(translations[currentLanguage].appNotReady);
+                        console.error("Supabase client or user not ready for export member report to word.");
+                        return;
+                    }
+                    // KẾT THÚC ĐOẠN KIỂM TRA
+
                     if (typeof window.saveAs === 'undefined') {
                         showErrorMessage(translations[currentLanguage].fileSaverLoadError);
                         return;
@@ -2504,6 +2684,14 @@ if (transaction.type === 'contribution') {
 
                 // Renders the Member Balance Pie Chart
                 function renderMemberBalancePieChart() {
+                    // THÊM ĐOẠN KIỂM TRA NÀY
+                    if (!supabase || !currentUser || !isAuthChecked) {
+                        memberBalancePieChartDiv.innerHTML = `<p class="text-center text-red-500 mt-4">${translations[currentLanguage].appNotReady}</p>`;
+                        console.error("Supabase client or user not ready for render member balance pie chart.");
+                        return;
+                    }
+                    // KẾT THÚC ĐOẠN KIỂM TRA
+
                     const CHART_SIZE = 200;
                     const RADIUS = CHART_SIZE / 2 - 10;
                     const centerX = CHART_SIZE / 2;
@@ -2624,6 +2812,14 @@ if (transaction.type === 'contribution') {
 
                 // Renders a single pie chart for a given type (income or expense)
                 function renderSingleCategoryPieChart(containerElement, title, dataMap, totalAmount, colors) {
+                    // THÊM ĐOẠN KIỂM TRA NÀY
+                    if (!supabase || !currentUser || !isAuthChecked) {
+                        containerElement.innerHTML = `<p class="text-center text-red-500 mt-4">${translations[currentLanguage].appNotReady}</p>`;
+                        console.error("Supabase client or user not ready for render single category pie chart.");
+                        return;
+                    }
+                    // KẾT THÚC ĐOẠN KIỂM TRA
+
                     const CHART_SIZE = 200;
                     const RADIUS = CHART_SIZE / 2 - 10;
                     const centerX = CHART_SIZE / 2;
@@ -2705,6 +2901,17 @@ if (transaction.type === 'contribution') {
 
                 // Renders both income and expense category pie charts
                 function renderCategoryPieCharts() {
+                    // THÊM ĐOẠN KIỂM TRA NÀY
+                    if (!supabase || !currentUser || !isAuthChecked) {
+                        const incomeChartContainer = document.getElementById('income-pie-chart-container');
+                        const expenseChartContainer = document.getElementById('expense-pie-chart-container');
+                        incomeChartContainer.innerHTML = `<p class="text-center text-red-500 mt-4">${translations[currentLanguage].appNotReady}</p>`;
+                        expenseChartContainer.innerHTML = `<p class="text-center text-red-500 mt-4">${translations[currentLanguage].appNotReady}</p>`;
+                        console.error("Supabase client or user not ready for render category pie charts.");
+                        return;
+                    }
+                    // KẾT THÚC ĐOẠN KIỂM TRA
+
                     const { incomeCategories, expenseCategories } = calculateCategoryBalances();
 
                     const incomeColors = [
@@ -2768,6 +2975,12 @@ if (transaction.type === 'contribution') {
 
                 // NEW: Function to call a Supabase Edge Function
                 async function callSupabaseEdgeFunction(functionName, dataPayload) {
+                    // THÊM ĐOẠN KIỂM TRA NÀY
+                    if (!supabase || !currentUser || !isAuthChecked) {
+                        throw new Error(translations[currentLanguage].appNotReady);
+                    }
+                    // KẾT THÚC ĐOẠN KIỂM TRA
+
                     try {
                         const session = await supabase.auth.getSession();
                         let accessToken = session?.data?.session?.access_token;
@@ -2824,6 +3037,16 @@ if (transaction.type === 'contribution') {
                     `;
                     hideErrorMessage(); // Clear previous errors for insights
 
+                    // THÊM ĐOẠN KIỂM TRA NÀY
+                    if (!supabase || !currentUser || !isAuthChecked) {
+                        showErrorMessage(translations[currentLanguage].appNotReady);
+                        fundInsightsContent.innerHTML = `<p class="text-center text-red-500">${translations[currentLanguage].appNotReady}</p>`;
+                        console.error("Supabase client or user not ready for generate fund insights.");
+                        isGeneratingInsights = false;
+                        return;
+                    }
+                    // KẾT THÚC ĐOẠN KIỂM TRA
+
                     // Prepare data for the Edge Function
                     let activitiesData = {
                         type: 'fund_insights',
@@ -2875,6 +3098,16 @@ if (transaction.type === 'contribution') {
 				`;
 				hideErrorMessage(); // Clear previous errors for food suggestions
 				addressInputForFood.value = ''; // Clear address input initially
+
+                // THÊM ĐOẠN KIỂM TRA NÀY
+                if (!supabase || !currentUser || !isAuthChecked) {
+                    showErrorMessage(translations[currentLanguage].appNotReady);
+                    foodSuggestionContent.innerHTML = `<p class="text-center text-red-500">${translations[currentLanguage].appNotReady}</p>`;
+                    console.error("Supabase client or user not ready for generate food suggestions.");
+                    isGeneratingFoodSuggestions = false;
+                    return;
+                }
+                // KẾT THÚC ĐOẠN KIỂM TRA
 
 				// Prepare data for the Edge Function
 				let activitiesData = {
@@ -2947,6 +3180,23 @@ if (transaction.type === 'contribution') {
                     // Hiển thị thông báo đang xử lý trên input mô tả
                     descriptionInput.value = translations[currentLanguage].generatingInsights; 
                     aiDescribeBtn.disabled = true;
+
+                    // THÊM ĐOẠN KIỂM TRA NÀY
+                    if (!supabase || !currentUser || !isAuthChecked) {
+                        showErrorMessage(translations[currentLanguage].appNotReady);
+                        descriptionInput.value = translations[currentLanguage].noImageDescription; // Reset description
+                        amountInput.value = ''; // Clear amount
+                        transactionTypeSelect.value = 'expense'; // Reset type
+                        transactionTypeSelect.dispatchEvent(new Event('change'));
+                        setDefaultCurrentDateTime(transactionDateInput);
+                        expenseTypeSelect.value = '';
+                        console.error("Supabase client or user not ready for call Gemini Vision API.");
+                        cameraLoadingSpinner.classList.add('hidden');
+                        aiDescribeBtn.disabled = false;
+                        cameraModal.classList.add('hidden');
+                        return;
+                    }
+                    // KẾT THÚC ĐOẠN KIỂM TRA
 
                     // --- PHẦN ĐƯỢC XÓA BỎ TRÊN FRONTEND ---
                     // XÓA BỎ TOÀN BỘ KHỐI KHỞI TẠO 'prompt' NÀY, 
@@ -3233,6 +3483,13 @@ if (transaction.type === 'contribution') {
 
 				// NEW: Function to convert coordinates to a human-readable address using AI
 				async function convertCoordinatesToAddress(latitude, longitude) {
+                    // THÊM ĐOẠN KIỂM TRA NÀY
+                    if (!supabase || !currentUser || !isAuthChecked) {
+                        console.error("Supabase client or user not ready for convert coordinates to address.");
+                        return null;
+                    }
+                    // KẾT THÚC ĐOẠN KIỂM TRA
+
 					try {
 						const geocodePrompt = `Chuyển đổi tọa độ GPS (latitude: ${latitude}, longitude: ${longitude}) thành một địa chỉ đường phố đầy đủ ở Việt Nam (bao gồm số nhà, tên đường, phường/xã, quận/huyện, thành phố). Phản hồi chỉ là một chuỗi địa chỉ. Nếu không tìm thấy địa chỉ cụ thể, trả về "Vị trí không xác định".`;
 
@@ -3267,6 +3524,16 @@ if (transaction.type === 'contribution') {
 					`;
 					hideErrorMessage(); // Clear previous errors for food suggestions
 					addressInputForFood.value = ''; // Clear address input initially
+
+                    // THÊM ĐOẠN KIỂM TRA NÀY
+                    if (!supabase || !currentUser || !isAuthChecked) {
+                        showErrorMessage(translations[currentLanguage].appNotReady);
+                        foodSuggestionContent.innerHTML = `<p class="text-center text-red-500">${translations[currentLanguage].appNotReady}</p>`;
+                        console.error("Supabase client or user not ready for get geolocation and suggest food.");
+                        isGeneratingFoodSuggestions = false;
+                        return;
+                    }
+                    // KẾT THÚC ĐOẠN KIỂM TRA
 
 					if (navigator.geolocation) {
 						navigator.geolocation.getCurrentPosition(
