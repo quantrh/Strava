@@ -1057,7 +1057,7 @@
             console.log("Using Supabase Anon Key:", anonKey ? "Provided/Non-empty" : "Empty/Default");
 
             // Warn if default URL is still in use
-            if (SUPABASE_URL === 'https://1rmbsxccrwrktbjlnezpu.supabase.co') {
+            if (SUPABASE_URL === 'https://rmbsxccrwrktbjlnezpu.supabase.co') {
                  console.warn("Supabase configuration warning: SUPABASE_URL is still the default value. Please replace with your actual Supabase Project URL.");
                  showErrorMessage(translations[currentLanguage].supabaseConfigWarning);
             }
@@ -2555,6 +2555,9 @@ if (transaction.type === 'contribution') {
                     const chartData = members.filter(m => Math.abs(m.balance) > 0.01); // Filter out members with effectively zero balance
                     const totalAbsoluteBalance = chartData.reduce((sum, m) => sum + Math.abs(m.balance), 0);
 
+                    console.log("Member Balance Chart Data:", chartData);
+                    console.log("Total Absolute Balance:", totalAbsoluteBalance);
+
                     if (chartData.length === 0) {
                         memberBalancePieChartDiv.innerHTML = `<p class="text-center text-gray-500 mt-4">${translations[currentLanguage].noBalanceChart}</p>`;
                         return;
@@ -2568,6 +2571,8 @@ if (transaction.type === 'contribution') {
                         const sliceAngle = (Math.abs(member.balance) / totalAbsoluteBalance) * 360;
                         const startAngle = currentAngle;
                         const endAngle = currentAngle + sliceAngle;
+
+                        console.log(`Member: ${member.name}, Balance: ${member.balance}, Slice Angle: ${sliceAngle}, Start Angle: ${startAngle}, End Angle: ${endAngle}`);
 
                         const pathData = describePieSlice(centerX, centerY, RADIUS, startAngle, endAngle);
                         const color = colorPalette[index % colorPalette.length];
@@ -2610,7 +2615,7 @@ if (transaction.type === 'contribution') {
                     });
 
                     memberBalancePieChartDiv.innerHTML = `
-                        <svg viewBox="0 0 ${CHART_SIZE} ${CHART_SIZE}" width="100%" height="auto" style="max-width: 300px;">
+                        <svg viewBox="0 0 ${CHART_SIZE} ${CHART_SIZE}" width="100%" height="${CHART_SIZE}" style="max-width: 300px;">
                             ${slicesSvg}
                             <text x="${centerX}" y="${centerY}" text-anchor="middle" alignment-baseline="middle" font-size="12" font-weight="bold" fill="#333">
                                 ${translations[currentLanguage].totalChart} ${formatNumberForDisplay(totalAbsoluteBalance)} ${translations[currentLanguage].unitCurrency}
@@ -2659,6 +2664,9 @@ if (transaction.type === 'contribution') {
                     const centerX = CHART_SIZE / 2;
                     const centerY = CHART_SIZE / 2;
 
+                    console.log(`Rendering ${title} Chart. Data Map:`, dataMap);
+                    console.log(`Total Amount for ${title} Chart:`, totalAmount);
+
                     if (totalAmount === 0) {
                         containerElement.innerHTML = `<p class="text-center text-gray-500 mt-4">${translations[currentLanguage].noCategoryChart.replace('{type}', title.toLowerCase())}</p>`;
                         return;
@@ -2678,6 +2686,9 @@ if (transaction.type === 'contribution') {
                         const sliceAngle = (amount / totalAmount) * 360;
                         const startAngle = currentAngle;
                         const endAngle = currentAngle + sliceAngle;
+
+                        console.log(`Category: ${category}, Amount: ${amount}, Percentage: ${percentage.toFixed(1)}%, Slice Angle: ${sliceAngle}, Start Angle: ${startAngle}, End Angle: ${endAngle}`);
+
 
                         const pathData = describePieSlice(centerX, centerY, RADIUS, startAngle, endAngle);
                         const color = colors[index % colors.length];
@@ -2720,7 +2731,7 @@ if (transaction.type === 'contribution') {
                     });
 
                     containerElement.innerHTML = `
-                        <svg viewBox="0 0 ${CHART_SIZE} ${CHART_SIZE}" width="100%" height="auto" style="max-width: 300px;">
+                        <svg viewBox="0 0 ${CHART_SIZE} ${CHART_SIZE}" width="100%" height="${CHART_SIZE}" style="max-width: 300px;">
                             ${slicesSvg}
                             <text x="${centerX}" y="${centerY}" text-anchor="middle" alignment-baseline="middle" font-size="12" font-weight="bold" fill="#333">
                                 ${translations[currentLanguage].totalChart} ${formatNumberForDisplay(totalAmount)} ${translations[currentLanguage].unitCurrency}
