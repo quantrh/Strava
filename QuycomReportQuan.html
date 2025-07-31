@@ -403,8 +403,8 @@
                     <td class="table-cell px-6 py-4">${formattedDate}</td>
                     <td class="table-cell px-6 py-4 text-right">${formattedAmount}</td>
                     <!-- Removed whitespace-nowrap to allow text to wrap -->
-                    <td class="table-cell px-6 py-4 break-words">${transaction.description}</td>
-                    <td class="table-cell px-6 py-4">${transaction.member_name}</td>
+                    <td class="table-cell px-6 py-4 break-words">${transaction.description || ''}</td>
+                    <td class="table-cell px-6 py-4">${transaction.member_name || ''}</td>
                     <td class="table-cell px-6 py-4">${transaction.expense_type || 'N/A'}</td>
                 `;
                 transactionTableBody.appendChild(row);
@@ -420,8 +420,8 @@
             const filteredData = transactions.filter(transaction => {
                 const transactionDate = new Date(transaction.date); // Changed column name
                 const isDateInRange = (!startDate || transactionDate >= startDate) && (!endDate || transactionDate <= endDate);
-                // Search logic now correctly checks both description and member name
-                const isMatchingSearch = transaction.description.toLowerCase().includes(searchTerm) || transaction.member_name.toLowerCase().includes(searchTerm);
+                // FIX: Add checks to ensure description and member_name exist before calling toLowerCase()
+                const isMatchingSearch = (transaction.description && transaction.description.toLowerCase().includes(searchTerm)) || (transaction.member_name && transaction.member_name.toLowerCase().includes(searchTerm));
                 const isMatchingType = !selectedType || transaction.expense_type === selectedType; // Filter by expense type
 
                 return isDateInRange && isMatchingSearch && isMatchingType;
@@ -455,7 +455,8 @@
             const filteredData = transactions.filter(transaction => {
                 const transactionDate = new Date(transaction.date); // Changed column name
                 const isDateInRange = (!startDate || transactionDate >= startDate) && (!endDate || transactionDate <= endDate);
-                const isMatchingSearch = transaction.description.toLowerCase().includes(searchTerm) || transaction.member_name.toLowerCase().includes(searchTerm);
+                // FIX: Add checks to ensure description and member_name exist
+                const isMatchingSearch = (transaction.description && transaction.description.toLowerCase().includes(searchTerm)) || (transaction.member_name && transaction.member_name.toLowerCase().includes(searchTerm));
                 const isMatchingType = !selectedType || transaction.expense_type === selectedType;
 
                 return isDateInRange && isMatchingSearch && isMatchingType;
@@ -464,8 +465,8 @@
             const dataToExport = filteredData.map(t => ({
                 'Ngày': new Date(t.date).toLocaleDateString('vi-VN'), // Changed column name
                 'Số tiền': t.amount,
-                'Mô tả': t.description,
-                'Người giao dịch': t.member_name,
+                'Mô tả': t.description || '', // Handle null description
+                'Người giao dịch': t.member_name || '', // Handle null member_name
                 'Loại': t.expense_type || 'N/A'
             }));
 
