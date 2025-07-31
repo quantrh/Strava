@@ -195,7 +195,7 @@
 
         <!-- Filters and Actions Section -->
         <div class="bg-white rounded-xl shadow p-6 mb-6">
-            <div class="flex flex-wrap items-end gap-4 mb-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
                 <!-- Date Filter -->
                 <div>
                     <label for="start-date" class="block text-sm font-medium text-gray-700" data-key="filterStartDate">Từ ngày</label>
@@ -206,13 +206,7 @@
                     <input type="date" id="end-date" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
                 </div>
 
-                <!-- Search Input -->
-                <div class="flex-grow">
-                    <label for="search-input" class="block text-sm font-medium text-gray-700" data-key="filterSearch">Tìm kiếm</label>
-                    <input type="text" id="search-input" placeholder="Tìm kiếm theo mô tả..." class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" data-key="filterSearchPlaceholder">
-                </div>
-
-                <!-- Expense Type Filter (New) -->
+                <!-- Expense Type Filter -->
                 <div>
                     <label for="expense-type-filter" class="block text-sm font-medium text-gray-700" data-key="filterTypeLabel">Loại</label>
                     <select id="expense-type-filter" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
@@ -220,15 +214,27 @@
                     </select>
                 </div>
 
-                <!-- Action Buttons -->
-                <div class="flex-shrink-0">
-                    <button id="apply-filters-btn" class="btn-primary mt-6 w-full" data-key="applyFiltersBtn">Áp dụng</button>
+                <!-- Member Filter (New) -->
+                <div>
+                    <label for="member-filter" class="block text-sm font-medium text-gray-700" data-key="filterMemberLabel">Người giao dịch</label>
+                    <select id="member-filter" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                        <option value="" data-key="filterMemberAll">Tất cả</option>
+                    </select>
                 </div>
-                <div class="flex-shrink-0">
-                    <button id="clear-filters-btn" class="btn-secondary mt-6 w-full" data-key="resetFiltersBtn">Đặt lại</button>
+
+                <!-- Search Input -->
+                <div class="col-span-1 md:col-span-2 lg:col-span-4">
+                    <label for="search-input" class="block text-sm font-medium text-gray-700" data-key="filterSearch">Tìm kiếm</label>
+                    <input type="text" id="search-input" placeholder="Tìm kiếm theo mô tả..." class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" data-key="filterSearchPlaceholder">
                 </div>
             </div>
 
+            <!-- Action Buttons -->
+            <div class="flex flex-wrap gap-4 mt-4 justify-end">
+                <button id="apply-filters-btn" class="btn-primary" data-key="applyFiltersBtn">Áp dụng</button>
+                <button id="clear-filters-btn" class="btn-secondary" data-key="resetFiltersBtn">Đặt lại</button>
+            </div>
+            
             <!-- Export Buttons -->
             <div class="flex flex-wrap gap-4 mt-4">
                 <button id="export-excel-btn" class="btn-primary flex-1 min-w-0" data-key="exportExcelBtn">Xuất Excel</button>
@@ -246,7 +252,6 @@
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" data-key="columnAmount">Số tiền</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" data-key="columnDescription">Mô tả</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" data-key="columnMember">Người giao dịch</th>
-                            <!-- New column for expense type -->
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" data-key="columnType">Loại</th>
                         </tr>
                     </thead>
@@ -289,17 +294,19 @@
                 filterEndDate: 'Đến ngày',
                 filterSearch: 'Tìm kiếm',
                 filterSearchPlaceholder: 'Tìm kiếm theo mô tả...',
-                filterTypeLabel: 'Loại', // New translation key
-                filterTypeAll: 'Tất cả', // New translation key
+                filterTypeLabel: 'Loại',
+                filterTypeAll: 'Tất cả',
+                filterMemberLabel: 'Người giao dịch', // New translation key
+                filterMemberAll: 'Tất cả', // New translation key
                 applyFiltersBtn: 'Áp dụng',
-                resetFiltersBtn: 'Đặt lại', // Changed from clearFiltersBtn to resetFiltersBtn
+                resetFiltersBtn: 'Đặt lại',
                 exportExcelBtn: 'Xuất Excel',
                 exportPdfBtn: 'Xuất PDF',
                 columnDate: 'Ngày',
                 columnAmount: 'Số tiền',
                 columnDescription: 'Mô tả',
                 columnMember: 'Người giao dịch',
-                columnType: 'Loại', // New translation key
+                columnType: 'Loại',
                 noData: 'Không có giao dịch nào được tìm thấy.',
                 success: 'Thành công!',
                 error: 'Lỗi!',
@@ -314,6 +321,7 @@
         const endDateInput = document.getElementById('end-date');
         const searchInput = document.getElementById('search-input');
         const expenseTypeFilter = document.getElementById('expense-type-filter');
+        const memberFilter = document.getElementById('member-filter'); // New element
         const applyFiltersBtn = document.getElementById('apply-filters-btn');
         const clearFiltersBtn = document.getElementById('clear-filters-btn');
         const exportExcelBtn = document.getElementById('export-excel-btn');
@@ -337,10 +345,15 @@
                     }
                 }
             });
-            // Handle select options
-            const allOption = expenseTypeFilter.querySelector('option[value=""]');
-            if (allOption) {
-                allOption.textContent = translations[lang].filterTypeAll;
+            // Handle select options for Expense Type
+            const allTypeOption = expenseTypeFilter.querySelector('option[value=""]');
+            if (allTypeOption) {
+                allTypeOption.textContent = translations[lang].filterTypeAll;
+            }
+            // Handle select options for Member Filter
+            const allMemberOption = memberFilter.querySelector('option[value=""]');
+            if (allMemberOption) {
+                allMemberOption.textContent = translations[lang].filterMemberAll;
             }
         }
 
@@ -358,7 +371,7 @@
             }, 5000);
         }
 
-        // Function to fetch all members and create a map
+        // Function to fetch all members and create a map, and populate the dropdown
         async function fetchMembers() {
             try {
                 const { data, error } = await supabase.from('members_quan').select('id, name');
@@ -368,10 +381,25 @@
                     acc[member.id] = member.name;
                     return acc;
                 }, {});
+
+                // Populate the new member filter dropdown
+                populateMemberFilter(data);
+
             } catch (error) {
                 console.error("Error fetching members:", error);
                 showMessage(`${translations[currentLanguage].error} Lỗi khi lấy danh sách thành viên: ${error.message}`, 'error');
             }
+        }
+
+        // Function to populate the member dropdown
+        function populateMemberFilter(memberData) {
+            memberFilter.innerHTML = `<option value="" data-key="filterMemberAll">${translations[currentLanguage].filterMemberAll}</option>`;
+            memberData.sort((a, b) => a.name.localeCompare(b.name, 'vi')).forEach(member => {
+                const option = document.createElement('option');
+                option.value = member.id;
+                option.textContent = member.name;
+                memberFilter.appendChild(option);
+            });
         }
 
         // Function to get member names from an array of member IDs
@@ -392,7 +420,7 @@
                     return;
                 }
 
-                // Fetch members first
+                // Fetch members first to populate the member filter and member map
                 await fetchMembers();
 
                 // Now fetch transactions
@@ -446,6 +474,7 @@
             const endDate = endDateInput.value ? new Date(endDateInput.value) : null;
             const searchTerm = searchInput.value.toLowerCase();
             const selectedType = expenseTypeFilter.value;
+            const selectedMemberId = memberFilter.value; // New filter value
 
             const filteredData = transactions.filter(transaction => {
                 const transactionDate = new Date(transaction.date);
@@ -457,8 +486,11 @@
                 // Check if description or member names contain the search term
                 const isMatchingSearch = (transaction.description && transaction.description.toLowerCase().includes(searchTerm)) || memberNames.toLowerCase().includes(searchTerm);
                 const isMatchingType = !selectedType || transaction.expense_type === selectedType;
+                
+                // New logic: Check if the transaction's involved members include the selected member
+                const isMatchingMember = !selectedMemberId || (transaction.involvedMemberIds && transaction.involvedMemberIds.includes(selectedMemberId));
 
-                return isDateInRange && isMatchingSearch && isMatchingType;
+                return isDateInRange && isMatchingSearch && isMatchingType && isMatchingMember;
             });
             renderTransactions(filteredData);
         }
@@ -484,6 +516,7 @@
             const endDate = endDateInput.value ? new Date(endDateInput.value) : null;
             const searchTerm = searchInput.value.toLowerCase();
             const selectedType = expenseTypeFilter.value;
+            const selectedMemberId = memberFilter.value;
 
             const filteredData = transactions.filter(transaction => {
                 const transactionDate = new Date(transaction.date);
@@ -493,8 +526,9 @@
 
                 const isMatchingSearch = (transaction.description && transaction.description.toLowerCase().includes(searchTerm)) || memberNames.toLowerCase().includes(searchTerm);
                 const isMatchingType = !selectedType || transaction.expense_type === selectedType;
+                const isMatchingMember = !selectedMemberId || (transaction.involvedMemberIds && transaction.involvedMemberIds.includes(selectedMemberId));
 
-                return isDateInRange && isMatchingSearch && isMatchingType;
+                return isDateInRange && isMatchingSearch && isMatchingType && isMatchingMember;
             });
 
             const dataToExport = filteredData.map(t => ({
@@ -564,6 +598,7 @@
             endDateInput.value = '';
             searchInput.value = '';
             expenseTypeFilter.value = '';
+            memberFilter.value = ''; // Reset the new member filter
             renderTransactions(transactions); // Re-render all transactions
         });
 
