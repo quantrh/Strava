@@ -273,6 +273,7 @@
         const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         let transactions = []; // Global variable to store all transactions
+        let members = {}; // Map to store member IDs and names
         let currentLanguage = 'vi'; // Default language
 
         // Localization strings
@@ -312,9 +313,9 @@
         const startDateInput = document.getElementById('start-date');
         const endDateInput = document.getElementById('end-date');
         const searchInput = document.getElementById('search-input');
-        const expenseTypeFilter = document.getElementById('expense-type-filter'); // New filter element
+        const expenseTypeFilter = document.getElementById('expense-type-filter');
         const applyFiltersBtn = document.getElementById('apply-filters-btn');
-        const clearFiltersBtn = document.getElementById('clear-filters-btn'); // Note: This ID remains the same
+        const clearFiltersBtn = document.getElementById('clear-filters-btn');
         const exportExcelBtn = document.getElementById('export-excel-btn');
         const exportPdfBtn = document.getElementById('export-pdf-btn');
         const logoutBtn = document.getElementById('logout-btn');
@@ -357,6 +358,31 @@
             }, 5000);
         }
 
+        // Function to fetch all members and create a map
+        async function fetchMembers() {
+            try {
+                const { data, error } = await supabase.from('members_quan').select('id, name');
+                if (error) throw error;
+                // Create a map from member ID to member name
+                members = data.reduce((acc, member) => {
+                    acc[member.id] = member.name;
+                    return acc;
+                }, {});
+            } catch (error) {
+                console.error("Error fetching members:", error);
+                showMessage(`${translations[currentLanguage].error} Lỗi khi lấy danh sách thành viên: ${error.message}`, 'error');
+            }
+        }
+
+        // Function to get member names from an array of member IDs
+        function getMemberNames(memberIds) {
+            if (!memberIds || memberIds.length === 0) {
+                return 'N/A';
+            }
+            // Map the IDs to names using the members object
+            return memberIds.map(id => members[id] || id).join(', ');
+        }
+
         async function fetchAllTransactions() {
             try {
                 // Ensure user is authenticated before fetching data
@@ -366,10 +392,14 @@
                     return;
                 }
 
+                // Fetch members first
+                await fetchMembers();
+
+                // Now fetch transactions
                 const { data, error } = await supabase
-                    .from('transactions_quan') // Changed table name
+                    .from('transactions_quan')
                     .select('*')
-                    .order('date', { ascending: false }); // Changed column name
+                    .order('date', { ascending: false });
 
                 if (error) throw error;
                 transactions = data;
@@ -394,17 +424,17 @@
                 const row = document.createElement('tr');
                 row.classList.add('hover:bg-gray-50', 'transition-colors');
 
-                // Format the date to a more readable format
-                const formattedDate = new Date(transaction.date).toLocaleDateString('vi-VN'); // Changed column name
-                // Format amount with commas and currency symbol
+                const formattedDate = new Date(transaction.date).toLocaleDateString('vi-VN');
                 const formattedAmount = new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(transaction.amount);
+
+                // Get member names from the involvedMemberIds array
+                const memberNames = getMemberNames(transaction.involvedMemberIds);
 
                 row.innerHTML = `
                     <td class="table-cell px-6 py-4">${formattedDate}</td>
                     <td class="table-cell px-6 py-4 text-right">${formattedAmount}</td>
-                    <!-- Removed whitespace-nowrap to allow text to wrap -->
                     <td class="table-cell px-6 py-4 break-words">${transaction.description || ''}</td>
-                    <td class="table-cell px-6 py-4">${transaction.member_name || ''}</td>
+                    <td class="table-cell px-6 py-4">${memberNames}</td>
                     <td class="table-cell px-6 py-4">${transaction.expense_type || 'N/A'}</td>
                 `;
                 transactionTableBody.appendChild(row);
@@ -415,14 +445,18 @@
             const startDate = startDateInput.value ? new Date(startDateInput.value) : null;
             const endDate = endDateInput.value ? new Date(endDateInput.value) : null;
             const searchTerm = searchInput.value.toLowerCase();
-            const selectedType = expenseTypeFilter.value; // Get the selected expense type
+            const selectedType = expenseTypeFilter.value;
 
             const filteredData = transactions.filter(transaction => {
-                const transactionDate = new Date(transaction.date); // Changed column name
+                const transactionDate = new Date(transaction.date);
                 const isDateInRange = (!startDate || transactionDate >= startDate) && (!endDate || transactionDate <= endDate);
-                // FIX: Add checks to ensure description and member_name exist before calling toLowerCase()
-                const isMatchingSearch = (transaction.description && transaction.description.toLowerCase().includes(searchTerm)) || (transaction.member_name && transaction.member_name.toLowerCase().includes(searchTerm));
-                const isMatchingType = !selectedType || transaction.expense_type === selectedType; // Filter by expense type
+                
+                // Get member names for searching
+                const memberNames = getMemberNames(transaction.involvedMemberIds);
+                
+                // Check if description or member names contain the search term
+                const isMatchingSearch = (transaction.description && transaction.description.toLowerCase().includes(searchTerm)) || memberNames.toLowerCase().includes(searchTerm);
+                const isMatchingType = !selectedType || transaction.expense_type === selectedType;
 
                 return isDateInRange && isMatchingSearch && isMatchingType;
             });
@@ -446,27 +480,28 @@
                 return;
             }
 
-            // Get filtered data to export
             const startDate = startDateInput.value ? new Date(startDateInput.value) : null;
             const endDate = endDateInput.value ? new Date(endDateInput.value) : null;
             const searchTerm = searchInput.value.toLowerCase();
             const selectedType = expenseTypeFilter.value;
 
             const filteredData = transactions.filter(transaction => {
-                const transactionDate = new Date(transaction.date); // Changed column name
+                const transactionDate = new Date(transaction.date);
                 const isDateInRange = (!startDate || transactionDate >= startDate) && (!endDate || transactionDate <= endDate);
-                // FIX: Add checks to ensure description and member_name exist
-                const isMatchingSearch = (transaction.description && transaction.description.toLowerCase().includes(searchTerm)) || (transaction.member_name && transaction.member_name.toLowerCase().includes(searchTerm));
+                
+                const memberNames = getMemberNames(transaction.involvedMemberIds);
+
+                const isMatchingSearch = (transaction.description && transaction.description.toLowerCase().includes(searchTerm)) || memberNames.toLowerCase().includes(searchTerm);
                 const isMatchingType = !selectedType || transaction.expense_type === selectedType;
 
                 return isDateInRange && isMatchingSearch && isMatchingType;
             });
 
             const dataToExport = filteredData.map(t => ({
-                'Ngày': new Date(t.date).toLocaleDateString('vi-VN'), // Changed column name
+                'Ngày': new Date(t.date).toLocaleDateString('vi-VN'),
                 'Số tiền': t.amount,
-                'Mô tả': t.description || '', // Handle null description
-                'Người giao dịch': t.member_name || '', // Handle null member_name
+                'Mô tả': t.description || '',
+                'Người giao dịch': getMemberNames(t.involvedMemberIds),
                 'Loại': t.expense_type || 'N/A'
             }));
 
@@ -481,7 +516,6 @@
         }
 
         function initializeSupabase() {
-            // Check for user session
             supabase.auth.getSession().then(({ data: { session } }) => {
                 if (!session) {
                     window.location.href = window.location.origin + '/LoginQuan.html';
@@ -490,7 +524,6 @@
                 }
             });
 
-            // Listen for auth state changes
             supabase.auth.onAuthStateChange((event, session) => {
                 if (event === 'SIGNED_OUT') {
                     window.location.href = window.location.origin + '/LoginQuan.html';
@@ -499,7 +532,7 @@
         }
 
         // Event Listeners
-        if(logoutBtn) { // Add a check to ensure the element exists before adding the event listener
+        if(logoutBtn) {
             logoutBtn.addEventListener('click', async (e) => {
                 e.preventDefault();
                 const { error } = await supabase.auth.signOut();
@@ -512,7 +545,7 @@
             });
         }
 
-        if(logoutBtnMobile) { // Add a check to ensure the element exists before adding the event listener
+        if(logoutBtnMobile) {
             logoutBtnMobile.addEventListener('click', async (e) => {
                 e.preventDefault();
                 const { error } = await supabase.auth.signOut();
@@ -536,12 +569,10 @@
 
         exportExcelBtn.addEventListener('click', exportToExcel);
 
-        // Export to PDF placeholder function (implementation requires a library like jsPDF)
         exportPdfBtn.addEventListener('click', () => {
             showMessage('Chức năng xuất PDF đang được phát triển.', 'processing');
         });
 
-        // Hamburger menu toggle
         document.getElementById('hamburger-btn').addEventListener('click', function() {
             const menu = document.getElementById('hamburger-menu');
             menu.classList.toggle('hidden');
@@ -560,8 +591,6 @@
             window.scrollTo({ top: 0, behavior: 'smooth' });
         };
 
-
-        // Initial data fetch and UI render when DOM is fully loaded
         document.addEventListener('DOMContentLoaded', () => {
             setLanguage(currentLanguage); // Set initial language
             initializeSupabase();
