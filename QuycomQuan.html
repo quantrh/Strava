@@ -291,7 +291,7 @@
             <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z" clip-rule="evenodd"></path></svg>
             <span data-key="addTransactionBtn">Thêm Giao Dịch</span>
         </button>
-        <button id="view-transactions-btn" class="btn-secondary flex items-center justify-center w-full sm:w-auto">
+        <button id="view-transactions-btn" class="btn-secondary flex items-center justify-center w-full sm:w-auto" onclick="window.location.href='QuycomReportQuan.html'">
             <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"></path><path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h.01a1 1 0 100-2H10zm3 0a1 1 0 000 2h.01a1 1 0 100-2H13zm-3 4a1 1 0 000 2h.01a1 1 0 100-2H10zm3 0a1 1 0 000 2h.01a1 1 0 100-2H13z" clip-rule="evenodd"></path></svg>
             <span data-key="viewHistoryBtn">Xem Lịch Sử</span>
         </button>
@@ -446,12 +446,7 @@
         </div>
     </div>
 
-    <div id="transactions-section" class="card hidden">
-        <h2 class="text-xl font-semibold mb-4 text-[#006B68]" data-key="transactionHistoryTitle">Lịch Sử Giao Dịch</h2>
-        <div id="transaction-list-container" class="overflow-x-auto">
-            <p class="text-center text-gray-500" data-key="loadingTransactions">Đang tải giao dịch...</p>
-        </div>
-    </div>
+    <!-- The transactions-section is now removed from here -->
 
     <div id="edit-transaction-modal" class="modal-overlay hidden">
         <div class="modal-content w-11/12 md:w-2/3 lg:w-1/2">
@@ -786,11 +781,11 @@
         const errorMessageDisplay = document.getElementById('error-message-display');
         const addMemberSection = document.getElementById('add-member-section');
         const addTransactionSection = document.getElementById('add-transaction-section');
-        const transactionsSection = document.getElementById('transactions-section');
+        // const transactionsSection = document.getElementById('transactions-section'); // Removed
         const fundReportSection = document.getElementById('fund-report-section');
         const memberReportsSection = document.getElementById('member-reports-section');
         const memberListContainer = document.getElementById('member-list-container');
-        const transactionListContainer = document.getElementById('transaction-list-container');
+        // const transactionListContainer = document.getElementById('transaction-list-container'); // Removed
         const totalContributionsDisplay = document.getElementById('total-contributions-display');
         const totalExpensesDisplay = document.getElementById('total-expenses-display');
         const memberBalancePieChartDiv = document.getElementById('member-balance-pie-chart');
@@ -896,7 +891,7 @@
             updateLanguageButtons();
             // Re-render dynamic content that uses translations
             renderMemberList();
-            renderTransactionList();
+            // renderTransactionList(); // Removed as it's no longer in this file
             renderFundReport();
             renderSelectedMemberReport();
             renderMemberBalancePieChart();
@@ -1017,7 +1012,7 @@
         function hideAllSections() {
             addMemberSection.classList.add('hidden');
             addTransactionSection.classList.add('hidden');
-            transactionsSection.classList.add('hidden');
+            // transactionsSection.classList.add('hidden'); // Removed
             fundReportSection.classList.add('hidden');
             memberReportsSection.classList.add('hidden');
             editTransactionModal.classList.add('hidden');
@@ -1296,7 +1291,7 @@
             renderFundBalance();
             renderMemberList();
             renderReportingSummary();
-            renderTransactionList(); // Re-render transaction list if visible
+            // renderTransactionList(); // Removed as it's no longer in this file
             renderMemberReportDropdown(); // Update member report dropdown
             renderMemberBalancePieChart(); // Update pie chart
             renderCategoryPieCharts(); // Render the new category pie charts
@@ -1425,6 +1420,8 @@
         }
 
         // Renders the transaction list table
+        // This function is now removed from QuycomQuan.html as it's moved to QuycomReportQuan.html
+        /*
         function renderTransactionList() {
             if (transactionsSection.classList.contains('hidden')) return; // Only render if visible
 
@@ -1440,7 +1437,7 @@
                             <th>${translations[currentLanguage].dateHeader}</th>
                             <th>${translations[currentLanguage].typeHeader}</th>
                             <th>${translations[currentLanguage].descriptionHeader}</th>
-                            <th>${translations[currentLanguage].expenseTypeHeader}</th> <!-- New Column -->
+                            <th>${translations[currentLanguage].expenseTypeHeader}</th>
                             <th>${translations[currentLanguage].relatedMembersHeader}</th>
                             <th class="table-header text-right-aligned">${translations[currentLanguage].amountHeader}</th>
                             <th>${translations[currentLanguage].actionHeader}</th>
@@ -1448,8 +1445,7 @@
                     </thead>
                     <tbody>
             `;
-            transactions.slice().sort((a, b) => new Date(b.date) - new Date(a.date)).forEach(t => { // Display latest first, sorted by actual date
-                // For the general transaction list, always display the total amount of the expense
+            transactions.slice().sort((a, b) => new Date(b.date) - new Date(a.date)).forEach(t => {
                 const displayedAmount = t.amount;
                 const typeText = t.type === 'contribution' ? translations[currentLanguage].contributionOption.replace('💵 ', '') : translations[currentLanguage].expenseOption.replace('🍺 ', '');
                 const typeClass = t.type === 'contribution' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800';
@@ -1468,7 +1464,7 @@
                         <td>${transactionDate}</td>
                         <td><span class="px-2 py-1 rounded-full text-xs font-semibold ${typeClass}">${typeText}</span></td>
                         <td>${t.description}</td>
-                        <td>${t.type === 'expense' && t.expense_type ? t.expense_type : 'N/A'}</td> <!-- Display expense type -->
+                        <td>${t.type === 'expense' && t.expense_type ? t.expense_type : 'N/A'}</td>
                         <td>${memberNames}</td>
                         <td class="text-right-aligned ${amountClass}">${t.type === 'contribution' ? '+' : '-'}${formatNumberForDisplay(displayedAmount)}</td>
                         <td class="flex flex-col sm:flex-row gap-2">
@@ -1500,6 +1496,7 @@
                 };
             });
         }
+        */
 
         // Helper to get member name by ID
         function getMemberName(memberId) {
@@ -2887,7 +2884,7 @@ if (transaction.type === 'contribution') {
                     console.log("Sending fund insights data to Edge Function:", activitiesData);
 
                     try {
-                        // Gọi hàm Edge Function mới: process-ai-requests
+                        // Gọi hàm Edge Function chung: process-ai-requests
                         const result = await callSupabaseEdgeFunction('process-ai-requests_quan', activitiesData);
 
                         if (result.success && result.analysis) {
@@ -2916,6 +2913,11 @@ if (transaction.type === 'contribution') {
 				`;
 				hideErrorMessage(); // Clear previous errors for food suggestions
 				addressInputForFood.value = ''; // Clear address input initially
+				// Ensure latitudeInput and longitudeInput are cleared if an address string is provided
+				if (addressString) {
+					latitudeInput.value = '';
+					longitudeInput.value = '';
+				}
 
 				// Prepare data for the Edge Function
 				let activitiesData = {
@@ -3112,7 +3114,7 @@ if (transaction.type === 'contribution') {
                     transactionDateInput.value = `${year}-${month}-${day}T${hours}:${minutes}`;
                     scrollToSection('add-transaction-section');
                 };
-                document.getElementById('view-transactions-btn').onclick = () => { hideAllSections(); transactionsSection.classList.remove('hidden'); renderTransactionList(); scrollToSection('transactions-section'); };
+                // document.getElementById('view-transactions-btn').onclick = () => { hideAllSections(); transactionsSection.classList.remove('hidden'); renderTransactionList(); scrollToSection('transactions-section'); }; // Removed
                 document.getElementById('show-report-selection-btn').onclick = () => { hideAllSections(); reportSelectionModal.classList.remove('hidden'); };
                 document.getElementById('get-insights-btn').onclick = () => {
                     hideAllSections();
