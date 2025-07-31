@@ -685,16 +685,14 @@
             if (expenseChart) expenseChart.destroy();
             if (contributionChart) contributionChart.destroy();
 
-            // Filter data for expenses and contributions based on the 'expense_type' value
-            // NOTE: The chart might be empty if the 'expense_type' values in your database are not 'expense' or 'contribution'
-            // Please check the console log for the actual values in the 'Loại' column.
-            const expenseTransactions = data.filter(t => t.expense_type === 'expense');
-            const contributionTransactions = data.filter(t => t.expense_type === 'contribution');
+            // Filter data for expenses and contributions based on the 'type' value
+            const expenseTransactions = data.filter(t => t.type === 'expense');
+            const contributionTransactions = data.filter(t => t.type === 'contribution');
 
             // --- Render Expense Chart ---
             const expenseData = expenseTransactions.reduce((acc, transaction) => {
-                // Use a more specific category if available, otherwise fallback to description
-                const category = transaction.category || transaction.description || 'Khác';
+                // Use a more specific category from expense_type if available
+                const category = transaction.expense_type || 'Khác';
                 if (!acc[category]) {
                     acc[category] = 0;
                 }
@@ -756,7 +754,7 @@
 
             // --- Render Contribution Chart ---
             const contributionData = contributionTransactions.reduce((acc, transaction) => {
-                const category = transaction.category || transaction.description || 'Khác';
+                const category = transaction.expense_type || 'Khác';
                 if (!acc[category]) {
                     acc[category] = 0;
                 }
@@ -821,18 +819,15 @@
             modalTitle.textContent = `${translations[currentLanguage].modalTitle} (${label})`;
             modalTableBody.innerHTML = '';
             
-            const transactionsForType = data.filter(t => {
-                const category = t.category || t.description || 'Khác';
-                return category === label;
-            });
+            // Filter transactions for the specific category
+            const transactionsForCategory = data.filter(t => (t.expense_type || 'Khác') === label);
             
-
-            if (transactionsForType.length === 0) {
+            if (transactionsForCategory.length === 0) {
                 const row = document.createElement('tr');
                 row.innerHTML = `<td colspan="4" class="table-cell text-center text-gray-500">Không có giao dịch nào thuộc nhóm này.</td>`;
                 modalTableBody.appendChild(row);
             } else {
-                transactionsForType.forEach(transaction => {
+                transactionsForCategory.forEach(transaction => {
                     const row = document.createElement('tr');
                     const formattedDate = new Date(transaction.date).toLocaleDateString('vi-VN');
                     const formattedAmount = new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(transaction.amount);
