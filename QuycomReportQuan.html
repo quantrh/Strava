@@ -276,7 +276,7 @@
                 const { data, error } = await supabase
                     .from('transactions_quan')
                     .select('*')
-                    .order('transaction_date', { ascending: false });
+                    .order('date', { ascending: false });
 
                 if (error) throw error;
                 transactions = data;
@@ -302,7 +302,7 @@
                 row.classList.add('hover:bg-gray-50', 'transition-colors');
 
                 // Format the date to a more readable format
-                const formattedDate = new Date(transaction.transaction_date).toLocaleDateString('vi-VN');
+                const formattedDate = new Date(transaction.date).toLocaleDateString('vi-VN');
                 // Format amount with commas and currency symbol
                 const formattedAmount = new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(transaction.amount);
 
@@ -324,7 +324,7 @@
             const selectedType = expenseTypeFilter.value; // Get the selected expense type
 
             const filteredData = transactions.filter(transaction => {
-                const transactionDate = new Date(transaction.transaction_date);
+                const transactionDate = new Date(transaction.date);
                 const isDateInRange = (!startDate || transactionDate >= startDate) && (!endDate || transactionDate <= endDate);
                 const isMatchingSearch = transaction.description.toLowerCase().includes(searchTerm) || transaction.member_name.toLowerCase().includes(searchTerm);
                 const isMatchingType = !selectedType || transaction.expense_type === selectedType; // Filter by expense type
@@ -358,7 +358,7 @@
             const selectedType = expenseTypeFilter.value;
 
             const filteredData = transactions.filter(transaction => {
-                const transactionDate = new Date(transaction.transaction_date);
+                const transactionDate = new Date(transaction.date);
                 const isDateInRange = (!startDate || transactionDate >= startDate) && (!endDate || transactionDate <= endDate);
                 const isMatchingSearch = transaction.description.toLowerCase().includes(searchTerm) || transaction.member_name.toLowerCase().includes(searchTerm);
                 const isMatchingType = !selectedType || transaction.expense_type === selectedType;
@@ -367,7 +367,7 @@
             });
 
             const dataToExport = filteredData.map(t => ({
-                'Ngày': new Date(t.transaction_date).toLocaleDateString('vi-VN'),
+                'Ngày': new Date(t.date).toLocaleDateString('vi-VN'),
                 'Số tiền': t.amount,
                 'Mô tả': t.description,
                 'Người giao dịch': t.member_name,
