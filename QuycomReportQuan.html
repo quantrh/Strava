@@ -1030,46 +1030,11 @@
                 }
 
                 // If no members exist, populate with default data (only members and transactions)
+                // This block is typically for the main app, but if this page can be accessed first,
+                // it might need to ensure basic data exists. For now, assuming members are handled by main app.
                 if (members.length === 0) {
-                    console.log("No members found, populating with default data...");
-                    const initialMembers = [
-                        { name: 'Trương Hồng Quân' },
-                        { name: 'Bùi Hoàng Giang' },
-                        { name: 'Nguyễn Thị Hoa Hậu' },
-                    ];
-                    const { data: newMembers, error: newMembersError } = await supabase
-                        .from('members_quan') // Updated table name
-                        .insert(initialMembers)
-                        .select();
-
-                    if (newMembersError) throw newMembersError;
-                    members = newMembers;
-
-                    // Create initial transactions using the IDs of newly inserted members
-                    // Ensure expense types used here exist in your actual expensetype table or handle "Khác"
-                    // Lấy loại đóng góp mặc định (nếu có)
-                    const defaultContributionTypeObj = expenseTypes.find(et => et.Type === 'contribution');
-                    const defaultContributionType = defaultContributionTypeObj ? defaultContributionTypeObj.expense_type : 'Đóng góp';
-
-                    // Lấy loại chi tiêu mặc định (nếu có)
-                    const defaultExpenseTypeObj = expenseTypes.find(et => et.Type === 'expense');
-                    const defaultExpenseType = defaultExpenseTypeObj ? defaultExpenseTypeObj.expense_type : 'Ăn uống';
-
-                    const initialTransactions = [
-                        { type: 'contribution', amount: 500000, description: 'Đóng góp ban đầu', date: new Date().toISOString(), contributingMemberId: newMembers[0].id, latitude: null, longitude: null, expense_type: defaultContributionType }, // Sử dụng loại đóng góp
-                        { type: 'contribution', amount: 300000, description: 'Đóng góp thêm', date: new Date().toISOString(), contributingMemberId: newMembers[1].id, latitude: null, longitude: null, expense_type: defaultContributionType }, // Sử dụng loại đóng góp
-                        { type: 'expense', amount: 150000, description: 'Mua đồ ăn nhẹ', date: new Date().toISOString(), involvedMemberIds: [newMembers[0].id, newMembers[1].id, newMembers[2].id], latitude: null, longitude: null, expense_type: defaultExpenseType },
-                        { type: 'contribution', amount: 200000, description: 'Đóng góp tháng 5', date: new Date().toISOString(), contributingMemberId: newMembers[2].id, latitude: null, longitude: null, expense_type: defaultContributionType }, // Sử dụng loại đóng góp
-                        { type: 'expense', amount: 250000, description: 'Tiền nước uống', date: new Date().toISOString(), involvedMemberIds: [newMembers[0].id, newMembers[2].id], latitude: null, longitude: null, expense_type: defaultExpenseType },
-                        { type: 'expense', amount: 300000, description: 'Đặt cơm trưa', date: new Date().toISOString(), involvedMemberIds: [newMembers[0].id, newMembers[1].id, newMembers[2].id], latitude: null, longitude: null, expense_type: defaultExpenseType },
-                    ];
-                    const { data: newTransactions, error: newTransactionsError } = await supabase
-                        .from('transactions_quan') // Updated table name
-                        .insert(initialTransactions)
-                        .select();
-
-                    if (newTransactionsError) throw newTransactionsError;
-                    transactions = newTransactions;
+                    console.warn("No members found. This page might not function correctly without initial member data from the main app.");
+                    // Optionally, you could redirect to the main app or show a message.
                 }
 
                 updateUI(); // Update UI after fetching data
@@ -1910,7 +1875,7 @@
             // Initial data fetch and UI render when DOM is fully loaded
             document.addEventListener('DOMContentLoaded', () => {
                 setLanguage(currentLanguage); // Set initial language
-                initializeSupabase();
+                initializeSupabase(); // Initialize Supabase and check auth
             });
         </script>
         <script>
