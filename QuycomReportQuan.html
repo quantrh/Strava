@@ -398,7 +398,8 @@
                 modalColumnAmount: 'Số tiền',
                 modalColumnDescription: 'Mô tả',
                 modalColumnMember: 'Người giao dịch',
-                contributionType: 'Đóng góp'
+                contributionType: 'Đóng góp',
+                noChartData: 'Không có dữ liệu để hiển thị.'
             }
         };
 
@@ -528,6 +529,10 @@
 
                 if (error) throw error;
                 transactions = data;
+                
+                // Add this console log to help the user debug the `expense_type` column values
+                console.log("All transactions fetched:", transactions);
+
                 populateExpenseTypeFilter(transactions);
                 renderTransactions(transactions);
                 renderCharts(transactions); // Initial chart render
@@ -572,20 +577,17 @@
             const endDate = endDateInput.value ? new Date(endDateInput.value) : null;
             const searchTerm = searchInput.value.toLowerCase();
             const selectedType = expenseTypeFilter.value;
-            const selectedMemberId = memberFilter.value; // New filter value
+            const selectedMemberId = memberFilter.value;
 
             const filteredData = transactions.filter(transaction => {
                 const transactionDate = new Date(transaction.date);
                 const isDateInRange = (!startDate || transactionDate >= startDate) && (!endDate || transactionDate <= endDate);
                 
-                // Get member names for searching
                 const memberNames = getMemberNames(transaction.involvedMemberIds);
                 
-                // Check if description or member names contain the search term
                 const isMatchingSearch = (transaction.description && transaction.description.toLowerCase().includes(searchTerm)) || memberNames.toLowerCase().includes(searchTerm);
                 const isMatchingType = !selectedType || transaction.expense_type === selectedType;
                 
-                // New logic: Check if the transaction's involved members include the selected member
                 const isMatchingMember = !selectedMemberId || (transaction.involvedMemberIds && transaction.involvedMemberIds.includes(selectedMemberId));
 
                 return isDateInRange && isMatchingSearch && isMatchingType && isMatchingMember;
@@ -671,7 +673,8 @@
                     <span>${label}: ${formattedAmount} (${percentage}%)</span>
                 `;
                 legendItem.onclick = () => {
-                    showDetailModal(label, transactionsData);
+                    // Pass the correct data type to the modal function
+                    showDetailModal(label, transactionsData, chartInstance.canvas.id);
                 };
                 legendElement.appendChild(legendItem);
             });
@@ -683,16 +686,19 @@
             if (contributionChart) contributionChart.destroy();
 
             // Filter data for expenses and contributions based on the 'expense_type' value
+            // NOTE: The chart might be empty if the 'expense_type' values in your database are not 'expense' or 'contribution'
+            // Please check the console log for the actual values in the 'Loại' column.
             const expenseTransactions = data.filter(t => t.expense_type === 'expense');
             const contributionTransactions = data.filter(t => t.expense_type === 'contribution');
 
             // --- Render Expense Chart ---
             const expenseData = expenseTransactions.reduce((acc, transaction) => {
-                const type = transaction.description || 'Khác'; // Use description to categorize expenses if 'expense' is the type
-                if (!acc[type]) {
-                    acc[type] = 0;
+                // Use a more specific category if available, otherwise fallback to description
+                const category = transaction.category || transaction.description || 'Khác';
+                if (!acc[category]) {
+                    acc[category] = 0;
                 }
-                acc[type] += Math.abs(transaction.amount); // Use absolute value for expense chart
+                acc[category] += Math.abs(transaction.amount); // Use absolute value for expense chart
                 return acc;
             }, {});
 
@@ -737,7 +743,7 @@
                             if (elements.length > 0) {
                                 const firstElement = elements[0];
                                 const label = expenseChart.data.labels[firstElement.index];
-                                showDetailModal(label, expenseTransactions);
+                                showDetailModal(label, expenseTransactions, 'expense-chart');
                             }
                         }
                     }
@@ -745,16 +751,16 @@
                 createCustomLegend(expenseChart, expenseLegendList, totalExpenseAmount, expenseTransactions);
             } else {
                 expenseChartCanvas.getContext('2d').clearRect(0, 0, expenseChartCanvas.width, expenseChartCanvas.height);
-                expenseLegendList.innerHTML = `<li class="text-gray-500">Không có dữ liệu chi tiêu để hiển thị.</li>`;
+                expenseLegendList.innerHTML = `<li class="text-gray-500">${translations[currentLanguage].noChartData}</li>`;
             }
 
             // --- Render Contribution Chart ---
             const contributionData = contributionTransactions.reduce((acc, transaction) => {
-                const type = transaction.description || 'Khác';
-                if (!acc[type]) {
-                    acc[type] = 0;
+                const category = transaction.category || transaction.description || 'Khác';
+                if (!acc[category]) {
+                    acc[category] = 0;
                 }
-                acc[type] += transaction.amount;
+                acc[category] += transaction.amount;
                 return acc;
             }, {});
 
@@ -799,7 +805,7 @@
                             if (elements.length > 0) {
                                 const firstElement = elements[0];
                                 const label = contributionChart.data.labels[firstElement.index];
-                                showDetailModal(label, contributionTransactions);
+                                showDetailModal(label, contributionTransactions, 'contribution-chart');
                             }
                         }
                     }
@@ -807,17 +813,17 @@
                 createCustomLegend(contributionChart, contributionLegendList, totalContributionAmount, contributionTransactions);
             } else {
                 contributionChartCanvas.getContext('2d').clearRect(0, 0, contributionChartCanvas.width, contributionChartCanvas.height);
-                contributionLegendList.innerHTML = `<li class="text-gray-500">Không có dữ liệu đóng góp để hiển thị.</li>`;
+                contributionLegendList.innerHTML = `<li class="text-gray-500">${translations[currentLanguage].noChartData}</li>`;
             }
         }
 
-        function showDetailModal(label, data) {
+        function showDetailModal(label, data, chartId) {
             modalTitle.textContent = `${translations[currentLanguage].modalTitle} (${label})`;
             modalTableBody.innerHTML = '';
             
             const transactionsForType = data.filter(t => {
-                const type = t.expense_type === 'expense' ? t.description : t.description;
-                return type === label;
+                const category = t.category || t.description || 'Khác';
+                return category === label;
             });
             
 
