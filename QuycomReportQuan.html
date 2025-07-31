@@ -244,6 +244,30 @@
         <h2 class="text-xl font-semibold mb-4 text-[#006B68]" data-key="filterTransactionsTitle">Lọc Giao Dịch</h2>
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             <div>
+                <label for="filter-year-select" class="block text-sm font-medium text-gray-700 mb-1" data-key="filterYearLabel">Năm</label>
+                <select id="filter-year-select" class="input-field">
+                    <option value="all" data-key="allYearsOption">Tất Cả</option>
+                </select>
+            </div>
+            <div>
+                <label for="filter-month-select" class="block text-sm font-medium text-gray-700 mb-1" data-key="filterMonthLabel">Tháng</label>
+                <select id="filter-month-select" class="input-field">
+                    <option value="all" data-key="allMonthsOption">Tất Cả</option>
+                    <option value="1">1</option>
+                    <option value="2">2</option>
+                    <option value="3">3</option>
+                    <option value="4">4</option>
+                    <option value="5">5</option>
+                    <option value="6">6</option>
+                    <option value="7">7</option>
+                    <option value="8">8</option>
+                    <option value="9">9</option>
+                    <option value="10">10</option>
+                    <option value="11">11</option>
+                    <option value="12">12</option>
+                </select>
+            </div>
+            <div>
                 <label for="from-date-input" class="block text-sm font-medium text-gray-700 mb-1" data-key="fromDateLabel">Từ Ngày</label>
                 <input type="datetime-local" id="from-date-input" class="input-field">
             </div>
@@ -402,10 +426,10 @@
 
     <script>
         // Supabase Client Initialization
-        // IMPORTANT: In the Canvas environment, leave SUPABASE_ANON_KEY empty.
-        // It will be automatically provided at runtime.
+        // IMPORTANT: In the Canvas environment, you need to provide your Supabase Anon Key here.
+        // Replace 'YOUR_SUPABASE_ANON_KEY' with your actual Supabase project's anon key.
         const SUPABASE_URL = 'https://rmbsxccrwrktbjlnezpu.supabase.co'; // Replace with your actual Supabase URL
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJtYnN4Y2Nyd3JrdGJqbG5lenB1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg2MjczNjQsImV4cCI6MjA2NDIwMzM2NH0.ydCqificftdtn1niRciFCifeuo8aX6SDGti-hCY5Z_Y'; // This should be an empty string in Canvas to use provided key
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJtYnN4Y2Nyd3JrdGJqbG5lenB1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg2MjczNjQsImV4cCI6MjA2NDIwMzM2NH0.ydCqificftdtn1niRciFCifeuo8aX6SDGti-hCY5Z_Y'; // REPLACE THIS WITH YOUR ACTUAL SUPABASE ANON KEY
 
         let supabase;
         let authReady = false; // New state to track if auth is ready
@@ -574,6 +598,10 @@
                 maxAmountLabel: 'Số Tiền Tối Đa', // New translation
                 minAmountPlaceholder: '0 VNĐ', // New translation
                 maxAmountPlaceholder: '4.000.000.000 VNĐ', // New translation
+                filterYearLabel: 'Năm', // New translation
+                filterMonthLabel: 'Tháng', // New translation
+                allYearsOption: 'Tất Cả', // New translation
+                allMonthsOption: 'Tất Cả', // New translation
             },
             'en': {
                 appTitle: 'Transaction History - GROUP FUND MANAGEMENT',
@@ -726,6 +754,10 @@
                 maxAmountLabel: 'Max Amount',
                 minAmountPlaceholder: '0 VND',
                 maxAmountPlaceholder: '4,000,000,000 VND',
+                filterYearLabel: 'Year',
+                filterMonthLabel: 'Month',
+                allYearsOption: 'All',
+                allMonthsOption: 'All',
             }
         };
 
@@ -781,26 +813,30 @@
         const scrollToTopBtn = document.getElementById('scroll-to-top-btn');
 
         // Filter Elements
+        const filterYearSelect = document.getElementById('filter-year-select'); // New
+        const filterMonthSelect = document.getElementById('filter-month-select'); // New
         const fromDateInput = document.getElementById('from-date-input');
         const toDateInput = document.getElementById('to-date-input');
         const filterTransactionTypeSelect = document.getElementById('filter-transaction-type');
         const filterDescriptionInput = document.getElementById('filter-description-input');
         const filterExpenseTypeSelect = document.getElementById('filter-expense-type-select');
         const filterMemberSelect = document.getElementById('filter-member-select');
-        const filterMinAmountInput = document.getElementById('filter-min-amount-input'); // Changed
-        const filterMaxAmountInput = document.getElementById('filter-max-amount-input'); // Changed
+        const filterMinAmountInput = document.getElementById('filter-min-amount-input');
+        const filterMaxAmountInput = document.getElementById('filter-max-amount-input');
         const searchBtn = document.getElementById('search-btn');
         const resetFilterBtn = document.getElementById('reset-filter-btn');
 
         // Filter state variables
+        let filterYear = 'all'; // New
+        let filterMonth = 'all'; // New
         let filterFromDate = null;
         let filterToDate = null;
         let filterType = 'all';
         let filterDescription = '';
-        let filterExpenseTypes = []; // Changed to array for multi-select
+        let filterExpenseTypes = [];
         let filterMember = 'all';
-        let filterMinAmount = 0; // Changed
-        let filterMaxAmount = 4000000000; // Changed
+        let filterMinAmount = 0;
+        let filterMaxAmount = 4000000000;
 
         // --- Language Functions ---
         function setLanguage(lang) {
@@ -952,20 +988,20 @@
             }
             console.log("window.supabase is available.");
 
-            // Determine the API key to use
-            // In Canvas environment, __supabase_key is provided. Otherwise, use the hardcoded SUPABASE_ANON_KEY.
-            const anonKey = typeof __supabase_key !== 'undefined' ? __supabase_key : SUPABASE_ANON_KEY;
+            // Use the provided SUPABASE_ANON_KEY. If it's empty, warn the user.
+            const anonKey = SUPABASE_ANON_KEY;
             console.log("Using Supabase Anon Key:", anonKey ? "Provided/Non-empty" : "Empty/Default");
 
             // Warn if default URL is still in use
-            if (SUPABASE_URL === 'https://1rmbsxccrwrktbjlnezpu.supabase.co') {
+            if (SUPABASE_URL === 'https://rmbsxccrwrktbjlnezpu.supabase.co') {
                  console.warn("Supabase configuration warning: SUPABASE_URL is still the default value. Please replace with your actual Supabase Project URL.");
                  showErrorMessage(translations[currentLanguage].supabaseConfigWarning);
             }
-            // Also warn if anonKey is empty and not running in Canvas (where __supabase_key would be injected)
-            if (!anonKey && typeof __supabase_key === 'undefined') {
-                console.warn("Supabase configuration warning: SUPABASE_ANON_KEY is empty and __supabase_key is not defined. This app might not connect to Supabase correctly outside Canvas.");
+            // Warn if anonKey is empty
+            if (!anonKey) {
+                console.warn("Supabase configuration warning: SUPABASE_ANON_KEY is empty. This app might not connect to Supabase correctly. Please provide your actual Supabase Anon Key.");
                 showErrorMessage(translations[currentLanguage].supabaseConfigWarning + " (Khóa API trống)");
+                return; // Prevent Supabase client creation with an empty key
             }
 
 
@@ -986,7 +1022,7 @@
                 // Add authentication listener
                 if (!supabase || !supabase.auth || typeof supabase.auth.onAuthStateChange !== 'function') { // Corrected method name to onAuthStateChange
                     console.error("DEBUG: Value of supabase.auth:", supabase.auth);
-                    const errorMsg = "Supabase client hoặc mô-đun xác thực không được khởi tạo đúng cách. `onAuthStateChange` không phải là một hàm. Vui lòng kiểm tra lại SUPABASE_URL và SUPABASE_ANON_KEY trong mã của bạn. Quan trọng hơn, hãy đảm bảo rằng dịch vụ **Xác thực (Authentication)** đã được kích hoạt và cấu hình đúng trong **Bảng điều khiển Supabase** của dự án của bạn (phần 'Authentication' -> 'Settings').";
+                    const errorMsg = "Supabase client hoặc mô-đun xác thực không được khởi tạo đúng cách. `onAuthStateChange` không phải là một hàm. Vui lòng kiểm tra lại SUPABASE_URL và khóa API của bạn. Quan trọng hơn, hãy đảm bảo rằng dịch vụ **Xác thực (Authentication)** đã được kích hoạt và cấu hình đúng trong **Bảng điều khiển Supabase** của dự án của bạn (phần 'Authentication' -> 'Settings').";
                     console.error(errorMsg);
                     showErrorMessage(errorMsg);
                     return;
@@ -1375,10 +1411,32 @@
             filterMaxAmountInput.value = formatNumberForInput('4000000000');
             filterMinAmount = 0;
             filterMaxAmount = 4000000000;
+
+            // Set default year/month filters
+            filterYear = 'all';
+            filterMonth = 'all';
+            filterYearSelect.value = 'all';
+            filterMonthSelect.value = 'all';
         }
 
         // Populates filter dropdowns
         function populateFilterSelectors() {
+            // Populate filter-year-select
+            filterYearSelect.innerHTML = `<option value="all" data-key="allYearsOption">${translations[currentLanguage].allYearsOption}</option>`;
+            const currentYear = new Date().getFullYear();
+            for (let i = currentYear + 1; i >= currentYear - 5; i--) { // Current year, 5 years back, 1 year forward
+                const option = document.createElement('option');
+                option.value = i;
+                option.textContent = i;
+                filterYearSelect.appendChild(option);
+            }
+            filterYearSelect.value = filterYear; // Restore selected value
+
+            // Populate filter-month-select (already has default options in HTML)
+            // Ensure translations are applied to "Tất Cả" option
+            document.querySelector('#filter-month-select option[value="all"]').textContent = translations[currentLanguage].allMonthsOption;
+            filterMonthSelect.value = filterMonth; // Restore selected value
+
             // Populate filter-transaction-type (already has default options in HTML)
             // No need to dynamically populate, just ensure translations are applied
 
@@ -1434,8 +1492,40 @@
             hideErrorMessage(); // Hide any previous error messages
 
             // Get filter values from inputs
-            filterFromDate = fromDateInput.value ? new Date(fromDateInput.value) : null;
-            filterToDate = toDateInput.value ? new Date(toDateInput.value) : null;
+            filterYear = filterYearSelect.value;
+            filterMonth = filterMonthSelect.value;
+
+            let currentFilterFromDate = fromDateInput.value ? new Date(fromDateInput.value) : null;
+            let currentFilterToDate = toDateInput.value ? new Date(toDateInput.value) : null;
+
+            // If year or month are selected, override/refine the date range
+            if (filterYear !== 'all' || filterMonth !== 'all') {
+                let year = filterYear === 'all' ? new Date().getFullYear() : parseInt(filterYear);
+                let month = filterMonth === 'all' ? 1 : parseInt(filterMonth); // If month is 'all', default to January
+
+                let startOfMonth, endOfMonth;
+
+                if (filterMonth !== 'all') {
+                    // Specific month and year selected
+                    startOfMonth = new Date(year, month - 1, 1, 0, 0, 0);
+                    endOfMonth = new Date(year, month, 0, 23, 59, 59); // Last day of the month
+                } else {
+                    // Only year selected (or month is 'all')
+                    startOfMonth = new Date(year, 0, 1, 0, 0, 0); // Jan 1st of the year
+                    endOfMonth = new Date(year, 11, 31, 23, 59, 59); // Dec 31st of the year
+                }
+
+                // Combine with existing from/to dates
+                filterFromDate = currentFilterFromDate && currentFilterFromDate > startOfMonth ? currentFilterFromDate : startOfMonth;
+                filterToDate = currentFilterToDate && currentFilterToDate < endOfMonth ? currentFilterToDate : endOfMonth;
+
+            } else {
+                // No year/month selected, use only from/to date inputs
+                filterFromDate = currentFilterFromDate;
+                filterToDate = currentFilterToDate;
+            }
+
+
             filterType = filterTransactionTypeSelect.value;
             filterDescription = filterDescriptionInput.value.trim().toLowerCase();
 
@@ -1462,7 +1552,7 @@
             let filteredTransactions = transactions.filter(t => {
                 const transactionDate = new Date(t.date);
 
-                // Date filter
+                // Date filter (now uses filterFromDate/filterToDate which might be set by year/month)
                 if (filterFromDate && transactionDate < filterFromDate) return false;
                 if (filterToDate && transactionDate > filterToDate) return false;
 
@@ -1517,7 +1607,10 @@
             filterType = 'all';
             filterDescription = '';
             filterMember = 'all';
+            filterYear = 'all'; // Reset year
+            filterMonth = 'all'; // Reset month
 
+            populateFilterSelectors(); // Re-populate to reflect reset dropdowns
             renderTransactionList(); // Render all transactions
             hideErrorMessage();
         }
@@ -1630,7 +1723,7 @@
                 // HIỂN THỊ edit-expense_type cho Chi Tiêu và đổi nhãn
                 editExpenseTypeDiv.classList.remove('hidden');
                 editExpenseTypeSelect.setAttribute('required', 'true');
-                if (editExpenseTypeLabelElement) {
+                if (expenseTypeLabelElement) {
                     expenseTypeLabelElement.textContent = translations[currentLanguage].expenseTypeLabel; // Đặt lại nhãn ban đầu
                 }
                 populateExpenseTypeSelect(editExpenseTypeSelect, 'expense'); // Truyền 'expense'
@@ -2180,6 +2273,5 @@
                 setDefaultDateFilters(); // Set default dates and amounts for filters
             });
         </script>
-
 </body>
 </html>
