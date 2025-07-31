@@ -69,6 +69,13 @@
             transition: all 0.3s ease-in-out;
             transform-origin: top right;
         }
+        /* New styles for responsive table */
+        .table-auto { table-layout: auto; width: 100%; }
+        .table-fixed { table-layout: fixed; width: 100%; }
+        .truncate { overflow: hidden; text-overflow: ellipsis; }
+        @media (max-width: 768px) {
+            .table-cell { word-break: break-all; }
+        }
     </style>
 </head>
 <body class="bg-gray-100 text-gray-800">
@@ -132,7 +139,7 @@
                     <button id="apply-filters-btn" class="btn-primary mt-6 w-full" data-key="applyFiltersBtn">Áp dụng</button>
                 </div>
                 <div class="flex-shrink-0">
-                    <button id="clear-filters-btn" class="btn-secondary mt-6 w-full" data-key="clearFiltersBtn">Xóa</button>
+                    <button id="clear-filters-btn" class="btn-secondary mt-6 w-full" data-key="resetFiltersBtn">Đặt lại</button>
                 </div>
             </div>
 
@@ -146,7 +153,7 @@
         <!-- Transaction Table Section -->
         <div class="bg-white rounded-xl shadow overflow-hidden">
             <div class="overflow-x-auto">
-                <table class="min-w-full divide-y divide-gray-200">
+                <table class="min-w-full divide-y divide-gray-200 table-auto">
                     <thead class="bg-gray-50">
                         <tr>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" data-key="columnDate">Ngày</th>
@@ -198,7 +205,7 @@
                 filterTypeLabel: 'Loại', // New translation key
                 filterTypeAll: 'Tất cả', // New translation key
                 applyFiltersBtn: 'Áp dụng',
-                clearFiltersBtn: 'Xóa',
+                resetFiltersBtn: 'Đặt lại', // Changed from clearFiltersBtn to resetFiltersBtn
                 exportExcelBtn: 'Xuất Excel',
                 exportPdfBtn: 'Xuất PDF',
                 columnDate: 'Ngày',
@@ -221,7 +228,7 @@
         const searchInput = document.getElementById('search-input');
         const expenseTypeFilter = document.getElementById('expense-type-filter'); // New filter element
         const applyFiltersBtn = document.getElementById('apply-filters-btn');
-        const clearFiltersBtn = document.getElementById('clear-filters-btn');
+        const clearFiltersBtn = document.getElementById('clear-filters-btn'); // Note: This ID remains the same
         const exportExcelBtn = document.getElementById('export-excel-btn');
         const exportPdfBtn = document.getElementById('export-pdf-btn');
         const logoutBtn = document.getElementById('logout-btn');
@@ -274,9 +281,9 @@
                 }
 
                 const { data, error } = await supabase
-                    .from('transactions_quan')
+                    .from('transactions')
                     .select('*')
-                    .order('date', { ascending: false });
+                    .order('transaction_date', { ascending: false });
 
                 if (error) throw error;
                 transactions = data;
@@ -302,16 +309,17 @@
                 row.classList.add('hover:bg-gray-50', 'transition-colors');
 
                 // Format the date to a more readable format
-                const formattedDate = new Date(transaction.date).toLocaleDateString('vi-VN');
+                const formattedDate = new Date(transaction.transaction_date).toLocaleDateString('vi-VN');
                 // Format amount with commas and currency symbol
                 const formattedAmount = new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(transaction.amount);
 
                 row.innerHTML = `
-                    <td class="table-cell whitespace-nowrap px-6 py-4">${formattedDate}</td>
-                    <td class="table-cell whitespace-nowrap px-6 py-4 text-right">${formattedAmount}</td>
-                    <td class="table-cell whitespace-nowrap px-6 py-4">${transaction.description}</td>
-                    <td class="table-cell whitespace-nowrap px-6 py-4">${transaction.member_name}</td>
-                    <td class="table-cell whitespace-nowrap px-6 py-4">${transaction.expense_type || 'N/A'}</td>
+                    <td class="table-cell px-6 py-4">${formattedDate}</td>
+                    <td class="table-cell px-6 py-4 text-right">${formattedAmount}</td>
+                    <!-- Removed whitespace-nowrap to allow text to wrap -->
+                    <td class="table-cell px-6 py-4 break-words">${transaction.description}</td>
+                    <td class="table-cell px-6 py-4">${transaction.member_name}</td>
+                    <td class="table-cell px-6 py-4">${transaction.expense_type || 'N/A'}</td>
                 `;
                 transactionTableBody.appendChild(row);
             });
@@ -324,8 +332,9 @@
             const selectedType = expenseTypeFilter.value; // Get the selected expense type
 
             const filteredData = transactions.filter(transaction => {
-                const transactionDate = new Date(transaction.date);
+                const transactionDate = new Date(transaction.transaction_date);
                 const isDateInRange = (!startDate || transactionDate >= startDate) && (!endDate || transactionDate <= endDate);
+                // Search logic now correctly checks both description and member name
                 const isMatchingSearch = transaction.description.toLowerCase().includes(searchTerm) || transaction.member_name.toLowerCase().includes(searchTerm);
                 const isMatchingType = !selectedType || transaction.expense_type === selectedType; // Filter by expense type
 
@@ -358,7 +367,7 @@
             const selectedType = expenseTypeFilter.value;
 
             const filteredData = transactions.filter(transaction => {
-                const transactionDate = new Date(transaction.date);
+                const transactionDate = new Date(transaction.transaction_date);
                 const isDateInRange = (!startDate || transactionDate >= startDate) && (!endDate || transactionDate <= endDate);
                 const isMatchingSearch = transaction.description.toLowerCase().includes(searchTerm) || transaction.member_name.toLowerCase().includes(searchTerm);
                 const isMatchingType = !selectedType || transaction.expense_type === selectedType;
@@ -367,7 +376,7 @@
             });
 
             const dataToExport = filteredData.map(t => ({
-                'Ngày': new Date(t.date).toLocaleDateString('vi-VN'),
+                'Ngày': new Date(t.transaction_date).toLocaleDateString('vi-VN'),
                 'Số tiền': t.amount,
                 'Mô tả': t.description,
                 'Người giao dịch': t.member_name,
