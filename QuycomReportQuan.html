@@ -657,7 +657,7 @@
             '#8BC34A', '#CDDC39', '#FFEB3B', '#FF9800', '#795548',
         ];
 
-        function createCustomLegend(chartInstance, legendElement, totalAmount) {
+        function createCustomLegend(chartInstance, legendElement, totalAmount, transactionsData) {
             legendElement.innerHTML = '';
             chartInstance.data.labels.forEach((label, index) => {
                 const color = chartInstance.data.datasets[0].backgroundColor[index];
@@ -671,7 +671,7 @@
                     <span>${label}: ${formattedAmount} (${percentage}%)</span>
                 `;
                 legendItem.onclick = () => {
-                    showDetailModal(label, transactions);
+                    showDetailModal(label, transactionsData);
                 };
                 legendElement.appendChild(legendItem);
             });
@@ -682,13 +682,13 @@
             if (expenseChart) expenseChart.destroy();
             if (contributionChart) contributionChart.destroy();
 
-            // Filter data for expenses (amount < 0) and contributions (amount > 0)
-            const expenseTransactions = data.filter(t => t.amount < 0);
-            const contributionTransactions = data.filter(t => t.amount > 0);
+            // Filter data for expenses and contributions based on the 'expense_type' value
+            const expenseTransactions = data.filter(t => t.expense_type === 'expense');
+            const contributionTransactions = data.filter(t => t.expense_type === 'contribution');
 
             // --- Render Expense Chart ---
             const expenseData = expenseTransactions.reduce((acc, transaction) => {
-                const type = transaction.expense_type || 'Khác';
+                const type = transaction.description || 'Khác'; // Use description to categorize expenses if 'expense' is the type
                 if (!acc[type]) {
                     acc[type] = 0;
                 }
@@ -742,7 +742,7 @@
                         }
                     }
                 });
-                createCustomLegend(expenseChart, expenseLegendList, totalExpenseAmount);
+                createCustomLegend(expenseChart, expenseLegendList, totalExpenseAmount, expenseTransactions);
             } else {
                 expenseChartCanvas.getContext('2d').clearRect(0, 0, expenseChartCanvas.width, expenseChartCanvas.height);
                 expenseLegendList.innerHTML = `<li class="text-gray-500">Không có dữ liệu chi tiêu để hiển thị.</li>`;
@@ -750,7 +750,7 @@
 
             // --- Render Contribution Chart ---
             const contributionData = contributionTransactions.reduce((acc, transaction) => {
-                const type = transaction.expense_type || translations[currentLanguage].contributionType;
+                const type = transaction.description || 'Khác';
                 if (!acc[type]) {
                     acc[type] = 0;
                 }
@@ -804,7 +804,7 @@
                         }
                     }
                 });
-                createCustomLegend(contributionChart, contributionLegendList, totalContributionAmount);
+                createCustomLegend(contributionChart, contributionLegendList, totalContributionAmount, contributionTransactions);
             } else {
                 contributionChartCanvas.getContext('2d').clearRect(0, 0, contributionChartCanvas.width, contributionChartCanvas.height);
                 contributionLegendList.innerHTML = `<li class="text-gray-500">Không có dữ liệu đóng góp để hiển thị.</li>`;
@@ -816,9 +816,10 @@
             modalTableBody.innerHTML = '';
             
             const transactionsForType = data.filter(t => {
-                const type = t.amount > 0 ? (t.expense_type || translations[currentLanguage].contributionType) : (t.expense_type || 'Khác');
+                const type = t.expense_type === 'expense' ? t.description : t.description;
                 return type === label;
             });
+            
 
             if (transactionsForType.length === 0) {
                 const row = document.createElement('tr');
