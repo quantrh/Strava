@@ -274,7 +274,10 @@
                     <canvas id="expense-chart"></canvas>
                 </div>
                 <div class="mt-4">
-                    <h4 class="text-lg font-semibold text-gray-800 mb-2">Chi tiết:</h4>
+                    <h4 class="text-lg font-semibold text-gray-800 mb-2">
+                        Chi tiết:
+                        <span id="total-expense-amount" class="text-base font-normal ml-2"></span>
+                    </h4>
                     <ul id="expense-legend" class="custom-legend"></ul>
                 </div>
             </div>
@@ -286,7 +289,10 @@
                     <canvas id="contribution-chart"></canvas>
                 </div>
                 <div class="mt-4">
-                    <h4 class="text-lg font-semibold text-gray-800 mb-2">Chi tiết:</h4>
+                    <h4 class="text-lg font-semibold text-gray-800 mb-2">
+                        Chi tiết:
+                        <span id="total-contribution-amount" class="text-base font-normal ml-2"></span>
+                    </h4>
                     <ul id="contribution-legend" class="custom-legend"></ul>
                 </div>
             </div>
@@ -399,7 +405,9 @@
                 modalColumnDescription: 'Mô tả',
                 modalColumnMember: 'Người giao dịch',
                 contributionType: 'Đóng góp',
-                noChartData: 'Không có dữ liệu để hiển thị.'
+                noChartData: 'Không có dữ liệu để hiển thị.',
+                totalExpense: 'Tổng chi tiêu:',
+                totalContribution: 'Tổng đóng góp:'
             }
         };
 
@@ -418,6 +426,8 @@
         const logoutBtnMobile = document.getElementById('logout-btn-mobile');
         const scrollToTopBtn = document.getElementById('scrollToTopBtn');
         const messageBox = document.getElementById('message-box');
+        const totalExpenseAmountSpan = document.getElementById('total-expense-amount');
+        const totalContributionAmountSpan = document.getElementById('total-contribution-amount');
 
         // Chart and Modal elements
         const expenseChartCanvas = document.getElementById('expense-chart');
@@ -453,6 +463,11 @@
             if (allMemberOption) {
                 allMemberOption.textContent = translations[lang].filterMemberAll;
             }
+            // Update total amounts based on current language
+            const totalExpenseAmount = expenseChart ? expenseChart.data.datasets[0].data.reduce((sum, val) => sum + val, 0) : 0;
+            const totalContributionAmount = contributionChart ? contributionChart.data.datasets[0].data.reduce((sum, val) => sum + val, 0) : 0;
+            totalExpenseAmountSpan.textContent = `${translations[lang].totalExpense} ${new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(totalExpenseAmount)}`;
+            totalContributionAmountSpan.textContent = `${translations[lang].totalContribution} ${new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(totalContributionAmount)}`;
         }
 
         async function showMessage(message, type) {
@@ -659,22 +674,36 @@
             '#8BC34A', '#CDDC39', '#FFEB3B', '#FF9800', '#795548',
         ];
 
+        // This function has been updated to sort the legend items by percentage in descending order
         function createCustomLegend(chartInstance, legendElement, totalAmount, transactionsData) {
             legendElement.innerHTML = '';
-            chartInstance.data.labels.forEach((label, index) => {
-                const color = chartInstance.data.datasets[0].backgroundColor[index];
+
+            const legendItems = chartInstance.data.labels.map((label, index) => {
                 const amount = chartInstance.data.datasets[0].data[index];
-                const percentage = totalAmount > 0 ? ((amount / totalAmount) * 100).toFixed(2) : 0;
-                const formattedAmount = new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
+                const percentage = totalAmount > 0 ? (amount / totalAmount) * 100 : 0;
+                const color = chartInstance.data.datasets[0].backgroundColor[index];
+                return {
+                    label,
+                    amount,
+                    percentage,
+                    color
+                };
+            });
+
+            // Sort items by percentage in descending order
+            legendItems.sort((a, b) => b.percentage - a.percentage);
+
+            legendItems.forEach(item => {
+                const formattedAmount = new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(item.amount);
 
                 const legendItem = document.createElement('li');
                 legendItem.innerHTML = `
-                    <div class="color-box" style="background-color: ${color}"></div>
-                    <span>${label}: ${formattedAmount} (${percentage}%)</span>
+                    <div class="color-box" style="background-color: ${item.color}"></div>
+                    <span>${item.label}: ${formattedAmount} (${item.percentage.toFixed(2)}%)</span>
                 `;
                 legendItem.onclick = () => {
                     // Pass the correct data type to the modal function
-                    showDetailModal(label, transactionsData, chartInstance.canvas.id);
+                    showDetailModal(item.label, transactionsData, chartInstance.canvas.id);
                 };
                 legendElement.appendChild(legendItem);
             });
@@ -705,8 +734,9 @@
             const totalExpenseAmount = expenseAmounts.reduce((sum, amount) => sum + amount, 0);
             const expenseColors = expenseLabels.map((_, index) => chartColors[index % chartColors.length]);
             
-            // Clear legend before rendering
+            // Clear legend and update total amount
             expenseLegendList.innerHTML = '';
+            totalExpenseAmountSpan.textContent = `${translations[currentLanguage].totalExpense} ${new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(totalExpenseAmount)}`;
 
             if (totalExpenseAmount > 0 && expenseLabels.length > 0) {
                 const ctxExpense = expenseChartCanvas.getContext('2d');
@@ -767,8 +797,9 @@
             const totalContributionAmount = contributionAmounts.reduce((sum, amount) => sum + amount, 0);
             const contributionColors = contributionLabels.map((_, index) => chartColors[index % chartColors.length]);
 
-            // Clear legend before rendering
+            // Clear legend and update total amount
             contributionLegendList.innerHTML = '';
+            totalContributionAmountSpan.textContent = `${translations[currentLanguage].totalContribution} ${new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(totalContributionAmount)}`;
 
             if (totalContributionAmount > 0 && contributionLabels.length > 0) {
                 const ctxContribution = contributionChartCanvas.getContext('2d');
