@@ -70,19 +70,17 @@
             transition: all 0.3s ease-in-out;
             transform-origin: top right;
         }
-        /* New styles for responsive table */
         .table-auto { table-layout: auto; width: 100%; }
         .table-fixed { table-layout: fixed; width: 100%; }
         .truncate { overflow: hidden; text-overflow: ellipsis; }
         @media (max-width: 768px) {
             .table-cell { word-break: break-all; }
         }
-        /* Hamburger Menu Specific Styles */
         .navbar {
             background-color: #ffffff;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
             padding: 0.75rem 1rem;
-            position: relative; /* Changed to relative to contain absolute menu */
+            position: relative;
             z-index: 50;
         }
         #hamburger-btn {
@@ -97,19 +95,19 @@
             background-color: #F3F4F6;
         }
         #hamburger-menu {
-            position: absolute; /* Changed to absolute */
-            top: 100%; /* Position below the navbar */
+            position: absolute;
+            top: 100%;
             left: 1rem;
             margin-top: 0.5rem;
-            background-color: #ffffff; /* Added background color */
+            background-color: #ffffff;
             border-radius: 0.5rem;
             box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05);
             width: 12rem;
             overflow: hidden;
-            z-index: 60; /* Increased z-index to ensure it's above navbar content */
+            z-index: 60;
         }
         #hamburger-menu a {
-            display: flex; /* Use flex to align icon and text */
+            display: flex;
             align-items: center;
             padding: 0.75rem 1rem;
             color: #374151;
@@ -140,6 +138,31 @@
             color: white;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
+        /* New custom legend styles */
+        .custom-legend li {
+            display: flex;
+            align-items: center;
+            margin-bottom: 0.5rem;
+            cursor: pointer;
+            font-size: 0.875rem; /* text-sm */
+        }
+        .custom-legend .color-box {
+            width: 1rem;
+            height: 1rem;
+            margin-right: 0.5rem;
+            border-radius: 0.25rem;
+        }
+        /* Chart container to manage multiple charts */
+        .chart-container {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 2rem;
+        }
+        @media (min-width: 1024px) {
+            .chart-container {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
     </style>
 </head>
 <body class="bg-gray-100 text-gray-800">
@@ -147,7 +170,6 @@
     <div class="navbar flex items-center">
         <!-- Hamburger button on the left -->
         <button id="hamburger-btn" aria-label="Mở menu" class="md:hidden">
-            <!-- SVG 3-line icon -->
             <svg class="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"></path>
             </svg>
@@ -174,7 +196,7 @@
         <!-- Logo and Title -->
         <div class="flex items-center ml-4 flex-grow">
             <img src="LogoQuy.png" alt="Logo Quản Lý Quỹ Nhóm" class="h-12 w-auto rounded-lg shadow-md mr-3" onerror="this.onerror=null;this.src='https://placehold.co/100x100/006B68/FFFFFF?text=Logo';">
-            <h1 class="text-2xl font-bold text-[#006B68]" data-key="appTitle">QUẢN LÝ QUỸ NHÓM</h1>
+            <h1 class="text-2xl font-bold text-[#006B68]" data-key="appName">QUẢN LÝ QUỸ NHÓM</h1>
         </div>
         <!-- Desktop Nav and Language Switcher -->
         <div class="hidden md:flex items-center gap-4">
@@ -244,10 +266,29 @@
         </div>
 
         <!-- Chart Section -->
-        <div class="bg-white rounded-xl shadow p-6 mb-6">
-            <h3 class="text-xl font-bold text-gray-900 mb-4" data-key="chartTitle">Thống kê chi tiêu theo loại</h3>
-            <div class="relative h-96">
-                <canvas id="expense-chart"></canvas>
+        <div class="bg-white rounded-xl shadow p-6 mb-6 chart-container">
+            <!-- Expense Chart -->
+            <div>
+                <h3 class="text-xl font-bold text-gray-900 mb-4" data-key="expenseChartTitle">Thống kê chi tiêu theo loại</h3>
+                <div class="relative h-96">
+                    <canvas id="expense-chart"></canvas>
+                </div>
+                <div class="mt-4">
+                    <h4 class="text-lg font-semibold text-gray-800 mb-2">Chi tiết:</h4>
+                    <ul id="expense-legend" class="custom-legend"></ul>
+                </div>
+            </div>
+
+            <!-- Contribution Chart -->
+            <div>
+                <h3 class="text-xl font-bold text-gray-900 mb-4" data-key="contributionChartTitle">Thống kê đóng góp theo loại</h3>
+                <div class="relative h-96">
+                    <canvas id="contribution-chart"></canvas>
+                </div>
+                <div class="mt-4">
+                    <h4 class="text-lg font-semibold text-gray-800 mb-2">Chi tiết:</h4>
+                    <ul id="contribution-legend" class="custom-legend"></ul>
+                </div>
             </div>
         </div>
 
@@ -298,7 +339,6 @@
             </div>
         </div>
 
-
         <!-- Scroll to Top Button -->
         <button id="scrollToTopBtn" class="scroll-to-top">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"></path></svg>
@@ -317,7 +357,8 @@
         let transactions = []; // Global variable to store all transactions
         let members = {}; // Map to store member IDs and names
         let currentLanguage = 'vi'; // Default language
-        let expenseChart = null; // Global variable to hold the chart instance
+        let expenseChart = null; // Global variable to hold the expense chart instance
+        let contributionChart = null; // Global variable to hold the contribution chart instance
 
         // Localization strings
         const translations = {
@@ -346,7 +387,8 @@
                 columnMember: 'Người giao dịch',
                 columnType: 'Loại',
                 noData: 'Không có giao dịch nào được tìm thấy.',
-                chartTitle: 'Thống kê chi tiêu theo loại',
+                expenseChartTitle: 'Thống kê chi tiêu theo loại',
+                contributionChartTitle: 'Thống kê đóng góp theo loại',
                 modalTitle: 'Chi tiết giao dịch',
                 success: 'Thành công!',
                 error: 'Lỗi!',
@@ -355,7 +397,8 @@
                 modalColumnDate: 'Ngày',
                 modalColumnAmount: 'Số tiền',
                 modalColumnDescription: 'Mô tả',
-                modalColumnMember: 'Người giao dịch'
+                modalColumnMember: 'Người giao dịch',
+                contributionType: 'Đóng góp'
             }
         };
 
@@ -377,6 +420,9 @@
 
         // Chart and Modal elements
         const expenseChartCanvas = document.getElementById('expense-chart');
+        const contributionChartCanvas = document.getElementById('contribution-chart');
+        const expenseLegendList = document.getElementById('expense-legend');
+        const contributionLegendList = document.getElementById('contribution-legend');
         const detailModal = document.getElementById('detail-modal');
         const modalTitle = document.getElementById('modal-title');
         const modalTableBody = document.getElementById('modal-table-body');
@@ -484,7 +530,7 @@
                 transactions = data;
                 populateExpenseTypeFilter(transactions);
                 renderTransactions(transactions);
-                renderChart(transactions); // Initial chart render
+                renderCharts(transactions); // Initial chart render
             } catch (error) {
                 console.error("Error fetching transactions:", error);
                 showMessage(`${translations[currentLanguage].error} ${error.message}`, 'error');
@@ -545,7 +591,7 @@
                 return isDateInRange && isMatchingSearch && isMatchingType && isMatchingMember;
             });
             renderTransactions(filteredData);
-            renderChart(filteredData);
+            renderCharts(filteredData);
         }
 
         function populateExpenseTypeFilter(data) {
@@ -611,14 +657,100 @@
             '#8BC34A', '#CDDC39', '#FFEB3B', '#FF9800', '#795548',
         ];
 
-        function renderChart(data) {
-            if (expenseChart) {
-                expenseChart.destroy(); // Destroy existing chart
+        function createCustomLegend(chartInstance, legendElement, totalAmount) {
+            legendElement.innerHTML = '';
+            chartInstance.data.labels.forEach((label, index) => {
+                const color = chartInstance.data.datasets[0].backgroundColor[index];
+                const amount = chartInstance.data.datasets[0].data[index];
+                const percentage = totalAmount > 0 ? ((amount / totalAmount) * 100).toFixed(2) : 0;
+                const formattedAmount = new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
+
+                const legendItem = document.createElement('li');
+                legendItem.innerHTML = `
+                    <div class="color-box" style="background-color: ${color}"></div>
+                    <span>${label}: ${formattedAmount} (${percentage}%)</span>
+                `;
+                legendItem.onclick = () => {
+                    showDetailModal(label, transactions);
+                };
+                legendElement.appendChild(legendItem);
+            });
+        }
+
+        function renderCharts(data) {
+            // Destroy existing charts if they exist
+            if (expenseChart) expenseChart.destroy();
+            if (contributionChart) contributionChart.destroy();
+
+            // Filter data for expenses (amount < 0) and contributions (amount > 0)
+            const expenseTransactions = data.filter(t => t.amount < 0);
+            const contributionTransactions = data.filter(t => t.amount > 0);
+
+            // --- Render Expense Chart ---
+            const expenseData = expenseTransactions.reduce((acc, transaction) => {
+                const type = transaction.expense_type || 'Khác';
+                if (!acc[type]) {
+                    acc[type] = 0;
+                }
+                acc[type] += Math.abs(transaction.amount); // Use absolute value for expense chart
+                return acc;
+            }, {});
+
+            const expenseLabels = Object.keys(expenseData);
+            const expenseAmounts = Object.values(expenseData);
+            const totalExpenseAmount = expenseAmounts.reduce((sum, amount) => sum + amount, 0);
+            const expenseColors = expenseLabels.map((_, index) => chartColors[index % chartColors.length]);
+            
+            // Clear legend before rendering
+            expenseLegendList.innerHTML = '';
+
+            if (totalExpenseAmount > 0 && expenseLabels.length > 0) {
+                const ctxExpense = expenseChartCanvas.getContext('2d');
+                expenseChart = new Chart(ctxExpense, {
+                    type: 'pie',
+                    data: {
+                        labels: expenseLabels,
+                        datasets: [{
+                            data: expenseAmounts,
+                            backgroundColor: expenseColors,
+                            hoverOffset: 4,
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false }, // Hide default legend
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        const label = context.label || '';
+                                        const value = context.parsed || 0;
+                                        const percentage = (value / totalExpenseAmount * 100).toFixed(2);
+                                        const formattedValue = new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(value);
+                                        return `${label}: ${formattedValue} (${percentage}%)`;
+                                    }
+                                }
+                            }
+                        },
+                        onClick: (event, elements) => {
+                            if (elements.length > 0) {
+                                const firstElement = elements[0];
+                                const label = expenseChart.data.labels[firstElement.index];
+                                showDetailModal(label, expenseTransactions);
+                            }
+                        }
+                    }
+                });
+                createCustomLegend(expenseChart, expenseLegendList, totalExpenseAmount);
+            } else {
+                expenseChartCanvas.getContext('2d').clearRect(0, 0, expenseChartCanvas.width, expenseChartCanvas.height);
+                expenseLegendList.innerHTML = `<li class="text-gray-500">Không có dữ liệu chi tiêu để hiển thị.</li>`;
             }
 
-            // Group transactions by expense type and sum the amounts
-            const expenseData = data.reduce((acc, transaction) => {
-                const type = transaction.expense_type || 'Khác';
+            // --- Render Contribution Chart ---
+            const contributionData = contributionTransactions.reduce((acc, transaction) => {
+                const type = transaction.expense_type || translations[currentLanguage].contributionType;
                 if (!acc[type]) {
                     acc[type] = 0;
                 }
@@ -626,71 +758,67 @@
                 return acc;
             }, {});
 
-            const labels = Object.keys(expenseData);
-            const amounts = Object.values(expenseData);
-            const totalAmount = amounts.reduce((sum, amount) => sum + amount, 0);
+            const contributionLabels = Object.keys(contributionData);
+            const contributionAmounts = Object.values(contributionData);
+            const totalContributionAmount = contributionAmounts.reduce((sum, amount) => sum + amount, 0);
+            const contributionColors = contributionLabels.map((_, index) => chartColors[index % chartColors.length]);
 
-            // Get a subset of colors based on the number of labels
-            const colors = labels.map((_, index) => chartColors[index % chartColors.length]);
+            // Clear legend before rendering
+            contributionLegendList.innerHTML = '';
 
-            if (totalAmount === 0 || labels.length === 0) {
-                // Display a message if there is no data to show in the chart
-                expenseChartCanvas.getContext('2d').clearRect(0, 0, expenseChartCanvas.width, expenseChartCanvas.height);
-                return;
-            }
-
-            const ctx = expenseChartCanvas.getContext('2d');
-            expenseChart = new Chart(ctx, {
-                type: 'pie',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        data: amounts,
-                        backgroundColor: colors,
-                        hoverOffset: 4,
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            position: 'top',
-                            labels: {
-                                color: '#374151',
-                                font: {
-                                    size: 14
+            if (totalContributionAmount > 0 && contributionLabels.length > 0) {
+                const ctxContribution = contributionChartCanvas.getContext('2d');
+                contributionChart = new Chart(ctxContribution, {
+                    type: 'pie',
+                    data: {
+                        labels: contributionLabels,
+                        datasets: [{
+                            data: contributionAmounts,
+                            backgroundColor: contributionColors,
+                            hoverOffset: 4,
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        const label = context.label || '';
+                                        const value = context.parsed || 0;
+                                        const percentage = (value / totalContributionAmount * 100).toFixed(2);
+                                        const formattedValue = new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(value);
+                                        return `${label}: ${formattedValue} (${percentage}%)`;
+                                    }
                                 }
                             }
                         },
-                        tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    const label = context.label || '';
-                                    const value = context.parsed || 0;
-                                    const percentage = (value / totalAmount * 100).toFixed(2);
-                                    const formattedValue = new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(value);
-                                    return `${label}: ${formattedValue} (${percentage}%)`;
-                                }
+                        onClick: (event, elements) => {
+                            if (elements.length > 0) {
+                                const firstElement = elements[0];
+                                const label = contributionChart.data.labels[firstElement.index];
+                                showDetailModal(label, contributionTransactions);
                             }
                         }
-                    },
-                    onClick: (event, elements) => {
-                        if (elements.length > 0) {
-                            const firstElement = elements[0];
-                            const label = expenseChart.data.labels[firstElement.index];
-                            showDetailModal(label, data);
-                        }
                     }
-                }
-            });
+                });
+                createCustomLegend(contributionChart, contributionLegendList, totalContributionAmount);
+            } else {
+                contributionChartCanvas.getContext('2d').clearRect(0, 0, contributionChartCanvas.width, contributionChartCanvas.height);
+                contributionLegendList.innerHTML = `<li class="text-gray-500">Không có dữ liệu đóng góp để hiển thị.</li>`;
+            }
         }
 
-        function showDetailModal(expenseType, allData) {
-            modalTitle.textContent = `${translations[currentLanguage].modalTitle} (${expenseType})`;
+        function showDetailModal(label, data) {
+            modalTitle.textContent = `${translations[currentLanguage].modalTitle} (${label})`;
             modalTableBody.innerHTML = '';
             
-            const transactionsForType = allData.filter(t => (t.expense_type || 'Khác') === expenseType);
+            const transactionsForType = data.filter(t => {
+                const type = t.amount > 0 ? (t.expense_type || translations[currentLanguage].contributionType) : (t.expense_type || 'Khác');
+                return type === label;
+            });
 
             if (transactionsForType.length === 0) {
                 const row = document.createElement('tr');
@@ -770,7 +898,7 @@
             expenseTypeFilter.value = '';
             memberFilter.value = ''; // Reset the new member filter
             renderTransactions(transactions); // Re-render all transactions
-            renderChart(transactions); // Re-render chart with all data
+            renderCharts(transactions); // Re-render charts with all data
         });
 
         exportExcelBtn.addEventListener('click', exportToExcel);
