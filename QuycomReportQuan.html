@@ -8,6 +8,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
     <style>
         body { font-family: 'Inter', sans-serif; }
@@ -242,6 +243,14 @@
             </div>
         </div>
 
+        <!-- Chart Section -->
+        <div class="bg-white rounded-xl shadow p-6 mb-6">
+            <h3 class="text-xl font-bold text-gray-900 mb-4" data-key="chartTitle">Thống kê chi tiêu theo loại</h3>
+            <div class="relative h-96">
+                <canvas id="expense-chart"></canvas>
+            </div>
+        </div>
+
         <!-- Transaction Table Section -->
         <div class="bg-white rounded-xl shadow overflow-hidden">
             <div class="overflow-x-auto">
@@ -262,6 +271,34 @@
             </div>
         </div>
 
+        <!-- Modal for Detailed Transactions -->
+        <div id="detail-modal" class="fixed inset-0 z-50 flex items-center justify-center hidden modal-overlay">
+            <div class="bg-white rounded-xl shadow-xl p-6 w-full max-w-4xl mx-4 max-h-[90vh] flex flex-col">
+                <div class="flex justify-between items-center pb-3 border-b">
+                    <h3 id="modal-title" class="text-2xl font-bold text-gray-900">Chi tiết giao dịch</h3>
+                    <button id="close-modal-btn" class="text-gray-500 hover:text-gray-700 focus:outline-none">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    </button>
+                </div>
+                <div class="mt-4 flex-grow overflow-y-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead>
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ngày</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Số tiền</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mô tả</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Người giao dịch</th>
+                            </tr>
+                        </thead>
+                        <tbody id="modal-table-body" class="bg-white divide-y divide-gray-200">
+                            <!-- Detailed transaction rows will be inserted here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+
         <!-- Scroll to Top Button -->
         <button id="scrollToTopBtn" class="scroll-to-top">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"></path></svg>
@@ -280,6 +317,7 @@
         let transactions = []; // Global variable to store all transactions
         let members = {}; // Map to store member IDs and names
         let currentLanguage = 'vi'; // Default language
+        let expenseChart = null; // Global variable to hold the chart instance
 
         // Localization strings
         const translations = {
@@ -296,8 +334,8 @@
                 filterSearchPlaceholder: 'Tìm kiếm theo mô tả...',
                 filterTypeLabel: 'Loại',
                 filterTypeAll: 'Tất cả',
-                filterMemberLabel: 'Người giao dịch', // New translation key
-                filterMemberAll: 'Tất cả', // New translation key
+                filterMemberLabel: 'Người giao dịch',
+                filterMemberAll: 'Tất cả',
                 applyFiltersBtn: 'Áp dụng',
                 resetFiltersBtn: 'Đặt lại',
                 exportExcelBtn: 'Xuất Excel',
@@ -308,10 +346,16 @@
                 columnMember: 'Người giao dịch',
                 columnType: 'Loại',
                 noData: 'Không có giao dịch nào được tìm thấy.',
+                chartTitle: 'Thống kê chi tiêu theo loại',
+                modalTitle: 'Chi tiết giao dịch',
                 success: 'Thành công!',
                 error: 'Lỗi!',
                 processing: 'Đang xử lý...',
-                logoutSuccess: 'Đăng xuất thành công!'
+                logoutSuccess: 'Đăng xuất thành công!',
+                modalColumnDate: 'Ngày',
+                modalColumnAmount: 'Số tiền',
+                modalColumnDescription: 'Mô tả',
+                modalColumnMember: 'Người giao dịch'
             }
         };
 
@@ -321,7 +365,7 @@
         const endDateInput = document.getElementById('end-date');
         const searchInput = document.getElementById('search-input');
         const expenseTypeFilter = document.getElementById('expense-type-filter');
-        const memberFilter = document.getElementById('member-filter'); // New element
+        const memberFilter = document.getElementById('member-filter');
         const applyFiltersBtn = document.getElementById('apply-filters-btn');
         const clearFiltersBtn = document.getElementById('clear-filters-btn');
         const exportExcelBtn = document.getElementById('export-excel-btn');
@@ -330,6 +374,13 @@
         const logoutBtnMobile = document.getElementById('logout-btn-mobile');
         const scrollToTopBtn = document.getElementById('scrollToTopBtn');
         const messageBox = document.getElementById('message-box');
+
+        // Chart and Modal elements
+        const expenseChartCanvas = document.getElementById('expense-chart');
+        const detailModal = document.getElementById('detail-modal');
+        const modalTitle = document.getElementById('modal-title');
+        const modalTableBody = document.getElementById('modal-table-body');
+        const closeModalBtn = document.getElementById('close-modal-btn');
 
         // Functions
         function setLanguage(lang) {
@@ -433,6 +484,7 @@
                 transactions = data;
                 populateExpenseTypeFilter(transactions);
                 renderTransactions(transactions);
+                renderChart(transactions); // Initial chart render
             } catch (error) {
                 console.error("Error fetching transactions:", error);
                 showMessage(`${translations[currentLanguage].error} ${error.message}`, 'error');
@@ -493,6 +545,7 @@
                 return isDateInRange && isMatchingSearch && isMatchingType && isMatchingMember;
             });
             renderTransactions(filteredData);
+            renderChart(filteredData);
         }
 
         function populateExpenseTypeFilter(data) {
@@ -549,6 +602,123 @@
             showMessage('Đã xuất file Excel thành công!', 'success');
         }
 
+        // ---- Chart and Modal Functions ----
+
+        // A list of colors for the chart slices
+        const chartColors = [
+            '#006B68', '#4CAF50', '#FFC107', '#FF5722', '#F44336',
+            '#9C27B0', '#3F51B5', '#2196F3', '#00BCD4', '#009688',
+            '#8BC34A', '#CDDC39', '#FFEB3B', '#FF9800', '#795548',
+        ];
+
+        function renderChart(data) {
+            if (expenseChart) {
+                expenseChart.destroy(); // Destroy existing chart
+            }
+
+            // Group transactions by expense type and sum the amounts
+            const expenseData = data.reduce((acc, transaction) => {
+                const type = transaction.expense_type || 'Khác';
+                if (!acc[type]) {
+                    acc[type] = 0;
+                }
+                acc[type] += transaction.amount;
+                return acc;
+            }, {});
+
+            const labels = Object.keys(expenseData);
+            const amounts = Object.values(expenseData);
+            const totalAmount = amounts.reduce((sum, amount) => sum + amount, 0);
+
+            // Get a subset of colors based on the number of labels
+            const colors = labels.map((_, index) => chartColors[index % chartColors.length]);
+
+            if (totalAmount === 0 || labels.length === 0) {
+                // Display a message if there is no data to show in the chart
+                expenseChartCanvas.getContext('2d').clearRect(0, 0, expenseChartCanvas.width, expenseChartCanvas.height);
+                return;
+            }
+
+            const ctx = expenseChartCanvas.getContext('2d');
+            expenseChart = new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: amounts,
+                        backgroundColor: colors,
+                        hoverOffset: 4,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                            labels: {
+                                color: '#374151',
+                                font: {
+                                    size: 14
+                                }
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const label = context.label || '';
+                                    const value = context.parsed || 0;
+                                    const percentage = (value / totalAmount * 100).toFixed(2);
+                                    const formattedValue = new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(value);
+                                    return `${label}: ${formattedValue} (${percentage}%)`;
+                                }
+                            }
+                        }
+                    },
+                    onClick: (event, elements) => {
+                        if (elements.length > 0) {
+                            const firstElement = elements[0];
+                            const label = expenseChart.data.labels[firstElement.index];
+                            showDetailModal(label, data);
+                        }
+                    }
+                }
+            });
+        }
+
+        function showDetailModal(expenseType, allData) {
+            modalTitle.textContent = `${translations[currentLanguage].modalTitle} (${expenseType})`;
+            modalTableBody.innerHTML = '';
+            
+            const transactionsForType = allData.filter(t => (t.expense_type || 'Khác') === expenseType);
+
+            if (transactionsForType.length === 0) {
+                const row = document.createElement('tr');
+                row.innerHTML = `<td colspan="4" class="table-cell text-center text-gray-500">Không có giao dịch nào thuộc nhóm này.</td>`;
+                modalTableBody.appendChild(row);
+            } else {
+                transactionsForType.forEach(transaction => {
+                    const row = document.createElement('tr');
+                    const formattedDate = new Date(transaction.date).toLocaleDateString('vi-VN');
+                    const formattedAmount = new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(transaction.amount);
+                    const memberNames = getMemberNames(transaction.involvedMemberIds);
+
+                    row.innerHTML = `
+                        <td class="table-cell px-6 py-4">${formattedDate}</td>
+                        <td class="table-cell px-6 py-4">${formattedAmount}</td>
+                        <td class="table-cell px-6 py-4 break-words">${transaction.description || ''}</td>
+                        <td class="table-cell px-6 py-4">${memberNames}</td>
+                    `;
+                    modalTableBody.appendChild(row);
+                });
+            }
+            detailModal.classList.remove('hidden');
+        }
+
+        function closeDetailModal() {
+            detailModal.classList.add('hidden');
+        }
+
         function initializeSupabase() {
             supabase.auth.getSession().then(({ data: { session } }) => {
                 if (!session) {
@@ -600,6 +770,7 @@
             expenseTypeFilter.value = '';
             memberFilter.value = ''; // Reset the new member filter
             renderTransactions(transactions); // Re-render all transactions
+            renderChart(transactions); // Re-render chart with all data
         });
 
         exportExcelBtn.addEventListener('click', exportToExcel);
@@ -611,6 +782,14 @@
         document.getElementById('hamburger-btn').addEventListener('click', function() {
             const menu = document.getElementById('hamburger-menu');
             menu.classList.toggle('hidden');
+        });
+
+        // Modal close listeners
+        closeModalBtn.addEventListener('click', closeDetailModal);
+        detailModal.addEventListener('click', (e) => {
+            if (e.target.id === 'detail-modal') {
+                closeDetailModal();
+            }
         });
 
         // Scroll to Top Button Logic
