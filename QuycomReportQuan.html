@@ -743,8 +743,14 @@
          * Filters the transactions based on the filter criteria.
          */
         function applyFilters() {
+            // Get filter dates
             const startDate = elements.startDateFilter.value ? new Date(elements.startDateFilter.value) : null;
-            const endDate = elements.endDateFilter.value ? new Date(elements.endDateFilter.value) : null;
+            let endDate = null;
+            // To include the entire end date, add one day to the selected date.
+            if (elements.endDateFilter.value) {
+                endDate = new Date(elements.endDateFilter.value);
+                endDate.setDate(endDate.getDate() + 1);
+            }
             const memberId = elements.memberFilter.value;
             const expenseTypeFilterValue = elements.expenseTypeFilter.value;
 
@@ -758,7 +764,7 @@
 
             console.log('--- Applying filters ---');
             console.log('Start Date:', startDate);
-            console.log('End Date:', endDate);
+            console.log('End Date (exclusive):', endDate);
             console.log('Member ID:', memberId);
             console.log('Expense Type Name for filter:', filteredExpenseTypeName);
 
@@ -771,8 +777,9 @@
 
                 const typeMatch = expenseTypeFilterValue === 'all' || t.expense_type === filteredExpenseTypeName;
 
+                // Update date matching logic to be inclusive of the end day
                 const dateMatch = (!startDate || transactionDate >= startDate) &&
-                                  (!endDate || transactionDate <= endDate);
+                                  (!endDate || transactionDate < endDate);
 
                 return memberMatch && typeMatch && dateMatch;
             });
