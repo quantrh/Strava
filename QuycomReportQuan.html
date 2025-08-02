@@ -529,21 +529,21 @@
 
         async function fetchSupabaseData() {
             showLoadingOverlay();
+            
             // Fetch members and transactions in parallel
-            // Sửa đổi tên bảng từ 'members' sang 'members_quan' theo yêu cầu của người dùng
-            // Sửa đổi tên bảng từ 'transactions' sang 'transactions_quan' để nhất quán
+            // Lấy dữ liệu từ bảng 'members_quan' và 'transactions_quan'
             const [membersResponse, transactionsResponse] = await Promise.all([
                 supabase.from('members_quan').select('*'),
                 supabase.from('transactions_quan').select('*')
             ]);
         
             if (membersResponse.error) {
-                console.error('Error fetching members:', membersResponse.error.message);
+                console.error('Lỗi khi lấy danh sách thành viên:', membersResponse.error.message);
                 hideLoadingOverlay();
                 return;
             }
             if (transactionsResponse.error) {
-                console.error('Error fetching transactions:', transactionsResponse.error.message);
+                console.error('Lỗi khi lấy danh sách giao dịch:', transactionsResponse.error.message);
                 hideLoadingOverlay();
                 return;
             }
@@ -559,18 +559,18 @@
         
         function updateTransactionTable() {
             const tableBody = document.getElementById('transaction-table-body');
-            tableBody.innerHTML = ''; // Clear existing rows
+            tableBody.innerHTML = ''; // Xóa các hàng hiện có
             
             const totalPages = Math.ceil(currentTransactions.length / pageSize);
             const startIndex = (currentPage - 1) * pageSize;
             const endIndex = Math.min(startIndex + pageSize, currentTransactions.length);
             const paginatedTransactions = currentTransactions.slice(startIndex, endIndex);
 
-            // Update transaction count and page info
+            // Cập nhật số lượng giao dịch và thông tin trang
             document.getElementById('transaction-count').textContent = `(${currentTransactions.length} giao dịch)`;
             document.getElementById('page-info').textContent = `Trang ${currentPage} trên ${totalPages || 1}`;
 
-            // Disable/Enable pagination buttons
+            // Vô hiệu hóa/Kích hoạt các nút phân trang
             document.getElementById('prev-page-btn').disabled = currentPage === 1;
             document.getElementById('next-page-btn').disabled = currentPage === totalPages || currentTransactions.length === 0;
 
@@ -583,18 +583,38 @@
             }
         
             paginatedTransactions.forEach(transaction => {
-                const member = members.find(m => m.id === transaction.member_id);
+                // Kiểm tra và định dạng ngày tháng. Nếu không hợp lệ, hiển thị "N/A"
+                let transactionDate = 'N/A';
+                if (transaction.date) { // Sử dụng trường 'date' từ phản hồi API
+                    const dateObject = new Date(transaction.date);
+                    if (!isNaN(dateObject.getTime())) {
+                        transactionDate = dateObject.toLocaleDateString('vi-VN');
+                    } else {
+                        console.error('Lỗi định dạng ngày cho giao dịch có ID:', transaction.id, 'Dữ liệu ngày:', transaction.date);
+                    }
+                }
+                
+                // Tìm kiếm thành viên. Sử dụng contributingMemberId
+                const member = members.find(m => m.id === transaction.contributingMemberId);
+                // Nếu không có contributingMemberId, kiểm tra involvedMemberIds
+                const memberName = member ? member.name : 
+                    (transaction.involvedMemberIds && transaction.involvedMemberIds.length > 0
+                        ? transaction.involvedMemberIds.map(id => {
+                            const involvedMember = members.find(m => m.id === id);
+                            return involvedMember ? involvedMember.name : 'Unknown';
+                        }).join(', ')
+                        : 'Unknown');
+
                 const row = document.createElement('tr');
 
-                // Dòng này đã được sửa để hiển thị `expense_type` nếu có
                 const transactionTypeCellContent = transaction.type === 'expense'
                     ? (transaction.expense_type || 'Chi tiêu')
                     : 'Đóng góp';
 
                 row.innerHTML = `
-                    <td class="table-cell px-6 py-4 whitespace-nowrap">${new Date(transaction.created_at).toLocaleDateString('vi-VN')}</td>
+                    <td class="table-cell px-6 py-4 whitespace-nowrap">${transactionDate}</td>
                     <td class="table-cell px-6 py-4 truncate max-w-xs">${transaction.description}</td>
-                    <td class="table-cell px-6 py-4 whitespace-nowrap">${member ? member.name : 'Unknown'}</td>
+                    <td class="table-cell px-6 py-4 whitespace-nowrap">${memberName}</td>
                     <td class="table-cell px-6 py-4 whitespace-nowrap">
                         <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full
                             ${transaction.type === 'expense' ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'}">
@@ -612,7 +632,7 @@
                 tableBody.appendChild(row);
             });
 
-            // Re-apply language after populating table
+            // Áp dụng lại ngôn ngữ sau khi điền dữ liệu vào bảng
             updateAllTextContent();
         }
         
@@ -627,13 +647,16 @@
             let query = supabase.from('transactions_quan').select('*');
 
             if (startDate) {
-                query = query.gte('created_at', startDate);
+                // Thay 'created_at' bằng 'date'
+                query = query.gte('date', startDate);
             }
             if (endDate) {
-                query = query.lte('created_at', endDate);
+                // Thay 'created_at' bằng 'date'
+                query = query.lte('date', endDate);
             }
             if (memberId !== 'all') {
-                query = query.eq('member_id', memberId);
+                // Thay 'member_id' bằng 'contributingMemberId'
+                query = query.eq('contributingMemberId', memberId);
             }
             if (transactionType !== 'all') {
                 query = query.eq('type', transactionType);
@@ -642,23 +665,24 @@
                 }
             }
 
-            const { data, error } = await query.order('created_at', { ascending: false });
+            // Sắp xếp theo ngày, sử dụng trường 'date'
+            const { data, error } = await query.order('date', { ascending: false });
 
             if (error) {
-                console.error('Error fetching filtered transactions:', error.message);
+                console.error('Lỗi khi lọc giao dịch:', error.message);
                 hideLoadingOverlay();
                 return;
             }
 
             currentTransactions = data;
-            currentPage = 1; // Reset to first page
+            currentPage = 1; // Reset về trang đầu
             updateTransactionTable();
             hideLoadingOverlay();
         }
 
         function populateMemberFilterOptions() {
             const memberFilter = document.getElementById('member-filter');
-            // Clear existing options, but keep the "Tất cả" option
+            // Xóa các tùy chọn hiện có, nhưng giữ tùy chọn "Tất cả"
             const allOption = memberFilter.querySelector('option[value="all"]');
             memberFilter.innerHTML = '';
             memberFilter.appendChild(allOption);
@@ -692,7 +716,7 @@
                 option.textContent = type;
                 expenseTypeFilter.appendChild(option);
             });
-            updateAllTextContent(); // Re-apply translation after updating options
+            updateAllTextContent(); // Áp dụng lại bản dịch sau khi cập nhật tùy chọn
         }
 
         function showLoadingOverlay() {
@@ -809,13 +833,31 @@
         // Export to Excel function
         function exportToExcel() {
             const data = currentTransactions.map(t => {
-                const member = members.find(m => m.id === t.member_id);
-                // Cập nhật để lấy đúng giá trị cho cột 'Loại'
+                // Sửa lỗi ở đây
+                const member = members.find(m => m.id === t.contributingMemberId);
+                const memberName = member ? member.name : 
+                    (t.involvedMemberIds && t.involvedMemberIds.length > 0
+                        ? t.involvedMemberIds.map(id => {
+                            const involvedMember = members.find(m => m.id === id);
+                            return involvedMember ? involvedMember.name : 'Unknown';
+                        }).join(', ')
+                        : 'Unknown');
+
                 const transactionType = t.type === 'expense' ? (t.expense_type || 'Chi tiêu') : 'Đóng góp';
+                
+                // Sửa lỗi ở đây
+                let transactionDate = '';
+                if (t.date) {
+                    const dateObject = new Date(t.date);
+                    if (!isNaN(dateObject.getTime())) {
+                        transactionDate = dateObject.toLocaleDateString('vi-VN');
+                    }
+                }
+                
                 return {
-                    'Ngày': new Date(t.created_at).toLocaleDateString('vi-VN'),
+                    'Ngày': transactionDate,
                     'Mô tả': t.description,
-                    'Người giao dịch': member ? member.name : 'Unknown',
+                    'Người giao dịch': memberName,
                     'Loại': transactionType,
                     'Số tiền': t.amount,
                     'ID': t.id
