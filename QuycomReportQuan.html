@@ -522,12 +522,13 @@
         }
 
         /**
-         * Gets the expense type name from its ID.
-         * @param {string} expenseType - The ID of the expense type.
+         * Gets the expense type name from the transaction's expense_type field.
+         * @param {string} expenseTypeNameFromTransaction - The name of the expense type from the transaction object.
          * @returns {string} - The name of the expense type, or 'Unknown Type' if not found.
          */
-        function getExpenseTypeName(expenseType) {
-            const type = expenseTypes.find(t => t.id === expenseType);
+        function getExpenseTypeName(expenseTypeNameFromTransaction) {
+            // Find the expense type in the list by its name, as it's directly stored in the transaction data.
+            const type = expenseTypes.find(t => t.expense_type === expenseTypeNameFromTransaction);
             return type ? type.expense_type : translations.unknownType || 'Loại không xác định';
         }
 
@@ -555,7 +556,8 @@
             } else {
                 paginatedData.forEach(transaction => {
                     const memberName = getMemberNames(transaction.involvedMemberIds, transaction.contributingMemberId);
-                    const expenseTypeName = getExpenseTypeName(transaction.expense_type);
+                    // Lỗi đã được sửa ở đây, giờ chúng ta sử dụng tên trực tiếp từ transaction
+                    const expenseTypeName = transaction.expense_type; 
                     const formattedDate = new Date(transaction.date).toLocaleDateString('vi-VN');
                     const formattedAmount = formatCurrency(transaction.amount);
 
@@ -610,33 +612,38 @@
             const startDate = elements.startDateFilter.value ? new Date(elements.startDateFilter.value) : null;
             const endDate = elements.endDateFilter.value ? new Date(elements.endDateFilter.value) : null;
             const memberId = elements.memberFilter.value;
-            const expenseType = elements.expenseTypeFilter.value;
-
-            // Log filter criteria for debugging
+            const expenseTypeFilterValue = elements.expenseTypeFilter.value;
+            
+            let filteredExpenseTypeName = null;
+            if (expenseTypeFilterValue !== 'all') {
+                const selectedType = expenseTypes.find(t => String(t.id) === expenseTypeFilterValue);
+                if (selectedType) {
+                    filteredExpenseTypeName = selectedType.expense_type;
+                }
+            }
+            
             console.log('--- Applying filters ---');
             console.log('Start Date:', startDate);
             console.log('End Date:', endDate);
             console.log('Member ID:', memberId);
-            console.log('Expense Type:', expenseType);
+            console.log('Expense Type Name for filter:', filteredExpenseTypeName);
 
             filteredTransactions = transactions.filter(t => {
                 const transactionDate = new Date(t.date);
-                // Check member. Includes both involvedMemberIds and contributingMemberId.
+                
                 const memberMatch = memberId === 'all' || 
                     (t.involvedMemberIds && t.involvedMemberIds.includes(memberId)) || 
                     (t.contributingMemberId && t.contributingMemberId === memberId);
                 
-                // Check expense type
-                const typeMatch = expenseType === 'all' || t.expense_type === expenseType;
+                // Logic được sửa để khớp tên loại giao dịch thay vì ID
+                const typeMatch = expenseTypeFilterValue === 'all' || t.expense_type === filteredExpenseTypeName;
                 
-                // Check date range
                 const dateMatch = (!startDate || transactionDate >= startDate) && 
                                   (!endDate || transactionDate <= endDate);
                 
                 return memberMatch && typeMatch && dateMatch;
             });
             
-            // Log the filtered results
             console.log('Filtered Transactions:', filteredTransactions);
             
             currentPage = 1;
