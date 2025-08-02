@@ -559,15 +559,15 @@
 
                 if (transactionError) throw transactionError;
 
-                // Create lookup maps for manual joining
-                const memberMap = new Map(members.map(m => [m.id, m.name]));
-                const expenseTypeMap = new Map(expenseTypes.map(e => [e.id, e.name]));
+                // Create lookup maps for manual joining, ensuring keys are strings
+                const memberMap = new Map(members.map(m => [String(m.id), m.name]));
+                const expenseTypeMap = new Map(expenseTypes.map(e => [String(e.id), e.name]));
 
-                // Manually join the data
+                // Manually join the data, ensuring keys are strings for lookup
                 originalTransactions = transactionData.map(t => ({
                     ...t,
-                    member_name: memberMap.get(t.member_id) || 'Unknown Member',
-                    expense_type_name: t.expense_type_id ? expenseTypeMap.get(t.expense_type_id) : null,
+                    member_name: memberMap.get(String(t.member_id)) || 'Unknown Member',
+                    expense_type_name: t.expense_type_id ? expenseTypeMap.get(String(t.expense_type_id)) : null,
                 }));
 
 
@@ -637,11 +637,11 @@
             const subTypeId = document.getElementById('sub-type-filter').value;
 
             filteredTransactions = originalTransactions.filter(t => {
-                const transactionDate = new Date(t.transaction_date);
+                const transactionDate = t.transaction_date ? new Date(t.transaction_date) : null;
                 const start = startDate ? new Date(startDate) : null;
                 const end = endDate ? new Date(endDate) : null;
 
-                const dateFilter = (!start || transactionDate >= start) && (!end || transactionDate <= end);
+                const dateFilter = (!start || (transactionDate && transactionDate >= start)) && (!end || (transactionDate && transactionDate <= end));
                 const memberFilter = memberId === 'all' || t.member_id.toString() === memberId;
                 const subTypeFilter = subTypeId === 'all' || (t.expense_type_id && t.expense_type_id.toString() === subTypeId);
 
@@ -665,9 +665,10 @@
                 row.className = 'hover:bg-gray-50';
                 const typeText = t.transaction_type === 'expense' ? translations[currentLang]['transactionTypeExpense'] : translations[currentLang]['transactionTypeContribution'];
                 const amountClass = t.transaction_type === 'expense' ? 'text-red-500' : 'text-green-500';
+                const formattedDate = t.transaction_date ? new Date(t.transaction_date).toLocaleDateString('vi-VN') : 'N/A';
 
                 row.innerHTML = `
-                    <td class="table-cell">${t.transaction_date}</td>
+                    <td class="table-cell">${formattedDate}</td>
                     <td class="table-cell">${t.description}</td>
                     <td class="table-cell">${t.member_name}</td>
                     <td class="table-cell">${typeText}</td>
@@ -928,12 +929,13 @@
         const viewTransactionDetail = (transactionId) => {
             const transaction = filteredTransactions.find(t => t.id === transactionId);
             if (transaction) {
+                const formattedDate = transaction.transaction_date ? new Date(transaction.transaction_date).toLocaleDateString('vi-VN') : 'N/A';
                 document.getElementById('view-detail-description').textContent = `${translations[currentLang]['tableDescription']}: ${transaction.description}`;
                 document.getElementById('view-detail-amount').textContent = `${translations[currentLang]['tableAmount']}: ${transaction.amount.toLocaleString('vi-VN')} VNĐ`;
                 const typeText = transaction.transaction_type === 'expense' ? translations[currentLang]['transactionTypeExpense'] : translations[currentLang]['transactionTypeContribution'];
                 document.getElementById('view-detail-type').textContent = `${translations[currentLang]['tableType']}: ${typeText}`;
                 document.getElementById('view-detail-member').textContent = `${translations[currentLang]['tableMember']}: ${transaction.member_name}`;
-                document.getElementById('view-detail-date').textContent = `${translations[currentLang]['tableDate']}: ${transaction.transaction_date}`;
+                document.getElementById('view-detail-date').textContent = `${translations[currentLang]['tableDate']}: ${formattedDate}`;
                 document.getElementById('view-detail-modal-overlay').classList.remove('hidden');
             }
         };
