@@ -290,7 +290,7 @@
                     <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
                         <path d="M10 2a1 1 0 011 1v6h6a1 1 0 110 2h-6v6a1 1 0 11-2 0v-6H3a1 1 0 110-2h6V3a1 1 0 011-1z" clip-rule="evenodd" fill-rule="evenodd"></path>
                     </svg>
-                    Xuất Excel
+                    <span>Xuất Excel</span>
                 </button>
             </div>
         </div>
@@ -458,6 +458,10 @@
                 deleteConfirmationMessage: 'Bạn có chắc chắn muốn xóa giao dịch này không?',
                 modalDelete: 'Xóa',
                 exportExcel: 'Xuất Excel',
+                // New translation keys for pagination and count
+                page: 'Trang',
+                of: 'của',
+                transactions: 'giao dịch'
             },
             'en': {
                 appTitle: 'Transaction History - GROUP FUND MANAGEMENT',
@@ -496,6 +500,10 @@
                 deleteConfirmationMessage: 'Are you sure you want to delete this transaction?',
                 modalDelete: 'Delete',
                 exportExcel: 'Export to Excel',
+                // New translation keys for pagination and count
+                page: 'Page',
+                of: 'of',
+                transactions: 'transactions'
             }
         };
 
@@ -553,9 +561,34 @@
                 day: '2-digit'
             });
         }
-        function getMemberName(memberId) {
-            return membersMap[memberId] || translations[currentLanguage].unknownMember;
+        
+        // --- Updated to handle `involvedMemberIds` which can be a string of UUIDs ---
+        function getMemberNames(involvedMemberIds) {
+            if (!involvedMemberIds) {
+                return translations[currentLanguage].unknownMember;
+            }
+            // involvedMemberIds is a string that might contain a single UUID or multiple UUIDs in an array format.
+            // We need to handle both cases. Assuming array-like strings start with '[' and end with ']'
+            let memberIds = [];
+            try {
+                // If the string looks like an array, parse it
+                if (involvedMemberIds.startsWith('[') && involvedMemberIds.endsWith(']')) {
+                    // This is a simple parse, more robust parsing might be needed for complex strings
+                    memberIds = JSON.parse(involvedMemberIds.replace(/'/g, '"'));
+                } else {
+                    // Otherwise, assume it's a single UUID
+                    memberIds = [involvedMemberIds];
+                }
+            } catch (e) {
+                console.error("Error parsing involvedMemberIds:", e);
+                // Fallback to a single ID if parsing fails
+                memberIds = [involvedMemberIds];
+            }
+
+            const names = memberIds.map(id => membersMap[id] || translations[currentLanguage].unknownMember);
+            return names.join(', ');
         }
+
 
         // --- Data Fetching from Supabase ---
         async function fetchSupabaseData() {
@@ -564,13 +597,16 @@
                 // Fetch members first
                 const { data: members, error: membersError } = await supabase
                     .from('members_quan')
-                    .select('*');
+                    .select('id, name'); // Specify columns to fetch for efficiency
                 if (membersError) throw membersError;
                 membersData = members;
                 membersMap = membersData.reduce((map, member) => {
                     map[member.id] = member.name;
                     return map;
                 }, {});
+                console.log("Fetched members:", membersData);
+                console.log("Members Map:", membersMap);
+
 
                 // Then fetch transactions
                 let { data: transactions, error: transactionsError } = await supabase
@@ -579,6 +615,7 @@
                     .order('date', { ascending: false });
                 if (transactionsError) throw transactionsError;
                 transactionsData = transactions;
+                console.log("Fetched transactions:", transactionsData);
                 applyFilters();
             } catch (error) {
                 console.error('Error fetching data:', error.message);
@@ -602,7 +639,7 @@
                 row.innerHTML = `
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${formatDate(transaction.date)}</td>
                     <td class="px-6 py-4 whitespace-pre-wrap text-sm text-gray-500">${transaction.description}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${getMemberName(transaction.member_id)}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${getMemberNames(transaction.involvedMemberIds)}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm ${transaction.type === 'expense' ? 'text-red-500' : 'text-green-500'}">
                         ${translations[currentLanguage][`transactionType${transaction.type === 'expense' ? 'Expense' : 'Contribution'}`]}
                     </td>
@@ -705,6 +742,7 @@
             updateAllTextContent();
             updateSubTypeFilterOptions();
             updateMemberFilterOptions();
+            applyFilters(); // Re-apply filters to refresh the table with new language
         }
 
         // --- Filter and Pagination Logic ---
@@ -724,7 +762,18 @@
                 filteredData = filteredData.filter(t => new Date(t.date) <= new Date(endDate));
             }
             if (memberId !== 'all') {
-                filteredData = filteredData.filter(t => t.member_id == parseInt(memberId));
+                // Filter logic for involvedMemberIds
+                filteredData = filteredData.filter(t => {
+                    if (t.involvedMemberIds) {
+                         try {
+                            const involvedIds = JSON.parse(t.involvedMemberIds.replace(/'/g, '"'));
+                            return involvedIds.includes(memberId);
+                         } catch (e) {
+                            return t.involvedMemberIds === memberId;
+                         }
+                    }
+                    return false;
+                });
             }
             if (transactionType !== 'all') {
                 filteredData = filteredData.filter(t => t.type === transactionType);
@@ -752,7 +801,7 @@
             document.getElementById('view-detail-description').textContent = `${translations[currentLanguage].tableDescription}: ${transaction.description}`;
             document.getElementById('view-detail-amount').textContent = `${translations[currentLanguage].tableAmount}: ${formatCurrency(transaction.amount)}`;
             document.getElementById('view-detail-type').textContent = `${translations[currentLanguage].tableType}: ${translations[currentLanguage][`transactionType${transaction.type === 'expense' ? 'Expense' : 'Contribution'}`]}`;
-            document.getElementById('view-detail-member').textContent = `${translations[currentLanguage].tableMember}: ${getMemberName(transaction.member_id)}`;
+            document.getElementById('view-detail-member').textContent = `${translations[currentLanguage].tableMember}: ${getMemberNames(transaction.involvedMemberIds)}`;
             document.getElementById('view-detail-date').textContent = `${translations[currentLanguage].tableDate}: ${formatDate(transaction.date)}`;
             elements.viewDetailModalOverlay.classList.remove('hidden');
         }
@@ -764,7 +813,8 @@
             document.getElementById('edit-transaction-id').value = transaction.id;
             elements.editDescription.value = transaction.description;
             elements.editAmount.value = transaction.amount;
-            elements.editMember.value = transaction.member_id;
+            // Assuming for editing we only select one member for simplicity
+            elements.editMember.value = transaction.involvedMemberIds.replace(/['"\[\] ]/g, ''); 
             elements.editType.value = transaction.type;
             
             if (transaction.type === 'expense') {
@@ -798,7 +848,7 @@
             const id = document.getElementById('edit-transaction-id').value;
             const description = elements.editDescription.value;
             const amount = elements.editAmount.value;
-            const memberId = elements.editMember.value;
+            const memberId = elements.editMember.value; // Get the single selected ID
             const type = elements.editType.value;
             const subType = type === 'expense' ? elements.editSubType.value : null;
 
@@ -808,7 +858,7 @@
                     .update({
                         description: description,
                         amount: amount,
-                        member_id: memberId,
+                        involvedMemberIds: JSON.stringify([memberId]), // Store as a JSON string array
                         type: type,
                         sub_type: subType,
                         updated_at: new Date().toISOString()
@@ -870,7 +920,7 @@
             const dataToExport = currentFilters.filteredTransactions.map(t => ({
                 [translations[currentLanguage].tableDate]: formatDate(t.date),
                 [translations[currentLanguage].tableDescription]: t.description,
-                [translations[currentLanguage].tableMember]: getMemberName(t.member_id),
+                [translations[currentLanguage].tableMember]: getMemberNames(t.involvedMemberIds),
                 [translations[currentLanguage].tableType]: translations[currentLanguage][`transactionType${t.type === 'expense' ? 'Expense' : 'Contribution'}`],
                 [translations[currentLanguage].expenseTypeLabel]: t.type === 'expense' ? t.sub_type : '-',
                 [translations[currentLanguage].tableAmount]: t.amount
