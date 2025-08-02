@@ -342,22 +342,89 @@
                     <p id="view-detail-date" class="text-sm text-gray-500"></p>
                 </div>
                 <div class="items-center px-4 py-3">
-                    <button id="close-view-detail-modal-btn" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 focus:outline-none focus:ring focus:ring-gray-300" data-key="close">Đóng</button>
+                    <button id="close-view-detail-modal-btn" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 focus:outline-none focus:ring focus:ring-gray-400 focus:ring-opacity-50" data-key="closeBtn">Đóng</button>
                 </div>
             </div>
         </div>
     </div>
-    <!-- Script Section -->
+    <!-- Add/Edit Transaction Modal -->
+    <div id="transaction-modal-overlay" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
+        <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div class="mt-3 text-center">
+                <h3 id="transaction-modal-title" class="text-lg leading-6 font-medium text-gray-900" data-key="addTransactionTitle">Thêm giao dịch mới</h3>
+                <form id="transaction-form" class="mt-5 space-y-4 text-left">
+                    <div>
+                        <label for="transaction-date" class="block text-sm font-medium text-gray-700" data-key="formDate">Ngày</label>
+                        <input type="date" id="transaction-date" name="date" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                    </div>
+                    <div>
+                        <label for="transaction-member" class="block text-sm font-medium text-gray-700" data-key="formMember">Người giao dịch</label>
+                        <select id="transaction-member" name="member_id" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                            <!-- Member options will be populated here -->
+                        </select>
+                    </div>
+                    <div>
+                        <label for="transaction-type" class="block text-sm font-medium text-gray-700" data-key="formType">Loại giao dịch</label>
+                        <select id="transaction-type" name="type" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                            <option value="expense" data-key="formTypeExpense">Chi tiêu</option>
+                            <option value="contribution" data-key="formTypeContribution">Đóng góp</option>
+                        </select>
+                    </div>
+                    <div id="expense-type-group" class="hidden">
+                        <label for="expense-type" class="block text-sm font-medium text-gray-700" data-key="formExpenseType">Loại chi tiêu</label>
+                        <select id="expense-type" name="expense_type" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                            <option value="Ăn uống" data-key="food">Ăn uống</option>
+                            <option value="Mua sắm" data-key="shopping">Mua sắm</option>
+                            <option value="Giải trí" data-key="entertainment">Giải trí</option>
+                            <option value="Đi lại" data-key="transportation">Đi lại</option>
+                            <option value="Khác" data-key="other">Khác</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="transaction-amount" class="block text-sm font-medium text-gray-700" data-key="formAmount">Số tiền</label>
+                        <input type="number" id="transaction-amount" name="amount" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                    </div>
+                    <div>
+                        <label for="transaction-description" class="block text-sm font-medium text-gray-700" data-key="formDescription">Mô tả</label>
+                        <input type="text" id="transaction-description" name="description" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                    </div>
+                    <input type="hidden" id="transaction-id" name="id">
+                    <div class="flex items-center justify-end mt-4">
+                        <button type="button" id="close-transaction-modal-btn" class="btn-secondary mr-2" data-key="formCancel">Hủy</button>
+                        <button type="submit" id="save-transaction-btn" class="btn-primary" data-key="formSave">Lưu</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <!-- Delete Confirmation Modal -->
+    <div id="delete-modal-overlay" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
+        <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div class="mt-3 text-center">
+                <h3 class="text-lg leading-6 font-medium text-gray-900" data-key="deleteConfirmTitle">Xác nhận xóa</h3>
+                <div class="mt-2 px-7 py-3">
+                    <p class="text-sm text-gray-500" data-key="deleteConfirmMessage">Bạn có chắc chắn muốn xóa giao dịch này không?</p>
+                </div>
+                <div class="items-center px-4 py-3">
+                    <button id="cancel-delete-btn" class="btn-secondary mr-2" data-key="formCancel">Hủy</button>
+                    <button id="confirm-delete-btn" class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 focus:outline-none focus:ring focus:ring-red-300 focus:ring-opacity-50" data-key="formDelete">Xóa</button>
+                </div>
+            </div>
+        </div>
+    </div>
     <script>
-        // Supabase configuration and client
-        const SUPABASE_URL = 'https://rmbsxccrwrktbjlnezpu.supabase.co';
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJtYnN4Y2Nyd3JrdGJqbG5lenB1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg2MjczNjQsImV4cCI6MjA2NDIwMzM2NH0.ydCqificftdtn1niRciFCifeuo8aX6SDGti-hCY5Z_Y';
+        const SUPABASE_URL = 'https://rmbsxccrwrktbjlnezpu.supabase.co'; // Replace with your Supabase URL
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJtYnN4Y2Nyd3JrdGJqbG5lenB1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg2MjczNjQsImV4cCI6MjA2NDIwMzM2NH0.ydCqificftdtn1niRciFCifeuo8aX6SDGti-hCY5Z_Y'; // Replace with your Supabase Anon Key
         let supabase = null;
-
-        // Global state
-        let transactions = [];
-        let expenseTypes = [];
-        const TRANSLATIONS = {
+        let members = [];
+        let currentPage = 1;
+        const pageSize = 10;
+        let currentTransactions = [];
+        let allTransactions = [];
+        let expenseTypes = ['Ăn uống', 'Mua sắm', 'Giải trí', 'Đi lại', 'Khác'];
+        
+        // Language
+        const translations = {
             'vi': {
                 appTitle: 'Lịch Sử Giao Dịch - QUẢN LÝ QUỸ NHÓM',
                 appName: 'QUẢN LÝ QUỸ NHÓM',
@@ -368,12 +435,12 @@
                 filterStartDate: 'Từ ngày',
                 filterEndDate: 'Đến ngày',
                 filterMember: 'Người giao dịch',
-                allMembers: 'Tất cả',
                 transactionTypeLabel: 'Loại giao dịch',
+                expenseTypeLabel: 'Loại chi tiêu',
+                allMembers: 'Tất cả',
                 allTypes: 'Tất cả',
                 transactionTypeExpense: 'Chi tiêu',
                 transactionTypeContribution: 'Đóng góp',
-                expenseTypeLabel: 'Loại chi tiêu',
                 allExpenseTypes: 'Tất cả',
                 filterApply: 'Áp dụng',
                 filterClear: 'Xóa bộ lọc',
@@ -387,39 +454,41 @@
                 tableActions: 'Hành động',
                 paginationPrevious: 'Trước',
                 paginationNext: 'Sau',
+                deleteConfirmTitle: 'Xác nhận xóa',
+                deleteConfirmMessage: 'Bạn có chắc chắn muốn xóa giao dịch này không?',
+                formCancel: 'Hủy',
+                formDelete: 'Xóa',
+                addTransactionTitle: 'Thêm giao dịch mới',
+                formDate: 'Ngày',
+                formMember: 'Người giao dịch',
+                formType: 'Loại giao dịch',
+                formExpenseType: 'Loại chi tiêu',
+                formAmount: 'Số tiền',
+                formDescription: 'Mô tả',
+                formSave: 'Lưu',
                 viewDetailTitle: 'Chi tiết giao dịch',
-                close: 'Đóng',
-                expense: 'Chi tiêu',
-                contribution: 'Đóng góp',
-                noData: 'Không có dữ liệu',
-                transactionCount: 'Hiển thị {start} đến {end} trong tổng số {total} giao dịch',
-                pageOf: 'Trang {currentPage} trên {totalPages}',
-                searchPlaceholder: 'Tìm kiếm...',
-                loading: 'Đang tải...',
-                loadMore: 'Tải thêm',
-                actionDelete: 'Xóa',
-                actionEdit: 'Sửa'
+                closeBtn: 'Đóng'
             },
             'en': {
-                appTitle: 'Transaction History - GROUP FUND MANAGEMENT',
-                appName: 'GROUP FUND MANAGEMENT',
+                appTitle: 'Transaction History - TEAM FUND MANAGER',
+                appName: 'TEAM FUND MANAGER',
                 navDashboard: 'Dashboard',
                 navReport: 'Report',
                 navLogout: 'Logout',
                 reportTitle: 'Transaction History',
-                filterStartDate: 'From Date',
-                filterEndDate: 'To Date',
+                filterStartDate: 'Start Date',
+                filterEndDate: 'End Date',
                 filterMember: 'Member',
-                allMembers: 'All',
                 transactionTypeLabel: 'Transaction Type',
+                expenseTypeLabel: 'Expense Type',
+                allMembers: 'All',
                 allTypes: 'All',
                 transactionTypeExpense: 'Expense',
                 transactionTypeContribution: 'Contribution',
-                expenseTypeLabel: 'Expense Type',
                 allExpenseTypes: 'All',
                 filterApply: 'Apply',
                 filterClear: 'Clear Filter',
-                exportExcel: 'Export to Excel',
+                exportExcel: 'Export Excel',
                 transactionHistory: 'Transaction History',
                 tableDate: 'Date',
                 tableDescription: 'Description',
@@ -429,383 +498,398 @@
                 tableActions: 'Actions',
                 paginationPrevious: 'Previous',
                 paginationNext: 'Next',
+                deleteConfirmTitle: 'Confirm Deletion',
+                deleteConfirmMessage: 'Are you sure you want to delete this transaction?',
+                formCancel: 'Cancel',
+                formDelete: 'Delete',
+                addTransactionTitle: 'Add New Transaction',
+                formDate: 'Date',
+                formMember: 'Member',
+                formType: 'Transaction Type',
+                formExpenseType: 'Expense Type',
+                formAmount: 'Amount',
+                formDescription: 'Description',
+                formSave: 'Save',
                 viewDetailTitle: 'Transaction Details',
-                close: 'Close',
-                expense: 'Expense',
-                contribution: 'Contribution',
-                noData: 'No data available',
-                transactionCount: 'Showing {start} to {end} of {total} transactions',
-                pageOf: 'Page {currentPage} of {totalPages}',
-                searchPlaceholder: 'Search...',
-                loading: 'Loading...',
-                loadMore: 'Load more',
-                actionDelete: 'Delete',
-                actionEdit: 'Edit'
+                closeBtn: 'Close'
             }
         };
-        let currentLanguage = 'vi';
-        let expenseTypeMap = new Map();
 
-        // Pagination variables
-        const ITEMS_PER_PAGE = 10;
-        let currentPage = 1;
-        let filteredTransactions = [];
+        let currentLang = 'vi';
 
-        // DOM elements
-        const subTypeFilter = document.getElementById('sub-type-filter');
-        const transactionTypeFilter = document.getElementById('transaction-type-filter');
-        const transactionTableBody = document.getElementById('transaction-table-body');
-        const pageInfoSpan = document.getElementById('page-info');
-        const transactionCountSpan = document.getElementById('transaction-count');
-        const prevPageBtn = document.getElementById('prev-page-btn');
-        const nextPageBtn = document.getElementById('next-page-btn');
-        const applyFilterBtn = document.getElementById('apply-filter-btn');
-        const clearFilterBtn = document.getElementById('clear-filter-btn');
-        const exportExcelBtn = document.getElementById('export-excel-btn');
-        const hamburgerBtn = document.getElementById('hamburger-btn');
-        const hamburgerMenu = document.getElementById('hamburger-menu');
-        const langViBtn = document.getElementById('lang-vi-btn');
-        const langEnBtn = document.getElementById('lang-en-btn');
-        const viewDetailModalOverlay = document.getElementById('view-detail-modal-overlay');
-        const closeViewDetailModalBtn = document.getElementById('close-view-detail-modal-btn');
-        const memberFilter = document.getElementById('member-filter');
-        const startDateFilter = document.getElementById('start-date-filter');
-        const endDateFilter = document.getElementById('end-date-filter');
-        const loadingOverlay = document.getElementById('loading-overlay');
-
-        // Helper functions
-        const showLoading = () => loadingOverlay.classList.remove('hidden');
-        const hideLoading = () => loadingOverlay.classList.add('hidden');
-
-        function formatCurrency(amount) {
-            return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
-        }
-
+        // Helper function to update all text content based on the current language
         function updateAllTextContent() {
-            const elements = document.querySelectorAll('[data-key]');
-            elements.forEach(element => {
+            document.querySelectorAll('[data-key]').forEach(element => {
                 const key = element.getAttribute('data-key');
-                if (TRANSLATIONS[currentLanguage][key]) {
-                    element.textContent = TRANSLATIONS[currentLanguage][key];
+                if (translations[currentLang][key]) {
+                    element.textContent = translations[currentLang][key];
                 }
             });
-            // Update specific dynamic content
-            updatePaginationInfo();
-            updateExportButtonText();
         }
 
-        function updateExportButtonText() {
-            const exportButtonSpan = exportExcelBtn.querySelector('span');
-            if (exportButtonSpan) {
-                exportButtonSpan.textContent = TRANSLATIONS[currentLanguage]['exportExcel'];
+        async function fetchSupabaseData() {
+            showLoadingOverlay();
+            
+            // Fetch members and transactions in parallel
+            // Lấy dữ liệu từ bảng 'members_quan' và 'transactions_quan'
+            const [membersResponse, transactionsResponse] = await Promise.all([
+                supabase.from('members_quan').select('*'),
+                supabase.from('transactions_quan').select('*')
+            ]);
+        
+            if (membersResponse.error) {
+                console.error('Lỗi khi lấy danh sách thành viên:', membersResponse.error.message);
+                hideLoadingOverlay();
+                return;
             }
-        }
-
-        async function fetchExpenseTypes() {
-            showLoading();
-            console.log("Đang cố gắng lấy loại chi tiêu từ Supabase...");
-            try {
-                const { data, error } = await supabase
-                    .from('expensetype_quan')
-                    .select('*');
-
-                if (error) {
-                    // Log lỗi cụ thể từ Supabase
-                    console.error('Lỗi khi lấy loại chi tiêu:', error.message);
-                    return;
-                }
-
-                expenseTypes = data;
-                expenseTypeMap.clear();
-                expenseTypes.forEach(type => expenseTypeMap.set(type.id, type.name));
-                console.log("Đã lấy loại chi tiêu thành công:", expenseTypes);
-            } catch (err) {
-                // Log lỗi không mong muốn, có thể do kết nối mạng
-                console.error('Lỗi không mong muốn xảy ra khi lấy loại chi tiêu. Vui lòng kiểm tra kết nối mạng và khóa API Supabase:', err);
-            } finally {
-                hideLoading();
+            if (transactionsResponse.error) {
+                console.error('Lỗi khi lấy danh sách giao dịch:', transactionsResponse.error.message);
+                hideLoadingOverlay();
+                return;
             }
+        
+            members = membersResponse.data;
+            allTransactions = transactionsResponse.data;
+            currentTransactions = [...allTransactions];
+        
+            populateMemberFilterOptions();
+            updateTransactionTable();
+            hideLoadingOverlay();
         }
+        
+        function updateTransactionTable() {
+            const tableBody = document.getElementById('transaction-table-body');
+            tableBody.innerHTML = ''; // Xóa các hàng hiện có
+            
+            const totalPages = Math.ceil(currentTransactions.length / pageSize);
+            const startIndex = (currentPage - 1) * pageSize;
+            const endIndex = Math.min(startIndex + pageSize, currentTransactions.length);
+            const paginatedTransactions = currentTransactions.slice(startIndex, endIndex);
 
-        function updateSubTypeFilterOptions() {
-            subTypeFilter.innerHTML = `<option value="all" data-key="allExpenseTypes">${TRANSLATIONS[currentLanguage]['allExpenseTypes']}</option>`;
-            expenseTypes.forEach(type => {
-                const option = document.createElement('option');
-                option.value = type.id;
-                option.textContent = type.name;
-                subTypeFilter.appendChild(option);
-            });
-        }
+            // Cập nhật số lượng giao dịch và thông tin trang
+            document.getElementById('transaction-count').textContent = `(${currentTransactions.length} giao dịch)`;
+            document.getElementById('page-info').textContent = `Trang ${currentPage} trên ${totalPages || 1}`;
 
-        function renderTransactions(data) {
-            transactionTableBody.innerHTML = '';
-            if (data.length === 0) {
+            // Vô hiệu hóa/Kích hoạt các nút phân trang
+            document.getElementById('prev-page-btn').disabled = currentPage === 1;
+            document.getElementById('next-page-btn').disabled = currentPage === totalPages || currentTransactions.length === 0;
+
+            if (paginatedTransactions.length === 0) {
                 const noDataRow = document.createElement('tr');
-                noDataRow.innerHTML = `<td colspan="6" class="table-cell text-center text-gray-500">${TRANSLATIONS[currentLanguage]['noData']}</td>`;
-                transactionTableBody.appendChild(noDataRow);
+                noDataRow.innerHTML = `<td colspan="6" class="table-cell text-center text-gray-500" data-key="noDataFound">Không tìm thấy giao dịch nào.</td>`;
+                tableBody.appendChild(noDataRow);
+                updateAllTextContent();
+                return;
+            }
+        
+            paginatedTransactions.forEach(transaction => {
+                // Kiểm tra và định dạng ngày tháng. Nếu không hợp lệ, hiển thị "N/A"
+                let transactionDate = 'N/A';
+                if (transaction.date) { // Sử dụng trường 'date' từ phản hồi API
+                    const dateObject = new Date(transaction.date);
+                    if (!isNaN(dateObject.getTime())) {
+                        transactionDate = dateObject.toLocaleDateString('vi-VN');
+                    } else {
+                        console.error('Lỗi định dạng ngày cho giao dịch có ID:', transaction.id, 'Dữ liệu ngày:', transaction.date);
+                    }
+                }
+                
+                // Tìm kiếm thành viên. Sử dụng contributingMemberId
+                const member = members.find(m => m.id === transaction.contributingMemberId);
+                // Nếu không có contributingMemberId, kiểm tra involvedMemberIds
+                const memberName = member ? member.name : 
+                    (transaction.involvedMemberIds && transaction.involvedMemberIds.length > 0
+                        ? transaction.involvedMemberIds.map(id => {
+                            const involvedMember = members.find(m => m.id === id);
+                            return involvedMember ? involvedMember.name : 'Unknown';
+                        }).join(', ')
+                        : 'Unknown');
+
+                const row = document.createElement('tr');
+
+                const transactionTypeCellContent = transaction.type === 'expense'
+                    ? (transaction.expense_type || 'Chi tiêu')
+                    : 'Đóng góp';
+
+                row.innerHTML = `
+                    <td class="table-cell px-6 py-4 whitespace-nowrap">${transactionDate}</td>
+                    <td class="table-cell px-6 py-4 truncate max-w-xs">${transaction.description}</td>
+                    <td class="table-cell px-6 py-4 whitespace-nowrap">${memberName}</td>
+                    <td class="table-cell px-6 py-4 whitespace-nowrap">
+                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full
+                            ${transaction.type === 'expense' ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'}">
+                            ${transactionTypeCellContent}
+                        </span>
+                    </td>
+                    <td class="table-cell px-6 py-4 whitespace-nowrap text-right font-medium">
+                        ${new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(transaction.amount)}
+                    </td>
+                    <td class="table-cell px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <button data-id="${transaction.id}" class="text-indigo-600 hover:text-indigo-900 mx-1 edit-btn">Sửa</button>
+                        <button data-id="${transaction.id}" class="text-red-600 hover:text-red-900 mx-1 delete-btn">Xóa</button>
+                    </td>
+                `;
+                tableBody.appendChild(row);
+            });
+
+            // Áp dụng lại ngôn ngữ sau khi điền dữ liệu vào bảng
+            updateAllTextContent();
+        }
+        
+        async function fetchFilteredTransactions() {
+            showLoadingOverlay();
+            const startDate = document.getElementById('start-date-filter').value;
+            const endDate = document.getElementById('end-date-filter').value;
+            const memberId = document.getElementById('member-filter').value;
+            const transactionType = document.getElementById('transaction-type-filter').value;
+            const expenseType = document.getElementById('sub-type-filter').value;
+
+            let query = supabase.from('transactions_quan').select('*');
+
+            if (startDate) {
+                // Thay 'created_at' bằng 'date'
+                query = query.gte('date', startDate);
+            }
+            if (endDate) {
+                // Thay 'created_at' bằng 'date'
+                query = query.lte('date', endDate);
+            }
+            if (memberId !== 'all') {
+                // Thay 'member_id' bằng 'contributingMemberId'
+                query = query.eq('contributingMemberId', memberId);
+            }
+            if (transactionType !== 'all') {
+                query = query.eq('type', transactionType);
+                if (transactionType === 'expense' && expenseType !== 'all') {
+                    query = query.eq('expense_type', expenseType);
+                }
+            }
+
+            // Sắp xếp theo ngày, sử dụng trường 'date'
+            const { data, error } = await query.order('date', { ascending: false });
+
+            if (error) {
+                console.error('Lỗi khi lọc giao dịch:', error.message);
+                hideLoadingOverlay();
                 return;
             }
 
-            const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-            const endIndex = Math.min(startIndex + ITEMS_PER_PAGE, data.length);
-            const paginatedData = data.slice(startIndex, endIndex);
-
-            paginatedData.forEach(item => {
-                const row = document.createElement('tr');
-                const isExpense = item.type === 'expense';
-                const typeText = isExpense ? (expenseTypeMap.get(item.sub_type_id) || 'Unknown') : TRANSLATIONS[currentLanguage][item.type];
-                const amountText = formatCurrency(item.amount);
-
-                row.innerHTML = `
-                    <td class="table-cell">${new Date(item.transaction_date).toLocaleDateString('vi-VN')}</td>
-                    <td class="table-cell">${item.description}</td>
-                    <td class="table-cell">${item.member_name}</td>
-                    <td class="table-cell">${typeText}</td>
-                    <td class="table-cell ${isExpense ? 'text-red-500' : 'text-green-500'}">${amountText}</td>
-                    <td class="table-cell text-right whitespace-nowrap">
-                        <button class="text-blue-500 hover:text-blue-700 font-medium view-detail-btn" data-id="${item.id}" data-key="viewDetailTitle">Chi tiết</button>
-                    </td>
-                `;
-                transactionTableBody.appendChild(row);
-            });
-
-            setupDetailButtons();
+            currentTransactions = data;
+            currentPage = 1; // Reset về trang đầu
+            updateTransactionTable();
+            hideLoadingOverlay();
         }
 
-        function setupDetailButtons() {
-            document.querySelectorAll('.view-detail-btn').forEach(button => {
-                button.addEventListener('click', (e) => {
-                    const id = e.target.getAttribute('data-id');
-                    const transaction = transactions.find(t => t.id == id);
-                    if (transaction) {
-                        showTransactionDetails(transaction);
-                    }
+        function populateMemberFilterOptions() {
+            const memberFilter = document.getElementById('member-filter');
+            // Xóa các tùy chọn hiện có, nhưng giữ tùy chọn "Tất cả"
+            const allOption = memberFilter.querySelector('option[value="all"]');
+            memberFilter.innerHTML = '';
+            memberFilter.appendChild(allOption);
+
+            members.forEach(member => {
+                const option = document.createElement('option');
+                option.value = member.id;
+                option.textContent = member.name;
+                memberFilter.appendChild(option);
+            });
+        }
+        
+        function updateSubTypeFilterOptions() {
+            const transactionType = document.getElementById('transaction-type-filter').value;
+            const subTypeFilterDiv = document.getElementById('sub-type-filter').parentElement;
+            
+            if (transactionType === 'expense') {
+                subTypeFilterDiv.classList.remove('hidden');
+                populateExpenseTypeFilter();
+            } else {
+                subTypeFilterDiv.classList.add('hidden');
+            }
+        }
+        
+        function populateExpenseTypeFilter() {
+            const expenseTypeFilter = document.getElementById('sub-type-filter');
+            expenseTypeFilter.innerHTML = '<option value="all" data-key="allExpenseTypes">Tất cả</option>';
+            expenseTypes.forEach(type => {
+                const option = document.createElement('option');
+                option.value = type;
+                option.textContent = type;
+                expenseTypeFilter.appendChild(option);
+            });
+            updateAllTextContent(); // Áp dụng lại bản dịch sau khi cập nhật tùy chọn
+        }
+
+        function showLoadingOverlay() {
+            document.getElementById('loading-overlay').classList.remove('hidden');
+        }
+
+        function hideLoadingOverlay() {
+            document.getElementById('loading-overlay').classList.add('hidden');
+        }
+        
+        // Modal functions
+        const viewDetailModal = document.getElementById('view-detail-modal-overlay');
+        const transactionModal = document.getElementById('transaction-modal-overlay');
+        const deleteModal = document.getElementById('delete-modal-overlay');
+        const closeModalBtns = document.querySelectorAll('#close-view-detail-modal-btn, #close-transaction-modal-btn, #cancel-delete-btn');
+
+        function openModal(modal) {
+            modal.classList.remove('hidden');
+        }
+
+        function closeModal(modal) {
+            modal.classList.add('hidden');
+        }
+
+        closeModalBtns.forEach(btn => {
+            btn.addEventListener('click', (event) => {
+                const parentModal = event.target.closest('.fixed');
+                if (parentModal) {
+                    closeModal(parentModal);
+                }
+            });
+        });
+
+        // Hamburger Menu
+        const hamburgerBtn = document.getElementById('hamburger-btn');
+        const hamburgerMenu = document.getElementById('hamburger-menu');
+
+        hamburgerBtn.addEventListener('click', () => {
+            hamburgerMenu.classList.toggle('hidden');
+        });
+
+        // Language Switcher
+        document.getElementById('lang-vi-btn').addEventListener('click', () => {
+            document.getElementById('lang-vi-btn').classList.add('active');
+            document.getElementById('lang-en-btn').classList.remove('active');
+            currentLang = 'vi';
+            updateAllTextContent();
+            updateTransactionTable(); // Re-render table with new language
+        });
+        
+        document.getElementById('lang-en-btn').addEventListener('click', () => {
+            document.getElementById('lang-en-btn').classList.add('active');
+            document.getElementById('lang-vi-btn').classList.remove('active');
+            currentLang = 'en';
+            updateAllTextContent();
+            updateTransactionTable(); // Re-render table with new language
+        });
+
+        // Event listeners
+        function setupEventListeners() {
+            // Filter buttons
+            document.getElementById('apply-filter-btn').addEventListener('click', fetchFilteredTransactions);
+            document.getElementById('clear-filter-btn').addEventListener('click', () => {
+                document.getElementById('start-date-filter').value = '';
+                document.getElementById('end-date-filter').value = '';
+                document.getElementById('member-filter').value = 'all';
+                document.getElementById('transaction-type-filter').value = 'all';
+                document.getElementById('sub-type-filter').value = 'all';
+                updateSubTypeFilterOptions();
+                currentTransactions = [...allTransactions];
+                currentPage = 1;
+                updateTransactionTable();
+            });
+
+            // Pagination buttons
+            document.getElementById('prev-page-btn').addEventListener('click', () => {
+                if (currentPage > 1) {
+                    currentPage--;
+                    updateTransactionTable();
+                }
+            });
+            document.getElementById('next-page-btn').addEventListener('click', () => {
+                const totalPages = Math.ceil(currentTransactions.length / pageSize);
+                if (currentPage < totalPages) {
+                    currentPage++;
+                    updateTransactionTable();
+                }
+            });
+
+            // Transaction type filter change listener
+            document.getElementById('transaction-type-filter').addEventListener('change', updateSubTypeFilterOptions);
+
+            // Export to Excel button
+            document.getElementById('export-excel-btn').addEventListener('click', exportToExcel);
+
+            // Scroll to top button
+            const scrollToTopBtn = document.getElementById('scroll-to-top-btn');
+            window.addEventListener('scroll', () => {
+                if (window.scrollY > 300) {
+                    scrollToTopBtn.classList.add('show');
+                } else {
+                    scrollToTopBtn.classList.remove('show');
+                }
+            });
+
+            scrollToTopBtn.addEventListener('click', () => {
+                window.scrollTo({
+                    top: 0,
+                    behavior: 'smooth'
                 });
             });
         }
-
-        function showTransactionDetails(transaction) {
-            const descriptionElement = document.getElementById('view-detail-description');
-            const amountElement = document.getElementById('view-detail-amount');
-            const typeElement = document.getElementById('view-detail-type');
-            const memberElement = document.getElementById('view-detail-member');
-            const dateElement = document.getElementById('view-detail-date');
-
-            const typeDisplay = transaction.type === 'expense' ? (expenseTypeMap.get(transaction.sub_type_id) || 'Unknown') : TRANSLATIONS[currentLanguage][transaction.type];
-
-            descriptionElement.textContent = `${TRANSLATIONS[currentLanguage]['tableDescription']}: ${transaction.description}`;
-            amountElement.textContent = `${TRANSLATIONS[currentLanguage]['tableAmount']}: ${formatCurrency(transaction.amount)}`;
-            typeElement.textContent = `${TRANSLATIONS[currentLanguage]['tableType']}: ${typeDisplay}`;
-            memberElement.textContent = `${TRANSLATIONS[currentLanguage]['tableMember']}: ${transaction.member_name}`;
-            dateElement.textContent = `${TRANSLATIONS[currentLanguage]['tableDate']}: ${new Date(transaction.transaction_date).toLocaleDateString('vi-VN')}`;
-
-            viewDetailModalOverlay.classList.remove('hidden');
-        }
-
-        function updatePaginationInfo() {
-            const totalPages = Math.ceil(filteredTransactions.length / ITEMS_PER_PAGE);
-            const totalItems = filteredTransactions.length;
-            const startItem = (currentPage - 1) * ITEMS_PER_PAGE + 1;
-            const endItem = Math.min(currentPage * ITEMS_PER_PAGE, totalItems);
-
-            const paginationText = TRANSLATIONS[currentLanguage]['pageOf']
-                .replace('{currentPage}', currentPage)
-                .replace('{totalPages}', totalPages);
-            pageInfoSpan.textContent = paginationText;
-
-            const countText = TRANSLATIONS[currentLanguage]['transactionCount']
-                .replace('{start}', startItem)
-                .replace('{end}', endItem)
-                .replace('{total}', totalItems);
-            transactionCountSpan.textContent = countText;
-
-            prevPageBtn.disabled = currentPage === 1;
-            nextPageBtn.disabled = currentPage === totalPages;
-            prevPageBtn.classList.toggle('opacity-50', currentPage === 1);
-            nextPageBtn.classList.toggle('opacity-50', currentPage === totalPages);
-        }
-
-        function filterTransactions() {
-            const startDate = startDateFilter.value ? new Date(startDateFilter.value) : null;
-            const endDate = endDateFilter.value ? new Date(endDateFilter.value) : null;
-            const memberId = memberFilter.value;
-            const transactionType = transactionTypeFilter.value;
-            const subTypeId = subTypeFilter.value;
-
-            filteredTransactions = transactions.filter(transaction => {
-                const transactionDate = new Date(transaction.transaction_date);
-                const matchesDate = (!startDate || transactionDate >= startDate) && (!endDate || transactionDate <= endDate);
-                const matchesMember = (memberId === 'all' || transaction.member_id === memberId);
-                const matchesType = (transactionType === 'all' || transaction.type === transactionType);
-                const matchesSubType = (subTypeId === 'all' || transaction.sub_type_id == subTypeId);
-
-                return matchesDate && matchesMember && matchesType && matchesSubType;
-            });
-
-            currentPage = 1;
-            renderTransactions(filteredTransactions);
-            updatePaginationInfo();
-        }
-
-        function clearFilters() {
-            startDateFilter.value = '';
-            endDateFilter.value = '';
-            memberFilter.value = 'all';
-            transactionTypeFilter.value = 'all';
-            subTypeFilter.value = 'all';
-            filterTransactions();
-        }
-
+        
+        // Export to Excel function
         function exportToExcel() {
-            const dataToExport = filteredTransactions.map(item => ({
-                'Ngày': new Date(item.transaction_date).toLocaleDateString('vi-VN'),
-                'Mô tả': item.description,
-                'Người giao dịch': item.member_name,
-                'Loại giao dịch': TRANSLATIONS[currentLanguage][item.type],
-                'Loại chi tiêu': item.type === 'expense' ? (expenseTypeMap.get(item.sub_type_id) || '') : '',
-                'Số tiền': item.amount
-            }));
+            const data = currentTransactions.map(t => {
+                // Sửa lỗi ở đây
+                const member = members.find(m => m.id === t.contributingMemberId);
+                const memberName = member ? member.name : 
+                    (t.involvedMemberIds && t.involvedMemberIds.length > 0
+                        ? t.involvedMemberIds.map(id => {
+                            const involvedMember = members.find(m => m.id === id);
+                            return involvedMember ? involvedMember.name : 'Unknown';
+                        }).join(', ')
+                        : 'Unknown');
 
-            const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+                const transactionType = t.type === 'expense' ? (t.expense_type || 'Chi tiêu') : 'Đóng góp';
+                
+                // Sửa lỗi ở đây
+                let transactionDate = '';
+                if (t.date) {
+                    const dateObject = new Date(t.date);
+                    if (!isNaN(dateObject.getTime())) {
+                        transactionDate = dateObject.toLocaleDateString('vi-VN');
+                    }
+                }
+                
+                return {
+                    'Ngày': transactionDate,
+                    'Mô tả': t.description,
+                    'Người giao dịch': memberName,
+                    'Loại': transactionType,
+                    'Số tiền': t.amount,
+                    'ID': t.id
+                };
+            });
+            const worksheet = XLSX.utils.json_to_sheet(data);
             const workbook = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(workbook, worksheet, "Giao Dịch");
             XLSX.writeFile(workbook, "Lich_Su_Giao_Dich.xlsx");
         }
 
-        async function fetchSupabaseData() {
-            showLoading();
-            console.log("Đang cố gắng lấy dữ liệu giao dịch và thành viên từ Supabase...");
-            console.log("Sử dụng URL:", SUPABASE_URL);
-            try {
-                const { data: members, error: membersError } = await supabase
-                    .from('members_quan') // Tên bảng đã được đổi
-                    .select('*');
-
-                if (membersError) {
-                    throw membersError;
-                }
-                
-                memberFilter.innerHTML = `<option value="all" data-key="allMembers">${TRANSLATIONS[currentLanguage]['allMembers']}</option>`;
-                members.forEach(member => {
-                    const option = document.createElement('option');
-                    option.value = member.id;
-                    option.textContent = member.name;
-                    memberFilter.appendChild(option);
-                });
-
-                const { data: transactionsData, error: transactionsError } = await supabase
-                    .from('transactions_quan')
-                    .select('*');
-
-                if (transactionsError) {
-                    throw transactionsError;
-                }
-                
-                transactions = transactionsData.map(t => {
-                    const member = members.find(m => m.id === t.member_id);
-                    return {
-                        ...t,
-                        member_name: member ? member.name : 'Unknown'
-                    };
-                });
-                filteredTransactions = transactions;
-                renderTransactions(filteredTransactions);
-                updatePaginationInfo();
-                console.log("Đã lấy dữ liệu giao dịch và thành viên thành công.");
-                
-            } catch (error) {
-                // Log lỗi chi tiết hơn
-                console.error("Lỗi khi lấy dữ liệu từ Supabase. Vui lòng kiểm tra URL và khóa API:", error);
-            } finally {
-                hideLoading();
-            }
-        }
-        
         async function initializePageWithData() {
+            // Check if supabase client is already initialized
             if (!supabase) {
                 console.error("Supabase client is not initialized.");
                 return;
             }
             try {
-                await fetchExpenseTypes();
-                updateSubTypeFilterOptions();
                 await fetchSupabaseData();
-                updateAllTextContent();
+                updateSubTypeFilterOptions();
+                updateAllTextContent(); // Initial translation on page load
             } catch (error) {
-                console.error("Khởi tạo trang thất bại:", error);
-            }
-        }
-
-        function setupEventListeners() {
-            hamburgerBtn.addEventListener('click', () => {
-                hamburgerMenu.classList.toggle('hidden');
-            });
-
-            langViBtn.addEventListener('click', () => {
-                currentLanguage = 'vi';
-                langViBtn.classList.add('active');
-                langEnBtn.classList.remove('active');
-                updateAllTextContent();
-                renderTransactions(filteredTransactions);
-                updateSubTypeFilterOptions();
-            });
-
-            langEnBtn.addEventListener('click', () => {
-                currentLanguage = 'en';
-                langEnBtn.classList.add('active');
-                langViBtn.classList.remove('active');
-                updateAllTextContent();
-                renderTransactions(filteredTransactions);
-                updateSubTypeFilterOptions();
-            });
-
-            prevPageBtn.addEventListener('click', () => {
-                if (currentPage > 1) {
-                    currentPage--;
-                    renderTransactions(filteredTransactions);
-                    updatePaginationInfo();
-                }
-            });
-
-            nextPageBtn.addEventListener('click', () => {
-                const totalPages = Math.ceil(filteredTransactions.length / ITEMS_PER_PAGE);
-                if (currentPage < totalPages) {
-                    currentPage++;
-                    renderTransactions(filteredTransactions);
-                    updatePaginationInfo();
-                }
-            });
-
-            applyFilterBtn.addEventListener('click', filterTransactions);
-            clearFilterBtn.addEventListener('click', clearFilters);
-            exportExcelBtn.addEventListener('click', exportToExcel);
-            closeViewDetailModalBtn.addEventListener('click', () => {
-                viewDetailModalOverlay.classList.add('hidden');
-            });
-            window.addEventListener('click', (event) => {
-                if (event.target === viewDetailModalOverlay) {
-                    viewDetailModalOverlay.classList.add('hidden');
-                }
-            });
-
-            document.getElementById('transaction-type-filter').addEventListener('change', (e) => {
-                const subTypeFilterDiv = document.getElementById('sub-type-filter').parentElement;
-                if (e.target.value === 'expense') {
-                    subTypeFilterDiv.style.display = 'block';
-                } else {
-                    subTypeFilterDiv.style.display = 'none';
-                }
-            });
-
-            if (transactionTypeFilter.value !== 'expense') {
-                document.getElementById('sub-type-filter').parentElement.style.display = 'none';
+                console.error("Initialization failed:", error);
             }
         }
 
         document.addEventListener('DOMContentLoaded', async () => {
+            // Check for the Supabase library and initialize the client
             if (window.supabase) {
                 supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-                console.log("Supabase client initialized with URL:", SUPABASE_URL);
+                console.log("Supabase client initialized successfully.");
+                // Setup event listeners and initialize the page data
                 setupEventListeners();
                 await initializePageWithData();
             } else {
