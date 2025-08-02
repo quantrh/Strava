@@ -273,10 +273,10 @@
                         <option value="contribution" data-key="transactionTypeContribution">Đóng góp</option>
                     </select>
                 </div>
-                <!-- Expense Type Filter -->
+                <!-- Sub-Type Filter -->
                 <div>
-                    <label for="expense-type-filter" class="block text-sm font-medium text-gray-700" data-key="expenseTypeLabel">Loại chi tiêu</label>
-                    <select id="expense-type-filter" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                    <label id="sub-type-filter-label" for="sub-type-filter" class="block text-sm font-medium text-gray-700" data-key="expenseTypeLabel">Loại chi tiêu</label>
+                    <select id="sub-type-filter" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
                         <option value="all" data-key="allExpenseTypes">Tất cả</option>
                     </select>
                 </div>
@@ -414,11 +414,11 @@
                             </select>
                         </div>
                         
-                        <!-- Expense Type (Conditional) -->
-                        <div id="edit-expense-type-div">
-                            <label for="edit-expense-type" class="block text-sm font-medium text-gray-700" data-key="expenseTypeLabel">Loại chi tiêu</label>
-                            <select id="edit-expense-type" class="mt-1 p-2 w-full border rounded-md" required>
-                                <!-- Expense types will be populated here -->
+                        <!-- Sub-Type (Conditional) -->
+                        <div id="edit-sub-type-div">
+                            <label id="edit-sub-type-label" for="edit-sub-type" class="block text-sm font-medium text-gray-700" data-key="expenseTypeLabel">Loại chi tiêu</label>
+                            <select id="edit-sub-type" class="mt-1 p-2 w-full border rounded-md" required>
+                                <!-- Sub-types will be populated here -->
                             </select>
                         </div>
 
@@ -458,7 +458,8 @@
             endDateFilter: document.getElementById('end-date-filter'),
             memberFilter: document.getElementById('member-filter'),
             transactionTypeFilter: document.getElementById('transaction-type-filter'),
-            expenseTypeFilter: document.getElementById('expense-type-filter'),
+            subTypeFilter: document.getElementById('sub-type-filter'),
+            subTypeFilterLabel: document.getElementById('sub-type-filter-label'),
             transactionCountSpan: document.getElementById('transaction-count'),
             prevPageBtn: document.getElementById('prev-page-btn'),
             nextPageBtn: document.getElementById('next-page-btn'),
@@ -468,6 +469,7 @@
             hamburgerBtn: document.getElementById('hamburger-btn'),
             hamburgerMenu: document.getElementById('hamburger-menu'),
             loadingOverlay: document.getElementById('loading-overlay'),
+            // Edit Modal Elements
             editModalOverlay: document.getElementById('edit-modal-overlay'),
             editTransactionForm: document.getElementById('edit-transaction-form'),
             editTransactionId: document.getElementById('edit-transaction-id'),
@@ -476,12 +478,15 @@
             editDescriptionInput: document.getElementById('edit-description'),
             editAmountInput: document.getElementById('edit-amount'),
             editMemberSelect: document.getElementById('edit-member'),
-            editExpenseTypeSelect: document.getElementById('edit-expense-type'),
-            editExpenseTypeDiv: document.getElementById('edit-expense-type-div'),
+            editSubTypeDiv: document.getElementById('edit-sub-type-div'),
+            editSubTypeLabel: document.getElementById('edit-sub-type-label'),
+            editSubTypeSelect: document.getElementById('edit-sub-type'),
             closeEditModalBtn: document.getElementById('close-edit-modal-btn'),
+            // Delete Modal Elements
             deleteModalOverlay: document.getElementById('delete-modal-overlay'),
             confirmDeleteBtn: document.getElementById('confirm-delete-btn'),
             cancelDeleteBtn: document.getElementById('cancel-delete-btn'),
+            // View Detail Modal Elements
             viewDetailModalOverlay: document.getElementById('view-detail-modal-overlay'),
             closeDetailModalBtn: document.getElementById('close-detail-modal-btn'),
             detailTransactionType: document.getElementById('detail-transaction-type'),
@@ -501,7 +506,7 @@
 
         let members = [];
         let transactions = [];
-        let expenseTypes = [];
+        let allSubTypes = []; // From expensetype_quan, used for edit modal
         let currentPage = 1;
         const transactionsPerPage = 10;
         let filteredTransactions = [];
@@ -519,6 +524,7 @@
                 filterMember: "Người giao dịch",
                 transactionTypeLabel: "Loại giao dịch",
                 expenseTypeLabel: "Loại chi tiêu",
+                contributionTypeLabel: "Loại đóng góp",
                 allMembers: "Tất cả",
                 allTypes: "Tất cả",
                 allExpenseTypes: "Tất cả",
@@ -534,6 +540,8 @@
                 tableType: "Loại",
                 tableAmount: "Số tiền",
                 tableActions: "Hành động",
+                tableActionsEdit: "Sửa",
+                tableActionsDelete: "Xóa",
                 noTransactions: "Không có giao dịch nào",
                 paginationPrevious: "Trước",
                 paginationNext: "Sau",
@@ -569,6 +577,7 @@
                 filterMember: "Member",
                 transactionTypeLabel: "Transaction Type",
                 expenseTypeLabel: "Expense Type",
+                contributionTypeLabel: "Contribution Type",
                 allMembers: "All Members",
                 allTypes: "All Types",
                 allExpenseTypes: "All",
@@ -584,6 +593,8 @@
                 tableType: "Type",
                 tableAmount: "Amount",
                 tableActions: "Actions",
+                tableActionsEdit: "Edit",
+                tableActionsDelete: "Delete",
                 noTransactions: "No transactions found",
                 paginationPrevious: "Previous",
                 paginationNext: "Next",
@@ -619,6 +630,7 @@
                     element.textContent = translations[key];
                 }
             });
+            updateSubTypeFilter();
             renderTransactions(filteredTransactions);
         }
 
@@ -636,18 +648,15 @@
                 if (membersError) throw membersError;
                 members = membersData;
 
-                const { data: expenseTypesData, error: expenseTypesError } = await supabaseClient.from('expensetype_quan').select('*');
-                if (expenseTypesError) throw expenseTypesError;
-                expenseTypes = expenseTypesData;
+                const { data: subTypesData, error: subTypesError } = await supabaseClient.from('expensetype_quan').select('*');
+                if (subTypesError) throw subTypesError;
+                allSubTypes = subTypesData;
 
                 const { data: transactionsData, error: transactionsError } = await supabaseClient.from('transactions_quan').select('*');
                 if (transactionsError) throw transactionsError;
                 transactions = transactionsData;
 
                 transactions.sort((a, b) => new Date(b.date) - new Date(a.date));
-
-                console.log('Fetched Data:', { members, expenseTypes, transactions });
-
                 initializePageWithData();
 
             } catch (error) {
@@ -666,20 +675,15 @@
                 ids.add(contributingMemberId);
             }
 
-            if (ids.size === 0) {
-                return translations.unassigned || 'Không xác định';
-            }
+            if (ids.size === 0) return translations.unassigned;
             return Array.from(ids).map(id => {
                 const member = members.find(m => m.id === id);
-                return member ? member.name : translations.unknownMember || 'Thành viên không xác định';
+                return member ? member.name : translations.unknownMember;
             }).join(', ');
         }
 
         function getTransactionDisplayType(transaction) {
-            if (transaction.transaction_type === 'contribution') {
-                return translations.transactionTypeContribution || 'Đóng góp';
-            }
-            return transaction.expense_type || translations.transactionTypeExpense || 'Chi tiêu';
+            return transaction.expense_type || (transaction.transaction_type === 'contribution' ? translations.transactionTypeContribution : translations.transactionTypeExpense);
         }
 
         function formatCurrency(amount) {
@@ -710,8 +714,8 @@
                             <td class="table-cell">${displayType}</td>
                             <td class="table-cell font-medium text-right ${amountColor}">${formattedAmount}</td>
                             <td class="table-cell text-right">
-                                <button class="text-blue-600 hover:text-blue-900 mx-1 edit-btn" data-id="${transaction.id}">${translations.modalSave || 'Sửa'}</button>
-                                <button class="text-red-600 hover:text-red-900 mx-1 delete-btn" data-id="${transaction.id}">${translations.modalDelete || 'Xóa'}</button>
+                                <button class="text-blue-600 hover:text-blue-900 mx-1 edit-btn" data-id="${transaction.id}">${translations.tableActionsEdit}</button>
+                                <button class="text-red-600 hover:text-red-900 mx-1 delete-btn" data-id="${transaction.id}">${translations.tableActionsDelete}</button>
                             </td>
                         </tr>
                     `;
@@ -735,22 +739,20 @@
         function applyFilters() {
             const startDate = elements.startDateFilter.value ? new Date(elements.startDateFilter.value) : null;
             const endDate = elements.endDateFilter.value ? new Date(elements.endDateFilter.value) : null;
-            if (endDate) endDate.setDate(endDate.getDate() + 1); // Include the entire end day
+            if (endDate) endDate.setDate(endDate.getDate() + 1);
 
             const memberId = elements.memberFilter.value;
             const transactionType = elements.transactionTypeFilter.value;
-            const expenseTypeId = elements.expenseTypeFilter.value;
+            const subTypeName = elements.subTypeFilter.value;
 
             filteredTransactions = transactions.filter(t => {
                 const transactionDate = new Date(t.date);
                 const dateMatch = (!startDate || transactionDate >= startDate) && (!endDate || transactionDate < endDate);
                 const memberMatch = memberId === 'all' || (t.involvedMemberIds && t.involvedMemberIds.includes(memberId)) || (t.contributingMemberId && t.contributingMemberId === memberId);
                 const transactionTypeMatch = transactionType === 'all' || t.transaction_type === transactionType;
-                
-                const selectedExpenseType = expenseTypes.find(et => String(et.id) === expenseTypeId);
-                const expenseTypeMatch = expenseTypeId === 'all' || (selectedExpenseType && t.expense_type === selectedExpenseType.expense_type);
+                const subTypeMatch = subTypeName === 'all' || t.expense_type === subTypeName;
 
-                return dateMatch && memberMatch && transactionTypeMatch && expenseTypeMatch;
+                return dateMatch && memberMatch && transactionTypeMatch && subTypeMatch;
             });
 
             currentPage = 1;
@@ -778,36 +780,54 @@
             const transaction = transactions.find(t => String(t.id) === transactionId);
             if (!transaction) return;
 
-            const transactionTypeStr = transaction.transaction_type === 'contribution' ? translations.transactionTypeContribution : translations.transactionTypeExpense;
-            elements.detailTransactionType.textContent = transactionTypeStr;
+            elements.detailTransactionType.textContent = transaction.transaction_type === 'contribution' ? translations.transactionTypeContribution : translations.transactionTypeExpense;
             elements.detailDate.textContent = new Date(transaction.date).toLocaleDateString('vi-VN');
             elements.detailDescription.textContent = transaction.description;
             elements.detailAmount.textContent = formatCurrency(transaction.amount);
             elements.detailAmount.className = `block text-gray-900 font-bold text-lg ${transaction.transaction_type === 'contribution' ? 'text-green-600' : 'text-red-600'}`;
             elements.detailMember.textContent = getMemberNames(transaction.involvedMemberIds, transaction.contributingMemberId);
 
-            if (transaction.transaction_type === 'expense' && transaction.expense_type) {
+            if (transaction.expense_type) {
                 elements.detailExpenseType.textContent = transaction.expense_type;
                 elements.detailExpenseTypeContainer.style.display = 'block';
+                elements.detailExpenseTypeContainer.querySelector('span:first-child').textContent = transaction.transaction_type === 'contribution' ? translations.contributionTypeLabel : translations.expenseTypeLabel;
             } else {
                 elements.detailExpenseTypeContainer.style.display = 'none';
             }
-
             elements.viewDetailModalOverlay.classList.remove('hidden');
         }
 
-        function toggleEditModalFields() {
-            const type = elements.editTransactionTypeSelect.value;
+        function updateEditModalUI(type) {
+            // Update member selection
             if (type === 'expense') {
-                elements.editExpenseTypeDiv.style.display = 'block';
                 elements.editMemberSelect.setAttribute('multiple', 'true');
                 elements.editMemberSelect.classList.add('h-32');
-                elements.editExpenseTypeSelect.required = true;
             } else { // contribution
-                elements.editExpenseTypeDiv.style.display = 'none';
                 elements.editMemberSelect.removeAttribute('multiple');
                 elements.editMemberSelect.classList.remove('h-32');
-                elements.editExpenseTypeSelect.required = false;
+            }
+
+            // Update sub-type dropdown
+            const subTypeLabel = elements.editSubTypeLabel;
+            const subTypeSelect = elements.editSubTypeSelect;
+            const subTypeDiv = elements.editSubTypeDiv;
+
+            const relevantSubTypes = allSubTypes.filter(st => st.type === type);
+            
+            if (relevantSubTypes.length > 0) {
+                subTypeLabel.textContent = type === 'expense' ? translations.expenseTypeLabel : translations.contributionTypeLabel;
+                subTypeSelect.innerHTML = '';
+                relevantSubTypes.forEach(st => {
+                    const option = document.createElement('option');
+                    option.value = st.expense_type;
+                    option.textContent = st.expense_type;
+                    subTypeSelect.appendChild(option);
+                });
+                subTypeDiv.style.display = 'block';
+                subTypeSelect.required = true;
+            } else {
+                subTypeDiv.style.display = 'none';
+                subTypeSelect.required = false;
             }
         }
         
@@ -820,11 +840,11 @@
             elements.editDescriptionInput.value = transaction.description;
             elements.editAmountInput.value = transaction.amount;
             
-            // Set transaction type and configure form
-            elements.editTransactionTypeSelect.value = transaction.transaction_type || 'expense';
-            toggleEditModalFields();
+            const currentType = transaction.transaction_type || 'expense';
+            elements.editTransactionTypeSelect.value = currentType;
+            
+            updateEditModalUI(currentType);
 
-            // Populate members
             elements.editMemberSelect.innerHTML = '';
             members.forEach(member => {
                 const option = document.createElement('option');
@@ -833,31 +853,18 @@
                 elements.editMemberSelect.appendChild(option);
             });
 
-            // Select members
-            if (transaction.transaction_type === 'contribution') {
+            if (currentType === 'contribution') {
                 elements.editMemberSelect.value = transaction.contributingMemberId;
             } else {
                 const involvedIds = new Set(transaction.involvedMemberIds || []);
                 if(transaction.contributingMemberId) involvedIds.add(transaction.contributingMemberId);
-                
                 Array.from(elements.editMemberSelect.options).forEach(option => {
-                    if (involvedIds.has(option.value)) {
-                        option.selected = true;
-                    }
+                    if (involvedIds.has(option.value)) option.selected = true;
                 });
             }
 
-            // Populate and select expense type
-            elements.editExpenseTypeSelect.innerHTML = '';
-            expenseTypes.forEach(type => {
-                const option = document.createElement('option');
-                option.value = type.id;
-                option.textContent = type.expense_type;
-                elements.editExpenseTypeSelect.appendChild(option);
-            });
-            const expenseType = expenseTypes.find(t => t.expense_type === transaction.expense_type);
-            if (expenseType) {
-                elements.editExpenseTypeSelect.value = expenseType.id;
+            if (transaction.expense_type) {
+                elements.editSubTypeSelect.value = transaction.expense_type;
             }
 
             elements.editModalOverlay.classList.remove('hidden');
@@ -871,32 +878,24 @@
             const transactionType = elements.editTransactionTypeSelect.value;
             
             let updatedData = {
-                id: transactionId,
                 date: elements.editDateInput.value,
                 description: elements.editDescriptionInput.value,
                 amount: parseFloat(elements.editAmountInput.value),
                 transaction_type: transactionType,
+                expense_type: elements.editSubTypeSelect.required ? elements.editSubTypeSelect.value : null,
             };
 
             if (transactionType === 'expense') {
                 const selectedMemberIds = Array.from(elements.editMemberSelect.selectedOptions).map(opt => opt.value);
-                const selectedExpenseTypeId = elements.editExpenseTypeSelect.value;
-                const expenseTypeName = expenseTypes.find(t => String(t.id) === selectedExpenseTypeId)?.expense_type;
-
                 updatedData.involvedMemberIds = selectedMemberIds;
-                // Assuming the first selected member is the one who paid for consistency.
                 updatedData.contributingMemberId = selectedMemberIds.length > 0 ? selectedMemberIds[0] : null;
-                updatedData.expense_type = expenseTypeName;
-
             } else { // contribution
-                const selectedMemberId = elements.editMemberSelect.value;
-                updatedData.contributingMemberId = selectedMemberId;
-                updatedData.involvedMemberIds = null;
-                updatedData.expense_type = null;
+                updatedData.contributingMemberId = elements.editMemberSelect.value;
+                updatedData.involvedMemberIds = [];
             }
 
             try {
-                const { data, error } = await supabaseClient
+                const { error } = await supabaseClient
                     .from('transactions_quan')
                     .update(updatedData)
                     .eq('id', transactionId);
@@ -904,7 +903,7 @@
                 if (error) throw error;
                 
                 elements.editModalOverlay.classList.add('hidden');
-                await fetchSupabaseData(); // Re-fetch to show updated data
+                await fetchSupabaseData();
 
             } catch (error) {
                 console.error('Error updating transaction:', error.message);
@@ -943,6 +942,32 @@
             }
         }
 
+        function updateSubTypeFilter() {
+            const transactionType = elements.transactionTypeFilter.value;
+            const subTypeDropdown = elements.subTypeFilter;
+            const subTypeLabel = elements.subTypeFilterLabel;
+
+            let subTypes = [];
+            if (transactionType === 'expense') {
+                subTypeLabel.textContent = translations.expenseTypeLabel;
+                subTypes = [...new Set(allSubTypes.filter(t => t.type === 'expense').map(t => t.expense_type))];
+            } else if (transactionType === 'contribution') {
+                subTypeLabel.textContent = translations.contributionTypeLabel;
+                subTypes = [...new Set(allSubTypes.filter(t => t.type === 'contribution').map(t => t.expense_type))];
+            } else { // 'all'
+                subTypeLabel.textContent = translations.expenseTypeLabel;
+                subTypes = [...new Set(allSubTypes.map(t => t.expense_type))];
+            }
+            
+            subTypeDropdown.innerHTML = `<option value="all">${translations.allExpenseTypes}</option>`;
+            subTypes.sort().forEach(type => {
+                const option = document.createElement('option');
+                option.value = type;
+                option.textContent = type;
+                subTypeDropdown.appendChild(option);
+            });
+        }
+
         // --- Event Listeners ---
         function setupEventListeners() {
             elements.applyFilterBtn.addEventListener('click', applyFilters);
@@ -951,35 +976,29 @@
                 elements.endDateFilter.value = '';
                 elements.memberFilter.value = 'all';
                 elements.transactionTypeFilter.value = 'all';
-                elements.expenseTypeFilter.value = 'all';
+                updateSubTypeFilter();
+                elements.subTypeFilter.value = 'all';
                 filteredTransactions = transactions;
                 currentPage = 1;
                 renderTransactions(filteredTransactions);
             });
 
             elements.prevPageBtn.addEventListener('click', () => {
-                if (currentPage > 1) {
-                    currentPage--;
-                    renderTransactions(filteredTransactions);
-                }
+                if (currentPage > 1) { currentPage--; renderTransactions(filteredTransactions); }
             });
 
             elements.nextPageBtn.addEventListener('click', () => {
                 const totalPages = Math.ceil(filteredTransactions.length / transactionsPerPage);
-                if (currentPage < totalPages) {
-                    currentPage++;
-                    renderTransactions(filteredTransactions);
-                }
+                if (currentPage < totalPages) { currentPage++; renderTransactions(filteredTransactions); }
             });
 
             elements.exportExcelBtn.addEventListener('click', exportToExcel);
 
             elements.transactionTableBody.addEventListener('click', (event) => {
                 const target = event.target;
-                const row = target.closest('tr');
+                const row = target.closest('tr[data-id]');
                 if (!row) return;
                 const transactionId = row.dataset.id;
-                if (!transactionId) return;
 
                 if (target.classList.contains('edit-btn')) {
                     event.stopPropagation();
@@ -998,31 +1017,22 @@
             elements.cancelDeleteBtn.addEventListener('click', () => elements.deleteModalOverlay.classList.add('hidden'));
             elements.confirmDeleteBtn.addEventListener('click', deleteTransaction);
             elements.hamburgerBtn.addEventListener('click', () => elements.hamburgerMenu.classList.toggle('hidden'));
-            elements.editTransactionTypeSelect.addEventListener('change', toggleEditModalFields);
+            elements.editTransactionTypeSelect.addEventListener('change', (e) => updateEditModalUI(e.target.value));
+            elements.transactionTypeFilter.addEventListener('change', updateSubTypeFilter);
             document.getElementById('lang-vi-btn').addEventListener('click', () => setLanguage('vi'));
             document.getElementById('lang-en-btn').addEventListener('click', () => setLanguage('en'));
         }
 
         function initializePageWithData() {
-            // Populate member filter
-            elements.memberFilter.innerHTML = `<option value="all" data-key="allMembers">Tất cả</option>`;
+            elements.memberFilter.innerHTML = `<option value="all" data-key="allMembers">${translations.allMembers}</option>`;
             members.forEach(member => {
                 const option = document.createElement('option');
                 option.value = member.id;
                 option.textContent = member.name;
                 elements.memberFilter.appendChild(option);
             });
-
-            // Populate expense type filter
-            elements.expenseTypeFilter.innerHTML = `<option value="all" data-key="allExpenseTypes">Tất cả</option>`;
-            expenseTypes.forEach(type => {
-                const option = document.createElement('option');
-                option.value = type.id;
-                option.textContent = type.expense_type;
-                elements.expenseTypeFilter.appendChild(option);
-            });
             
-            setLanguage(currentLanguage);
+            setLanguage(currentLanguage); // This also calls updateSubTypeFilter
             filteredTransactions = transactions;
             renderTransactions(filteredTransactions);
         }
