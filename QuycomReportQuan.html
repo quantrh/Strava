@@ -567,6 +567,21 @@
             });
         }
 
+        // Function to update sub-type options in the transaction form modal
+        function updateTransactionFormSubTypeOptions() {
+            const subTypeSelect = document.getElementById('transaction-sub-type');
+            // Clear existing options
+            subTypeSelect.innerHTML = ''; 
+            
+            // Populate with expense types from the fetched list
+            expenseTypes.forEach(type => {
+                const option = document.createElement('option');
+                option.value = type.id;
+                option.textContent = type.name;
+                subTypeSelect.appendChild(option);
+            });
+        }
+
         // Function to fetch members from the database
         async function fetchMembers() {
             showLoadingOverlay();
@@ -611,7 +626,7 @@
         // Function to fetch data from Supabase
         async function fetchSupabaseData() {
             showLoadingOverlay();
-            // Loại bỏ join trực tiếp với expensetype_quan để tránh lỗi quan hệ khóa ngoại
+            // Remove the direct join with expensetype_quan to avoid the foreign key relationship error.
             const { data, error } = await supabase
                 .from('transactions_quan')
                 .select(`
@@ -633,7 +648,7 @@
                 member: item.members_quan.name,
                 member_id: item.member_id,
                 type: item.type,
-                // Lấy tên loại chi tiêu từ mảng đã tải
+                // Get the expense type name from the pre-fetched array
                 sub_type: item.expensetype_id ? expenseTypes.find(type => type.id === item.expensetype_id)?.name : '',
                 sub_type_id: item.expensetype_id,
                 amount: item.amount
@@ -738,6 +753,8 @@
             document.getElementById('apply-filter-btn').addEventListener('click', applyFilters);
             document.getElementById('clear-filter-btn').addEventListener('click', clearFilters);
             document.getElementById('export-excel-btn').addEventListener('click', exportToExcel);
+            
+            // Event listener for the transaction type filter (main page)
             document.getElementById('transaction-type-filter').addEventListener('change', (event) => {
                 const subTypeFilterContainer = document.getElementById('sub-type-filter').parentElement;
                 if (event.target.value === 'expense') {
@@ -746,6 +763,22 @@
                     subTypeFilterContainer.classList.add('hidden');
                 }
             });
+
+            // Event listener for the transaction type select inside the modal
+            document.getElementById('transaction-type').addEventListener('change', (event) => {
+                const subTypeContainer = document.getElementById('sub-type-container');
+                const subTypeSelect = document.getElementById('transaction-sub-type');
+                if (event.target.value === 'expense') {
+                    subTypeContainer.classList.remove('hidden');
+                    // Populate with expense types
+                    updateTransactionFormSubTypeOptions();
+                } else {
+                    subTypeContainer.classList.add('hidden');
+                    // Clear the select when hidden to prevent invalid data saving
+                    subTypeSelect.innerHTML = '';
+                }
+            });
+
 
             // Mobile menu toggle
             const hamburgerBtn = document.getElementById('hamburger-btn');
@@ -855,6 +888,7 @@
                 await fetchMembers();
                 await fetchExpenseTypes();
                 updateSubTypeFilterOptions();
+                updateTransactionFormSubTypeOptions(); // Populate sub-type options for the modal
                 await fetchSupabaseData();
                 updateTextContent(currentLang); // Initial translation on page load
             } catch (error) {
