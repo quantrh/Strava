@@ -163,9 +163,41 @@
                 grid-template-columns: 1fr 1fr;
             }
         }
+
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+        }
+
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border-left-color: #006B68;
+            animation: spin 1s ease infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body class="bg-gray-100 text-gray-800">
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="loading-overlay hidden">
+        <div class="spinner"></div>
+    </div>
+
     <!-- Header -->
     <div class="navbar flex items-center">
         <!-- Hamburger button on the left -->
@@ -286,10 +318,6 @@
                 <button id="next-page-btn" class="btn-secondary" data-key="paginationNext">Sau</button>
             </div>
         </div>
-
-        <!-- Modal for Edit and Delete (unchanged) -->
-        <!-- ... (Modal content) ... -->
-        
     </main>
 
     <!-- Scroll to Top Button (unchanged) -->
@@ -299,10 +327,8 @@
     
 
     <script>
-        // Các đoạn code xử lý đa ngôn ngữ, Supabase, và các hàm khác vẫn giữ nguyên
-        // Khởi tạo các phần tử DOM
+        // DOM elements initialization
         const elements = {
-            // ... (các phần tử đã có) ...
             transactionTableBody: document.getElementById('transaction-table-body'),
             applyFilterBtn: document.getElementById('apply-filter-btn'),
             clearFilterBtn: document.getElementById('clear-filter-btn'),
@@ -318,87 +344,177 @@
             scrollToTopBtn: document.getElementById('scroll-to-top-btn'),
             hamburgerBtn: document.getElementById('hamburger-btn'),
             hamburgerMenu: document.getElementById('hamburger-menu'),
-            // ... (thêm các phần tử cần thiết) ...
+            loadingOverlay: document.getElementById('loading-overlay'),
         };
 
-        // --- Dữ liệu tĩnh được mô phỏng từ file data.txt ---
-        const members = [
-            {"id":"d9d6d93a-2cce-4f67-9695-2207c85325d3","name":"Trương Hồng Quân","balance":0},
-            {"id":"47d7bf16-48bf-42f5-91ca-cd72317a249e","name":"Trương Tuyết Vân","balance":0},
-            {"id":"3f03b9ca-b4db-4a3b-9091-97518c6f5c11","name":"Trương Khánh Linh","balance":0},
-            {"id":"956b61ad-c4b6-4f13-b565-cc50071e89ac","name":"Nguyễn Thị Hương Lê","balance":0}
-        ];
-
-        const expenseTypes = [
-            {"id":"Tiền đi chợ", "expense_type": "Tiền đi chợ", "Type": "expense"},
-            {"id":"Nhà hàng, quán ăn", "expense_type": "Nhà hàng, quán ăn", "Type": "expense"},
-            {"id":"Cafe", "expense_type": "Cafe", "Type": "expense"},
-            {"id":"Tiền điện, nước, gas", "expense_type": "Tiền điện, nước, gas", "Type": "expense"},
-            {"id":"Internet, điện thoại, truyền hình", "expense_type": "Internet, điện thoại, truyền hình", "Type": "expense"},
-            {"id":"Phí dịch vụ nhà", "expense_type": "Phí dịch vụ nhà", "Type": "expense"},
-            {"id":"Trang trí, nội thất", "expense_type": "Trang trí, nội thất", "Type": "expense"},
-            {"id":"Đồ gia dụng", "expense_type": "Đồ gia dụng", "Type": "expense"},
-            {"id":"Đồ điện tử", "expense_type": "Đồ điện tử", "Type": "expense"},
-            {"id":"Xăng xe, vé xe", "expense_type": "Xăng xe, vé xe", "Type": "expense"},
-            {"id":"Bảo trì, sửa xe", "expense_type": "Bảo trì, sửa xe", "Type": "expense"},
-            {"id":"Phí cầu đường, gửi xe", "expense_type": "Phí cầu đường, gửi xe", "Type": "expense"},
-            {"id":"Học phí", "expense_type": "Học phí", "Type": "expense"},
-            {"id":"Linh", "expense_type": "Linh", "Type": "expense"},
-            {"id":"Vân", "expense_type": "Vân", "Type": "expense"},
-            {"id":"Quần áo, giày dép", "expense_type": "Quần áo, giày dép", "Type": "expense"},
-            {"id":"Mỹ phẩm, làm tóc", "expense_type": "Mỹ phẩm, làm tóc", "Type": "expense"},
-            {"id":"Khám chữa bệnh", "expense_type": "Khám chữa bệnh", "Type": "expense"},
-            {"id":"Du lịch, dã ngoại", "expense_type": "Du lịch, dã ngoại", "Type": "expense"},
-            {"id":"Mừng cưới, ma chay", "expense_type": "Mừng cưới, ma chay", "Type": "expense"},
-            {"id":"Đóng góp từ thiện", "expense_type": "Đóng góp từ thiện", "Type": "expense"},
-            {"id":"Phí dịch vụ ngân hàng", "expense_type": "Phí dịch vụ ngân hàng", "Type": "expense"},
-            {"id":"Trả nợ gốc lãi vay, phí", "expense_type": "Trả nợ gốc lãi vay, phí", "Type": "expense"},
-            {"id":"Chi phí phát sinh khác", "expense_type": "Chi phí phát sinh khác", "Type": "expense"},
-            {"id":"Lương", "expense_type": "Lương", "Type": "contribution"},
-            {"id":"Thưởng", "expense_type": "Thưởng", "Type": "contribution"},
-            {"id":"Thu nhập từ kinh doanh", "expense_type": "Thu nhập từ kinh doanh", "Type": "contribution"},
-            {"id":"Lãi tiết kiệm", "expense_type": "Lãi tiết kiệm", "Type": "contribution"},
-            {"id":"Cổ tức, trái phiếu", "expense_type": "Cổ tức, trái phiếu", "Type": "contribution"},
-            {"id":"Thu nhập từ cho thuê", "expense_type": "Thu nhập từ cho thuê", "Type": "contribution"}
-        ];
-
-        let transactions = [
-            {"id":"4f94c15a-0ed9-498c-b992-9e458b6c6a3c","type":"expense","amount":467600,"description":"Giao dịch mua hàng tại WinMart+, thanh toán bằng BIDV Visa Cashback 360","date":"2025-07-15T14:26:00.000Z","contributingMemberId":null,"involvedMemberIds":["d9d6d93a-2cce-4f67-9695-2207c85325d3"],"latitude":null,"longitude":null,"expense_type":"Tiền đi chợ"},
-            {"id":"095dd0fc-ddcf-434d-a446-f54d07d2e7bd","type":"expense","amount":416000,"description":"Chi phí bữa ăn tại Phiếu Tạm Tính, bao gồm các món: bắp bò xào mỳ, đùi ếch xào măng, trúc size M (8 đùi), cháo ếch size M (2 ếch), trà sâm dứa.","date":"2025-07-25T14:18:00.000Z","contributingMemberId":null,"involvedMemberIds":["d9d6d93a-2cce-4f67-9695-2207c85325d3"],"latitude":null,"longitude":null,"expense_type":"Nhà hàng, quán ăn"},
-            {"id":"0ccd7559-18a9-49df-9d46-29795f613d8d","type":"expense","amount":360000,"description":"Mua các sản phẩm tại cửa hàng MUJI Vincom Times City, bao gồm túi mua sắm, kẹo xốp Marshmallows, bộ số 5 cuốn 36 tờ 6mm - B, bánh xốp vị sô cô la đậu phộng, súp miso rong biển, mì mầm lúa mạch organic ANP, mì sâm cát organic ANPASO - G","date":"2025-07-27T13:32:00.000Z","contributingMemberId":null,"involvedMemberIds":["d9d6d93a-2cce-4f67-9695-2207c85325d3"],"latitude":null,"longitude":null,"expense_type":"Nhà hàng, quán ăn"},
-            {"id":"d58b81df-fa7c-4d1f-8c10-0a6f35bfe02f","type":"expense","amount":621000,"description":"Hóa đơn mua hàng tại MRDIY Vincom Mega Mall Times City, bao gồm dây buộc cáp, giá đỡ góc, cáp USB, kệ để đồ bồn rửa, giá treo bàn chải hút chân không","date":"2025-07-27T13:51:00.000Z","contributingMemberId":null,"involvedMemberIds":["d9d6d93a-2cce-4f67-9695-2207c85325d3"],"latitude":null,"longitude":null,"expense_type":"Trang trí, nội thất"},
-            {"id":"0d2c6068-0033-48cf-afc9-444a9e0f99f5","type":"expense","amount":3574000,"description":"Mua sắm các sản phẩm tại MUJI Vincom Times City, bao gồm túi mua sắm, kéo tỉa lông, gương trang điểm, tất, túi chống thấm, bàn chải sàn nhà tắm, bộ dầu thơm nội thất, đồng hồ điện tử, móc đôi nhôm hít chân không, và nhiều loại tất khác.","date":"2025-07-27T13:08:00.000Z","contributingMemberId":null,"involvedMemberIds":["d9d6d93a-2cce-4f67-9695-2207c85325d3"],"latitude":null,"longitude":null,"expense_type":"Đồ gia dụng"},
-        ];
+        // --- Supabase Client Initialization ---
+        // Các giá trị này đã được cập nhật với thông tin từ dự án của bạn
+        const supabaseUrl = 'https://rmbsxccrwrktbjlnezpu.supabase.co';
+        const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJtYnN4Y2Nyd3JrdGJqbG5lenB1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg2MjczNjQsImV4cCI6MjA2NDIwMzM2NH0.ydCqificftdtn1niRciFCifeuo8aX6SDGti-hCY5Z_Y';
         
-        // Cần đảm bảo rằng các hàm này đã được định nghĩa ở nơi khác trong code gốc
-        // Đây là các biến và hàm cần thiết để hoạt động, có thể đã tồn tại trong file gốc
+        // Tạo instance client với một tên riêng để tránh xung đột tiềm ẩn
+        const supabaseClient = supabase.createClient(supabaseUrl, supabaseAnonKey);
+
+        let members = [];
+        let transactions = [];
+        let expenseTypes = [];
         let currentPage = 1;
         const transactionsPerPage = 10;
-        let filteredTransactions = transactions;
+        let filteredTransactions = [];
 
         const localization = {
             vi: {
-                // ... (dữ liệu localization tiếng Việt) ...
+                appTitle: "Lịch Sử Giao Dịch - QUẢN LÝ QUỸ NHÓM",
+                appName: "QUẢN LÝ QUỸ NHÓM",
+                navDashboard: "Trang chủ",
+                navReport: "Báo cáo",
+                navLogout: "Đăng xuất",
+                reportTitle: "Lịch Sử Giao Dịch",
+                filterStartDate: "Từ ngày",
+                filterEndDate: "Đến ngày",
+                filterMember: "Người giao dịch",
+                filterType: "Loại giao dịch",
+                allMembers: "Tất cả",
+                allTypes: "Tất cả",
+                filterApply: "Áp dụng",
+                filterClear: "Xóa bộ lọc",
+                exportExcel: "Xuất Excel",
+                transactionHistory: "Lịch Sử Giao Dịch",
+                tableDate: "Ngày",
+                tableDescription: "Mô tả",
+                tableMember: "Người giao dịch",
+                tableType: "Loại",
+                tableAmount: "Số tiền",
+                tableActions: "Hành động",
+                noTransactions: "Không có giao dịch nào",
+                paginationPrevious: "Trước",
+                paginationNext: "Sau",
+                page: "Trang",
+                of: "của",
+                unassigned: "Không xác định",
+                unknownMember: "Thành viên không xác định",
+                unknownType: "Loại không xác định"
             },
             en: {
-                // ... (dữ liệu localization tiếng Anh) ...
+                appTitle: "Transaction History - GROUP FUND MANAGER",
+                appName: "GROUP FUND MANAGER",
+                navDashboard: "Dashboard",
+                navReport: "Report",
+                navLogout: "Logout",
+                reportTitle: "Transaction History",
+                filterStartDate: "Start Date",
+                filterEndDate: "End Date",
+                filterMember: "Member",
+                filterType: "Type",
+                allMembers: "All Members",
+                allTypes: "All Types",
+                filterApply: "Apply",
+                filterClear: "Clear",
+                exportExcel: "Export Excel",
+                transactionHistory: "Transaction History",
+                tableDate: "Date",
+                tableDescription: "Description",
+                tableMember: "Member",
+                tableType: "Type",
+                tableAmount: "Amount",
+                tableActions: "Actions",
+                noTransactions: "No transactions found",
+                paginationPrevious: "Previous",
+                paginationNext: "Next",
+                page: "Page",
+                of: "of",
+                unassigned: "Unassigned",
+                unknownMember: "Unknown Member",
+                unknownType: "Unknown Type"
             }
         };
         let currentLanguage = 'vi';
-        const translations = localization[currentLanguage];
+        let translations = localization[currentLanguage];
 
-        // --- Các hàm mới/cập nhật để hiển thị dữ liệu ---
+        // Function to update content based on selected language
+        function updateContent() {
+            translations = localization[currentLanguage];
+            document.querySelectorAll('[data-key]').forEach(element => {
+                const key = element.dataset.key;
+                if (translations[key]) {
+                    element.textContent = translations[key];
+                }
+            });
+            renderTransactions(filteredTransactions);
+        }
 
+        // Function to set the language
+        function setLanguage(lang) {
+            currentLanguage = lang;
+            document.getElementById('lang-vi-btn').classList.toggle('active', lang === 'vi');
+            document.getElementById('lang-en-btn').classList.toggle('active', lang === 'en');
+            updateContent();
+        }
+
+        document.getElementById('lang-vi-btn').addEventListener('click', () => setLanguage('vi'));
+        document.getElementById('lang-en-btn').addEventListener('click', () => setLanguage('en'));
+        
         /**
-         * Lấy tên thành viên từ ID.
-         * @param {string[]} memberIds - Mảng các ID thành viên.
-         * @returns {string} - Chuỗi tên thành viên, hoặc 'Không xác định' nếu không tìm thấy.
+         * Fetches data from Supabase and initializes the page.
          */
-        function getMemberNames(memberIds) {
-            if (!memberIds || memberIds.length === 0) {
+        async function fetchSupabaseData() {
+            elements.loadingOverlay.classList.remove('hidden');
+            try {
+                // Fetch members data from the 'members_quan' table
+                const { data: membersData, error: membersError } = await supabaseClient
+                    .from('members_quan')
+                    .select('*');
+                if (membersError) throw membersError;
+                members = membersData;
+
+                // Fetch expense types data from the 'expensetype_quan' table
+                const { data: expenseTypesData, error: expenseTypesError } = await supabaseClient
+                    .from('expensetype_quan')
+                    .select('*');
+                if (expenseTypesError) throw expenseTypesError;
+                expenseTypes = expenseTypesData;
+
+                // Fetch transactions data from the 'transactions_quan' table
+                const { data: transactionsData, error: transactionsError } = await supabaseClient
+                    .from('transactions_quan')
+                    .select('*');
+                if (transactionsError) throw transactionsError;
+                transactions = transactionsData;
+
+                console.log('Fetched Members:', members);
+                console.log('Fetched Expense Types:', expenseTypes);
+                console.log('Fetched Transactions:', transactions);
+
+                // Initialize the page with the fetched data
+                initializePageWithData();
+
+            } catch (error) {
+                console.error('Error fetching data from Supabase:', error.message);
+                // Display an error message to the user here if needed
+            } finally {
+                elements.loadingOverlay.classList.add('hidden');
+            }
+        }
+        
+        /**
+         * Gets member names from IDs.
+         * @param {string[]} memberIds - Array of member IDs.
+         * @param {string} contributingMemberId - ID of the contributing member.
+         * @returns {string} - A string of member names, or 'Unassigned' if not found.
+         */
+        function getMemberNames(memberIds, contributingMemberId) {
+            let ids = [];
+            if (memberIds) {
+                ids = [...memberIds];
+            }
+            if (contributingMemberId && !ids.includes(contributingMemberId)) {
+                ids.push(contributingMemberId);
+            }
+
+            if (ids.length === 0) {
                 return translations.unassigned || 'Không xác định';
             }
-            const names = memberIds.map(id => {
+            const names = ids.map(id => {
                 const member = members.find(m => m.id === id);
                 return member ? member.name : translations.unknownMember || 'Thành viên không xác định';
             });
@@ -406,9 +522,9 @@
         }
 
         /**
-         * Lấy tên loại giao dịch từ ID.
-         * @param {string} expenseType - ID của loại giao dịch.
-         * @returns {string} - Tên loại giao dịch, hoặc 'Không xác định' nếu không tìm thấy.
+         * Gets the expense type name from its ID.
+         * @param {string} expenseType - The ID of the expense type.
+         * @returns {string} - The name of the expense type, or 'Unknown Type' if not found.
          */
         function getExpenseTypeName(expenseType) {
             const type = expenseTypes.find(t => t.id === expenseType);
@@ -416,17 +532,17 @@
         }
 
         /**
-         * Định dạng số tiền thành chuỗi tiền tệ.
-         * @param {number} amount - Số tiền.
-         * @returns {string} - Chuỗi tiền tệ đã định dạng.
+         * Formats a number as a currency string.
+         * @param {number} amount - The amount to format.
+         * @returns {string} - The formatted currency string.
          */
         function formatCurrency(amount) {
             return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
         }
 
         /**
-         * Hiển thị bảng giao dịch dựa trên dữ liệu.
-         * @param {Array} data - Mảng các đối tượng giao dịch.
+         * Renders the transaction table with the provided data.
+         * @param {Array} data - An array of transaction objects.
          */
         function renderTransactions(data) {
             elements.transactionTableBody.innerHTML = '';
@@ -435,10 +551,10 @@
             const paginatedData = data.slice(startIndex, endIndex);
 
             if (paginatedData.length === 0) {
-                elements.transactionTableBody.innerHTML = `<tr><td colspan="6" class="text-center py-4 text-gray-500" data-key="noTransactions">Không có giao dịch nào</td></tr>`;
+                elements.transactionTableBody.innerHTML = `<tr><td colspan="6" class="text-center py-4 text-gray-500">${translations.noTransactions}</td></tr>`;
             } else {
                 paginatedData.forEach(transaction => {
-                    const memberName = getMemberNames(transaction.involvedMemberIds);
+                    const memberName = getMemberNames(transaction.involvedMemberIds, transaction.contributingMemberId);
                     const expenseTypeName = getExpenseTypeName(transaction.expense_type);
                     const formattedDate = new Date(transaction.date).toLocaleDateString('vi-VN');
                     const formattedAmount = formatCurrency(transaction.amount);
@@ -460,13 +576,13 @@
                 });
             }
 
-            elements.transactionCountSpan.textContent = `(${data.length} giao dịch)`;
+            elements.transactionCountSpan.textContent = `(${data.length} ${translations.transactionHistory.toLowerCase()})`;
             updatePaginationControls(data.length);
         }
 
         /**
-         * Cập nhật bộ điều khiển phân trang.
-         * @param {number} totalTransactions - Tổng số giao dịch.
+         * Updates the pagination controls.
+         * @param {number} totalTransactions - The total number of transactions.
          */
         function updatePaginationControls(totalTransactions) {
             const totalPages = Math.ceil(totalTransactions / transactionsPerPage);
@@ -488,7 +604,7 @@
         }
 
         /**
-         * Lọc các giao dịch dựa trên bộ lọc.
+         * Filters the transactions based on the filter criteria.
          */
         function applyFilters() {
             const startDate = elements.startDateFilter.value ? new Date(elements.startDateFilter.value) : null;
@@ -496,13 +612,33 @@
             const memberId = elements.memberFilter.value;
             const expenseType = elements.expenseTypeFilter.value;
 
+            // Log filter criteria for debugging
+            console.log('--- Applying filters ---');
+            console.log('Start Date:', startDate);
+            console.log('End Date:', endDate);
+            console.log('Member ID:', memberId);
+            console.log('Expense Type:', expenseType);
+
             filteredTransactions = transactions.filter(t => {
                 const transactionDate = new Date(t.date);
-                const memberMatch = memberId === 'all' || (t.involvedMemberIds && t.involvedMemberIds.includes(memberId)) || (t.contributingMemberId && t.contributingMemberId === memberId);
+                // Check member. Includes both involvedMemberIds and contributingMemberId.
+                const memberMatch = memberId === 'all' || 
+                    (t.involvedMemberIds && t.involvedMemberIds.includes(memberId)) || 
+                    (t.contributingMemberId && t.contributingMemberId === memberId);
+                
+                // Check expense type
                 const typeMatch = expenseType === 'all' || t.expense_type === expenseType;
-                const dateMatch = (!startDate || transactionDate >= startDate) && (!endDate || transactionDate <= endDate);
+                
+                // Check date range
+                const dateMatch = (!startDate || transactionDate >= startDate) && 
+                                  (!endDate || transactionDate <= endDate);
+                
                 return memberMatch && typeMatch && dateMatch;
             });
+            
+            // Log the filtered results
+            console.log('Filtered Transactions:', filteredTransactions);
+            
             currentPage = 1;
             renderTransactions(filteredTransactions);
         }
@@ -534,14 +670,15 @@
             }
         });
 
-        // Event listener cho nút hamburger
+        // Hamburger menu event listener
         elements.hamburgerBtn.addEventListener('click', () => {
             elements.hamburgerMenu.classList.toggle('hidden');
         });
 
-        // Initialize function to populate filters and render initial data
-        function initializePage() {
+        // Initialization function to populate filters and render table
+        function initializePageWithData() {
             // Populate member filter
+            elements.memberFilter.innerHTML = `<option value="all" data-key="allMembers">Tất cả</option>`;
             members.forEach(member => {
                 const option = document.createElement('option');
                 option.value = member.id;
@@ -550,6 +687,7 @@
             });
 
             // Populate expense type filter
+            elements.expenseTypeFilter.innerHTML = `<option value="all" data-key="allTypes">Tất cả</option>`;
             expenseTypes.forEach(type => {
                 const option = document.createElement('option');
                 option.value = type.id;
@@ -557,11 +695,15 @@
                 elements.expenseTypeFilter.appendChild(option);
             });
 
-            renderTransactions(transactions);
+            // Set initial language
+            setLanguage(currentLanguage);
+
+            filteredTransactions = transactions;
+            renderTransactions(filteredTransactions);
         }
         
-        // Gọi hàm khởi tạo khi DOM đã tải xong
-        document.addEventListener('DOMContentLoaded', initializePage);
+        // Call the function to fetch data from Supabase when the DOM is loaded
+        document.addEventListener('DOMContentLoaded', fetchSupabaseData);
     </script>
 </body>
 </html>
