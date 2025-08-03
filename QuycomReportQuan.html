@@ -293,13 +293,25 @@
             </div>
         </div>
         
-        <!-- Chart Section -->
-        <div id="chart-section" class="bg-white rounded-xl shadow overflow-hidden mt-8">
-            <div class="p-6 border-b border-gray-200">
-                <h3 class="text-xl font-bold text-gray-900" data-key="spendingChartTitle">Biểu đồ chi tiêu</h3>
+        <!-- Charts Section -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-8">
+            <!-- Doughnut Chart Section -->
+            <div id="chart-section" class="bg-white rounded-xl shadow overflow-hidden">
+                <div class="p-6 border-b border-gray-200">
+                    <h3 class="text-xl font-bold text-gray-900" data-key="spendingChartTitle">Biểu đồ cơ cấu chi tiêu</h3>
+                </div>
+                <div class="p-6">
+                    <canvas id="expenseChart"></canvas>
+                </div>
             </div>
-            <div class="p-6">
-                <canvas id="expenseChart"></canvas>
+             <!-- Monthly Stacked Bar Chart Section -->
+            <div id="monthly-chart-section" class="bg-white rounded-xl shadow overflow-hidden">
+                <div class="p-6 border-b border-gray-200">
+                    <h3 class="text-xl font-bold text-gray-900" data-key="monthlySpendingChartTitle">Biểu đồ chi tiêu theo tháng</h3>
+                </div>
+                <div class="p-6">
+                    <canvas id="monthlyExpenseChart"></canvas>
+                </div>
             </div>
         </div>
 
@@ -472,6 +484,7 @@
             detailType: document.getElementById('detail-type'),
             // Chart elements
             expenseChartCanvas: document.getElementById('expenseChart'),
+            monthlyExpenseChartCanvas: document.getElementById('monthlyExpenseChart'),
             chartDetailModalOverlay: document.getElementById('chart-detail-modal-overlay'),
             chartDetailModalTitle: document.getElementById('chart-detail-modal-title'),
             chartDetailTableBody: document.getElementById('chart-detail-table-body'),
@@ -490,7 +503,9 @@
         let currentPage = 1;
         const transactionsPerPage = 10;
         let filteredTransactions = [];
-        let expenseChartInstance = null; // To hold the chart instance
+        let expenseChartInstance = null;
+        let monthlyChartInstance = null;
+        let expenseTypeColors = {};
 
         const localization = {
             vi: {
@@ -537,9 +552,11 @@
                 detailModalAmount: "Số tiền:",
                 detailModalMember: "Người giao dịch:",
                 detailModalType: "Loại giao dịch:",
-                spendingChartTitle: "Biểu đồ chi tiêu",
+                spendingChartTitle: "Biểu đồ cơ cấu chi tiêu",
+                monthlySpendingChartTitle: "Biểu đồ chi tiêu theo tháng",
                 spendingByType: "Chi tiêu theo loại",
                 chartDetailTitle: "Chi tiết cho",
+                totalSpending: "Tổng chi tiêu",
             },
             en: {
                 appTitle: "Transaction History - GROUP FUND MANAGER",
@@ -585,9 +602,11 @@
                 detailModalAmount: "Amount:",
                 detailModalMember: "Member:",
                 detailModalType: "Transaction Type:",
-                spendingChartTitle: "Spending Chart",
+                spendingChartTitle: "Spending Structure Chart",
+                monthlySpendingChartTitle: "Monthly Spending Chart",
                 spendingByType: "Spending by Type",
                 chartDetailTitle: "Details for",
+                totalSpending: "Total Spending",
             }
         };
         let currentLanguage = 'vi';
@@ -602,7 +621,7 @@
                 }
             });
             renderTransactions(filteredTransactions);
-            renderChart(filteredTransactions); // Re-render chart on language change
+            renderAllCharts(filteredTransactions);
         }
 
         function setLanguage(lang) {
@@ -625,6 +644,12 @@
                 const { data: expenseTypesData, error: expenseTypesError } = await supabaseClient.from('expensetype_quan').select('*');
                 if (expenseTypesError) throw expenseTypesError;
                 expenseTypes = expenseTypesData;
+                
+                // Generate consistent colors for each expense type
+                expenseTypes.forEach((type, index) => {
+                    expenseTypeColors[type.expense_type] = `hsl(${(index * 60) % 360}, 70%, 60%)`;
+                });
+
 
                 const { data: transactionsData, error: transactionsError } = await supabaseClient.from('transactions_quan').select('*');
                 if (transactionsError) throw transactionsError;
@@ -692,8 +717,13 @@
             elements.transactionCountSpan.textContent = `(${data.length} ${translations.transactionHistory.toLowerCase()})`;
             updatePaginationControls(data.length);
         }
+        
+        function renderAllCharts(data) {
+            renderDoughnutChart(data);
+            renderMonthlyChart(data);
+        }
 
-        function renderChart(data) {
+        function renderDoughnutChart(data) {
             if (expenseChartInstance) {
                 expenseChartInstance.destroy();
             }
@@ -717,7 +747,7 @@
 
             const chartLabels = Object.keys(sortedData);
             const chartData = Object.values(sortedData).map(item => item.total);
-            const chartColors = chartLabels.map((_, i) => `hsl(${(i * 60) % 360}, 70%, 60%)`);
+            const chartColors = chartLabels.map(label => expenseTypeColors[label] || '#cccccc');
 
             const ctx = elements.expenseChartCanvas.getContext('2d');
             expenseChartInstance = new Chart(ctx, {
@@ -736,9 +766,9 @@
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    onClick: (event, elements) => {
-                        if (elements.length > 0) {
-                            const chartElement = elements[0];
+                    onClick: (event, chartElements) => {
+                        if (chartElements.length > 0) {
+                            const chartElement = chartElements[0];
                             const label = chartLabels[chartElement.index];
                             const transactionsForType = sortedData[label].transactions;
                             openChartDetailModal(label, transactionsForType);
@@ -774,15 +804,21 @@
                         title: {
                             display: true,
                             text: translations.spendingChartTitle,
-                            font: { size: 18, family: "'Inter', sans-serif" }
+                            font: { size: 18, family: "'Inter', sans-serif" },
+                            padding: { top: 10, bottom: 10 }
+                        },
+                         subtitle: {
+                            display: true,
+                            text: `${translations.totalSpending}: ${formatCurrency(totalSpending)}`,
+                            font: { size: 14, weight: 'bold', family: "'Inter', sans-serif" },
+                            color: '#006B68',
+                            padding: { bottom: 10 }
                         },
                         tooltip: {
                             callbacks: {
                                 label: function(context) {
                                     let label = context.label || '';
-                                    if (label) {
-                                        label += ': ';
-                                    }
+                                    if (label) label += ': ';
                                     if (context.parsed !== null) {
                                         const value = context.parsed;
                                         const percentage = totalSpending > 0 ? ((value / totalSpending) * 100).toFixed(2) : 0;
@@ -797,6 +833,90 @@
             });
         }
         
+        function renderMonthlyChart(data) {
+            if (monthlyChartInstance) {
+                monthlyChartInstance.destroy();
+            }
+
+            const monthlyData = data.reduce((acc, t) => {
+                const month = t.date.substring(0, 7); // YYYY-MM
+                if (!acc[month]) {
+                    acc[month] = { total: 0 };
+                }
+                const type = t.expense_type || (translations.unassigned || 'Không xác định');
+                if (!acc[month][type]) {
+                    acc[month][type] = 0;
+                }
+                acc[month][type] += t.amount;
+                acc[month].total += t.amount;
+                return acc;
+            }, {});
+            
+            const months = Object.keys(monthlyData).sort();
+            const types = [...new Set(data.map(t => t.expense_type || (translations.unassigned || 'Không xác định')))];
+
+            const datasets = types.map(type => {
+                const dataForType = months.map(month => {
+                    const monthData = monthlyData[month];
+                    const typeTotal = monthData[type] || 0;
+                    return monthData.total > 0 ? (typeTotal / monthData.total) * 100 : 0;
+                });
+                return {
+                    label: type,
+                    data: dataForType,
+                    backgroundColor: expenseTypeColors[type] || '#cccccc',
+                };
+            });
+
+            const ctx = elements.monthlyExpenseChartCanvas.getContext('2d');
+            monthlyChartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: months,
+                    datasets: datasets
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: translations.monthlySpendingChartTitle,
+                            font: { size: 18, family: "'Inter', sans-serif" }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    if (context.parsed.y !== null) {
+                                        label += context.parsed.y.toFixed(2) + '%';
+                                    }
+                                    return label;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            stacked: true,
+                        },
+                        y: {
+                            stacked: true,
+                            max: 100,
+                            ticks: {
+                                callback: function(value) {
+                                    return value + '%';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
         function openChartDetailModal(type, transactionsForType) {
             elements.chartDetailModalTitle.textContent = `${translations.chartDetailTitle} "${type}"`;
             elements.chartDetailTableBody.innerHTML = '';
@@ -857,7 +977,7 @@
 
             currentPage = 1;
             renderTransactions(filteredTransactions);
-            renderChart(filteredTransactions); // Update chart with filtered data
+            renderAllCharts(filteredTransactions);
         }
 
         function exportToExcel() {
@@ -981,7 +1101,7 @@
             filteredTransactions = transactions;
             currentPage = 1;
             renderTransactions(filteredTransactions);
-            renderChart(filteredTransactions); // Also reset chart
+            renderAllCharts(filteredTransactions);
         });
 
         elements.prevPageBtn.addEventListener('click', () => {
@@ -1049,7 +1169,7 @@
 
             filteredTransactions = transactions;
             renderTransactions(filteredTransactions);
-            renderChart(filteredTransactions); // Initial chart render
+            renderAllCharts(filteredTransactions);
         }
 
         document.addEventListener('DOMContentLoaded', fetchSupabaseData);
