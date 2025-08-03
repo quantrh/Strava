@@ -809,11 +809,12 @@
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    onClick: (event, chartElements) => {
-                        if (chartElements.length > 0) {
-                            const element = chartElements[0];
-                            const month = monthlyChartInstance.data.labels[element.index];
-                            const type = monthlyChartInstance.data.datasets[element.datasetIndex].label;
+                    onClick: (event, elements, chart) => {
+                        const points = chart.getElementsAtEventForMode(event, 'nearest', { intersect: true }, true);
+                        if (points.length > 0) {
+                            const element = points[0];
+                            const month = chart.data.labels[element.index];
+                            const type = chart.data.datasets[element.datasetIndex].label;
 
                             const transactionsForMonthAndType = filteredTransactions.filter(t => {
                                 const transactionMonth = t.date.substring(0, 7);
