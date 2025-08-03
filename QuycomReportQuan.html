@@ -265,6 +265,9 @@
                 <div class="p-6 h-96">
                     <canvas id="monthlyExpenseChart"></canvas>
                 </div>
+                <div id="monthly-summary-container" class="p-6 border-t border-gray-200 overflow-x-auto">
+                    <!-- Monthly summary tables will be inserted here -->
+                </div>
             </div>
         </div>
 
@@ -328,6 +331,7 @@
             expenseChartCanvas: document.getElementById('expenseChart'),
             expenseLegendContainer: document.getElementById('expense-legend-container'),
             monthlyExpenseChartCanvas: document.getElementById('monthlyExpenseChart'),
+            monthlySummaryContainer: document.getElementById('monthly-summary-container'),
             chartDetailModalOverlay: document.getElementById('chart-detail-modal-overlay'),
             chartDetailModalTitle: document.getElementById('chart-detail-modal-title'),
             chartDetailTableBody: document.getElementById('chart-detail-table-body'),
@@ -628,7 +632,8 @@
                             const chartElement = chartElements[0];
                             const label = chartLabels[chartElement.index];
                             const transactionsForType = spendingByType[label].transactions;
-                            openChartDetailModal(label, transactionsForType);
+                            const title = `${translations.chartDetailTitle} "${label}"`;
+                            openChartDetailModal(title, transactionsForType);
                         }
                     },
                     plugins: {
@@ -689,7 +694,7 @@
 
             const ctx = elements.monthlyExpenseChartCanvas.getContext('2d');
             monthlyChartInstance = new Chart(ctx, {
-                type: 'line', // Changed from 'bar' to 'line'
+                type: 'line',
                 data: {
                     labels: months,
                     datasets: datasets
@@ -697,6 +702,22 @@
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
+                    onClick: (event, chartElements) => {
+                        if (chartElements.length > 0) {
+                            const element = chartElements[0];
+                            const month = monthlyChartInstance.data.labels[element.index];
+                            const type = monthlyChartInstance.data.datasets[element.datasetIndex].label;
+
+                            const transactionsForMonthAndType = filteredTransactions.filter(t => {
+                                const transactionMonth = t.date.substring(0, 7);
+                                const transactionType = t.expense_type || (translations.unassigned || 'Không xác định');
+                                return transactionMonth === month && transactionType === type;
+                            });
+                            
+                            const modalTitle = `${translations.chartDetailTitle} "${type}" (${month})`;
+                            openChartDetailModal(modalTitle, transactionsForMonthAndType);
+                        }
+                    },
                     plugins: {
                         title: {
                             display: true,
@@ -704,16 +725,17 @@
                             font: { size: 18, family: "'Inter', sans-serif" }
                         },
                         tooltip: {
-                            mode: 'index',
-                            intersect: false,
+                            mode: 'point',
+                            intersect: true,
                             callbacks: {
                                 label: function(context) {
-                                    let label = context.dataset.label || '';
-                                    if (label) label += ': ';
-                                    if (context.parsed.y !== null) {
-                                        label += context.parsed.y.toFixed(2) + '%';
-                                    }
-                                    return label;
+                                    const month = context.chart.data.labels[context.dataIndex];
+                                    const type = context.dataset.label;
+                                    const monthDetails = monthlyData[month];
+                                    const typeTotal = monthDetails ? (monthDetails[type] || 0) : 0;
+                                    const totalForMonth = monthDetails ? monthDetails.total : 0;
+                                    const percentage = totalForMonth > 0 ? (typeTotal / totalForMonth * 100).toFixed(2) : 0;
+                                    return `${type}: ${formatCurrency(typeTotal)} (${percentage}%)`;
                                 }
                             }
                         },
@@ -738,15 +760,72 @@
                     },
                     elements: {
                         line: {
-                            tension: 0.4 // Makes the lines smooth
+                            tension: 0.4
                         }
                     }
                 }
             });
+
+            // Render summary tables below the chart
+            const summaryContainer = elements.monthlySummaryContainer;
+            summaryContainer.innerHTML = ''; 
+
+            if (months.length === 0) {
+                summaryContainer.innerHTML = `<p class="text-center text-gray-500">${translations.noTransactions}</p>`;
+                return;
+            }
+
+            let summaryHtml = '<div class="space-y-6">';
+            months.forEach(month => {
+                const monthData = monthlyData[month];
+                const sortedTypes = Object.entries(monthData)
+                    .filter(([key]) => key !== 'total')
+                    .sort(([, a], [, b]) => b - a);
+
+                summaryHtml += `
+                    <div>
+                        <h4 class="text-lg font-semibold mb-2">${month}</h4>
+                        <table class="w-full text-sm text-left text-gray-500">
+                            <thead class="text-xs text-gray-700 uppercase bg-gray-50">
+                                <tr>
+                                    <th scope="col" class="px-4 py-2">${translations.legendType}</th>
+                                    <th scope="col" class="px-4 py-2 text-right">${translations.legendAmount}</th>
+                                    <th scope="col" class="px-4 py-2 text-right">${translations.legendRatio}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                `;
+
+                sortedTypes.forEach(([type, amount]) => {
+                    const percentage = monthData.total > 0 ? (amount / monthData.total * 100).toFixed(2) : 0;
+                    summaryHtml += `
+                        <tr class="bg-white border-b">
+                            <td class="px-4 py-2 font-medium text-gray-900 whitespace-nowrap">${type}</td>
+                            <td class="px-4 py-2 text-right">${formatCurrency(amount)}</td>
+                            <td class="px-4 py-2 text-right">${percentage}%</td>
+                        </tr>
+                    `;
+                });
+
+                summaryHtml += `
+                            </tbody>
+                            <tfoot class="font-semibold text-gray-900">
+                                <tr>
+                                    <td class="px-4 py-2">${translations.totalSpending}</td>
+                                    <td class="px-4 py-2 text-right">${formatCurrency(monthData.total)}</td>
+                                    <td class="px-4 py-2 text-right">100.00%</td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                `;
+            });
+            summaryHtml += '</div>';
+            summaryContainer.innerHTML = summaryHtml;
         }
 
-        function openChartDetailModal(type, transactionsForType) {
-            elements.chartDetailModalTitle.textContent = `${translations.chartDetailTitle} "${type}"`;
+        function openChartDetailModal(title, transactionsForType) {
+            elements.chartDetailModalTitle.textContent = title;
             elements.chartDetailTableBody.innerHTML = '';
 
             transactionsForType.sort((a, b) => new Date(b.date) - new Date(a.date));
