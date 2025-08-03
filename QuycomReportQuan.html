@@ -138,32 +138,6 @@
             color: white;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
-        /* New custom legend styles */
-        .custom-legend li {
-            display: flex;
-            align-items: center;
-            margin-bottom: 0.5rem;
-            cursor: pointer;
-            font-size: 0.875rem; /* text-sm */
-        }
-        .custom-legend .color-box {
-            width: 1rem;
-            height: 1rem;
-            margin-right: 0.5rem;
-            border-radius: 0.25rem;
-        }
-        /* Chart container to manage multiple charts */
-        .chart-container {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 2rem;
-        }
-        @media (min-width: 1024px) {
-            .chart-container {
-                grid-template-columns: 1fr 1fr;
-            }
-        }
-
         .loading-overlay {
             position: fixed;
             top: 0;
@@ -302,7 +276,7 @@
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" data-key="tableDescription">Mô tả</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" data-key="tableMember">Người giao dịch</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" data-key="tableType">Loại</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" data-key="tableAmount">Số tiền</th>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider" data-key="tableAmount">Số tiền</th>
                             <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider" data-key="tableActions">Hành động</th>
                         </tr>
                     </thead>
@@ -318,6 +292,17 @@
                 <button id="next-page-btn" class="btn-secondary" data-key="paginationNext">Sau</button>
             </div>
         </div>
+        
+        <!-- Chart Section -->
+        <div id="chart-section" class="bg-white rounded-xl shadow overflow-hidden mt-8">
+            <div class="p-6 border-b border-gray-200">
+                <h3 class="text-xl font-bold text-gray-900" data-key="spendingChartTitle">Biểu đồ chi tiêu</h3>
+            </div>
+            <div class="p-6">
+                <canvas id="expenseChart"></canvas>
+            </div>
+        </div>
+
     </main>
 
     <!-- Scroll to Top Button -->
@@ -448,7 +433,6 @@
             deleteModalOverlay: document.getElementById('delete-modal-overlay'),
             confirmDeleteBtn: document.getElementById('confirm-delete-btn'),
             cancelDeleteBtn: document.getElementById('cancel-delete-btn'),
-            // New elements for the detail modal
             viewDetailModalOverlay: document.getElementById('view-detail-modal-overlay'),
             closeDetailModalBtn: document.getElementById('close-detail-modal-btn'),
             detailDate: document.getElementById('detail-date'),
@@ -456,6 +440,8 @@
             detailAmount: document.getElementById('detail-amount'),
             detailMember: document.getElementById('detail-member'),
             detailType: document.getElementById('detail-type'),
+            // Chart element
+            expenseChartCanvas: document.getElementById('expenseChart'),
         };
 
         // --- Supabase Client Initialization ---
@@ -470,6 +456,7 @@
         let currentPage = 1;
         const transactionsPerPage = 10;
         let filteredTransactions = [];
+        let expenseChartInstance = null; // To hold the chart instance
 
         const localization = {
             vi: {
@@ -516,6 +503,8 @@
                 detailModalAmount: "Số tiền:",
                 detailModalMember: "Người giao dịch:",
                 detailModalType: "Loại giao dịch:",
+                spendingChartTitle: "Biểu đồ chi tiêu",
+                spendingByType: "Chi tiêu theo loại",
             },
             en: {
                 appTitle: "Transaction History - GROUP FUND MANAGER",
@@ -561,12 +550,13 @@
                 detailModalAmount: "Amount:",
                 detailModalMember: "Member:",
                 detailModalType: "Transaction Type:",
+                spendingChartTitle: "Spending Chart",
+                spendingByType: "Spending by Type",
             }
         };
         let currentLanguage = 'vi';
         let translations = localization[currentLanguage];
 
-        // Function to update content based on selected language
         function updateContent() {
             translations = localization[currentLanguage];
             document.querySelectorAll('[data-key]').forEach(element => {
@@ -576,9 +566,9 @@
                 }
             });
             renderTransactions(filteredTransactions);
+            renderChart(filteredTransactions); // Re-render chart on language change
         }
 
-        // Function to set the language
         function setLanguage(lang) {
             currentLanguage = lang;
             document.getElementById('lang-vi-btn').classList.toggle('active', lang === 'vi');
@@ -589,99 +579,53 @@
         document.getElementById('lang-vi-btn').addEventListener('click', () => setLanguage('vi'));
         document.getElementById('lang-en-btn').addEventListener('click', () => setLanguage('en'));
 
-        /**
-         * Fetches data from Supabase and initializes the page.
-         */
         async function fetchSupabaseData() {
             elements.loadingOverlay.classList.remove('hidden');
             try {
-                // Fetch members data from the 'members_quan' table
-                const { data: membersData, error: membersError } = await supabaseClient
-                    .from('members_quan')
-                    .select('*');
+                const { data: membersData, error: membersError } = await supabaseClient.from('members_quan').select('*');
                 if (membersError) throw membersError;
                 members = membersData;
 
-                // Fetch expense types data from the 'expensetype_quan' table
-                const { data: expenseTypesData, error: expenseTypesError } = await supabaseClient
-                    .from('expensetype_quan')
-                    .select('*');
+                const { data: expenseTypesData, error: expenseTypesError } = await supabaseClient.from('expensetype_quan').select('*');
                 if (expenseTypesError) throw expenseTypesError;
                 expenseTypes = expenseTypesData;
 
-                // Fetch transactions data from the 'transactions_quan' table
-                const { data: transactionsData, error: transactionsError } = await supabaseClient
-                    .from('transactions_quan')
-                    .select('*');
+                const { data: transactionsData, error: transactionsError } = await supabaseClient.from('transactions_quan').select('*');
                 if (transactionsError) throw transactionsError;
                 transactions = transactionsData;
 
-                // Sort transactions by date in descending order (newest first)
                 transactions.sort((a, b) => new Date(b.date) - new Date(a.date));
 
-                console.log('Fetched Members:', members);
-                console.log('Fetched Expense Types:', expenseTypes);
-                console.log('Fetched Transactions:', transactions);
-
-                // Initialize the page with the fetched data
                 initializePageWithData();
 
             } catch (error) {
                 console.error('Error fetching data from Supabase:', error.message);
-                // Display an error message to the user here if needed
             } finally {
                 elements.loadingOverlay.classList.add('hidden');
             }
         }
 
-        /**
-         * Gets member names from IDs.
-         * @param {string[]} memberIds - Array of member IDs.
-         * @param {string} contributingMemberId - ID of the contributing member.
-         * @returns {string} - A string of member names, or 'Unassigned' if not found.
-         */
         function getMemberNames(memberIds, contributingMemberId) {
             let ids = [];
-            if (memberIds) {
-                ids = [...memberIds];
-            }
-            if (contributingMemberId && !ids.includes(contributingMemberId)) {
-                ids.push(contributingMemberId);
-            }
+            if (memberIds) ids = [...memberIds];
+            if (contributingMemberId && !ids.includes(contributingMemberId)) ids.push(contributingMemberId);
 
-            if (ids.length === 0) {
-                return translations.unassigned || 'Không xác định';
-            }
-            const names = ids.map(id => {
+            if (ids.length === 0) return translations.unassigned || 'Không xác định';
+            return ids.map(id => {
                 const member = members.find(m => m.id === id);
-                return member ? member.name : translations.unknownMember || 'Thành viên không xác định';
-            });
-            return names.join(', ');
+                return member ? member.name : (translations.unknownMember || 'Thành viên không xác định');
+            }).join(', ');
         }
 
-        /**
-         * Gets the expense type name from the transaction's expense_type field.
-         * @param {string} expenseTypeNameFromTransaction - The name of the expense type from the transaction object.
-         * @returns {string} - The name of the expense type, or 'Unknown Type' if not found.
-         */
         function getExpenseTypeName(expenseTypeNameFromTransaction) {
             const type = expenseTypes.find(t => t.expense_type === expenseTypeNameFromTransaction);
-            return type ? type.expense_type : translations.unknownType || 'Loại không xác định';
+            return type ? type.expense_type : (translations.unknownType || 'Loại không xác định');
         }
 
-        /**
-         * Formats a number as a currency string.
-         * @param {number} amount - The amount to format.
-         * @returns {string} - The formatted currency string.
-         */
         function formatCurrency(amount) {
             return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
         }
 
-        /**
-         * Renders the transaction table with the provided data.
-         * @param {Array} data - An array of transaction objects.
-         */
         function renderTransactions(data) {
             elements.transactionTableBody.innerHTML = '';
             const startIndex = (currentPage - 1) * transactionsPerPage;
@@ -697,7 +641,6 @@
                     const formattedDate = new Date(transaction.date).toLocaleDateString('vi-VN');
                     const formattedAmount = formatCurrency(transaction.amount);
 
-                    // Add a data-id attribute to the row for the detail modal function
                     const row = `
                         <tr class="hover:bg-gray-50 cursor-pointer" data-id="${transaction.id}">
                             <td class="table-cell">${formattedDate}</td>
@@ -706,8 +649,8 @@
                             <td class="table-cell">${expenseTypeName}</td>
                             <td class="table-cell font-medium text-right">${formattedAmount}</td>
                             <td class="table-cell text-right">
-                                <button class="text-blue-600 hover:text-blue-900 mx-1 edit-btn" data-id="${transaction.id}">Sửa</button>
-                                <button class="text-red-600 hover:text-red-900 mx-1 delete-btn" data-id="${transaction.id}">Xóa</button>
+                                <button class="text-blue-600 hover:text-blue-900 mx-1 edit-btn" data-id="${transaction.id}" data-key="editAction">Sửa</button>
+                                <button class="text-red-600 hover:text-red-900 mx-1 delete-btn" data-id="${transaction.id}" data-key="deleteAction">Xóa</button>
                             </td>
                         </tr>
                     `;
@@ -720,36 +663,98 @@
         }
 
         /**
-         * Updates the pagination controls.
-         * @param {number} totalTransactions - The total number of transactions.
+         * Renders the spending chart based on the provided transaction data.
+         * @param {Array} data - An array of transaction objects.
          */
+        function renderChart(data) {
+            if (expenseChartInstance) {
+                expenseChartInstance.destroy();
+            }
+
+            const spendingByType = {};
+            data.forEach(transaction => {
+                // Assuming all transactions are expenses for this chart
+                const type = transaction.expense_type || (translations.unassigned || 'Không xác định');
+                const amount = transaction.amount;
+                if (spendingByType[type]) {
+                    spendingByType[type] += amount;
+                } else {
+                    spendingByType[type] = amount;
+                }
+            });
+
+            const chartLabels = Object.keys(spendingByType);
+            const chartData = Object.values(spendingByType);
+            
+            // Generate dynamic colors for the chart
+            const chartColors = chartLabels.map(() => `hsl(${Math.random() * 360}, 70%, 60%)`);
+
+            const ctx = elements.expenseChartCanvas.getContext('2d');
+            expenseChartInstance = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: chartLabels,
+                    datasets: [{
+                        label: translations.spendingByType,
+                        data: chartData,
+                        backgroundColor: chartColors,
+                        borderColor: '#fff',
+                        borderWidth: 2,
+                        hoverOffset: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                             labels: {
+                                font: {
+                                    family: "'Inter', sans-serif",
+                                    size: 14
+                                }
+                            }
+                        },
+                        title: {
+                            display: true,
+                            text: translations.spendingChartTitle,
+                            font: {
+                                size: 18,
+                                family: "'Inter', sans-serif",
+                            }
+                        },
+                        tooltip: {
+                             callbacks: {
+                                label: function(context) {
+                                    let label = context.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    if (context.parsed !== null) {
+                                        label += formatCurrency(context.parsed);
+                                    }
+                                    return label;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
         function updatePaginationControls(totalTransactions) {
             const totalPages = Math.ceil(totalTransactions / transactionsPerPage);
             elements.pageInfoSpan.textContent = `${translations.page} ${currentPage} ${translations.of} ${totalPages}`;
             elements.prevPageBtn.disabled = currentPage === 1;
             elements.nextPageBtn.disabled = currentPage === totalPages || totalPages === 0;
-
-            if (elements.prevPageBtn.disabled) {
-                elements.prevPageBtn.classList.add('opacity-50', 'cursor-not-allowed');
-            } else {
-                elements.prevPageBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-            }
-
-            if (elements.nextPageBtn.disabled) {
-                elements.nextPageBtn.classList.add('opacity-50', 'cursor-not-allowed');
-            } else {
-                elements.nextPageBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-            }
+            elements.prevPageBtn.classList.toggle('opacity-50', currentPage === 1);
+            elements.nextPageBtn.classList.toggle('opacity-50', currentPage === totalPages || totalPages === 0);
         }
 
-        /**
-         * Filters the transactions based on the filter criteria.
-         */
         function applyFilters() {
-            // Get filter dates
             const startDate = elements.startDateFilter.value ? new Date(elements.startDateFilter.value) : null;
             let endDate = null;
-            // To include the entire end date, add one day to the selected date.
             if (elements.endDateFilter.value) {
                 endDate = new Date(elements.endDateFilter.value);
                 endDate.setDate(endDate.getDate() + 1);
@@ -760,104 +765,58 @@
             let filteredExpenseTypeName = null;
             if (expenseTypeFilterValue !== 'all') {
                 const selectedType = expenseTypes.find(t => String(t.id) === expenseTypeFilterValue);
-                if (selectedType) {
-                    filteredExpenseTypeName = selectedType.expense_type;
-                }
+                if (selectedType) filteredExpenseTypeName = selectedType.expense_type;
             }
-
-            console.log('--- Applying filters ---');
-            console.log('Start Date:', startDate);
-            console.log('End Date (exclusive):', endDate);
-            console.log('Member ID:', memberId);
-            console.log('Expense Type Name for filter:', filteredExpenseTypeName);
 
             filteredTransactions = transactions.filter(t => {
                 const transactionDate = new Date(t.date);
-
-                const memberMatch = memberId === 'all' ||
-                    (t.involvedMemberIds && t.involvedMemberIds.includes(memberId)) ||
-                    (t.contributingMemberId && t.contributingMemberId === memberId);
-
+                const memberMatch = memberId === 'all' || (t.involvedMemberIds && t.involvedMemberIds.includes(memberId)) || (t.contributingMemberId && t.contributingMemberId === memberId);
                 const typeMatch = expenseTypeFilterValue === 'all' || t.expense_type === filteredExpenseTypeName;
-
-                // Update date matching logic to be inclusive of the end day
-                const dateMatch = (!startDate || transactionDate >= startDate) &&
-                                  (!endDate || transactionDate < endDate);
-
+                const dateMatch = (!startDate || transactionDate >= startDate) && (!endDate || transactionDate < endDate);
                 return memberMatch && typeMatch && dateMatch;
             });
 
-            console.log('Filtered Transactions:', filteredTransactions);
-
             currentPage = 1;
             renderTransactions(filteredTransactions);
+            renderChart(filteredTransactions); // Update chart with filtered data
         }
 
-        /**
-         * Exports the filtered transactions to an Excel file.
-         */
         function exportToExcel() {
-            const dataToExport = filteredTransactions.map(t => {
-                const memberName = getMemberNames(t.involvedMemberIds, t.contributingMemberId);
-                const expenseTypeName = t.expense_type;
-                const formattedDate = new Date(t.date).toLocaleDateString('vi-VN');
-                const formattedAmount = t.amount; // Use raw number for Excel
-
-                return {
-                    'Ngày': formattedDate,
-                    'Mô tả': t.description,
-                    'Người giao dịch': memberName,
-                    'Loại': expenseTypeName,
-                    'Số tiền (VND)': formattedAmount
-                };
-            });
+            const dataToExport = filteredTransactions.map(t => ({
+                'Ngày': new Date(t.date).toLocaleDateString('vi-VN'),
+                'Mô tả': t.description,
+                'Người giao dịch': getMemberNames(t.involvedMemberIds, t.contributingMemberId),
+                'Loại': t.expense_type,
+                'Số tiền (VND)': t.amount
+            }));
 
             const worksheet = XLSX.utils.json_to_sheet(dataToExport);
             const workbook = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(workbook, worksheet, 'Lịch Sử Giao Dịch');
-
             const wbout = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
             saveAs(new Blob([wbout], { type: 'application/octet-stream' }), 'lich_su_giao_dich.xlsx');
-            console.log("Exported filtered transactions to Excel.");
         }
 
-        /**
-         * Populates the detail modal with transaction data and shows it.
-         * @param {string} transactionId - The ID of the transaction to view.
-         */
         function openDetailModal(transactionId) {
             const transaction = transactions.find(t => String(t.id) === transactionId);
-            if (!transaction) {
-                console.error('Transaction not found:', transactionId);
-                return;
-            }
-
+            if (!transaction) return;
             elements.detailDate.textContent = new Date(transaction.date).toLocaleDateString('vi-VN');
             elements.detailDescription.textContent = transaction.description;
             elements.detailAmount.textContent = formatCurrency(transaction.amount);
             elements.detailMember.textContent = getMemberNames(transaction.involvedMemberIds, transaction.contributingMemberId);
             elements.detailType.textContent = transaction.expense_type;
-
             elements.viewDetailModalOverlay.classList.remove('hidden');
         }
 
-        /**
-         * Populates the edit modal with transaction data and shows it.
-         * @param {string} transactionId - The ID of the transaction to edit.
-         */
         function openEditModal(transactionId) {
             const transaction = transactions.find(t => String(t.id) === transactionId);
-            if (!transaction) {
-                console.error('Transaction not found:', transactionId);
-                return;
-            }
+            if (!transaction) return;
 
             elements.editTransactionId.value = transaction.id;
             elements.editDateInput.value = new Date(transaction.date).toISOString().split('T')[0];
             elements.editDescriptionInput.value = transaction.description;
             elements.editAmountInput.value = transaction.amount;
 
-            // Populate member select
             elements.editMemberSelect.innerHTML = '';
             members.forEach(member => {
                 const option = document.createElement('option');
@@ -865,15 +824,12 @@
                 option.textContent = member.name;
                 elements.editMemberSelect.appendChild(option);
             });
-            // Select the correct member
             if (transaction.contributingMemberId) {
                 elements.editMemberSelect.value = transaction.contributingMemberId;
             } else if (transaction.involvedMemberIds && transaction.involvedMemberIds.length > 0) {
                  elements.editMemberSelect.value = transaction.involvedMemberIds[0];
             }
 
-
-            // Populate expense type select
             elements.editExpenseTypeSelect.innerHTML = '';
             expenseTypes.forEach(type => {
                 const option = document.createElement('option');
@@ -881,99 +837,56 @@
                 option.textContent = type.expense_type;
                 elements.editExpenseTypeSelect.appendChild(option);
             });
-            // Select the correct expense type
             const expenseType = expenseTypes.find(t => t.expense_type === transaction.expense_type);
-            if (expenseType) {
-                elements.editExpenseTypeSelect.value = expenseType.id;
-            }
+            if (expenseType) elements.editExpenseTypeSelect.value = expenseType.id;
 
             elements.editModalOverlay.classList.remove('hidden');
         }
 
-        /**
-         * Handles the form submission for updating a transaction.
-         * @param {Event} event - The form submission event.
-         */
         async function handleEditFormSubmit(event) {
             event.preventDefault();
             elements.loadingOverlay.classList.remove('hidden');
 
             const transactionId = elements.editTransactionId.value;
-            const newDate = elements.editDateInput.value;
-            const newDescription = elements.editDescriptionInput.value;
-            const newAmount = parseFloat(elements.editAmountInput.value);
-            const newMemberId = elements.editMemberSelect.value;
             const newExpenseTypeId = elements.editExpenseTypeSelect.value;
             const newExpenseTypeName = expenseTypes.find(t => String(t.id) === newExpenseTypeId).expense_type;
-
+            
             const updatedData = {
-                date: newDate,
-                description: newDescription,
-                amount: newAmount,
-                contributingMemberId: newMemberId,
+                date: elements.editDateInput.value,
+                description: elements.editDescriptionInput.value,
+                amount: parseFloat(elements.editAmountInput.value),
+                contributingMemberId: elements.editMemberSelect.value,
                 expense_type: newExpenseTypeName,
             };
 
             try {
-                const { data, error } = await supabaseClient
-                    .from('transactions_quan')
-                    .update(updatedData)
-                    .eq('id', transactionId);
-
-                if (error) {
-                    throw error;
-                }
-                console.log('Transaction updated successfully:', data);
+                const { error } = await supabaseClient.from('transactions_quan').update(updatedData).eq('id', transactionId);
+                if (error) throw error;
                 elements.editModalOverlay.classList.add('hidden');
-                // Re-fetch data to update the table
                 await fetchSupabaseData();
-
             } catch (error) {
                 console.error('Error updating transaction:', error.message);
-                // Display error message
             } finally {
                 elements.loadingOverlay.classList.add('hidden');
             }
         }
 
         let transactionToDeleteId = null;
-
-        /**
-         * Opens the delete confirmation modal.
-         * @param {string} transactionId - The ID of the transaction to delete.
-         */
         function openDeleteModal(transactionId) {
             transactionToDeleteId = transactionId;
             elements.deleteModalOverlay.classList.remove('hidden');
         }
 
-        /**
-         * Deletes a transaction from Supabase.
-         */
         async function deleteTransaction() {
-            if (!transactionToDeleteId) {
-                console.error('No transaction ID to delete.');
-                return;
-            }
+            if (!transactionToDeleteId) return;
             elements.loadingOverlay.classList.remove('hidden');
-
             try {
-                const { error } = await supabaseClient
-                    .from('transactions_quan')
-                    .delete()
-                    .eq('id', transactionToDeleteId);
-
-                if (error) {
-                    throw error;
-                }
-                console.log('Transaction deleted successfully:', transactionToDeleteId);
+                const { error } = await supabaseClient.from('transactions_quan').delete().eq('id', transactionToDeleteId);
+                if (error) throw error;
                 elements.deleteModalOverlay.classList.add('hidden');
-                // Re-fetch data to update the table
                 await fetchSupabaseData();
-
             } catch (error) {
                 console.error('Error deleting transaction:', error.message);
-                // Display error message
             } finally {
                 elements.loadingOverlay.classList.add('hidden');
             }
@@ -989,6 +902,7 @@
             filteredTransactions = transactions;
             currentPage = 1;
             renderTransactions(filteredTransactions);
+            renderChart(filteredTransactions); // Also reset chart
         });
 
         elements.prevPageBtn.addEventListener('click', () => {
@@ -1006,54 +920,35 @@
             }
         });
 
-        // Add event listener for the export button
         elements.exportExcelBtn.addEventListener('click', exportToExcel);
 
-        // Add event listener for the table body to handle dynamic buttons and row clicks
         elements.transactionTableBody.addEventListener('click', (event) => {
             const target = event.target;
             const row = target.closest('tr');
             const transactionId = row ? row.getAttribute('data-id') : null;
 
             if (target.classList.contains('edit-btn')) {
-                event.stopPropagation(); // Prevent row click
+                event.stopPropagation();
                 openEditModal(transactionId);
             } else if (target.classList.contains('delete-btn')) {
-                event.stopPropagation(); // Prevent row click
+                event.stopPropagation();
                 openDeleteModal(transactionId);
             } else if (transactionId) {
-                // Handle row click only if it's not on the action buttons
                 openDetailModal(transactionId);
             }
         });
 
-        // Add event listeners for the new detail modal
-        elements.closeDetailModalBtn.addEventListener('click', () => {
-            elements.viewDetailModalOverlay.classList.add('hidden');
-        });
-
-        // Add event listeners for the edit and delete modals
-        elements.closeEditModalBtn.addEventListener('click', () => {
-            elements.editModalOverlay.classList.add('hidden');
-        });
-
+        elements.closeDetailModalBtn.addEventListener('click', () => elements.viewDetailModalOverlay.classList.add('hidden'));
+        elements.closeEditModalBtn.addEventListener('click', () => elements.editModalOverlay.classList.add('hidden'));
         elements.editTransactionForm.addEventListener('submit', handleEditFormSubmit);
-
         elements.cancelDeleteBtn.addEventListener('click', () => {
             elements.deleteModalOverlay.classList.add('hidden');
             transactionToDeleteId = null;
         });
-
         elements.confirmDeleteBtn.addEventListener('click', deleteTransaction);
+        elements.hamburgerBtn.addEventListener('click', () => elements.hamburgerMenu.classList.toggle('hidden'));
 
-        // Hamburger menu event listener
-        elements.hamburgerBtn.addEventListener('click', () => {
-            elements.hamburgerMenu.classList.toggle('hidden');
-        });
-
-        // Initialization function to populate filters and render table
         function initializePageWithData() {
-            // Populate member filter
             elements.memberFilter.innerHTML = `<option value="all" data-key="allMembers">Tất cả</option>`;
             members.forEach(member => {
                 const option = document.createElement('option');
@@ -1062,7 +957,6 @@
                 elements.memberFilter.appendChild(option);
             });
 
-            // Populate expense type filter
             elements.expenseTypeFilter.innerHTML = `<option value="all" data-key="allTypes">Tất cả</option>`;
             expenseTypes.forEach(type => {
                 const option = document.createElement('option');
@@ -1071,14 +965,13 @@
                 elements.expenseTypeFilter.appendChild(option);
             });
 
-            // Set initial language
             setLanguage(currentLanguage);
 
             filteredTransactions = transactions;
             renderTransactions(filteredTransactions);
+            renderChart(filteredTransactions); // Initial chart render
         }
 
-        // Call the function to fetch data from Supabase when the DOM is loaded
         document.addEventListener('DOMContentLoaded', fetchSupabaseData);
     </script>
 </body>
