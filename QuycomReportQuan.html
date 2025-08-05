@@ -143,7 +143,7 @@
 </head>
 <body class="bg-gray-100 text-gray-800">
     <!-- Loading Overlay -->
-    <div id="loading-overlay" class="loading-overlay hidden">
+    <div id="loading-overlay" class="loading-overlay">
         <div class="spinner"></div>
     </div>
 
@@ -156,12 +156,14 @@
         </div>
         <!-- Desktop Nav and Language Switcher -->
         <div class="hidden md:flex items-center gap-4">
-            <a href="QuycomQuan.html" class="text-gray-700 hover:text-gray-900 font-semibold" data-key="navDashboard">Trang chủ</a>
-            <a href="QuycomReportQuan.html" class="text-gray-700 hover:text-gray-900 font-semibold" data-key="navReport">Báo cáo</a>
+            <a href="./QuycomQuan.html" class="text-gray-700 hover:text-gray-900 font-semibold" data-key="navDashboard">Trang chủ</a>
+            <a href="./QuycomReportQuan.html" class="text-gray-700 hover:text-gray-900 font-semibold" data-key="navReport">Báo cáo</a>
             <div class="language-switch">
                 <button id="lang-vi-btn" data-lang="vi" class="active">VI</button>
                 <button id="lang-en-btn" data-lang="en">EN</button>
             </div>
+            <!-- Logout Button -->
+            <button id="logout-btn" class="ml-4 btn-secondary bg-red-100 text-red-700 hover:bg-red-200" data-key="logout">Đăng xuất</button>
         </div>
     </div>
     <main class="container mx-auto p-4 mt-8">
@@ -197,6 +199,21 @@
                             <!-- Checkboxes will be populated here -->
                         </div>
                     </div>
+                </div>
+            </div>
+            <!-- NEW FILTERS ROW -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                <div>
+                    <label for="description-filter" class="block text-sm font-medium text-gray-700" data-key="filterDescription">Mô tả</label>
+                    <input type="text" id="description-filter" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" placeholder="Tìm theo mô tả...">
+                </div>
+                <div>
+                    <label for="min-amount-filter" class="block text-sm font-medium text-gray-700" data-key="filterMinAmount">Số tiền từ</label>
+                    <input type="number" id="min-amount-filter" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" placeholder="0">
+                </div>
+                <div>
+                    <label for="max-amount-filter" class="block text-sm font-medium text-gray-700" data-key="filterMaxAmount">Số tiền đến</label>
+                    <input type="number" id="max-amount-filter" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" placeholder="1000000">
                 </div>
             </div>
             <div class="flex flex-col sm:flex-row gap-2 mt-4">
@@ -383,6 +400,9 @@
             expenseTypeFilterBtn: document.getElementById('expense-type-filter-btn'),
             expenseTypeFilterText: document.getElementById('expense-type-filter-text'),
             expenseTypeFilterDropdown: document.getElementById('expense-type-filter-dropdown'),
+            descriptionFilter: document.getElementById('description-filter'), // New
+            minAmountFilter: document.getElementById('min-amount-filter'), // New
+            maxAmountFilter: document.getElementById('max-amount-filter'), // New
             transactionCountSpan: document.getElementById('transaction-count'),
             prevPageBtn: document.getElementById('prev-page-btn'),
             nextPageBtn: document.getElementById('next-page-btn'),
@@ -443,6 +463,9 @@
                 filterEndDate: "Đến ngày",
                 filterMember: "Người giao dịch",
                 filterType: "Loại giao dịch",
+                filterDescription: "Mô tả",
+                filterMinAmount: "Số tiền từ",
+                filterMaxAmount: "Số tiền đến",
                 allMembers: "Tất cả",
                 allTypes: "Tất cả",
                 filterApply: "Áp dụng",
@@ -478,6 +501,7 @@
                 deleteConfirmationTitle: "Xác Nhận Xóa",
                 deleteConfirmationMessage: "Bạn có chắc chắn muốn xóa giao dịch này không? Hành động này không thể hoàn tác.",
                 modalDelete: "Xóa",
+                logout: "Đăng xuất",
             },
             en: {
                 appTitle: "Transaction History - GROUP FUND MANAGER",
@@ -489,6 +513,9 @@
                 filterEndDate: "End Date",
                 filterMember: "Member",
                 filterType: "Type",
+                filterDescription: "Description",
+                filterMinAmount: "Amount from",
+                filterMaxAmount: "Amount to",
                 allMembers: "All Members",
                 allTypes: "All Types",
                 filterApply: "Apply",
@@ -524,6 +551,7 @@
                 deleteConfirmationTitle: "Delete Confirmation",
                 deleteConfirmationMessage: "Are you sure you want to delete this transaction? This action cannot be undone.",
                 modalDelete: "Delete",
+                logout: "Logout",
             }
         };
         let currentLanguage = 'vi';
@@ -907,7 +935,7 @@
                 sortedTypes.forEach(([type, amount]) => {
                     const percentage = monthData.total > 0 ? (amount / monthData.total * 100).toFixed(2) : 0;
                     summaryHtml += `
-                        <tr class="bg-white border-b">
+                        <tr class="bg-white border-b hover:bg-gray-50 cursor-pointer summary-row" data-month="${month}" data-type="${type}">
                             <td class="px-4 py-2 font-medium text-gray-900 whitespace-nowrap">${type}</td>
                             <td class="px-4 py-2 text-right">${formatCurrency(amount)}</td>
                             <td class="px-4 py-2 text-right">${percentage}%</td>
@@ -918,7 +946,7 @@
                 summaryHtml += `
                             </tbody>
                             <tfoot class="font-semibold text-gray-900">
-                                <tr>
+                                <tr class="hover:bg-gray-100 cursor-pointer summary-row" data-month="${month}" data-type="all">
                                     <td class="px-4 py-2">${translations.totalSpending}</td>
                                     <td class="px-4 py-2 text-right">${formatCurrency(monthData.total)}</td>
                                     <td class="px-4 py-2 text-right">100.00%</td>
@@ -1068,6 +1096,9 @@
             }
             const memberId = elements.memberFilter.value;
             const selectedExpenseTypeIds = getSelectedExpenseTypes();
+            const description = elements.descriptionFilter.value.toLowerCase().trim();
+            const minAmount = parseFloat(elements.minAmountFilter.value);
+            const maxAmount = parseFloat(elements.maxAmountFilter.value);
 
             const selectedExpenseTypeNames = selectedExpenseTypeIds.map(id => {
                 const type = expenseTypes.find(t => String(t.id) === id);
@@ -1079,7 +1110,11 @@
                 const memberMatch = memberId === 'all' || (t.involvedMemberIds && t.involvedMemberIds.includes(memberId)) || (t.contributingMemberId && t.contributingMemberId === memberId);
                 const typeMatch = selectedExpenseTypeNames.length === 0 || selectedExpenseTypeNames.includes(t.expense_type);
                 const dateMatch = (!startDate || transactionDate >= startDate) && (!endDate || transactionDate < endDate);
-                return memberMatch && typeMatch && dateMatch;
+                const descriptionMatch = !description || t.description.toLowerCase().includes(description);
+                const minAmountMatch = isNaN(minAmount) || t.amount >= minAmount;
+                const maxAmountMatch = isNaN(maxAmount) || t.amount <= maxAmount;
+
+                return memberMatch && typeMatch && dateMatch && descriptionMatch && minAmountMatch && maxAmountMatch;
             });
 
             currentPage = 1;
@@ -1109,6 +1144,9 @@
             elements.startDateFilter.value = '';
             elements.endDateFilter.value = '';
             elements.memberFilter.value = 'all';
+            elements.descriptionFilter.value = '';
+            elements.minAmountFilter.value = '';
+            elements.maxAmountFilter.value = '';
             elements.expenseTypeFilterDropdown.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
                 checkbox.checked = false;
             });
@@ -1189,7 +1227,7 @@
             elements.expenseTypeFilterDropdown.innerHTML = '';
             expenseTypes.forEach(type => {
                 const label = document.createElement('label');
-                label.className = 'flex items-center space-x-2';
+                label.className = 'flex items-center space-x-2 p-2 hover:bg-gray-100 cursor-pointer';
                 const checkbox = document.createElement('input');
                 checkbox.type = 'checkbox';
                 checkbox.value = type.id;
@@ -1198,7 +1236,7 @@
                 checkbox.addEventListener('change', updateExpenseTypeFilterText);
 
                 label.appendChild(checkbox);
-                label.appendChild(document.createTextNode(type.expense_type));
+                label.appendChild(document.createTextNode(` ${type.expense_type}`));
                 elements.expenseTypeFilterDropdown.appendChild(label);
             });
 
@@ -1208,8 +1246,91 @@
             renderTransactions(filteredTransactions);
             renderAllCharts(filteredTransactions);
         }
+        
+        // --- NEW: Logout Function ---
+        async function handleLogout() {
+            elements.loadingOverlay.classList.remove('hidden');
+            try {
+                const { error } = await supabaseClient.auth.signOut();
+                if (error) throw error;
+                // FIX: Manually construct the absolute URL
+                const pathArray = window.location.pathname.split('/');
+                pathArray.pop();
+                pathArray.push('LoginQuan.html');
+                window.location.href = window.location.origin + pathArray.join('/');
+            } catch (error) {
+                console.error('Error logging out:', error.message);
+                alert('Lỗi khi đăng xuất: ' + error.message);
+            } finally {
+                elements.loadingOverlay.classList.add('hidden');
+            }
+        }
+        
+        // --- NEW: Event listener for monthly summary table ---
+        elements.monthlySummaryContainer.addEventListener('click', (event) => {
+            const summaryRow = event.target.closest('.summary-row');
+            if (!summaryRow) return;
 
-        document.addEventListener('DOMContentLoaded', fetchSupabaseData);
+            const month = summaryRow.dataset.month;
+            const type = summaryRow.dataset.type;
+
+            const transactionsForSelection = transactions.filter(t => {
+                const transactionMonth = t.date.substring(0, 7);
+                const transactionType = t.expense_type || (translations.unassigned || 'Không xác định');
+                
+                const monthMatch = transactionMonth === month;
+                const typeMatch = (type === 'all') || (transactionType === type);
+
+                return monthMatch && typeMatch;
+            });
+
+            const modalTitle = type === 'all' 
+                ? `${translations.chartDetailTitle} ${month}`
+                : `${translations.chartDetailTitle} "${type}" (${month})`;
+            
+            openChartDetailModal(modalTitle, transactionsForSelection);
+        });
+
+        // --- REVISED: Page Initialization ---
+        document.addEventListener('DOMContentLoaded', async () => {
+            // The loading overlay is visible by default now.
+            
+            // 1. Check user session
+            try {
+                const { data: { session }, error: sessionError } = await supabaseClient.auth.getSession();
+                if (sessionError) throw sessionError;
+
+                if (!session) {
+                    // No user is signed in, redirect to login page
+                    // FIX: Manually construct the absolute URL
+                    const pathArray = window.location.pathname.split('/');
+                    pathArray.pop();
+                    pathArray.push('LoginQuan.html');
+                    window.location.href = window.location.origin + pathArray.join('/');
+                    return; // Stop executing further code
+                }
+
+                // User is logged in, proceed.
+                console.log('User is logged in:', session.user.email);
+
+                // 2. Add event listener for the new logout button
+                const logoutBtn = document.getElementById('logout-btn');
+                if (logoutBtn) {
+                    logoutBtn.addEventListener('click', handleLogout);
+                }
+
+                // 3. Fetch data (the original purpose of the event listener)
+                await fetchSupabaseData();
+
+            } catch (error) {
+                console.error('Initialization error:', error.message);
+                // Hide loading overlay on error
+                elements.loadingOverlay.classList.add('hidden');
+                // Optionally show an error message on the page
+                document.body.innerHTML = `<div class="text-center p-8 text-red-600">Lỗi khởi tạo: ${error.message}</div>`;
+            }
+        });
+
     </script>
 </body>
 </html>
