@@ -201,6 +201,21 @@
                     </div>
                 </div>
             </div>
+            <!-- NEW FILTERS ROW -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                <div>
+                    <label for="description-filter" class="block text-sm font-medium text-gray-700" data-key="filterDescription">Mô tả</label>
+                    <input type="text" id="description-filter" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" placeholder="Tìm theo mô tả...">
+                </div>
+                <div>
+                    <label for="min-amount-filter" class="block text-sm font-medium text-gray-700" data-key="filterMinAmount">Số tiền từ</label>
+                    <input type="number" id="min-amount-filter" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" placeholder="0">
+                </div>
+                <div>
+                    <label for="max-amount-filter" class="block text-sm font-medium text-gray-700" data-key="filterMaxAmount">Số tiền đến</label>
+                    <input type="number" id="max-amount-filter" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" placeholder="1000000">
+                </div>
+            </div>
             <div class="flex flex-col sm:flex-row gap-2 mt-4">
                 <button id="apply-filter-btn" class="btn-primary flex-1" data-key="filterApply">Áp dụng</button>
                 <button id="clear-filter-btn" class="btn-secondary flex-1" data-key="filterClear">Xóa bộ lọc</button>
@@ -385,6 +400,9 @@
             expenseTypeFilterBtn: document.getElementById('expense-type-filter-btn'),
             expenseTypeFilterText: document.getElementById('expense-type-filter-text'),
             expenseTypeFilterDropdown: document.getElementById('expense-type-filter-dropdown'),
+            descriptionFilter: document.getElementById('description-filter'), // New
+            minAmountFilter: document.getElementById('min-amount-filter'), // New
+            maxAmountFilter: document.getElementById('max-amount-filter'), // New
             transactionCountSpan: document.getElementById('transaction-count'),
             prevPageBtn: document.getElementById('prev-page-btn'),
             nextPageBtn: document.getElementById('next-page-btn'),
@@ -445,6 +463,9 @@
                 filterEndDate: "Đến ngày",
                 filterMember: "Người giao dịch",
                 filterType: "Loại giao dịch",
+                filterDescription: "Mô tả",
+                filterMinAmount: "Số tiền từ",
+                filterMaxAmount: "Số tiền đến",
                 allMembers: "Tất cả",
                 allTypes: "Tất cả",
                 filterApply: "Áp dụng",
@@ -492,6 +513,9 @@
                 filterEndDate: "End Date",
                 filterMember: "Member",
                 filterType: "Type",
+                filterDescription: "Description",
+                filterMinAmount: "Amount from",
+                filterMaxAmount: "Amount to",
                 allMembers: "All Members",
                 allTypes: "All Types",
                 filterApply: "Apply",
@@ -911,7 +935,7 @@
                 sortedTypes.forEach(([type, amount]) => {
                     const percentage = monthData.total > 0 ? (amount / monthData.total * 100).toFixed(2) : 0;
                     summaryHtml += `
-                        <tr class="bg-white border-b">
+                        <tr class="bg-white border-b hover:bg-gray-50 cursor-pointer summary-row" data-month="${month}" data-type="${type}">
                             <td class="px-4 py-2 font-medium text-gray-900 whitespace-nowrap">${type}</td>
                             <td class="px-4 py-2 text-right">${formatCurrency(amount)}</td>
                             <td class="px-4 py-2 text-right">${percentage}%</td>
@@ -922,7 +946,7 @@
                 summaryHtml += `
                             </tbody>
                             <tfoot class="font-semibold text-gray-900">
-                                <tr>
+                                <tr class="hover:bg-gray-100 cursor-pointer summary-row" data-month="${month}" data-type="all">
                                     <td class="px-4 py-2">${translations.totalSpending}</td>
                                     <td class="px-4 py-2 text-right">${formatCurrency(monthData.total)}</td>
                                     <td class="px-4 py-2 text-right">100.00%</td>
@@ -1072,6 +1096,9 @@
             }
             const memberId = elements.memberFilter.value;
             const selectedExpenseTypeIds = getSelectedExpenseTypes();
+            const description = elements.descriptionFilter.value.toLowerCase().trim();
+            const minAmount = parseFloat(elements.minAmountFilter.value);
+            const maxAmount = parseFloat(elements.maxAmountFilter.value);
 
             const selectedExpenseTypeNames = selectedExpenseTypeIds.map(id => {
                 const type = expenseTypes.find(t => String(t.id) === id);
@@ -1083,7 +1110,11 @@
                 const memberMatch = memberId === 'all' || (t.involvedMemberIds && t.involvedMemberIds.includes(memberId)) || (t.contributingMemberId && t.contributingMemberId === memberId);
                 const typeMatch = selectedExpenseTypeNames.length === 0 || selectedExpenseTypeNames.includes(t.expense_type);
                 const dateMatch = (!startDate || transactionDate >= startDate) && (!endDate || transactionDate < endDate);
-                return memberMatch && typeMatch && dateMatch;
+                const descriptionMatch = !description || t.description.toLowerCase().includes(description);
+                const minAmountMatch = isNaN(minAmount) || t.amount >= minAmount;
+                const maxAmountMatch = isNaN(maxAmount) || t.amount <= maxAmount;
+
+                return memberMatch && typeMatch && dateMatch && descriptionMatch && minAmountMatch && maxAmountMatch;
             });
 
             currentPage = 1;
@@ -1113,6 +1144,9 @@
             elements.startDateFilter.value = '';
             elements.endDateFilter.value = '';
             elements.memberFilter.value = 'all';
+            elements.descriptionFilter.value = '';
+            elements.minAmountFilter.value = '';
+            elements.maxAmountFilter.value = '';
             elements.expenseTypeFilterDropdown.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
                 checkbox.checked = false;
             });
@@ -1231,6 +1265,31 @@
                 elements.loadingOverlay.classList.add('hidden');
             }
         }
+        
+        // --- NEW: Event listener for monthly summary table ---
+        elements.monthlySummaryContainer.addEventListener('click', (event) => {
+            const summaryRow = event.target.closest('.summary-row');
+            if (!summaryRow) return;
+
+            const month = summaryRow.dataset.month;
+            const type = summaryRow.dataset.type;
+
+            const transactionsForSelection = transactions.filter(t => {
+                const transactionMonth = t.date.substring(0, 7);
+                const transactionType = t.expense_type || (translations.unassigned || 'Không xác định');
+                
+                const monthMatch = transactionMonth === month;
+                const typeMatch = (type === 'all') || (transactionType === type);
+
+                return monthMatch && typeMatch;
+            });
+
+            const modalTitle = type === 'all' 
+                ? `${translations.chartDetailTitle} ${month}`
+                : `${translations.chartDetailTitle} "${type}" (${month})`;
+            
+            openChartDetailModal(modalTitle, transactionsForSelection);
+        });
 
         // --- REVISED: Page Initialization ---
         document.addEventListener('DOMContentLoaded', async () => {
@@ -1275,5 +1334,3 @@
     </script>
 </body>
 </html>
-
-
