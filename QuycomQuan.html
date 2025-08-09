@@ -241,366 +241,383 @@
 </head>
 <body class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4 font-sans text-gray-800">
 
-  
-<!-- Navbar with Hamburger Menu -->
-<div class="navbar flex items-center">
-    <!-- Hamburger button on the left -->
-    <button id="hamburger-btn" aria-label="Mở menu">
-        <!-- SVG 3-line icon -->
-        <svg class="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"></path>
-        </svg>
-    </button>
-
-    <!-- Hidden menu when not active -->
-    <div id="hamburger-menu" class="hidden">
-        <a href="CalendarMaker.html">
-            <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-            </svg>
-            Tạo Lịch
-        </a>
+    <!-- Unauthorized Access Message -->
+    <div id="unauthorized-section" class="hidden fixed inset-0 bg-gray-100 flex flex-col items-center justify-center p-4 z-[2000]">
+        <div class="card text-center max-w-lg">
+            <h2 class="text-2xl font-bold text-red-600 mb-4" data-key="unauthorizedTitle">Truy Cập Bị Từ Chối</h2>
+            <p class="text-gray-700 mb-6">
+                <span data-key="unauthorizedMessagePart1">Bạn phải được mời để sử dụng hệ thống. Vui lòng liên hệ quản trị viên qua email:</span>
+                <a href="mailto:quantrhvn@gmail.com" class="text-blue-600 hover:underline">quantrhvn@gmail.com</a> 
+                <span data-key="unauthorizedMessagePart2">hoặc SĐT:</span>
+                <a href="tel:0989073739" class="text-blue-600 hover:underline">0989073739</a> 
+                <span data-key="unauthorizedMessagePart3">để được hỗ trợ.</span>
+            </p>
+            <button id="logout-btn" class="btn-primary" data-key="logoutBtn">Đăng Xuất</button>
+        </div>
     </div>
 
-    <!-- Logo and Title (pushed to the right) -->
-    <div class="flex items-center ml-4 flex-grow">
-        <img src="LogoQuy.png" alt="Logo Quản Lý Quỹ Nhóm" class="h-12 w-auto rounded-lg shadow-md mr-3" onerror="this.onerror=null;this.src='https://placehold.co/100x100/006B68/FFFFFF?text=Logo';">
-        <h1 class="text-2xl font-bold text-[#006B68]" data-key="appTitle">QUẢN LÝ QUỸ NHÓM</h1>
-    </div>
-  <div class="language-switch">
-            <button id="lang-vi-btn" data-lang="vi" class="active">VI</button>
-            <button id="lang-en-btn" data-lang="en">EN</button>
+    <!-- Main App Content Wrapper -->
+    <div id="main-app-content">
+        <!-- Navbar with Hamburger Menu -->
+        <div class="navbar flex items-center">
+            <!-- Hamburger button on the left -->
+            <button id="hamburger-btn" aria-label="Mở menu">
+                <!-- SVG 3-line icon -->
+                <svg class="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"></path>
+                </svg>
+            </button>
+
+            <!-- Hidden menu when not active -->
+            <div id="hamburger-menu" class="hidden">
+                <a href="CalendarMaker.html">
+                    <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                    </svg>
+                    Tạo Lịch
+                </a>
+            </div>
+
+            <!-- Logo and Title (pushed to the right) -->
+            <div class="flex items-center ml-4 flex-grow">
+                <img src="LogoQuy.png" alt="Logo Quản Lý Quỹ Nhóm" class="h-12 w-auto rounded-lg shadow-md mr-3" onerror="this.onerror=null;this.src='https://placehold.co/100x100/006B68/FFFFFF?text=Logo';">
+                <h1 class="text-2xl font-bold text-[#006B68]" data-key="appTitle">QUẢN LÝ QUỸ NHÓM</h1>
+            </div>
+          <div class="language-switch">
+                    <button id="lang-vi-btn" data-lang="vi" class="active">VI</button>
+                    <button id="lang-en-btn" data-lang="en">EN</button>
+                </div>
+
         </div>
 
-</div>
 
-
-    <div id="fund-balance-card" class="card mb-8 text-center">
-        <h2 class="text-2xl font-semibold text-gray-700 mb-4" data-key="fundBalanceTitle">Số Dư Quỹ Chung</h2>
-        <p id="fund-balance-display" class="text-5xl font-extrabold text-green-600">0 VNĐ</p>
-    </div>
-
-    <div id="error-message-display" class="error-message mb-4 hidden"></div>
-
-    <div class="flex flex-col sm:flex-row justify-center gap-4 mb-8">
-        <button id="add-member-btn" class="btn-primary flex items-center justify-center w-full sm:w-auto">
-            <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"></path></svg>
-            <span data-key="addMemberBtn">Thêm Thành Viên</span>
-        </button>
-        <button id="add-transaction-btn" class="btn-primary flex items-center justify-center w-full sm:w-auto">
-            <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z" clip-rule="evenodd"></path></svg>
-            <span data-key="addTransactionBtn">Thêm Giao Dịch</span>
-        </button>
-        <button id="view-transactions-btn" class="btn-secondary flex items-center justify-center w-full sm:w-auto" onclick="window.location.href='QuycomReportQuan.html'">
-            <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"></path><path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h.01a1 1 0 100-2H10zm3 0a1 1 0 000 2h.01a1 1 0 100-2H13zm-3 4a1 1 0 000 2h.01a1 1 0 100-2H10zm3 0a1 1 0 000 2h.01a1 1 0 100-2H13z" clip-rule="evenodd"></path></svg>
-            <span data-key="viewHistoryBtn">Xem Lịch Sử</span>
-        </button>
-        <button id="show-report-selection-btn" class="btn-secondary flex items-center justify-center w-full sm:w-auto">
-            <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M3 3a1 1 0 011-1h12a1 1 0 011 1v14a1 1 0 01-1 1H4a1 1 0 01-1-1V3zm4.5 9.5a.5.5 0 000 1h5a.5.5 0 000-1h-5zM7 7a1 1 0 011-1h4a1 1 0 110 2H8a1 1 0 01-1-1z" clip-rule="evenodd"></path></svg>
-            <span data-key="reportBtn">Báo Cáo</span>
-        </button>
-        <button id="get-insights-btn" class="btn-primary flex items-center justify-center w-full sm:w-auto">
-            ✨ <span data-key="aiInsightsBtn">AI Nhận xét Quỹ</span>
-        </button>
-        <button id="get-food-suggestions-btn" class="btn-primary flex items-center justify-center w-full sm:w-auto">
-            🍜 <span data-key="foodSuggestionsBtn">Gợi ý món ăn</span>
-        </button>
-    </div>
-
-    <div id="add-member-section" class="card mb-8 hidden">
-        <h2 class="text-xl font-semibold mb-4 text-[#006B68]" data-key="addMemberTitle">Thêm Thành Viên Mới</h2>
-        <form id="add-member-form" class="flex flex-col sm:flex-row gap-4">
-            <input type="text" id="member-name-input" name="memberName" data-key="memberNamePlaceholder" placeholder="Tên thành viên" class="input-field flex-grow" required />
-            <button type="submit" class="btn-primary flex-shrink-0 w-full sm:w-auto" data-key="addBtn">Thêm</button>
-        </form>
-    </div>
-
-    <div id="add-transaction-section" class="card mb-8 hidden">
-        <h2 class="text-xl font-semibold mb-4 text-[#006B68]" data-key="addTransactionTitle">Thêm Giao Dịch Mới</h2>
-        <form id="add-transaction-form" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div class="col-span-full">
-                <label for="transaction-type" class="block text-sm font-medium text-gray-700 mb-1" data-key="transactionTypeLabel">Loại Giao Dịch</label>
-                <select id="transaction-type" name="transactionType" class="input-field">
-                    <option value="contribution" data-key="contributionOption">💵 Đóng Góp</option>
-                    <option value="expense" data-key="expenseOption">🍺 Chi Tiêu</option>
-                </select>
+            <div id="fund-balance-card" class="card mb-8 text-center">
+                <h2 class="text-2xl font-semibold text-gray-700 mb-4" data-key="fundBalanceTitle">Số Dư Quỹ Chung</h2>
+                <p id="fund-balance-display" class="text-5xl font-extrabold text-green-600">0 VNĐ</p>
             </div>
 
-            <div id="expense-type-div" class="col-span-full hidden">
-                <label for="expense-type-select" class="block text-sm font-medium text-gray-700 mb-1" data-key="expenseTypeLabel">Loại Chi Tiêu</label>
-                <select id="expense-type-select" name="expenseType" class="input-field"></select>
+            <div id="error-message-display" class="error-message mb-4 hidden"></div>
+
+            <div class="flex flex-col sm:flex-row justify-center gap-4 mb-8">
+                <button id="add-member-btn" class="btn-primary flex items-center justify-center w-full sm:w-auto">
+                    <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"></path></svg>
+                    <span data-key="addMemberBtn">Thêm Thành Viên</span>
+                </button>
+                <button id="add-transaction-btn" class="btn-primary flex items-center justify-center w-full sm:w-auto">
+                    <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z" clip-rule="evenodd"></path></svg>
+                    <span data-key="addTransactionBtn">Thêm Giao Dịch</span>
+                </button>
+                <button id="view-transactions-btn" class="btn-secondary flex items-center justify-center w-full sm:w-auto" onclick="window.location.href='QuycomReportQuan.html'">
+                    <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"></path><path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h.01a1 1 0 100-2H10zm3 0a1 1 0 000 2h.01a1 1 0 100-2H13zm-3 4a1 1 0 000 2h.01a1 1 0 100-2H10zm3 0a1 1 0 000 2h.01a1 1 0 100-2H13z" clip-rule="evenodd"></path></svg>
+                    <span data-key="viewHistoryBtn">Xem Lịch Sử</span>
+                </button>
+                <button id="show-report-selection-btn" class="btn-secondary flex items-center justify-center w-full sm:w-auto">
+                    <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M3 3a1 1 0 011-1h12a1 1 0 011 1v14a1 1 0 01-1 1H4a1 1 0 01-1-1V3zm4.5 9.5a.5.5 0 000 1h5a.5.5 0 000-1h-5zM7 7a1 1 0 011-1h4a1 1 0 110 2H8a1 1 0 01-1-1z" clip-rule="evenodd"></path></svg>
+                    <span data-key="reportBtn">Báo Cáo</span>
+                </button>
+                <button id="get-insights-btn" class="btn-primary flex items-center justify-center w-full sm:w-auto">
+                    ✨ <span data-key="aiInsightsBtn">AI Nhận xét Quỹ</span>
+                </button>
+                <button id="get-food-suggestions-btn" class="btn-primary flex items-center justify-center w-full sm:w-auto">
+                    🍜 <span data-key="foodSuggestionsBtn">Gợi ý món ăn</span>
+                </button>
             </div>
 
-            <div id="contributing-member-div" class="col-span-full">
-                <label for="member-select" class="block text-sm font-medium text-gray-700 mb-1" data-key="contributingMemberLabel">Thành Viên Đóng Góp</label>
-                <select id="member-select" name="contributingMember" class="input-field" required></select>
+            <div id="add-member-section" class="card mb-8 hidden">
+                <h2 class="text-xl font-semibold mb-4 text-[#006B68]" data-key="addMemberTitle">Thêm Thành Viên Mới</h2>
+                <form id="add-member-form" class="flex flex-col sm:flex-row gap-4">
+                    <input type="text" id="member-name-input" name="memberName" data-key="memberNamePlaceholder" placeholder="Tên thành viên" class="input-field flex-grow" required />
+                    <button type="submit" class="btn-primary flex-shrink-0 w-full sm:w-auto" data-key="addBtn">Thêm</button>
+                </form>
             </div>
 
-            <div id="involved-members-div" class="col-span-full hidden">
-                <label class="block text-sm font-medium text-gray-700 mb-1" data-key="involvedMembersLabel">Thành Viên Tham Gia Chi Tiêu</label>
-                <div id="involved-members-checkboxes" class="grid grid-cols-2 sm:grid-cols-3 gap-2 p-2 border border-gray-300 rounded-md bg-gray-50">
+            <div id="add-transaction-section" class="card mb-8 hidden">
+                <h2 class="text-xl font-semibold mb-4 text-[#006B68]" data-key="addTransactionTitle">Thêm Giao Dịch Mới</h2>
+                <form id="add-transaction-form" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="col-span-full">
+                        <label for="transaction-type" class="block text-sm font-medium text-gray-700 mb-1" data-key="transactionTypeLabel">Loại Giao Dịch</label>
+                        <select id="transaction-type" name="transactionType" class="input-field">
+                            <option value="contribution" data-key="contributionOption">💵 Đóng Góp</option>
+                            <option value="expense" data-key="expenseOption">🍺 Chi Tiêu</option>
+                        </select>
                     </div>
+
+                    <div id="expense-type-div" class="col-span-full hidden">
+                        <label for="expense-type-select" class="block text-sm font-medium text-gray-700 mb-1" data-key="expenseTypeLabel">Loại Chi Tiêu</label>
+                        <select id="expense-type-select" name="expenseType" class="input-field"></select>
+                    </div>
+
+                    <div id="contributing-member-div" class="col-span-full">
+                        <label for="member-select" class="block text-sm font-medium text-gray-700 mb-1" data-key="contributingMemberLabel">Thành Viên Đóng Góp</label>
+                        <select id="member-select" name="contributingMember" class="input-field" required></select>
+                    </div>
+
+                    <div id="involved-members-div" class="col-span-full hidden">
+                        <label class="block text-sm font-medium text-gray-700 mb-1" data-key="involvedMembersLabel">Thành Viên Tham Gia Chi Tiêu</label>
+                        <div id="involved-members-checkboxes" class="grid grid-cols-2 sm:grid-cols-3 gap-2 p-2 border border-gray-300 rounded-md bg-gray-50">
+                            </div>
+                    </div>
+
+                    <div>
+                        <label for="amount" class="block text-sm font-medium text-gray-700 mb-1" data-key="amountLabel">Số Tiền (VNĐ)</label>
+                        <input type="text" id="amount-input" name="amount" data-key="amountPlaceholder" placeholder="Số tiền" class="input-field text-right" required />
+                    </div>
+                    
+                    <!-- New: Date input field -->
+                    <div>
+                        <label for="transaction-date" class="block text-sm font-medium text-gray-700 mb-1" data-key="transactionDateLabel">Ngày Giao Dịch</label>
+                        <input type="datetime-local" id="transaction-date-input" name="transactionDate" class="input-field" required />
+                    </div>
+
+                    <div>
+                        <label for="description" class="block text-sm font-medium text-gray-700 mb-1" data-key="descriptionLabel">Mô Tả</label>
+                        <textarea id="description-input" name="description" data-key="descriptionPlaceholder" placeholder="Mô tả giao dịch" class="input-field resize-y overflow-auto" rows="3" required></textarea>
+                        <button type="button" id="ai-describe-btn" class="btn-secondary mt-2 w-full flex items-center justify-center">
+                            <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M4 5a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2V7a2 2 0 00-2-2h-1.586a1 1 0 01-.707-.293l-1.147-1.146A2 2 0 009.172 3H6a2 2 0 00-2 2zM14 8a2 2 0 11-4 0 2 2 0 014 0z" clip-rule="evenodd"></path></svg>
+                            <span data-key="aiDescribeBtn">Mô tả AI từ Ảnh/Camera</span>
+                        </button>
+                    </div>
+                    <!-- Hidden input for GPS coordinates -->
+                    <input type="hidden" id="latitude-input" name="latitude">
+                    <input type="hidden" id="longitude-input" name="longitude">
+
+                    <div class="col-span-full">
+                        <button type="submit" class="btn-primary w-full" data-key="recordTransactionBtn">Ghi Lại Giao Dịch</button>
+                    </div>
+                </form>
             </div>
 
-            <div>
-                <label for="amount" class="block text-sm font-medium text-gray-700 mb-1" data-key="amountLabel">Số Tiền (VNĐ)</label>
-                <input type="text" id="amount-input" name="amount" data-key="amountPlaceholder" placeholder="Số tiền" class="input-field text-right" required />
-            </div>
-            
-            <!-- New: Date input field -->
-            <div>
-                <label for="transaction-date" class="block text-sm font-medium text-gray-700 mb-1" data-key="transactionDateLabel">Ngày Giao Dịch</label>
-                <input type="datetime-local" id="transaction-date-input" name="transactionDate" class="input-field" required />
+            <div class="card mb-8">
+                <h2 class="text-xl font-semibold mb-4 text-[#006B68]" data-key="memberListTitle">Danh Sách Thành Viên</h2>
+                <div id="member-list-container" class="overflow-x-auto">
+                    <p class="text-center text-gray-500" data-key="loadingMembers">Đang tải thành viên...</p>
+                </div>
             </div>
 
-            <div>
-                <label for="description" class="block text-sm font-medium text-gray-700 mb-1" data-key="descriptionLabel">Mô Tả</label>
-                <textarea id="description-input" name="description" data-key="descriptionPlaceholder" placeholder="Mô tả giao dịch" class="input-field resize-y overflow-auto" rows="3" required></textarea>
-                <button type="button" id="ai-describe-btn" class="btn-secondary mt-2 w-full flex items-center justify-center">
-                    <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M4 5a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2V7a2 2 0 00-2-2h-1.586a1 1 0 01-.707-.293l-1.147-1.146A2 2 0 009.172 3H6a2 2 0 00-2 2zM14 8a2 2 0 11-4 0 2 2 0 014 0z" clip-rule="evenodd"></path></svg>
-                    <span data-key="aiDescribeBtn">Mô tả AI từ Ảnh/Camera</span>
-                </button>
-            </div>
-            <!-- Hidden input for GPS coordinates -->
-            <input type="hidden" id="latitude-input" name="latitude">
-            <input type="hidden" id="longitude-input" name="longitude">
-
-            <div class="col-span-full">
-                <button type="submit" class="btn-primary w-full" data-key="recordTransactionBtn">Ghi Lại Giao Dịch</button>
-            </div>
-        </form>
-    </div>
-
-    <div class="card mb-8">
-        <h2 class="text-xl font-semibold mb-4 text-[#006B68]" data-key="memberListTitle">Danh Sách Thành Viên</h2>
-        <div id="member-list-container" class="overflow-x-auto">
-            <p class="text-center text-gray-500" data-key="loadingMembers">Đang tải thành viên...</p>
-        </div>
-    </div>
-
-    <div class="card mb-8">
-        <h2 class="text-xl font-semibold mb-4 text-[#006B68]" data-key="summaryReportTitle">Báo Cáo Tóm Tắt</h2>
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-center">
-            <div class="p-4 bg-green-50 rounded-lg">
-                <p class="text-lg font-medium text-green-700" data-key="totalContributions">Tổng Đóng Góp</p>
-                <p id="total-contributions-display" class="text-3xl font-bold text-green-600">0 VNĐ</p>
-            </div>
-            <div class="p-4 bg-red-50 rounded-lg">
-                <p class="text-lg font-medium text-red-700" data-key="totalExpenses">Tổng Chi Tiêu</p>
-                <p id="total-expenses-display" class="text-3xl font-bold text-red-600">0 VNĐ</p>
-            </div>
-        </div>
-        <h3 class="text-xl font-semibold mt-8 mb-4 text-[#006B68] text-center" data-key="memberBalanceChartTitle">Số Dư Thành Viên (Biểu Đồ Tròn)</h3>
-        <div id="member-balance-pie-chart" class="flex justify-center items-center w-full my-4">
-            <p class="text-center text-gray-500 mt-4" data-key="loadingChart">Đang tải biểu đồ...</p>
-        </div>
-
-        <h3 class="text-xl font-semibold mt-8 mb-4 text-[#006B68] text-center" data-key="categoryChartsTitle">Thu/Chi Theo Phân Loại (Biểu Đồ Bánh)</h3>
-        <div id="category-pie-charts" class="flex flex-col md:flex-row justify-around items-center w-full my-4 gap-8">
-            <div id="income-pie-chart-container" class="flex flex-col items-center">
-                <h4 class="text-lg font-semibold text-green-700 mb-2" data-key="incomeByCategory">Thu nhập theo loại</h4>
-                <p class="text-center text-gray-500 mt-4" data-key="loadingChart">Đang tải biểu đồ...</p>
-            </div>
-            <div id="expense-pie-chart-container" class="flex flex-col items-center">
-                <h4 class="text-lg font-semibold text-red-700 mb-2" data-key="expenseByCategory">Chi tiêu theo loại</h4>
-                <p class="text-center text-gray-500 mt-4" data-key="loadingChart">Đang tải biểu đồ...</p>
-            </div>
-        </div>
-    </div>
-
-    <div id="fund-report-section" class="card mb-8 hidden">
-        <h2 class="text-xl font-semibold mb-4 text-[#006B68]" data-key="fundReportTitle">Báo Cáo Quỹ Chung</h2>
-        <div class="flex flex-wrap justify-end gap-4 mb-4">
-            <button id="export-fund-report-excel" class="btn-secondary flex items-center">
-                <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd"></path></svg>
-                <span data-key="exportExcelBtn">Xuất Excel</span>
-            </button>
-            <button id="export-fund-report-word" class="btn-secondary flex items-center">
-                <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path d="M4 4a2 2 0 012-2h8a2 2 0 012 2v12a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 2a1 1 0 000 2h8a1 1 0 000-2H6zm0 4a1 1 0 000 2h8a1 1 0 000-2H6zm0 4a1 1 0 000 2h8a1 1 0 000-2H6z" clip-rule="evenodd"></path></svg>
-                <span data-key="exportWordBtn">Xuất Word</span>
-            </button>
-        </div>
-        <div id="fund-report-table-container" class="overflow-x-auto">
-            <p class="text-center text-gray-500" data-key="noTransactionsReport">Chưa có giao dịch nào để báo cáo.</p>
-        </div>
-    </div>
-
-    <div id="member-reports-section" class="card mb-8 hidden">
-        <h2 class="text-xl font-semibold mb-4 text-[#006B68]" data-key="memberReportsTitle">Báo Cáo Từng Thành Viên</h2>
-        <div class="mb-4">
-            <label for="select-member-report" class="block text-sm font-medium text-gray-700 mb-1" data-key="selectMemberReportLabel">Chọn Thành Viên:</label>
-            <select id="select-member-report" name="selectMemberReport" class="input-field"></select>
-        </div>
-        <div class="flex flex-wrap justify-end gap-4 mb-4">
-            <button id="export-member-report-excel" class="btn-secondary flex items-center">
-                <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd"></path></svg>
-                <span data-key="exportExcelBtn">Xuất Excel</span>
-            </button>
-            <button id="export-member-report-word" class="btn-secondary flex items-center">
-                <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M4 4a2 2 0 012-2h8a2 2 0 012 2v12a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 2a1 1 0 000 2h8a1 1 0 000-2H6zm0 4a1 1 0 000 2h8a1 1 0 000-2H6zm0 4a1 1 0 000 2h8a1 1 0 000-2H6z" clip-rule="evenodd"></path></svg>
-                <span data-key="exportWordBtn">Xuất Word</span>
-            </button>
-        </div>
-        <div id="member-report-table-container" class="overflow-x-auto">
-            <p class="text-center text-gray-500" data-key="selectMemberToReport">Vui lòng chọn một thành viên để xem báo cáo.</p>
-        </div>
-    </div>
-
-    <!-- The transactions-section is now removed from here -->
-
-    <div id="edit-transaction-modal" class="modal-overlay hidden">
-        <div class="modal-content w-11/12 md:w-2/3 lg:w-1/2">
-            <h2 class="text-2xl font-semibold mb-6 text-[#006B68]" data-key="editTransactionModalTitle">Chỉnh Sửa Giao Dịch</h2>
-            <form id="edit-transaction-form" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div class="col-span-full">
-                    <label for="edit-transaction-type" class="block text-sm font-medium text-gray-700 mb-1" data-key="transactionTypeLabel">Loại Giao Dịch</label>
-                    <select id="edit-transaction-type" name="editTransactionType" class="input-field">
-                        <option value="contribution" data-key="contributionOption">💵 Đóng Góp</option>
-                        <option value="expense" data-key="expenseOption">🍺 Chi Tiêu</option>
-                    </select>
+            <div class="card mb-8">
+                <h2 class="text-xl font-semibold mb-4 text-[#006B68]" data-key="summaryReportTitle">Báo Cáo Tóm Tắt</h2>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-center">
+                    <div class="p-4 bg-green-50 rounded-lg">
+                        <p class="text-lg font-medium text-green-700" data-key="totalContributions">Tổng Đóng Góp</p>
+                        <p id="total-contributions-display" class="text-3xl font-bold text-green-600">0 VNĐ</p>
+                    </div>
+                    <div class="p-4 bg-red-50 rounded-lg">
+                        <p class="text-lg font-medium text-red-700" data-key="totalExpenses">Tổng Chi Tiêu</p>
+                        <p id="total-expenses-display" class="text-3xl font-bold text-red-600">0 VNĐ</p>
+                    </div>
+                </div>
+                <h3 class="text-xl font-semibold mt-8 mb-4 text-[#006B68] text-center" data-key="memberBalanceChartTitle">Số Dư Thành Viên (Biểu Đồ Tròn)</h3>
+                <div id="member-balance-pie-chart" class="flex justify-center items-center w-full my-4">
+                    <p class="text-center text-gray-500 mt-4" data-key="loadingChart">Đang tải biểu đồ...</p>
                 </div>
 
-                <div id="edit-expense-type-div" class="col-span-full hidden">
-                    <label for="edit-expense-type-select" class="block text-sm font-medium text-gray-700 mb-1" data-key="expenseTypeLabel">Loại Chi Tiêu</label>
-                    <select id="edit-expense-type-select" name="editExpenseType" class="input-field"></select>
+                <h3 class="text-xl font-semibold mt-8 mb-4 text-[#006B68] text-center" data-key="categoryChartsTitle">Thu/Chi Theo Phân Loại (Biểu Đồ Bánh)</h3>
+                <div id="category-pie-charts" class="flex flex-col md:flex-row justify-around items-center w-full my-4 gap-8">
+                    <div id="income-pie-chart-container" class="flex flex-col items-center">
+                        <h4 class="text-lg font-semibold text-green-700 mb-2" data-key="incomeByCategory">Thu nhập theo loại</h4>
+                        <p class="text-center text-gray-500 mt-4" data-key="loadingChart">Đang tải biểu đồ...</p>
+                    </div>
+                    <div id="expense-pie-chart-container" class="flex flex-col items-center">
+                        <h4 class="text-lg font-semibold text-red-700 mb-2" data-key="expenseByCategory">Chi tiêu theo loại</h4>
+                        <p class="text-center text-gray-500 mt-4" data-key="loadingChart">Đang tải biểu đồ...</p>
+                    </div>
                 </div>
+            </div>
 
-                <div id="edit-contributing-member-div" class="col-span-full">
-                    <label for="edit-member-select" class="block text-sm font-medium text-gray-700 mb-1" data-key="contributingMemberLabel">Thành Viên Đóng Góp</label>
-                    <select id="edit-member-select" name="editContributingMember" class="input-field" required></select>
+            <div id="fund-report-section" class="card mb-8 hidden">
+                <h2 class="text-xl font-semibold mb-4 text-[#006B68]" data-key="fundReportTitle">Báo Cáo Quỹ Chung</h2>
+                <div class="flex flex-wrap justify-end gap-4 mb-4">
+                    <button id="export-fund-report-excel" class="btn-secondary flex items-center">
+                        <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd"></path></svg>
+                        <span data-key="exportExcelBtn">Xuất Excel</span>
+                    </button>
+                    <button id="export-fund-report-word" class="btn-secondary flex items-center">
+                        <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path d="M4 4a2 2 0 012-2h8a2 2 0 012 2v12a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 2a1 1 0 000 2h8a1 1 0 000-2H6zm0 4a1 1 0 000 2h8a1 1 0 000-2H6zm0 4a1 1 0 000 2h8a1 1 0 000-2H6z" clip-rule="evenodd"></path></svg>
+                        <span data-key="exportWordBtn">Xuất Word</span>
+                    </button>
                 </div>
+                <div id="fund-report-table-container" class="overflow-x-auto">
+                    <p class="text-center text-gray-500" data-key="noTransactionsReport">Chưa có giao dịch nào để báo cáo.</p>
+                </div>
+            </div>
 
-                <div id="edit-involved-members-div" class="col-span-full hidden">
-                    <label class="block text-sm font-medium text-gray-700 mb-1" data-key="involvedMembersLabel">Thành Viên Tham Gia Chi Tiêu</label>
-                    <div id="edit-involved-members-checkboxes" class="grid grid-cols-2 sm:grid-cols-3 gap-2 p-2 border border-gray-300 rounded-md bg-gray-50">
+            <div id="member-reports-section" class="card mb-8 hidden">
+                <h2 class="text-xl font-semibold mb-4 text-[#006B68]" data-key="memberReportsTitle">Báo Cáo Từng Thành Viên</h2>
+                <div class="mb-4">
+                    <label for="select-member-report" class="block text-sm font-medium text-gray-700 mb-1" data-key="selectMemberReportLabel">Chọn Thành Viên:</label>
+                    <select id="select-member-report" name="selectMemberReport" class="input-field"></select>
+                </div>
+                <div class="flex flex-wrap justify-end gap-4 mb-4">
+                    <button id="export-member-report-excel" class="btn-secondary flex items-center">
+                        <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd"></path></svg>
+                        <span data-key="exportExcelBtn">Xuất Excel</span>
+                    </button>
+                    <button id="export-member-report-word" class="btn-secondary flex items-center">
+                        <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M4 4a2 2 0 012-2h8a2 2 0 012 2v12a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 2a1 1 0 000 2h8a1 1 0 000-2H6zm0 4a1 1 0 000 2h8a1 1 0 000-2H6zm0 4a1 1 0 000 2h8a1 1 0 000-2H6z" clip-rule="evenodd"></path></svg>
+                        <span data-key="exportWordBtn">Xuất Word</span>
+                    </button>
+                </div>
+                <div id="member-report-table-container" class="overflow-x-auto">
+                    <p class="text-center text-gray-500" data-key="selectMemberToReport">Vui lòng chọn một thành viên để xem báo cáo.</p>
+                </div>
+            </div>
+
+            <!-- The transactions-section is now removed from here -->
+
+            <div id="edit-transaction-modal" class="modal-overlay hidden">
+                <div class="modal-content w-11/12 md:w-2/3 lg:w-1/2">
+                    <h2 class="text-2xl font-semibold mb-6 text-[#006B68]" data-key="editTransactionModalTitle">Chỉnh Sửa Giao Dịch</h2>
+                    <form id="edit-transaction-form" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="col-span-full">
+                            <label for="edit-transaction-type" class="block text-sm font-medium text-gray-700 mb-1" data-key="transactionTypeLabel">Loại Giao Dịch</label>
+                            <select id="edit-transaction-type" name="editTransactionType" class="input-field">
+                                <option value="contribution" data-key="contributionOption">💵 Đóng Góp</option>
+                                <option value="expense" data-key="expenseOption">🍺 Chi Tiêu</option>
+                            </select>
                         </div>
+
+                        <div id="edit-expense-type-div" class="col-span-full hidden">
+                            <label for="edit-expense-type-select" class="block text-sm font-medium text-gray-700 mb-1" data-key="expenseTypeLabel">Loại Chi Tiêu</label>
+                            <select id="edit-expense-type-select" name="editExpenseType" class="input-field"></select>
+                        </div>
+
+                        <div id="edit-contributing-member-div" class="col-span-full">
+                            <label for="edit-member-select" class="block text-sm font-medium text-gray-700 mb-1" data-key="contributingMemberLabel">Thành Viên Đóng Góp</label>
+                            <select id="edit-member-select" name="editContributingMember" class="input-field" required></select>
+                        </div>
+
+                        <div id="edit-involved-members-div" class="col-span-full hidden">
+                            <label class="block text-sm font-medium text-gray-700 mb-1" data-key="involvedMembersLabel">Thành Viên Tham Gia Chi Tiêu</label>
+                            <div id="edit-involved-members-checkboxes" class="grid grid-cols-2 sm:grid-cols-3 gap-2 p-2 border border-gray-300 rounded-md bg-gray-50">
+                                </div>
+                        </div>
+
+                        <div>
+                            <label for="edit-amount" class="block text-sm font-medium text-gray-700 mb-1" data-key="amountLabel">Số Tiền (VNĐ)</label>
+                            <input type="text" id="edit-amount-input" name="editAmount" data-key="amountPlaceholder" placeholder="Số tiền" class="input-field text-right" required />
+                        </div>
+                        <!-- New: Date input field for edit modal -->
+                        <div>
+                            <label for="edit-transaction-date" class="block text-sm font-medium text-gray-700 mb-1" data-key="transactionDateLabel">Ngày Giao Dịch</label>
+                            <input type="datetime-local" id="edit-transaction-date-input" name="editTransactionDate" class="input-field" required />
+                        </div>
+                        <div>
+                            <label for="edit-description" class="block text-sm font-medium text-gray-700 mb-1" data-key="descriptionLabel">Mô Tả</label>
+                            <textarea id="edit-description-input" name="editDescription" data-key="descriptionPlaceholder" placeholder="Mô tả giao dịch" class="input-field resize-y overflow-auto" rows="3" required></textarea>
+                        </div>
+                        <!-- Hidden inputs for GPS coordinates in edit modal -->
+                        <input type="hidden" id="edit-latitude-input" name="editLatitude">
+                        <input type="hidden" id="edit-longitude-input" name="editLongitude">
+
+                        <div class="col-span-full flex flex-col sm:flex-row justify-end gap-4 mt-4">
+                            <button type="button" id="cancel-edit-transaction-btn" class="btn-secondary w-full sm:w-auto" data-key="cancelBtn">Hủy</button>
+                            <button type="submit" class="btn-primary w-full sm:w-auto" data-key="saveChangesBtn">Lưu Thay Đổi</button>
+                        </div>
+                    </form>
                 </div>
+            </div>
 
-                <div>
-                    <label for="edit-amount" class="block text-sm font-medium text-gray-700 mb-1" data-key="amountLabel">Số Tiền (VNĐ)</label>
-                    <input type="text" id="edit-amount-input" name="editAmount" data-key="amountPlaceholder" placeholder="Số tiền" class="input-field text-right" required />
+            <div id="member-details-modal" class="modal-overlay hidden">
+                <div class="modal-content w-11/12 md:w-2/3 lg:w-1/2">
+                    <h2 id="member-details-name" class="text-2xl font-semibold mb-6 text-[#006B68]"></h2>
+                    <div class="mb-4">
+                        <p class="text-lg font-medium text-gray-700" data-key="currentBalance">Số Dư Hiện Tại:</p>
+                        <p id="member-details-balance" class="text-3xl font-bold"></p>
+                    </div>
+
+                    <h3 class="text-xl font-semibold mb-3 text-[#006B68]" data-key="relatedTransactions">Các Giao Dịch Liên Quan</h3>
+                    <div id="member-details-transactions-container" class="overflow-x-auto max-h-80">
+                        <p class="text-center text-gray-500" data-key="noRelatedTransactions">Chưa có giao dịch nào liên quan đến thành viên này.</p>
+                    </div>
+                    <div class="flex justify-end mt-6">
+                        <button type="button" id="close-member-details-btn" class="btn-primary" data-key="closeBtn">Đóng</button>
+                    </div>
                 </div>
-                <!-- New: Date input field for edit modal -->
-                <div>
-                    <label for="edit-transaction-date" class="block text-sm font-medium text-gray-700 mb-1" data-key="transactionDateLabel">Ngày Giao Dịch</label>
-                    <input type="datetime-local" id="edit-transaction-date-input" name="editTransactionDate" class="input-field" required />
+            </div>
+
+            <div id="confirmation-modal" class="modal-overlay hidden">
+                <div class="modal-content w-11/12 md:w-1/2 lg:w-1/3">
+                    <h2 class="text-xl font-semibold mb-4 text-gray-800" data-key="confirmationTitle">Xác Nhận</h2>
+                    <p id="confirmation-message" class="mb-6 text-gray-700"></p>
+                    <div class="flex flex-col sm:flex-row justify-end gap-4">
+                        <button type="button" id="cancel-confirmation-btn" class="btn-secondary w-full sm:w-auto" data-key="cancelBtn">Hủy</button>
+                        <button type="button" id="confirm-action-btn" class="btn-primary w-full sm:w-auto" data-key="confirmBtn">Xác Nhận</button>
+                    </div>
                 </div>
-                <div>
-                    <label for="edit-description" class="block text-sm font-medium text-gray-700 mb-1" data-key="descriptionLabel">Mô Tả</label>
-                    <textarea id="edit-description-input" name="editDescription" data-key="descriptionPlaceholder" placeholder="Mô tả giao dịch" class="input-field resize-y overflow-auto" rows="3" required></textarea>
+            </div>
+
+            <div id="report-selection-modal" class="modal-overlay hidden">
+                <div class="modal-content w-11/12 md:w-1/2 lg:w-1/3">
+                    <h2 class="text-2xl font-semibold mb-6 text-[#006B68] text-center" data-key="selectReportTypeTitle">Chọn Loại Báo Cáo</h2>
+                    <div class="flex flex-col gap-4">
+                        <button id="select-fund-report-btn" class="btn-primary flex items-center justify-center w-full">
+                            <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path d="M10 12a2 2 0 100-4 2 2 0 000 4z"></path><path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd"></path></svg>
+                            <span data-key="fundReportOption">Báo Cáo Quỹ Chung</span>
+                        </button>
+                        <button id="select-member-report-btn" class="btn-primary flex items-center justify-center w-full">
+                            <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-6-3a2 2 0 11-4 0 2 2 0 014 0zm-2 4a4 4 0 00-4 4h8a4 4 0 00-4-4z" clip-rule="evenodd"></path></svg>
+                            <span data-key="memberReportOption">Báo Cáo Từng Thành Viên</span>
+                        </button>
+                    </div>
+                    <div class="flex justify-end mt-6">
+                        <button type="button" id="close-report-selection-btn" class="btn-secondary" data-key="closeBtn">Đóng</button>
+                    </div>
                 </div>
-                <!-- Hidden inputs for GPS coordinates in edit modal -->
-                <input type="hidden" id="edit-latitude-input" name="editLatitude">
-                <input type="hidden" id="edit-longitude-input" name="editLongitude">
+            </div>
 
-                <div class="col-span-full flex flex-col sm:flex-row justify-end gap-4 mt-4">
-                    <button type="button" id="cancel-edit-transaction-btn" class="btn-secondary w-full sm:w-auto" data-key="cancelBtn">Hủy</button>
-                    <button type="submit" class="btn-primary w-full sm:w-auto" data-key="saveChangesBtn">Lưu Thay Đổi</button>
+            <div id="fund-insights-modal" class="modal-overlay hidden">
+                <div class="modal-content w-11/12 md:w-2/3 lg:w-1/2">
+                    <h2 class="text-2xl font-semibold mb-6 text-[#006B68]" data-key="fundInsightsModalTitle">Thông Tin Chi Tiết Quỹ ✨</h2>
+                    <div id="fund-insights-content">
+                        </div>
+                    <div class="flex justify-end mt-6">
+                        <button type="button" id="close-insights-btn" class="btn-primary" data-key="closeBtn">Đóng</button>
+                    </div>
                 </div>
-            </form>
-        </div>
-    </div>
-
-    <div id="member-details-modal" class="modal-overlay hidden">
-        <div class="modal-content w-11/12 md:w-2/3 lg:w-1/2">
-            <h2 id="member-details-name" class="text-2xl font-semibold mb-6 text-[#006B68]"></h2>
-            <div class="mb-4">
-                <p class="text-lg font-medium text-gray-700" data-key="currentBalance">Số Dư Hiện Tại:</p>
-                <p id="member-details-balance" class="text-3xl font-bold"></p>
             </div>
 
-            <h3 class="text-xl font-semibold mb-3 text-[#006B68]" data-key="relatedTransactions">Các Giao Dịch Liên Quan</h3>
-            <div id="member-details-transactions-container" class="overflow-x-auto max-h-80">
-                <p class="text-center text-gray-500" data-key="noRelatedTransactions">Chưa có giao dịch nào liên quan đến thành viên này.</p>
-            </div>
-            <div class="flex justify-end mt-6">
-                <button type="button" id="close-member-details-btn" class="btn-primary" data-key="closeBtn">Đóng</button>
-            </div>
-        </div>
-    </div>
+            <div id="food-suggestion-modal" class="modal-overlay hidden">
+                <div class="modal-content w-11/12 md:w-2/3 lg:w-1/2">
+                    <h2 class="text-2xl font-semibold mb-6 text-[#006B68]" data-key="foodSuggestionModalTitle">Gợi Ý Món Ăn ✨</h2>
 
-    <div id="confirmation-modal" class="modal-overlay hidden">
-        <div class="modal-content w-11/12 md:w-1/2 lg:w-1/3">
-            <h2 class="text-xl font-semibold mb-4 text-gray-800" data-key="confirmationTitle">Xác Nhận</h2>
-            <p id="confirmation-message" class="mb-6 text-gray-700"></p>
-            <div class="flex flex-col sm:flex-row justify-end gap-4">
-                <button type="button" id="cancel-confirmation-btn" class="btn-secondary w-full sm:w-auto" data-key="cancelBtn">Hủy</button>
-                <button type="button" id="confirm-action-btn" class="btn-primary w-full sm:w-auto" data-key="confirmBtn">Xác Nhận</button>
-            </div>
-        </div>
-    </div>
+                    <!-- Thêm ô nhập liệu địa chỉ và nút -->
+                    <div class="mb-4">
+                        <label for="address-input-for-food" class="block text-sm font-medium text-gray-700 mb-1" data-key="addressInputLabel">Hoặc nhập địa chỉ cụ thể:</label>
+                        <input type="text" id="address-input-for-food" placeholder="Ví dụ: 123 Đường ABC, Quận 1, TP.HCM" class="input-field mb-2" />
+                        <button id="get-food-suggestions-by-address-btn" class="btn-primary flex items-center justify-center w-full sm:w-auto">
+                            🍜 <span data-key="searchByAddressBtn">Tìm kiếm theo địa chỉ này</span>
+                        </button>
+                    </div>
 
-    <div id="report-selection-modal" class="modal-overlay hidden">
-        <div class="modal-content w-11/12 md:w-1/2 lg:w-1/3">
-            <h2 class="text-2xl font-semibold mb-6 text-[#006B68] text-center" data-key="selectReportTypeTitle">Chọn Loại Báo Cáo</h2>
-            <div class="flex flex-col gap-4">
-                <button id="select-fund-report-btn" class="btn-primary flex items-center justify-center w-full">
-                    <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path d="M10 12a2 2 0 100-4 2 2 0 000 4z"></path><path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd"></path></svg>
-                    <span data-key="fundReportOption">Báo Cáo Quỹ Chung</span>
-                </button>
-                <button id="select-member-report-btn" class="btn-primary flex items-center justify-center w-full">
-                    <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-6-3a2 2 0 11-4 0 2 2 0 014 0zm-2 4a4 4 0 00-4 4h8a4 4 0 00-4-4z" clip-rule="evenodd"></path></svg>
-                    <span data-key="memberReportOption">Báo Cáo Từng Thành Viên</span>
-                </button>
-            </div>
-            <div class="flex justify-end mt-6">
-                <button type="button" id="close-report-selection-btn" class="btn-secondary" data-key="closeBtn">Đóng</button>
-            </div>
-        </div>
-    </div>
-
-    <div id="fund-insights-modal" class="modal-overlay hidden">
-        <div class="modal-content w-11/12 md:w-2/3 lg:w-1/2">
-            <h2 class="text-2xl font-semibold mb-6 text-[#006B68]" data-key="fundInsightsModalTitle">Thông Tin Chi Tiết Quỹ ✨</h2>
-            <div id="fund-insights-content">
+                    <div id="food-suggestion-content">
+                        <!-- Nội dung gợi ý món ăn sẽ được điền vào đây -->
+                    </div>
+                    <div class="flex justify-end mt-6">
+                        <button type="button" id="close-food-suggestion-btn" class="btn-primary" data-key="closeBtn">Đóng</button>
+                    </div>
                 </div>
-            <div class="flex justify-end mt-6">
-                <button type="button" id="close-insights-btn" class="btn-primary" data-key="closeBtn">Đóng</button>
             </div>
-        </div>
+
+            <div id="camera-modal" class="modal-overlay hidden">
+                <div class="modal-content">
+                    <h2 class="text-2xl font-semibold mb-4 text-[#006B68]" data-key="aiDescriptionModalTitle">Mô tả giao dịch bằng AI</h2>
+                    <input type="file" id="image-upload-input" accept="image/*" class="hidden">
+                    <img id="uploaded-image-preview" alt="Uploaded Image" class="max-w-full h-auto rounded-md my-4 hidden">
+                    <div id="camera-loading-spinner" class="hidden"></div>
+                    <div id="camera-controls" class="flex gap-4 mt-4">
+                        <button id="cancel-camera-btn" class="btn-secondary flex items-center justify-center w-full">
+                            <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg>
+                            <span data-key="cancelBtn">Hủy</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <button id="scroll-to-top-btn" data-key="scrollToTopBtn" title="Cuộn lên đầu">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"></path>
+                </svg>
+            </button>
     </div>
-
-    <div id="food-suggestion-modal" class="modal-overlay hidden">
-        <div class="modal-content w-11/12 md:w-2/3 lg:w-1/2">
-            <h2 class="text-2xl font-semibold mb-6 text-[#006B68]" data-key="foodSuggestionModalTitle">Gợi Ý Món Ăn ✨</h2>
-
-            <!-- Thêm ô nhập liệu địa chỉ và nút -->
-            <div class="mb-4">
-                <label for="address-input-for-food" class="block text-sm font-medium text-gray-700 mb-1" data-key="addressInputLabel">Hoặc nhập địa chỉ cụ thể:</label>
-                <input type="text" id="address-input-for-food" placeholder="Ví dụ: 123 Đường ABC, Quận 1, TP.HCM" class="input-field mb-2" />
-                <button id="get-food-suggestions-by-address-btn" class="btn-primary flex items-center justify-center w-full sm:w-auto">
-                    🍜 <span data-key="searchByAddressBtn">Tìm kiếm theo địa chỉ này</span>
-                </button>
-            </div>
-
-            <div id="food-suggestion-content">
-                <!-- Nội dung gợi ý món ăn sẽ được điền vào đây -->
-            </div>
-            <div class="flex justify-end mt-6">
-                <button type="button" id="close-food-suggestion-btn" class="btn-primary" data-key="closeBtn">Đóng</button>
-            </div>
-        </div>
-    </div>
-
-    <div id="camera-modal" class="modal-overlay hidden">
-        <div class="modal-content">
-            <h2 class="text-2xl font-semibold mb-4 text-[#006B68]" data-key="aiDescriptionModalTitle">Mô tả giao dịch bằng AI</h2>
-            <input type="file" id="image-upload-input" accept="image/*" class="hidden">
-            <img id="uploaded-image-preview" alt="Uploaded Image" class="max-w-full h-auto rounded-md my-4 hidden">
-            <div id="camera-loading-spinner" class="hidden"></div>
-            <div id="camera-controls" class="flex gap-4 mt-4">
-                <button id="cancel-camera-btn" class="btn-secondary flex items-center justify-center w-full">
-                    <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg>
-                    <span data-key="cancelBtn">Hủy</span>
-                </button>
-            </div>
-        </div>
-    </div>
-    <button id="scroll-to-top-btn" data-key="scrollToTopBtn" title="Cuộn lên đầu">
-        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"></path>
-        </svg>
-    </button>
 
     <script>
         // Supabase Client Initialization
@@ -630,13 +647,17 @@
         // Translations object
         const translations = {
             'vi': {
-               
-				 // ...
-				addressInputLabel: 'Hoặc nhập địa chỉ cụ thể:',
+                // ...
+                appTitle: 'QUẢN LÝ QUỸ NHÓM',
+                unauthorizedTitle: 'Truy Cập Bị Từ Chối',
+                unauthorizedMessagePart1: 'Bạn phải được mời để sử dụng hệ thống. Vui lòng liên hệ quản trị viên qua email:',
+                unauthorizedMessagePart2: 'hoặc SĐT:',
+                unauthorizedMessagePart3: 'để được hỗ trợ.',
+                logoutBtn: 'Đăng Xuất',
+                checkingAccess: 'Đang kiểm tra quyền truy cập...',
+                addressInputLabel: 'Hoặc nhập địa chỉ cụ thể:',
 				searchByAddressBtn: 'Tìm kiếm theo địa chỉ này',
-				// ...
-				appTitle: 'QUẢN LÝ QUỸ NHÓM',
-                fundBalanceTitle: 'Số Dư Quỹ Chung',
+				fundBalanceTitle: 'Số Dư Quỹ Chung',
                 unitCurrency: 'VNĐ',
                 addMemberBtn: 'Thêm Thành Viên',
                 addTransactionBtn: 'Thêm Giao Dịch',
@@ -774,18 +795,18 @@
         };
 
         // DOM Elements
-		// ... các biến khác
+		const mainAppContent = document.getElementById('main-app-content'); // NEW
+        const unauthorizedSection = document.getElementById('unauthorized-section'); // NEW
+        const logoutBtn = document.getElementById('logout-btn'); // NEW
 		const addressInputForFood = document.getElementById('address-input-for-food'); // NEW
 		const getFoodSuggestionsByAddressBtn = document.getElementById('get-food-suggestions-by-address-btn'); // NEW
         const fundBalanceDisplay = document.getElementById('fund-balance-display');
         const errorMessageDisplay = document.getElementById('error-message-display');
         const addMemberSection = document.getElementById('add-member-section');
         const addTransactionSection = document.getElementById('add-transaction-section');
-        // const transactionsSection = document.getElementById('transactions-section'); // Removed
         const fundReportSection = document.getElementById('fund-report-section');
         const memberReportsSection = document.getElementById('member-reports-section');
         const memberListContainer = document.getElementById('member-list-container');
-        // const transactionListContainer = document.getElementById('transaction-list-container'); // Removed
         const totalContributionsDisplay = document.getElementById('total-contributions-display');
         const totalExpensesDisplay = document.getElementById('total-expenses-display');
         const memberBalancePieChartDiv = document.getElementById('member-balance-pie-chart');
@@ -891,7 +912,6 @@
             updateLanguageButtons();
             // Re-render dynamic content that uses translations
             renderMemberList();
-            // renderTransactionList(); // Removed as it's no longer in this file
             renderFundReport();
             renderSelectedMemberReport();
             renderMemberBalancePieChart();
@@ -909,9 +929,23 @@
             document.querySelectorAll('[data-key]').forEach(element => {
                 const key = element.dataset.key;
                 if (translations[currentLanguage][key]) {
-                    element.textContent = translations[currentLanguage][key];
+                    // Handle special case for unauthorized message
+                    if (key.startsWith('unauthorizedMessagePart')) {
+                        // This will be handled by a dedicated function to avoid breaking text and links
+                    } else {
+                        element.textContent = translations[currentLanguage][key];
+                    }
                 }
             });
+            // Update unauthorized message separately to preserve links
+            const unauthPart1 = document.querySelector('[data-key="unauthorizedMessagePart1"]');
+            const unauthPart2 = document.querySelector('[data-key="unauthorizedMessagePart2"]');
+            const unauthPart3 = document.querySelector('[data-key="unauthorizedMessagePart3"]');
+            if (unauthPart1) unauthPart1.textContent = translations[currentLanguage].unauthorizedMessagePart1 + ' ';
+            if (unauthPart2) unauthPart2.textContent = ' ' + translations[currentLanguage].unauthorizedMessagePart2 + ' ';
+            if (unauthPart3) unauthPart3.textContent = ' ' + translations[currentLanguage].unauthorizedMessagePart3;
+
+
             // Special handling for title tag
             document.title = translations[currentLanguage].appTitle;
             // Special handling for options in select elements
@@ -1012,7 +1046,6 @@
         function hideAllSections() {
             addMemberSection.classList.add('hidden');
             addTransactionSection.classList.add('hidden');
-            // transactionsSection.classList.add('hidden'); // Removed
             fundReportSection.classList.add('hidden');
             memberReportsSection.classList.add('hidden');
             editTransactionModal.classList.add('hidden');
@@ -1046,17 +1079,13 @@
             }
             console.log("window.supabase is available.");
 
-            // Determine the API key to use
-            // In Canvas environment, __supabase_key is provided. Otherwise, use the hardcoded SUPABASE_ANON_KEY.
             const anonKey = typeof __supabase_key !== 'undefined' ? __supabase_key : SUPABASE_ANON_KEY;
             console.log("Using Supabase Anon Key:", anonKey ? "Provided/Non-empty" : "Empty/Default");
 
-            // Warn if default URL is still in use
             if (SUPABASE_URL === 'https://1rmbsxccrwrktbjlnezpu.supabase.co') {
                  console.warn("Supabase configuration warning: SUPABASE_URL is still the default value. Please replace with your actual Supabase Project URL.");
                  showErrorMessage(translations[currentLanguage].supabaseConfigWarning);
             }
-            // Also warn if anonKey is empty and not running in Canvas (where __supabase_key would be injected)
             if (!anonKey && typeof __supabase_key === 'undefined') {
                 console.warn("Supabase configuration warning: SUPABASE_ANON_KEY is empty and __supabase_key is not defined. This app might not connect to Supabase correctly outside Canvas.");
                 showErrorMessage(translations[currentLanguage].supabaseConfigWarning + " (Khóa API trống)");
@@ -1064,8 +1093,6 @@
 
 
             try {
-                // Ensure we are getting the createClient function correctly.
-                // It's usually directly available on the global `supabase` object from the CDN.
                 if (typeof window.supabase.createClient !== 'function') {
                     const errorMsg = "Supabase library loaded, but `createClient` function is not available on `window.supabase`. This might indicate a corrupted load or version issue.";
                     console.error(errorMsg);
@@ -1074,29 +1101,70 @@
                 }
 
                 supabase = window.supabase.createClient(SUPABASE_URL, anonKey);
-                console.log("Supabase client created:", supabase); // Log the full client object
-                console.log("Supabase auth module:", supabase.auth); // Log the auth module
+                console.log("Supabase client created:", supabase);
+                console.log("Supabase auth module:", supabase.auth);
 
-                // Add authentication listener
-                if (!supabase || !supabase.auth || typeof supabase.auth.onAuthStateChange !== 'function') { // Corrected method name to onAuthStateChange
-                    console.error("DEBUG: Value of supabase.auth:", supabase.auth);
+                if (!supabase || !supabase.auth || typeof supabase.auth.onAuthStateChange !== 'function') {
                     const errorMsg = "Supabase client hoặc mô-đun xác thực không được khởi tạo đúng cách. `onAuthStateChange` không phải là một hàm. Vui lòng kiểm tra lại SUPABASE_URL và SUPABASE_ANON_KEY trong mã của bạn. Quan trọng hơn, hãy đảm bảo rằng dịch vụ **Xác thực (Authentication)** đã được kích hoạt và cấu hình đúng trong **Bảng điều khiển Supabase** của dự án của bạn (phần 'Authentication' -> 'Settings').";
                     console.error(errorMsg);
                     showErrorMessage(errorMsg);
                     return;
                 }
-                supabase.auth.onAuthStateChange((event, session) => { // Corrected method name to onAuthStateChange
+
+                // *** MODIFIED onAuthStateChange LISTENER ***
+                supabase.auth.onAuthStateChange(async (event, session) => {
                     console.log("onAuthStateChange event:", event, "session:", session);
                     if (session) {
                         console.log("User is logged in:", session.user);
-                        authReady = true;
-                        fetchData(); // Fetch initial data after successful login
-                        setupRealtimeSubscriptions(); // Set up real-time listeners
+                        const userEmail = session.user.email;
+
+                        // Hide main content and show a loading message while checking access
+                        mainAppContent.classList.add('hidden');
+                        unauthorizedSection.classList.add('hidden');
+                        showErrorMessage(translations[currentLanguage].checkingAccess);
+
+                        try {
+                            // Check if user is in the invited_users table
+                            const { data: invitedUser, error } = await supabase
+                                .from('invited_users')
+                                .select('email')
+                                .eq('email', userEmail)
+                                .single(); // Use .single() to get one record or null
+
+                            // PGRST116 means "exact one row not found", which is what we expect if the user is not invited.
+                            // We only want to throw an error for other, unexpected database issues.
+                            if (error && error.code !== 'PGRST116') {
+                                throw error;
+                            }
+
+                            if (invitedUser) {
+                                // User is invited, proceed with app initialization
+                                console.log("User is authorized. Loading app.");
+                                hideErrorMessage();
+                                mainAppContent.classList.remove('hidden'); // Show main content
+                                authReady = true;
+                                fetchData();
+                                setupRealtimeSubscriptions();
+                            } else {
+                                // User is not invited, show the unauthorized screen
+                                console.log("User is not authorized.");
+                                hideErrorMessage();
+                                mainAppContent.classList.add('hidden');
+                                unauthorizedSection.classList.remove('hidden');
+                                authReady = false;
+                            }
+                        } catch (dbError) {
+                            console.error("Error checking invited users:", dbError);
+                            showErrorMessage(`Lỗi kiểm tra quyền truy cập: ${dbError.message}`);
+                            authReady = false;
+                            // Optionally, show the unauthorized screen with a generic error
+                            mainAppContent.classList.add('hidden');
+                            unauthorizedSection.classList.remove('hidden');
+                        }
+
                     } else {
                         console.log("User is not logged in, redirecting to login page.");
                         authReady = false;
-                        // Redirect to login page if not authenticated
-                        // Use window.location.origin to construct an absolute URL
                         window.location.href = window.location.origin + '/Strava/LoginQuan.html';
                     }
                 });
@@ -1104,7 +1172,6 @@
             } catch (error) {
                 console.error("Error during Supabase client creation or initialization:", error);
                 showErrorMessage(`Lỗi khi tạo client Supabase: ${error.message}. Vui lòng kiểm tra URL và khóa API.`);
-                return;
             }
         }
 
@@ -1204,20 +1271,17 @@
                     members = newMembers;
 
                     // Create initial transactions using the IDs of newly inserted members
-                    // Ensure expense types used here exist in your actual expensetype table or handle "Khác"
-                    // Lấy loại đóng góp mặc định (nếu có)
                     const defaultContributionTypeObj = expenseTypes.find(et => et.Type === 'contribution');
                     const defaultContributionType = defaultContributionTypeObj ? defaultContributionTypeObj.expense_type : 'Đóng góp';
 
-                    // Lấy loại chi tiêu mặc định (nếu có)
                     const defaultExpenseTypeObj = expenseTypes.find(et => et.Type === 'expense');
                     const defaultExpenseType = defaultExpenseTypeObj ? defaultExpenseTypeObj.expense_type : 'Ăn uống';
 
                     const initialTransactions = [
-                        { type: 'contribution', amount: 500000, description: 'Đóng góp ban đầu', date: new Date().toISOString(), contributingMemberId: newMembers[0].id, latitude: null, longitude: null, expense_type: defaultContributionType }, // Sử dụng loại đóng góp
-                        { type: 'contribution', amount: 300000, description: 'Đóng góp thêm', date: new Date().toISOString(), contributingMemberId: newMembers[1].id, latitude: null, longitude: null, expense_type: defaultContributionType }, // Sử dụng loại đóng góp
+                        { type: 'contribution', amount: 500000, description: 'Đóng góp ban đầu', date: new Date().toISOString(), contributingMemberId: newMembers[0].id, latitude: null, longitude: null, expense_type: defaultContributionType },
+                        { type: 'contribution', amount: 300000, description: 'Đóng góp thêm', date: new Date().toISOString(), contributingMemberId: newMembers[1].id, latitude: null, longitude: null, expense_type: defaultContributionType },
                         { type: 'expense', amount: 150000, description: 'Mua đồ ăn nhẹ', date: new Date().toISOString(), involvedMemberIds: [newMembers[0].id, newMembers[1].id, newMembers[2].id], latitude: null, longitude: null, expense_type: defaultExpenseType },
-                        { type: 'contribution', amount: 200000, description: 'Đóng góp tháng 5', date: new Date().toISOString(), contributingMemberId: newMembers[2].id, latitude: null, longitude: null, expense_type: defaultContributionType }, // Sử dụng loại đóng góp
+                        { type: 'contribution', amount: 200000, description: 'Đóng góp tháng 5', date: new Date().toISOString(), contributingMemberId: newMembers[2].id, latitude: null, longitude: null, expense_type: defaultContributionType },
                         { type: 'expense', amount: 250000, description: 'Tiền nước uống', date: new Date().toISOString(), involvedMemberIds: [newMembers[0].id, newMembers[2].id], latitude: null, longitude: null, expense_type: defaultExpenseType },
                         { type: 'expense', amount: 300000, description: 'Đặt cơm trưa', date: new Date().toISOString(), involvedMemberIds: [newMembers[0].id, newMembers[1].id, newMembers[2].id], latitude: null, longitude: null, expense_type: defaultExpenseType },
                     ];
@@ -1233,7 +1297,6 @@
                 updateUI(); // Update UI after fetching data
             } catch (error) {
                 console.error("Error fetching data from Supabase:", error.message);
-                // Error message already set by specific checks above, or fallback here
                 if (!currentErrorMessage) {
                     showErrorMessage(`${translations[currentLanguage].dataLoadError} ${error.message}`);
                 }
@@ -1264,7 +1327,6 @@
                 })
                 .subscribe();
             
-            // New: Real-time subscription for expensetype table
             supabase
                 .channel('public:expensetype')
                 .on('postgres_changes', { event: '*', schema: 'public', table: 'expensetype' }, payload => {
@@ -1280,25 +1342,21 @@
             if (loadingDiv) {
                 loadingDiv.classList.toggle('hidden', !isLoading);
             }
-            // You might also disable buttons or inputs here
         }
 
         // --- UI Update Functions ---
 
-        // Updates all dynamic parts of the UI
         function updateUI() {
             calculateBalances();
             renderFundBalance();
             renderMemberList();
             renderReportingSummary();
-            // renderTransactionList(); // Removed as it's no longer in this file
-            renderMemberReportDropdown(); // Update member report dropdown
-            renderMemberBalancePieChart(); // Update pie chart
-            renderCategoryPieCharts(); // Render the new category pie charts
-            populateSelectors(); // Populate new expense type dropdowns
+            renderMemberReportDropdown();
+            renderMemberBalancePieChart();
+            renderCategoryPieCharts();
+            populateSelectors();
         }
 
-        // Calculates fund and member balances
         function calculateBalances() {
             let totalBalance = 0;
             const tempMemberBalances = new Map(members.map(m => [m.id, 0]));
@@ -1333,7 +1391,6 @@
             fundBalance = totalBalance;
         }
 
-        // Renders the overall fund balance
         function renderFundBalance() {
             fundBalanceDisplay.textContent = `${formatNumberForDisplay(fundBalance)} ${translations[currentLanguage].unitCurrency}`;
             fundBalanceDisplay.classList.remove('text-green-600', 'text-red-600');
@@ -1344,7 +1401,6 @@
             }
         }
 
-        // Renders the member list table
         function renderMemberList() {
             if (members.length === 0) {
                 memberListContainer.innerHTML = `<p class="text-center text-gray-500">${translations[currentLanguage].noMembers}</p>`;
@@ -1394,7 +1450,6 @@
             `;
             memberListContainer.innerHTML = tableHtml;
 
-            // Attach event listeners for settle up, view details, and delete buttons
             memberListContainer.querySelectorAll('.settle-up-btn').forEach(button => {
                 button.onclick = (e) => settleUpMember(e.target.dataset.memberId);
             });
@@ -1410,7 +1465,6 @@
             });
         }
 
-        // Renders the reporting summary (total contributions and expenses)
         function renderReportingSummary() {
             const totalContributions = transactions.filter(t => t.type === 'contribution').reduce((sum, t) => sum + t.amount, 0);
             const totalExpenses = transactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
@@ -1419,92 +1473,11 @@
             totalExpensesDisplay.textContent = `${formatNumberForDisplay(totalExpenses)} ${translations[currentLanguage].unitCurrency}`;
         }
 
-        // Renders the transaction list table
-        // This function is now removed from QuycomQuan.html as it's moved to QuycomReportQuan.html
-        /*
-        function renderTransactionList() {
-            if (transactionsSection.classList.contains('hidden')) return; // Only render if visible
-
-            if (transactions.length === 0) {
-                transactionListContainer.innerHTML = `<p class="text-center text-gray-500">${translations[currentLanguage].noTransactions}</p>`;
-                return;
-            }
-
-            let tableHtml = `
-                <table class="min-w-full bg-white rounded-lg shadow-sm">
-                    <thead>
-                        <tr>
-                            <th>${translations[currentLanguage].dateHeader}</th>
-                            <th>${translations[currentLanguage].typeHeader}</th>
-                            <th>${translations[currentLanguage].descriptionHeader}</th>
-                            <th>${translations[currentLanguage].expenseTypeHeader}</th>
-                            <th>${translations[currentLanguage].relatedMembersHeader}</th>
-                            <th class="table-header text-right-aligned">${translations[currentLanguage].amountHeader}</th>
-                            <th>${translations[currentLanguage].actionHeader}</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-            `;
-            transactions.slice().sort((a, b) => new Date(b.date) - new Date(a.date)).forEach(t => {
-                const displayedAmount = t.amount;
-                const typeText = t.type === 'contribution' ? translations[currentLanguage].contributionOption.replace('💵 ', '') : translations[currentLanguage].expenseOption.replace('🍺 ', '');
-                const typeClass = t.type === 'contribution' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800';
-                const amountClass = t.type === 'contribution' ? 'balance-positive' : 'balance-negative';
-
-                const memberNames = t.type === 'contribution'
-                    ? getMemberName(t.contributingMemberId)
-                    : getInvolvedMembersNames(t.involvedMemberIds);
-
-                const transactionDate = new Date(t.date).toLocaleDateString(currentLanguage === 'vi' ? 'vi-VN' : 'en-US', {
-                    year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit'
-                });
-
-                tableHtml += `
-                    <tr class="table-row">
-                        <td>${transactionDate}</td>
-                        <td><span class="px-2 py-1 rounded-full text-xs font-semibold ${typeClass}">${typeText}</span></td>
-                        <td>${t.description}</td>
-                        <td>${t.type === 'expense' && t.expense_type ? t.expense_type : 'N/A'}</td>
-                        <td>${memberNames}</td>
-                        <td class="text-right-aligned ${amountClass}">${t.type === 'contribution' ? '+' : '-'}${formatNumberForDisplay(displayedAmount)}</td>
-                        <td class="flex flex-col sm:flex-row gap-2">
-                            <button data-transaction-id="${t.id}" class="edit-transaction-btn text-blue-600 hover:text-blue-900 font-semibold text-sm w-full sm:w-auto">${translations[currentLanguage].editBtn}</button>
-                            <button data-transaction-id="${t.id}" class="delete-transaction-btn text-red-600 hover:text-red-900 font-semibold text-sm w-full sm:w-auto">${translations[currentLanguage].deleteBtn}</button>
-                        </td>
-                    </tr>
-                `;
-            });
-            tableHtml += `
-                    </tbody>
-                </table>
-            `;
-            transactionListContainer.innerHTML = tableHtml;
-
-            // Attach event listeners for edit and delete buttons
-            transactionListContainer.querySelectorAll('.edit-transaction-btn').forEach(button => {
-                button.onclick = (e) => {
-                    const id = e.target.dataset.transactionId;
-                    const transactionToEdit = transactions.find(t => t.id === id);
-                    if (transactionToEdit) showEditTransactionModal(transactionToEdit);
-                };
-            });
-            transactionListContainer.querySelectorAll('.delete-transaction-btn').forEach(button => {
-                button.onclick = (e) => {
-                    const id = e.target.dataset.transactionId;
-                    const transactionToDeleteFound = transactions.find(t => t.id === id);
-                    if (transactionToDeleteFound) confirmDeleteTransaction(transactionToDeleteFound);
-                };
-            });
-        }
-        */
-
-        // Helper to get member name by ID
         function getMemberName(memberId) {
             const member = members.find(m => m.id === memberId);
             return member ? member.name : 'N/A';
         }
 
-        // Helper to get involved members' names for expenses
         function getInvolvedMembersNames(involvedMemberIds) {
             if (!involvedMemberIds || involvedMemberIds.length === 0) {
                 return translations[currentLanguage].allMembers;
@@ -1514,13 +1487,12 @@
 
         // --- Member Actions ---
 
-        // Handles adding a new member
         addMemberForm.onsubmit = async (e) => {
             e.preventDefault();
-            const submitButton = e.submitter; // Get the button that triggered the submit
+            const submitButton = e.submitter;
             if (submitButton) {
-                submitButton.disabled = true; // Disable the button immediately
-                submitButton.textContent = 'Đang lưu...'; // Optional: show loading text
+                submitButton.disabled = true;
+                submitButton.textContent = 'Đang lưu...';
             }
 
             const name = memberNameInput.value.trim();
@@ -1535,12 +1507,12 @@
             hideErrorMessage();
             try {
                 const { data, error } = await supabase
-                    .from('members_quan') // Updated table name
+                    .from('members_quan')
                     .insert({ name: name, balance: 0 });
                 if (error) throw error;
-                memberNameInput.value = ''; // Clear input
-                addMemberSection.classList.add('hidden'); // Hide form
-                fetchData(); // Re-fetch data to update UI
+                memberNameInput.value = '';
+                addMemberSection.classList.add('hidden');
+                fetchData();
             } catch (error) {
                 console.error("Error adding member:", error.message);
                 showErrorMessage(`${translations[currentLanguage].addMemberError} ${error.message}`);
@@ -1552,10 +1524,9 @@
             }
         };
 
-        // Handles settling up a member's balance
         async function settleUpMember(memberId) {
             const memberToSettle = members.find(m => m.id === memberId);
-            if (!memberToSettle || Math.abs(memberToSettle.balance) < 0.01) return; // Use a small epsilon for zero check
+            if (!memberToSettle || Math.abs(memberToSettle.balance) < 0.01) return;
 
             const settlementAmount = Math.abs(memberToSettle.balance);
             const settlementType = memberToSettle.balance < 0 ? 'contribution' : 'expense';
@@ -1566,27 +1537,25 @@
                     type: settlementType,
                     amount: settlementAmount,
                     description: description,
-                    date: new Date().toISOString(), // Use ISO string for consistency
+                    date: new Date().toISOString(),
                     contributingMemberId: settlementType === 'contribution' ? memberToSettle.id : null,
                     involvedMemberIds: settlementType === 'expense' ? [memberToSettle.id] : [],
-                    latitude: null, // Default to null for settlement transactions
-                    longitude: null, // Default to null for settlement transactions
-                    expense_type: settlementType === 'expense' ? translations[currentLanguage].otherCategory : null, // Default for settlement expense
+                    latitude: null,
+                    longitude: null,
+                    expense_type: settlementType === 'expense' ? translations[currentLanguage].otherCategory : null,
                 };
                 const { data, error } = await supabase
-                    .from('transactions_quan') // Updated table name
+                    .from('transactions_quan')
                     .insert(newTransaction);
                 if (error) throw error;
-                fetchData(); // Re-fetch data to update UI
+                fetchData();
             } catch (error) {
                     console.error("Error settling up member:", error.message);
                 showErrorMessage(`${translations[currentLanguage].settleUpError} ${error.message}`);
             }
         };
 
-        // Shows confirmation modal for deleting a member
         function confirmDeleteMember(member) {
-            // Check if balance is effectively zero (within a small tolerance)
             if (Math.abs(member.balance) > 0.01) {
                 showErrorMessage(translations[currentLanguage].memberBalanceNotZero);
                 return;
@@ -1595,20 +1564,17 @@
             const message = translations[currentLanguage].confirmDeleteMember.replace('{memberName}', member.name);
             confirmationMessage.textContent = message;
             confirmationModal.classList.remove('hidden');
-            // Change confirm action to delete member
             confirmActionBtn.onclick = deleteMemberConfirmed;
         }
 
-        // Handles deletion of member after confirmation
         async function deleteMemberConfirmed() {
             if (memberToDelete) {
                 try {
                     console.log(`Attempting to delete transactions for member: ${memberToDelete.name} (ID: ${memberToDelete.id})`);
-                    // Delete all transactions related to this member first
                     const { error: transactionsError } = await supabase
-                        .from('transactions_quan') // Updated table name
+                        .from('transactions_quan')
                         .delete()
-                        .or(`contributingMemberId.eq.${memberToDelete.id},involvedMemberIds.cs.{${memberToDelete.id}}`); // Delete if contributing or involved
+                        .or(`contributingMemberId.eq.${memberToDelete.id},involvedMemberIds.cs.{${memberToDelete.id}}`);
 
                     if (transactionsError) {
                         console.error("Error deleting related transactions:", transactionsError.message);
@@ -1616,10 +1582,9 @@
                     }
                     console.log(`Transactions for member ${memberToDelete.name} deleted successfully.`);
 
-                    // Then delete the member
                     console.log(`Attempting to delete member: ${memberToDelete.name} (ID: ${memberToDelete.id})`);
                     const { error: memberError } = await supabase
-                        .from('members_quan') // Updated table name
+                        .from('members_quan')
                         .delete()
                         .eq('id', memberToDelete.id);
 
@@ -1629,7 +1594,7 @@
                     }
                     console.log(`Member ${memberToDelete.name} deleted successfully.`);
 
-                    fetchData(); // Re-fetch data to update UI
+                    fetchData();
                 } catch (error) {
                     console.error("Error during member deletion process:", error.message);
                     showErrorMessage(`${translations[currentLanguage].deleteMemberError} ${error.message}`);
@@ -1637,30 +1602,28 @@
             }
             confirmationModal.classList.add('hidden');
             memberToDelete = null;
-            // Reset confirm action to delete transaction (default)
-            confirmActionBtn.onclick = deleteTransactionConfirmed; // Ensure this is reset
+            confirmActionBtn.onclick = deleteTransactionConfirmed;
         }
 
         // --- Transaction Actions ---
 
-        // Handles adding a new transaction
         addTransactionForm.onsubmit = async (e) => {
             e.preventDefault();
-            const submitButton = e.submitter; // Get the button that triggered the submit
+            const submitButton = e.submitter;
             if (submitButton) {
-                submitButton.disabled = true; // Disable the button immediately
-                submitButton.textContent = 'Đang lưu...'; // Optional: show loading text
+                submitButton.disabled = true;
+                submitButton.textContent = 'Đang lưu...';
             }
 
             const type = transactionTypeSelect.value;
-            const amount = parseFormattedNumber(amountInput.value); // Use the new parseFormattedNumber
-            const transactionDate = transactionDateInput.value; // Get the date from the input
+            const amount = parseFormattedNumber(amountInput.value);
+            const transactionDate = transactionDateInput.value;
             const description = descriptionInput.value.trim();
             const contributingMemberId = memberSelect.value;
             const selectedExpenseMembers = Array.from(involvedMembersCheckboxes.querySelectorAll('input:checked')).map(input => input.value);
             const latitude = latitudeInput.value ? parseFloat(latitudeInput.value) : null;
             const longitude = longitudeInput.value ? parseFloat(longitudeInput.value) : null;
-            const expenseType = expenseTypeSelect.value; // New: Get expense type
+            const expenseType = expenseTypeSelect.value;
 
             if (isNaN(amount) || amount <= 0 || !description || !transactionDate) {
                 showErrorMessage(translations[currentLanguage].invalidAmountDesc);
@@ -1686,7 +1649,7 @@
                 }
                 return;
             }
-            if (expenseTypeDiv.classList.contains('hidden') === false && !expenseType) { // New validation for expense type, only if visible
+            if (expenseTypeDiv.classList.contains('hidden') === false && !expenseType) {
                 showErrorMessage(translations[currentLanguage].selectExpenseType);
                 if (submitButton) {
                     submitButton.disabled = false;
@@ -1702,186 +1665,166 @@
                     type: type,
                     amount: amount,
                     description: description,
-                    date: new Date(transactionDate).toISOString(), // Convert to ISO string for Supabase
+                    date: new Date(transactionDate).toISOString(),
                     contributingMemberId: type === 'contribution' ? contributingMemberId : null,
                     involvedMemberIds: type === 'expense' ? selectedExpenseMembers : [],
                     latitude: latitude,
                     longitude: longitude,
-                    expense_type: expenseType, // Always save expenseType
+                    expense_type: expenseType,
                 };
                 const { data, error } = await supabase
-                    .from('transactions_quan') // Updated table name
+                    .from('transactions_quan')
                     .insert(newTransaction);
                 if (error) throw error;
                 amountInput.value = '';
                 descriptionInput.value = '';
-                // Reset member selection for expense if it was an expense
                 involvedMembersCheckboxes.querySelectorAll('input[type="checkbox"]').forEach(checkbox => checkbox.checked = false);
-                addTransactionSection.classList.add('hidden'); // Hide form
-                fetchData(); // Re-fetch data to update UI
+                addTransactionSection.classList.add('hidden');
+                fetchData();
             } catch (error) {
                 console.error("Error adding transaction:", error.message);
                 showErrorMessage(`${translations[currentLanguage].addTransactionError} ${error.message}`);
             } finally {
                 if (submitButton) {
                     submitButton.disabled = false;
-                    submitButton.textContent = translations[currentLanguage].recordTransactionBtn; // Reset button text
+                    submitButton.textContent = translations[currentLanguage].recordTransactionBtn;
                 }
             }
         };
 
-        // Populates the member dropdowns and checkboxes for transaction forms (and expense types)
-				   function populateSelectors() {
-				// For Add Transaction Form - Members
-				memberSelect.innerHTML = '';
-				involvedMembersCheckboxes.innerHTML = '';
+        function populateSelectors() {
+            memberSelect.innerHTML = '';
+            involvedMembersCheckboxes.innerHTML = '';
 
-				if (members.length === 0) {
-					memberSelect.innerHTML = `<option value="">${translations[currentLanguage].noMembers}</option>`;
-					involvedMembersCheckboxes.innerHTML = `<p class="text-gray-500 text-sm">${translations[currentLanguage].noMembers}</p>`;
-				} else {
-					members.forEach(member => {
-						// For dropdown (contributing member)
-						const option = document.createElement('option');
-						option.value = member.id;
-						option.textContent = member.name;
-						memberSelect.appendChild(option);
+            if (members.length === 0) {
+                memberSelect.innerHTML = `<option value="">${translations[currentLanguage].noMembers}</option>`;
+                involvedMembersCheckboxes.innerHTML = `<p class="text-gray-500 text-sm">${translations[currentLanguage].noMembers}</p>`;
+            } else {
+                members.forEach(member => {
+                    const option = document.createElement('option');
+                    option.value = member.id;
+                    option.textContent = member.name;
+                    memberSelect.appendChild(option);
 
-						// For checkboxes (involved members)
-						const label = document.createElement('label');
-						label.className = 'inline-flex items-center cursor-pointer';
-						label.innerHTML = `
-							<input type="checkbox" class="form-checkbox h-4 w-4 text-[#006B68] transition duration-150 ease-in-out rounded focus:ring-[#006B68]" value="${member.id}">
-							<span class="ml-2 text-sm text-gray-700">${member.name}</span>
-						`;
-						involvedMembersCheckboxes.appendChild(label);
-					});
-					// Set default selected member for contribution if available
-					if (members.length > 0) {
-						memberSelect.value = members[0].id;
-					}
-				}
-
-				// Gọi hàm populate riêng cho expenseTypeSelect với loại giao dịch mặc định của form thêm
-				populateExpenseTypeSelect(expenseTypeSelect, transactionTypeSelect.value); 
-
-				// For Edit Transaction Form - Members (similar logic for edit modal)
-				editMemberSelect.innerHTML = '';
-				editInvolvedMembersCheckboxes.innerHTML = '';
-
-				if (members.length === 0) {
-					editMemberSelect.innerHTML = `<option value="">${translations[currentLanguage].noMembers}</option>`;
-					editInvolvedMembersCheckboxes.innerHTML = `<p class="text-gray-500 text-sm">${translations[currentLanguage].noMembers}</p>`;
-				} else {
-					members.forEach(member => {
-						const option = document.createElement('option');
-						option.value = member.id;
-						option.textContent = member.name;
-						editMemberSelect.appendChild(option);
-
-						const label = document.createElement('label');
-						label.className = 'inline-flex items-center cursor-pointer';
-						label.innerHTML = `
-							<input type="checkbox" class="form-checkbox h-4 w-4 text-[#006B68] transition duration-150 ease-in-out rounded focus:ring-[#006B68]" value="${member.id}">
-							<span class="ml-2 text-sm text-gray-700">${member.name}</span>
-						`;
-						editInvolvedMembersCheckboxes.appendChild(label);
-					});
-				}
-
-					// Gọi hàm populate riêng cho editExpenseTypeSelect với loại giao dịch mặc định của form sửa
-						populateExpenseTypeSelect(editExpenseTypeSelect, editTransactionTypeSelect.value); 
-			}
-			// THÊM HÀM MỚI NÀY SAU HÀM populateSelectors()
-			// Hàm để điền các loại chi tiêu/thu nhập vào dropdown
-            function populateExpenseTypeSelect(selectElement, transactionType) {
-                selectElement.innerHTML = '';
-                
-                let filteredTypes = [];
-                // Lọc các loại chi tiêu/thu nhập dựa trên 'Type' của chúng trong bảng expensetype
-                if (transactionType) {
-                    filteredTypes = expenseTypes.filter(type => type.Type === transactionType);
-                } else {
-                    // Nếu không có transactionType, hiển thị tất cả các loại (hoặc không hiển thị gì)
-                    filteredTypes = expenseTypes;
-                }
-
-                if (filteredTypes.length === 0) {
-                    const noOptionsMessage = translations[currentLanguage].selectExpenseType;
-                    selectElement.innerHTML = `<option value="">${noOptionsMessage}</option>`;
-                } else {
-                    const defaultOption = document.createElement('option');
-                    defaultOption.value = '';
-                    defaultOption.textContent = translations[currentLanguage].selectExpenseType;
-                    selectElement.appendChild(defaultOption);
-
-                    filteredTypes.forEach(type => {
-                        const option = document.createElement('option');
-                        option.value = type.expense_type;
-                        option.textContent = type.expense_type;
-                        selectElement.appendChild(option);
-                    });
+                    const label = document.createElement('label');
+                    label.className = 'inline-flex items-center cursor-pointer';
+                    label.innerHTML = `
+                        <input type="checkbox" class="form-checkbox h-4 w-4 text-[#006B68] transition duration-150 ease-in-out rounded focus:ring-[#006B68]" value="${member.id}">
+                        <span class="ml-2 text-sm text-gray-700">${member.name}</span>
+                    `;
+                    involvedMembersCheckboxes.appendChild(label);
+                });
+                if (members.length > 0) {
+                    memberSelect.value = members[0].id;
                 }
             }
 
+            populateExpenseTypeSelect(expenseTypeSelect, transactionTypeSelect.value); 
 
-					// Toggles visibility and required attributes of contributing/involved member fields and expense type field based on transaction type
-			transactionTypeSelect.onchange = () => {
-			const expenseTypeLabelElement = expenseTypeDiv.querySelector('label[data-key="expenseTypeLabel"]');
-			const selectedTransactionType = transactionTypeSelect.value; // Lấy giá trị đã chọn
+            editMemberSelect.innerHTML = '';
+            editInvolvedMembersCheckboxes.innerHTML = '';
 
-			if (selectedTransactionType === 'contribution') {
-				contributingMemberDiv.classList.remove('hidden');
-				memberSelect.setAttribute('required', 'true');
-				involvedMembersDiv.classList.add('hidden');
-				involvedMembersCheckboxes.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
-					checkbox.checked = false;
-					checkbox.removeAttribute('required');
-				});
-				
-				expenseTypeDiv.classList.remove('hidden'); 
-				expenseTypeSelect.setAttribute('required', 'true');
-				if (expenseTypeLabelElement) {
-					expenseTypeLabelElement.textContent = "Loại thu";
-				}
-			populateExpenseTypeSelect(expenseTypeSelect, 'contribution'); // Truyền 'contribution'
-				expenseTypeSelect.value = ''; // Làm sạch giá trị sau khi populate
-				
-				
-			} else { // Expense
-				contributingMemberDiv.classList.add('hidden');
-				memberSelect.removeAttribute('required');
-				memberSelect.value = '';
-				involvedMembersDiv.classList.remove('hidden');
-				
-				expenseTypeDiv.classList.remove('hidden'); 
-				expenseTypeSelect.setAttribute('required', 'true');
-				if (expenseTypeLabelElement) {
-					expenseTypeLabelElement.textContent = translations[currentLanguage].expenseTypeLabel;
-				}
-				populateExpenseTypeSelect(expenseTypeSelect, 'expense'); // Truyền 'expense'
-				// Sau khi populate, nếu có giá trị cũ không hợp lệ thì sẽ bị làm trống,
-				// sau đó bạn có thể chọn mặc định nếu muốn
-				// Lấy giá trị mặc định của loại chi tiêu từ danh sách đã lọc
-				const defaultExpenseOption = expenseTypes.find(et => et.Type === 'expense');
-				if (defaultExpenseOption) {
-					 expenseTypeSelect.value = defaultExpenseOption.expense_type;
-				} else {
-					 expenseTypeSelect.value = ''; // Để trống nếu không có loại chi tiêu nào
-				}
-			}
-		};
+            if (members.length === 0) {
+                editMemberSelect.innerHTML = `<option value="">${translations[currentLanguage].noMembers}</option>`;
+                editInvolvedMembersCheckboxes.innerHTML = `<p class="text-gray-500 text-sm">${translations[currentLanguage].noMembers}</p>`;
+            } else {
+                members.forEach(member => {
+                    const option = document.createElement('option');
+                    option.value = member.id;
+                    option.textContent = member.name;
+                    editMemberSelect.appendChild(option);
 
-        // Shows the edit transaction modal
+                    const label = document.createElement('label');
+                    label.className = 'inline-flex items-center cursor-pointer';
+                    label.innerHTML = `
+                        <input type="checkbox" class="form-checkbox h-4 w-4 text-[#006B68] transition duration-150 ease-in-out rounded focus:ring-[#006B68]" value="${member.id}">
+                        <span class="ml-2 text-sm text-gray-700">${member.name}</span>
+                    `;
+                    editInvolvedMembersCheckboxes.appendChild(label);
+                });
+            }
+
+            populateExpenseTypeSelect(editExpenseTypeSelect, editTransactionTypeSelect.value); 
+        }
+
+        function populateExpenseTypeSelect(selectElement, transactionType) {
+            selectElement.innerHTML = '';
+            
+            let filteredTypes = [];
+            if (transactionType) {
+                filteredTypes = expenseTypes.filter(type => type.Type === transactionType);
+            } else {
+                filteredTypes = expenseTypes;
+            }
+
+            if (filteredTypes.length === 0) {
+                const noOptionsMessage = translations[currentLanguage].selectExpenseType;
+                selectElement.innerHTML = `<option value="">${noOptionsMessage}</option>`;
+            } else {
+                const defaultOption = document.createElement('option');
+                defaultOption.value = '';
+                defaultOption.textContent = translations[currentLanguage].selectExpenseType;
+                selectElement.appendChild(defaultOption);
+
+                filteredTypes.forEach(type => {
+                    const option = document.createElement('option');
+                    option.value = type.expense_type;
+                    option.textContent = type.expense_type;
+                    selectElement.appendChild(option);
+                });
+            }
+        }
+
+
+        transactionTypeSelect.onchange = () => {
+            const expenseTypeLabelElement = expenseTypeDiv.querySelector('label[data-key="expenseTypeLabel"]');
+            const selectedTransactionType = transactionTypeSelect.value;
+
+            if (selectedTransactionType === 'contribution') {
+                contributingMemberDiv.classList.remove('hidden');
+                memberSelect.setAttribute('required', 'true');
+                involvedMembersDiv.classList.add('hidden');
+                involvedMembersCheckboxes.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+                    checkbox.checked = false;
+                    checkbox.removeAttribute('required');
+                });
+                
+                expenseTypeDiv.classList.remove('hidden'); 
+                expenseTypeSelect.setAttribute('required', 'true');
+                if (expenseTypeLabelElement) {
+                    expenseTypeLabelElement.textContent = "Loại thu";
+                }
+                populateExpenseTypeSelect(expenseTypeSelect, 'contribution');
+                expenseTypeSelect.value = '';
+                
+            } else { // Expense
+                contributingMemberDiv.classList.add('hidden');
+                memberSelect.removeAttribute('required');
+                memberSelect.value = '';
+                involvedMembersDiv.classList.remove('hidden');
+                
+                expenseTypeDiv.classList.remove('hidden'); 
+                expenseTypeSelect.setAttribute('required', 'true');
+                if (expenseTypeLabelElement) {
+                    expenseTypeLabelElement.textContent = translations[currentLanguage].expenseTypeLabel;
+                }
+                populateExpenseTypeSelect(expenseTypeSelect, 'expense');
+                const defaultExpenseOption = expenseTypes.find(et => et.Type === 'expense');
+                if (defaultExpenseOption) {
+                     expenseTypeSelect.value = defaultExpenseOption.expense_type;
+                } else {
+                     expenseTypeSelect.value = '';
+                }
+            }
+        };
+
         function showEditTransactionModal(transaction) {
-            editingTransaction = transaction; // Store the transaction globally
+            editingTransaction = transaction;
             editTransactionModal.classList.remove('hidden');
             hideErrorMessage();
 
-            // Populate form fields
             editTransactionTypeSelect.value = transaction.type;
             editAmountInput.value = formatNumberForInput(transaction.amount.toString());
-            // Format the date for datetime-local input
             const transactionDate = new Date(transaction.date);
             const year = transactionDate.getFullYear();
             const month = (transactionDate.getMonth() + 1).toString().padStart(2, '0');
@@ -1894,62 +1837,52 @@
             editLatitudeInput.value = transaction.latitude || '';
             editLongitudeInput.value = transaction.longitude || '';
             
-            // Set initial selection based on transaction type and manage required attributes
-          // Set initial selection based on transaction type and manage required attributes
-const expenseTypeLabelElement = editExpenseTypeDiv.querySelector('label[data-key="expenseTypeLabel"]'); // Lấy label cho modal sửa
+            const expenseTypeLabelElement = editExpenseTypeDiv.querySelector('label[data-key="expenseTypeLabel"]');
 
-if (transaction.type === 'contribution') {
-    editContributingMemberDiv.classList.remove('hidden');
-    editMemberSelect.setAttribute('required', 'true');
-    editInvolvedMembersDiv.classList.add('hidden');
-    editInvolvedMembersCheckboxes.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
-        checkbox.removeAttribute('required');
-    });
-    editMemberSelect.value = transaction.contributingMemberId || '';
-    
-    // Hiển thị expense_type cho contribution và đổi nhãn
-    editExpenseTypeDiv.classList.remove('hidden'); 
-    editExpenseTypeSelect.setAttribute('required', 'true'); 
-    if (expenseTypeLabelElement) {
-        expenseTypeLabelElement.textContent = "Loại thu"; // Đổi nhãn thành "Loại thu"
-    }
-   populateExpenseTypeSelect(editExpenseTypeSelect, 'contribution'); // Populate với 'contribution' types
-    // Sử dụng transaction.expense_type cho cả contribution và expense
-    editExpenseTypeSelect.value = transaction.expense_type || ''; // Set giá trị nếu có
-    
-    
-} else { // Expense
-    editContributingMemberDiv.classList.add('hidden');
-    editMemberSelect.removeAttribute('required');
-    editMemberSelect.value = '';
-    editInvolvedMembersDiv.classList.remove('hidden');
-    // Clear all checkboxes first
-    editInvolvedMembersCheckboxes.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
-        checkbox.checked = false;
-    });
-    // Then check the ones involved in this transaction
-    if (transaction.involvedMemberIds) {
-        transaction.involvedMemberIds.forEach(id => {
-            const checkbox = editInvolvedMembersCheckboxes.querySelector(`input[value="${id}"]`);
-            if (checkbox) checkbox.checked = true;
-        });
-    }
-    
-    // Hiển thị expense_type cho expense và đổi nhãn
-    editExpenseTypeDiv.classList.remove('hidden'); 
-    editExpenseTypeSelect.setAttribute('required', 'true'); 
-    if (expenseTypeLabelElement) {
-        expenseTypeLabelElement.textContent = translations[currentLanguage].expenseTypeLabel; // Đặt lại nhãn ban đầu
-    }
-    populateExpenseTypeSelect(editExpenseTypeSelect, 'expense'); // Populate với 'expense' types
-    // Sử dụng transaction.expense_type cho cả contribution và expense
-    editExpenseTypeSelect.value = transaction.expense_type || ''; // Set giá trị nếu có
-}
+            if (transaction.type === 'contribution') {
+                editContributingMemberDiv.classList.remove('hidden');
+                editMemberSelect.setAttribute('required', 'true');
+                editInvolvedMembersDiv.classList.add('hidden');
+                editInvolvedMembersCheckboxes.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+                    checkbox.removeAttribute('required');
+                });
+                editMemberSelect.value = transaction.contributingMemberId || '';
+                
+                editExpenseTypeDiv.classList.remove('hidden'); 
+                editExpenseTypeSelect.setAttribute('required', 'true'); 
+                if (expenseTypeLabelElement) {
+                    expenseTypeLabelElement.textContent = "Loại thu";
+                }
+                populateExpenseTypeSelect(editExpenseTypeSelect, 'contribution');
+                editExpenseTypeSelect.value = transaction.expense_type || '';
+                
+            } else { // Expense
+                editContributingMemberDiv.classList.add('hidden');
+                editMemberSelect.removeAttribute('required');
+                editMemberSelect.value = '';
+                editInvolvedMembersDiv.classList.remove('hidden');
+                editInvolvedMembersCheckboxes.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+                    checkbox.checked = false;
+                });
+                if (transaction.involvedMemberIds) {
+                    transaction.involvedMemberIds.forEach(id => {
+                        const checkbox = editInvolvedMembersCheckboxes.querySelector(`input[value="${id}"]`);
+                        if (checkbox) checkbox.checked = true;
+                    });
+                }
+                
+                editExpenseTypeDiv.classList.remove('hidden'); 
+                editExpenseTypeSelect.setAttribute('required', 'true'); 
+                if (expenseTypeLabelElement) {
+                    expenseTypeLabelElement.textContent = translations[currentLanguage].expenseTypeLabel;
+                }
+                populateExpenseTypeSelect(editExpenseTypeSelect, 'expense');
+                editExpenseTypeSelect.value = transaction.expense_type || '';
+            }
         }
 
-        // Toggles visibility and required attributes of contributing/involved member fields in edit modal
-		editTransactionTypeSelect.onchange = () => {
-			const editExpenseTypeLabelElement = editExpenseTypeDiv.querySelector('label[data-key="expenseTypeLabel"]'); // Lấy phần tử label
+        editTransactionTypeSelect.onchange = () => {
+			const editExpenseTypeLabelElement = editExpenseTypeDiv.querySelector('label[data-key="expenseTypeLabel"]');
 			
 			if (editTransactionTypeSelect.value === 'contribution') {
 				editContributingMemberDiv.classList.remove('hidden');
@@ -1960,14 +1893,13 @@ if (transaction.type === 'contribution') {
 					checkbox.removeAttribute('required');
 				});
 				
-			// HIỂN THỊ edit-expense_type cho Đóng Góp và đổi nhãn
 				editExpenseTypeDiv.classList.remove('hidden'); 
 				editExpenseTypeSelect.setAttribute('required', 'true'); 
 				if (editExpenseTypeLabelElement) {
-					editExpenseTypeLabelElement.textContent = "Loại thu"; // Đổi nhãn thành "Loại thu"
+					editExpenseTypeLabelElement.textContent = "Loại thu";
 				}
-				populateExpenseTypeSelect(editExpenseTypeSelect, 'contribution'); // Truyền 'contribution'
-				editExpenseTypeSelect.value = ''; // Thêm dòng này để làm sạch giá trị
+				populateExpenseTypeSelect(editExpenseTypeSelect, 'contribution');
+				editExpenseTypeSelect.value = '';
 				
 			} else { // Expense
 				editContributingMemberDiv.classList.add('hidden');
@@ -1978,40 +1910,37 @@ if (transaction.type === 'contribution') {
 					checkbox.checked = false;
 				});
 				
-				// HIỂN THỊ edit-expense_type cho Chi Tiêu và đổi nhãn
 				editExpenseTypeDiv.classList.remove('hidden'); 
 				editExpenseTypeSelect.setAttribute('required', 'true'); 
 				if (editExpenseTypeLabelElement) {
-					editExpenseTypeLabelElement.textContent = translations[currentLanguage].expenseTypeLabel; // Đặt lại nhãn ban đầu
+					editExpenseTypeLabelElement.textContent = translations[currentLanguage].expenseTypeLabel;
 				}
-				populateExpenseTypeSelect(editExpenseTypeSelect, 'expense'); // Truyền 'expense'
-				// Ensure expense type is populated if not already, and select a default if available
+				populateExpenseTypeSelect(editExpenseTypeSelect, 'expense');
 				if (editExpenseTypeSelect.value === '' && expenseTypes.length > 0) {
-					editExpenseTypeSelect.value = expenseTypes.find(et => et.Type === 'expense')?.expense_type || ''; // Select first expense type or empty
+					editExpenseTypeSelect.value = expenseTypes.find(et => et.Type === 'expense')?.expense_type || '';
 				}
 			}
 		};
 
-        // Handles saving edited transaction
         editTransactionForm.onsubmit = async (e) => {
             e.preventDefault();
             if (!editingTransaction) return;
 
-            const submitButton = e.submitter; // Get the button that triggered the submit
+            const submitButton = e.submitter;
             if (submitButton) {
-                submitButton.disabled = true; // Disable the button immediately
-                submitButton.textContent = 'Đang lưu...'; // Optional: show loading text
+                submitButton.disabled = true;
+                submitButton.textContent = 'Đang lưu...';
             }
 
             const type = editTransactionTypeSelect.value;
-            const amount = parseFormattedNumber(editAmountInput.value); // Use the new parseFormattedNumber
-            const transactionDate = editTransactionDateInput.value; // Get the date from the input
+            const amount = parseFormattedNumber(editAmountInput.value);
+            const transactionDate = editTransactionDateInput.value;
             const description = editDescriptionInput.value.trim();
             const contributingMemberId = editMemberSelect.value;
             const involvedMemberIds = Array.from(editInvolvedMembersCheckboxes.querySelectorAll('input:checked')).map(input => input.value);
             const latitude = editLatitudeInput.value ? parseFloat(editLatitudeInput.value) : null;
             const longitude = editLongitudeInput.value ? parseFloat(editLongitudeInput.value) : null;
-            const expenseType = editExpenseTypeSelect.value; // New: Get expense type
+            const expenseType = editExpenseTypeSelect.value;
 
             if (isNaN(amount) || amount <= 0 || !description || !transactionDate) {
                 showErrorMessage(translations[currentLanguage].editInvalidAmountDesc);
@@ -2029,70 +1958,64 @@ if (transaction.type === 'contribution') {
                 }
                 return;
             }
-           // Validation cho expenseType (dù là đóng góp hay chi tiêu, nếu hiển thị thì required)
-		// Validation cho expenseType (dù là đóng góp hay chi tiêu, nếu hiển thị thì required)
-					if (editExpenseTypeDiv.classList.contains('hidden') === false && !expenseType) { 
-						showErrorMessage(translations[currentLanguage].selectExpenseType);
-						if (submitButton) {
-							submitButton.disabled = false;
-							submitButton.textContent = translations[currentLanguage].saveChangesBtn;
-						}
-						return;
-					}
+            if (editExpenseTypeDiv.classList.contains('hidden') === false && !expenseType) { 
+                showErrorMessage(translations[currentLanguage].selectExpenseType);
+                if (submitButton) {
+                    submitButton.disabled = false;
+                    submitButton.textContent = translations[currentLanguage].saveChangesBtn;
+                }
+                return;
+            }
             
-
             hideErrorMessage();
 
             try {
                 const { data, error } = await supabase
-                    .from('transactions_quan') // Updated table name
+                    .from('transactions_quan')
                     .update({
                         type: type,
                         amount: amount,
                         description: description,
-                        date: new Date(transactionDate).toISOString(), // Convert to ISO string for Supabase
+                        date: new Date(transactionDate).toISOString(),
                         contributingMemberId: type === 'contribution' ? contributingMemberId : null,
                         involvedMemberIds: type === 'expense' ? involvedMemberIds : [],
                         latitude: latitude,
                         longitude: longitude,
-                        expense_type: expenseType, // Always update expenseType
+                        expense_type: expenseType,
                     })
                     .eq('id', editingTransaction.id);
                 if (error) throw error;
                 editTransactionModal.classList.add('hidden');
                 editingTransaction = null;
-                fetchData(); // Re-fetch data to update UI
+                fetchData();
             } catch (error) {
                 console.error("Error editing transaction:", error.message);
                 showErrorMessage(`${translations[currentLanguage].editTransactionError} ${error.message}`);
             } finally {
                 if (submitButton) {
                     submitButton.disabled = false;
-                    submitButton.textContent = translations[currentLanguage].saveChangesBtn; // Reset button text
+                    submitButton.textContent = translations[currentLanguage].saveChangesBtn;
                 }
             }
         };
 
-        // Shows confirmation modal for deleting a transaction
         function confirmDeleteTransaction(transaction) {
             transactionToDelete = transaction;
             const message = translations[currentLanguage].confirmDeleteTransaction.replace('{description}', transaction.description);
             confirmationMessage.textContent = message;
             confirmationModal.classList.remove('hidden');
-            // Change confirm action to delete transaction
             confirmActionBtn.onclick = deleteTransactionConfirmed;
         }
 
-        // Handles deletion of transaction after confirmation
         async function deleteTransactionConfirmed() {
             if (transactionToDelete) {
                 try {
                     const { error } = await supabase
-                        .from('transactions_quan') // Updated table name
+                        .from('transactions_quan')
                         .delete()
                         .eq('id', transactionToDelete.id);
                     if (error) throw error;
-                    fetchData(); // Re-fetch data to update UI
+                    fetchData();
                 } catch (error) {
                     console.error("Error deleting transaction:", error.message);
                     showErrorMessage(`${translations[currentLanguage].deleteTransactionError} ${error.message}`);
@@ -2100,16 +2023,13 @@ if (transaction.type === 'contribution') {
             }
             confirmationModal.classList.add('hidden');
             transactionToDelete = null;
-            // Reset confirm action to delete transaction (default)
-            confirmActionBtn.onclick = deleteTransactionConfirmed; // Keep as default for transactions
-        }
+            confirmActionBtn.onclick = deleteTransactionConfirmed;
+        };
 
-        // Cancels deletion (for both member and transaction)
         cancelConfirmationBtn.onclick = () => {
             confirmationModal.classList.add('hidden');
             transactionToDelete = null;
             memberToDelete = null;
-            // Reset confirm action to delete transaction (default)
             confirmActionBtn.onclick = deleteTransactionConfirmed;
         };
 
@@ -2143,7 +2063,7 @@ if (transaction.type === 'contribution') {
                                 <th>${translations[currentLanguage].dateHeader}</th>
                                 <th>${translations[currentLanguage].typeHeader}</th>
                                 <th>${translations[currentLanguage].descriptionHeader}</th>
-                                <th>${translations[currentLanguage].expenseTypeHeader}</th> <!-- New Column -->
+                                <th>${translations[currentLanguage].expenseTypeHeader}</th>
                                 <th class="table-header text-right-aligned">${translations[currentLanguage].amountHeader}</th>
                             </tr>
                         </thead>
@@ -2151,7 +2071,6 @@ if (transaction.type === 'contribution') {
                 `;
                 memberTransactions.forEach(t => {
                     let displayedAmount = t.amount;
-                    // For individual member details, show the per-person share of the expense
                     if (t.type === 'expense' && t.involvedMemberIds && t.involvedMemberIds.length > 0) {
                         displayedAmount = t.amount / t.involvedMemberIds.length;
                     }
@@ -2167,7 +2086,7 @@ if (transaction.type === 'contribution') {
                                 <td>${transactionDate}</td>
                                 <td><span class="px-2 py-1 rounded-full text-xs font-semibold ${typeClass}">${typeText}</span></td>
                                 <td>${t.description}</td>
-                                <td>${t.type === 'expense' && t.expense_type ? t.expense_type : 'N/A'}</td> <!-- Display expense type -->
+                                <td>${t.type === 'expense' && t.expense_type ? t.expense_type : 'N/A'}</td>
                                 <td class="text-right-aligned ${amountClass}">${t.type === 'contribution' ? '+' : '-'}${formatNumberForDisplay(displayedAmount)}</td>
                             </tr>
                         `;
@@ -2181,8 +2100,6 @@ if (transaction.type === 'contribution') {
             }
 
             // --- Reporting Functions ---
-
-            // Renders the Fund Report table
             function renderFundReport() {
                 if (transactions.length === 0) {
                     fundReportTableContainer.innerHTML = `<p class="text-center text-gray-500">${translations[currentLanguage].noTransactionsReport}</p>`;
@@ -2196,7 +2113,7 @@ if (transaction.type === 'contribution') {
                                 <th class="table-header">${translations[currentLanguage].dateHeader}</th>
                                 <th class="table-header">${translations[currentLanguage].typeHeader}</th>
                                 <th class="table-header">${translations[currentLanguage].descriptionHeader}</th>
-                                <th class="table-header">${translations[currentLanguage].expenseTypeHeader}</th> <!-- New Column -->
+                                <th class="table-header">${translations[currentLanguage].expenseTypeHeader}</th>
                                 <th class="table-header">${translations[currentLanguage].relatedMembersHeader}</th>
                                 <th class="table-header text-right-aligned">${translations[currentLanguage].amountHeader}</th>
                             </tr>
@@ -2204,7 +2121,6 @@ if (transaction.type === 'contribution') {
                         <tbody>
                 `;
                 transactions.slice().sort((a, b) => new Date(b.date) - new Date(a.date)).forEach(t => {
-                    // For the fund report, always display the total amount of the expense
                     const displayedAmount = t.amount;
                     const typeText = t.type === 'contribution' ? translations[currentLanguage].contributionOption.replace('💵 ', '') : translations[currentLanguage].expenseOption.replace('🍺 ', '');
                     const typeClass = t.type === 'contribution' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800';
@@ -2222,7 +2138,7 @@ if (transaction.type === 'contribution') {
                             <td>${transactionDate}</td>
                             <td><span class="px-2 py-1 rounded-full text-xs font-semibold ${typeClass}">${typeText}</span></td>
                             <td>${t.description}</td>
-                            <td>${t.type === 'expense' && t.expense_type ? t.expense_type : 'N/A'}</td> <!-- Display expense type -->
+                            <td>${t.type === 'expense' && t.expense_type ? t.expense_type : 'N/A'}</td>
                             <td>${memberNames}</td>
                             <td class="text-right-aligned ${amountClass}">${t.type === 'contribution' ? '+' : '-'}${formatNumberForDisplay(displayedAmount)}</td>
                         </tr>
@@ -2235,7 +2151,6 @@ if (transaction.type === 'contribution') {
                 fundReportTableContainer.innerHTML = tableHtml;
             }
 
-            // Renders the Member Report dropdown
             function renderMemberReportDropdown() {
                 selectMemberReportDropdown.innerHTML = '';
                 if (members.length === 0) {
@@ -2247,15 +2162,13 @@ if (transaction.type === 'contribution') {
                         option.textContent = member.name;
                         selectMemberReportDropdown.appendChild(option);
                     });
-                    // Set default selected member if not already set
                     if (!selectMemberReportDropdown.value && members.length > 0) {
                         selectMemberReportDropdown.value = members[0].id;
                     }
                 }
-                renderSelectedMemberReport(); // Render report for initially selected member
+                renderSelectedMemberReport();
             }
 
-            // Renders the report for the currently selected member
             function renderSelectedMemberReport() {
                 const selectedMemberId = selectMemberReportDropdown.value;
                 if (!selectedMemberId) {
@@ -2280,7 +2193,7 @@ if (transaction.type === 'contribution') {
                                 <th class="table-header">${translations[currentLanguage].dateHeader}</th>
                                 <th>${translations[currentLanguage].typeHeader}</th>
                                 <th>${translations[currentLanguage].descriptionHeader}</th>
-                                <th>${translations[currentLanguage].expenseTypeHeader}</th> <!-- New Column -->
+                                <th>${translations[currentLanguage].expenseTypeHeader}</th>
                                 <th class="table-header text-right-aligned">${translations[currentLanguage].amountHeader}</th>
                             </tr>
                         </thead>
@@ -2288,7 +2201,6 @@ if (transaction.type === 'contribution') {
                 `;
                 memberTransactions.forEach(t => {
                     let displayedAmount = t.amount;
-                    // For individual member reports, show the per-person share of the expense
                     if (t.type === 'expense' && t.involvedMemberIds && t.involvedMemberIds.length > 0) {
                         displayedAmount = t.amount / t.involvedMemberIds.length;
                     }
@@ -2304,7 +2216,7 @@ if (transaction.type === 'contribution') {
                                 <td>${transactionDate}</td>
                                 <td><span class="px-2 py-1 rounded-full text-xs font-semibold ${typeClass}">${typeText}</span></td>
                                 <td>${t.description}</td>
-                                <td>${t.type === 'expense' && t.expense_type ? t.expense_type : 'N/A'}</td> <!-- Display expense type -->
+                                <td>${t.type === 'expense' && t.expense_type ? t.expense_type : 'N/A'}</td>
                                 <td class="text-right-aligned ${amountClass}">${t.type === 'contribution' ? '+' : '-'}${formatNumberForDisplay(displayedAmount)}</td>
                             </tr>
                         `;
@@ -2316,7 +2228,6 @@ if (transaction.type === 'contribution') {
                     memberReportTableContainer.innerHTML = tableHtml;
                 }
 
-                // Export Fund Report to Excel
                 exportFundReportExcelBtn.onclick = () => {
                     if (typeof window.XLSX === 'undefined') {
                         showErrorMessage(translations[currentLanguage].xlsxLoadError);
@@ -2324,7 +2235,6 @@ if (transaction.type === 'contribution') {
                     }
 
                     const reportData = transactions.slice().sort((a, b) => new Date(a.date) - new Date(b.date)).map(t => {
-                        // For Excel export of fund report, use the total amount
                         const displayedAmount = t.amount;
                         const transactionDate = new Date(t.date).toLocaleDateString(currentLanguage === 'vi' ? 'vi-VN' : 'en-US', {
                             year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit'
@@ -2333,7 +2243,7 @@ if (transaction.type === 'contribution') {
                             [translations[currentLanguage].dateHeader]: transactionDate,
                             [translations[currentLanguage].typeHeader]: t.type === 'contribution' ? translations[currentLanguage].contributionType : translations[currentLanguage].expenseType,
                             [translations[currentLanguage].descriptionHeader]: t.description,
-                            [translations[currentLanguage].expenseTypeHeader]: t.type === 'expense' && t.expense_type ? t.expense_type : 'N/A', // New
+                            [translations[currentLanguage].expenseTypeHeader]: t.type === 'expense' && t.expense_type ? t.expense_type : 'N/A',
                             [translations[currentLanguage].relatedMembersHeader]: t.type === 'contribution' ? getMemberName(t.contributingMemberId) : getInvolvedMembersNames(t.involvedMemberIds),
                             [`${translations[currentLanguage].amountHeader} (${translations[currentLanguage].unitCurrency})`]: (t.type === 'contribution' ? '+' : '-') + formatNumberForDisplay(displayedAmount),
                         };
@@ -2345,7 +2255,6 @@ if (transaction.type === 'contribution') {
                     window.XLSX.writeFile(wb, `${translations[currentLanguage].fundReportTitle}.xlsx`);
                 };
 
-                // Export Member Report to Excel
                 exportMemberReportExcelBtn.onclick = () => {
                     if (typeof window.XLSX === 'undefined') {
                         showErrorMessage(translations[currentLanguage].xlsxLoadError);
@@ -2364,7 +2273,6 @@ if (transaction.type === 'contribution') {
 
                     const reportData = memberTransactions.map(t => {
                         let displayedAmount = t.amount;
-                        // For Excel export of member report, use the per-person share
                         if (t.type === 'expense' && t.involvedMemberIds && t.involvedMemberIds.length > 0) {
                             displayedAmount = t.amount / t.involvedMemberIds.length;
                         }
@@ -2375,7 +2283,7 @@ if (transaction.type === 'contribution') {
                             [translations[currentLanguage].dateHeader]: transactionDate,
                             [translations[currentLanguage].typeHeader]: t.type === 'contribution' ? translations[currentLanguage].contributionType : translations[currentLanguage].expenseType,
                             [translations[currentLanguage].descriptionHeader]: t.description,
-                            [translations[currentLanguage].expenseTypeHeader]: t.type === 'expense' && t.expense_type ? t.expense_type : 'N/A', // New
+                            [translations[currentLanguage].expenseTypeHeader]: t.type === 'expense' && t.expense_type ? t.expense_type : 'N/A',
                             [`${translations[currentLanguage].amountHeader} (${translations[currentLanguage].unitCurrency})`]: (t.type === 'contribution' ? '+' : '-') + formatNumberForDisplay(displayedAmount),
                         };
                     });
@@ -2386,21 +2294,15 @@ if (transaction.type === 'contribution') {
                     window.XLSX.writeFile(wb, `${translations[currentLanguage].memberReportsTitle}_${memberName}.xlsx`);
                 };
 
-                // --- Word Export Functions ---
-
-                // Helper function to get HTML content for Word export with inline styles
                 function getHtmlForWordExport(containerId, title) {
                     const container = document.getElementById(containerId);
                     if (!container) return '';
 
-                    // Clone the container to manipulate its content without affecting the live DOM
                     const clonedContainer = container.cloneNode(true);
 
-                    // Apply inline styles to the cloned table elements for better Word rendering
                     const table = clonedContainer.querySelector('table');
                     if (table) {
-                        table.classList.add('word-export-table'); // Add a specific class for Word export styling
-                        // Apply inline styles to th and td elements
+                        table.classList.add('word-export-table');
                         clonedContainer.querySelectorAll('th, td').forEach(cell => {
                             cell.style.border = '1px solid #e5e7eb';
                             cell.style.padding = '0.75rem';
@@ -2409,7 +2311,6 @@ if (transaction.type === 'contribution') {
                                 cell.style.backgroundColor = '#f3f4f6';
                                 cell.style.fontWeight = 'bold';
                             }
-                            // Apply color for balance classes
                             if (cell.querySelector('.balance-positive')) {
                                 cell.style.color = '#10B981';
                             } else if (cell.querySelector('.balance-negative')) {
@@ -2417,11 +2318,10 @@ if (transaction.type === 'contribution') {
                             } else if (cell.querySelector('.balance-zero')) {
                                 cell.style.color = '#6B7280';
                             }
-                            // Remove span elements that apply color/background on web for Word export
                             const span = cell.querySelector('span.px-2.py-1.rounded-full');
                             if (span) {
-                                cell.textContent = span.textContent; // Move text from span to cell
-                                span.remove(); // Remove the span
+                                cell.textContent = span.textContent;
+                                span.remove();
                             }
                         });
                     }
@@ -2433,7 +2333,6 @@ if (transaction.type === 'contribution') {
                             <meta charset="utf-8">
                             <title>${title}</title>
                             <style>
-                                /* Basic styles for Word document */
                                 body { font-family: 'Inter', sans-serif; }
                                 table {
                                     border-collapse: collapse;
@@ -2464,7 +2363,6 @@ if (transaction.type === 'contribution') {
                 }
 
 
-                // Export Fund Report to Word
                 exportFundReportWordBtn.onclick = () => {
                     if (typeof window.saveAs === 'undefined') {
                         showErrorMessage(translations[currentLanguage].fileSaverLoadError);
@@ -2472,7 +2370,7 @@ if (transaction.type === 'contribution') {
                     }
 
                     const title = translations[currentLanguage].fundReportTitle;
-                    const content = getHtmlForWordExport('fund-report-table-container', title); // Use the actual table container ID
+                    const content = getHtmlForWordExport('fund-report-table-container', title);
 
                     const blob = new Blob([content], {
                         type: 'application/msword;charset=utf-8'
@@ -2480,7 +2378,6 @@ if (transaction.type === 'contribution') {
                     saveAs(blob, `${translations[currentLanguage].fundReportTitle}.doc`);
                 };
 
-                // Export Member Report to Word
                 exportMemberReportWordBtn.onclick = () => {
                     if (typeof window.saveAs === 'undefined') {
                         showErrorMessage(translations[currentLanguage].fileSaverLoadError);
@@ -2493,7 +2390,7 @@ if (transaction.type === 'contribution') {
                     }
                     const memberName = getMemberName(selectedMemberId);
                     const title = `${translations[currentLanguage].memberReportsTitle}: ${memberName}`;
-                    const content = getHtmlForWordExport('member-report-table-container', title); // Use the actual table container ID
+                    const content = getHtmlForWordExport('member-report-table-container', title);
 
                     const blob = new Blob([content], {
                         type: 'application/msword;charset=utf-8'
@@ -2503,8 +2400,6 @@ if (transaction.type === 'contribution') {
 
 
                 // --- Pie Chart Functions ---
-
-                // Helper for SVG arc drawing
                 function polarToCartesian(centerX, centerY, radius, angleInDegrees) {
                     const angleInRadians = (angleInDegrees - 90) * Math.PI / 180.0;
                     return {
@@ -2529,7 +2424,6 @@ if (transaction.type === 'contribution') {
                     return pathData;
                 }
 
-                // Renders the Member Balance Pie Chart
                 function renderMemberBalancePieChart() {
                     const CHART_SIZE = 200;
                     const RADIUS = CHART_SIZE / 2 - 10;
@@ -2537,19 +2431,11 @@ if (transaction.type === 'contribution') {
                     const centerY = CHART_SIZE / 2;
 
                     const colorPalette = [
-                        '#4CAF50', // Green
-                        '#2196F3', // Blue
-                        '#FFC107', // Amber
-                        '#F44336', // Red
-                        '#9C27B0', // Purple
-                        '#FF9800', // Orange
-                        '#00BCD4', // Cyan
-                        '#E91E63', // Pink
-                        '#795548', // Brown
-                        '#607D8B', // Blue Grey
+                        '#4CAF50', '#2196F3', '#FFC107', '#F44336', '#9C27B0',
+                        '#FF9800', '#00BCD4', '#E91E63', '#795548', '#607D8B',
                     ];
 
-                    const chartData = members.filter(m => Math.abs(m.balance) > 0.01); // Filter out members with effectively zero balance
+                    const chartData = members.filter(m => Math.abs(m.balance) > 0.01);
                     const totalAbsoluteBalance = chartData.reduce((sum, m) => sum + Math.abs(m.balance), 0);
 
                     console.log("Member Balance Chart Data:", chartData);
@@ -2625,9 +2511,6 @@ if (transaction.type === 'contribution') {
                     `;
                 }
 
-                // --- Pie Charts for Categories (Income and Expense) ---
-
-                // Extracts category from transaction expense_type (New)
                 function extractCategory(transaction) {
                     if (transaction.type === 'expense' && transaction.expense_type) {
                         return transaction.expense_type;
@@ -2635,14 +2518,12 @@ if (transaction.type === 'contribution') {
                     return translations[currentLanguage].otherCategory;
                 }
 
-				// Tính toán tổng thu nhập và chi phí cho từng danh mục
                 function calculateCategoryBalances() {
                     const incomeCategories = new Map();
                     const expenseCategories = new Map();
 
                     transactions.forEach(t => {
                         if (t.type === 'contribution') {
-                            // Đối với contribution, sử dụng expense_type nếu có, nếu không thì dùng 'Đóng góp' chung
                             const category = t.expense_type && t.expense_type !== null ? t.expense_type : translations[currentLanguage].contributionType;
                             incomeCategories.set(category, (incomeCategories.get(category) || 0) + t.amount);
                         } else if (t.type === 'expense') {
@@ -2654,7 +2535,6 @@ if (transaction.type === 'contribution') {
                     return { incomeCategories, expenseCategories };
                 }
 
-                // Renders a single pie chart for a given type (income or expense)
                 function renderSingleCategoryPieChart(containerElement, title, dataMap, totalAmount, colors) {
                     const CHART_SIZE = 200;
                     const RADIUS = CHART_SIZE / 2 - 10;
@@ -2674,7 +2554,6 @@ if (transaction.type === 'contribution') {
                     let legendHtml = '';
                     let index = 0;
 
-                    // Sort categories alphabetically for consistent display
                     const sortedCategories = Array.from(dataMap.keys()).sort();
 
                     sortedCategories.forEach(category => {
@@ -2685,7 +2564,6 @@ if (transaction.type === 'contribution') {
                         const endAngle = currentAngle + sliceAngle;
 
                         console.log(`Category: ${category}, Amount: ${amount}, Percentage: ${percentage.toFixed(1)}%, Slice Angle: ${sliceAngle}, Start Angle: ${startAngle}, End Angle: ${endAngle}`);
-
 
                         const pathData = describePieSlice(centerX, centerY, RADIUS, startAngle, endAngle);
                         const color = colors[index % colors.length];
@@ -2741,17 +2619,16 @@ if (transaction.type === 'contribution') {
                     `;
                 }
 
-                // Renders both income and expense category pie charts
                 function renderCategoryPieCharts() {
                     const { incomeCategories, expenseCategories } = calculateCategoryBalances();
 
                     const incomeColors = [
-                        '#4CAF50', '#8BC34A', '#CDDC39', '#FFEB3B', '#FFC107', // Greens to Yellows
-                        '#26A69A', '#00BCD4', '#009688', '#4DD0E1', '#80CBC4'  // Teals
+                        '#4CAF50', '#8BC34A', '#CDDC39', '#FFEB3B', '#FFC107',
+                        '#26A69A', '#00BCD4', '#009688', '#4DD0E1', '#80CBC4'
                     ];
                     const expenseColors = [
-                        '#F44336', '#E57373', '#FFCDD2', '#D32F2F', '#C62828', // Reds
-                        '#FF9800', '#FFB74D', '#FFECB3', '#FB8C00', '#E65100'  // Oranges
+                        '#F44336', '#E57373', '#FFCDD2', '#D32F2F', '#C62828',
+                        '#FF9800', '#FFB74D', '#FFECB3', '#FB8C00', '#E65100'
                     ];
 
                     const totalIncome = Array.from(incomeCategories.values()).reduce((sum, val) => sum + val, 0);
@@ -2765,46 +2642,28 @@ if (transaction.type === 'contribution') {
                 }
 
 
-                // --- Gemini API Integration (via Supabase Edge Functions) ---
-
-                // Simple Markdown to HTML converter
+                // --- Gemini API Integration ---
                 function markdownToHtml(markdown) {
                     let html = markdown;
-
-                    // Convert headings (e.g., ## Heading) to <h2>
                     html = html.replace(/^### (.*$)/gim, '<h3>$1</h3>');
                     html = html.replace(/^## (.*$)/gim, '<h2>$1</h2>');
                     html = html.replace(/^# (.*$)/gim, '<h1>$1</h1>');
-
-                    // Convert bold (e.g., **text**) to <strong> 
                     html = html.replace(/\*\*(.*?)\*\*/gim, '<strong>$1</strong>');
-                    // Convert italics (e.g., *text*) to <em>
                     html = html.replace(/\*(.*?)\*/gim, '<em>$1</em>');
-
-                    // Convert unordered lists (e.g., - item) to <ul> and <li>
                     html = html.replace(/^\s*\-\s(.*)$/gim, '<li>$1</li>');
                     html = html.replace(/^(<li>.*<\/li>(\n<li>.*<\/li>)*)/gim, '<ul>$1</ul>');
-
-                    // Convert ordered lists (e.g., 1. item) to <ol> and <li>
                     html = html.replace(/^\s*\d+\.\s(.*)$/gim, '<li>$1</li>');
                     html = html.replace(/^(<li>.*<\/li>(\n<li>.*<\/li>)*)/gim, '<ol>$1</ol>');
-
-
-                    // Convert newlines to paragraphs, but only if not already part of a block element
                     html = html.split('\n').map(line => {
                         if (line.trim() === '' || line.startsWith('<h') || line.startsWith('<ul') || line.startsWith('<ol') || line.startsWith('<li>')) {
                             return line;
                         }
                         return `<p class="mb-2 text-gray-700">${line}</p>`;
                     }).join('');
-
-                    // Clean up empty paragraphs that might be created by the above logic
                     html = html.replace(/<p class="mb-2 text-gray-700"><\/p>/g, '');
-
                     return html;
                 }
 
-                // NEW: Function to call a Supabase Edge Function
                 async function callSupabaseEdgeFunction(functionName, dataPayload) {
                     try {
                         const session = await supabase.auth.getSession();
@@ -2812,12 +2671,10 @@ if (transaction.type === 'contribution') {
                         const clientTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
                         if (!accessToken) {
-                            // Attempt anonymous sign-in if no session. This might fail if RLS requires authenticated users.
                             const { data, error } = await supabase.auth.signInAnonymously();
                             if (error) {
                                 throw new Error(`Anonymous sign-in failed: ${error.message}`);
                             }
-                            // If anonymous sign-in is successful, retrieve the new session
                             const newSession = await supabase.auth.getSession();
                             if (!newSession?.data?.session?.access_token) {
                                 throw new Error("Could not obtain access token after anonymous sign-in.");
@@ -2834,8 +2691,8 @@ if (transaction.type === 'contribution') {
                                 'Content-Type': 'application/json',
                             },
                             body: JSON.stringify({
-                                activities: dataPayload, // Pass our custom payload as 'activities'
-                                clientTimezone: clientTimezone // Pass timezone for context
+                                activities: dataPayload,
+                                clientTimezone: clientTimezone
                             }),
                         });
 
@@ -2847,7 +2704,7 @@ if (transaction.type === 'contribution') {
                         return await response.json();
                     } catch (error) {
                         console.error(`Error calling Supabase Edge Function ${functionName}:`, error);
-                        throw error; // Re-throw to be handled by calling functions
+                        throw error;
                     }
                 }
 
@@ -2860,9 +2717,8 @@ if (transaction.type === 'contribution') {
                             <p class="mt-4 text-gray-600">${translations[currentLanguage].generatingInsights}</p>
                         </div>
                     `;
-                    hideErrorMessage(); // Clear previous errors for insights
+                    hideErrorMessage();
 
-                    // Prepare data for the Edge Function
                     let activitiesData = {
                         type: 'fund_insights',
                         fundBalance: fundBalance,
@@ -2872,19 +2728,17 @@ if (transaction.type === 'contribution') {
                             description: t.description,
                             date: t.date,
                             contributingMemberName: t.type === 'contribution' ? getMemberName(t.contributingMemberId) : null,
-                           // Dòng đã sửa để gửi một mảng các tên thành viên
                             involvedMemberNames: t.type === 'expense' && t.involvedMemberIds
                                 ? t.involvedMemberIds.map(id => getMemberName(id))
                                 : [],
                             expenseType: t.type === 'expense' ? t.expense_type : null
-                        })).slice(-10).sort((a, b) => new Date(a.date) - new Date(b.date)), // Last 10, sorted by date
+                        })).slice(-10).sort((a, b) => new Date(a.date) - new Date(b.date)),
                         currentLanguage: currentLanguage
                     };
 
                     console.log("Sending fund insights data to Edge Function:", activitiesData);
 
                     try {
-                        // Gọi hàm Edge Function chung: process-ai-requests
                         const result = await callSupabaseEdgeFunction('process-ai-requests_quan', activitiesData);
 
                         if (result.success && result.analysis) {
@@ -2902,7 +2756,6 @@ if (transaction.type === 'contribution') {
                     }
                 }
 
-                // New function to generate food suggestions
 			 async function generateFoodSuggestions(latitude, longitude, addressString = null) {
 				isGeneratingFoodSuggestions = true;
 				foodSuggestionContent.innerHTML = `
@@ -2911,36 +2764,32 @@ if (transaction.type === 'contribution') {
 						<p class="mt-4 text-gray-600">${translations[currentLanguage].generatingFoodSuggestions}</p>
 					</div>
 				`;
-				hideErrorMessage(); // Clear previous errors for food suggestions
-				addressInputForFood.value = ''; // Clear address input initially
-				// Ensure latitudeInput and longitudeInput are cleared if an address string is provided
+				hideErrorMessage();
+				addressInputForFood.value = '';
 				if (addressString) {
 					latitudeInput.value = '';
 					longitudeInput.value = '';
 				}
 
-				// Prepare data for the Edge Function
 				let activitiesData = {
 					type: 'food_suggestions',
 					latitude: latitude,
 					longitude: longitude,
-					addressString: addressString, // Truyền addressString (có thể là null)
+					addressString: addressString,
 					currentLanguage: currentLanguage
 				};
 
 				console.log("Sending food suggestion data to Edge Function:", activitiesData);
 
 				try {
-					// Gọi hàm Edge Function mới: process-ai-requests
 					const result = await callSupabaseEdgeFunction('process-ai-requests_quan', activitiesData);
 
 					if (result.success && result.analysis) {
-						const suggestions = result.analysis; // Dữ liệu từ Edge Function đã là đối tượng JSON đã được phân tích
+						const suggestions = result.analysis;
 
 						let htmlContent = '<div class="space-y-4">';
 						if (suggestions.length > 0) {
 							suggestions.forEach(s => {
-								// Construct Google Maps search link using the restaurant name
 								const googleMapsSearchLink = s.name ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(s.name)}` : '#';
 
 								htmlContent += `
@@ -2962,7 +2811,7 @@ if (transaction.type === 'contribution') {
 						} else {
 							htmlContent += `<p class="text-center text-gray-500">${translations[currentLanguage].noFoodSuggestions}</p>`;
 						}
-						htmlContent += '</div>'; // Close space-y-4 div
+						htmlContent += '</div>';
 						foodSuggestionContent.innerHTML = htmlContent;
 					} else {
 						foodSuggestionContent.innerHTML = `<p class="text-center text-gray-500">${translations[currentLanguage].noFoodSuggestions}</p>`;
@@ -2977,28 +2826,18 @@ if (transaction.type === 'contribution') {
 				}
 			}	
 
-                // Removed: callSupabaseVisionEdgeFunction is no longer needed.
-                // All AI calls go through callSupabaseEdgeFunction now.
-
-                // Call Gemini Vision API (now via single Supabase Edge Function 'process-ai-requests')
-               // Call Gemini Vision API (now via single Supabase Edge Function 'process-ai-requests')
-              // Call Gemini Vision API (now via single Supabase Edge Function 'process-ai-requests')
-               // Call Gemini Vision API (now via single Supabase Edge Function 'process-ai-requests')
-              // Call Gemini Vision API (now via single Supabase Edge Function 'process-ai-requests')
                 async function callGeminiVisionAPI(base64ImageData) {
                     cameraLoadingSpinner.classList.remove('hidden');
-                    // Hiển thị thông báo đang xử lý trên input mô tả
                     descriptionInput.value = translations[currentLanguage].generatingInsights; 
                     aiDescribeBtn.disabled = true;
                     
                     const payload = {
-                        type: 'image_description', // Loại hoạt động cho Edge Function
+                        type: 'image_description',
                         image: base64ImageData,
-                        currentLanguage: currentLanguage, // Truyền ngôn ngữ để Edge Function sử dụng prompt đúng
+                        currentLanguage: currentLanguage,
                     };
 
                     try {
-                        // Gọi hàm Edge Function chung: process-ai-requests
                         const result = await callSupabaseEdgeFunction('process-ai-requests_quan', payload);
 
                         if (result.success && result.analysis) {
@@ -3018,9 +2857,6 @@ if (transaction.type === 'contribution') {
 
                             console.log("Địa điểm từ AI:", parsedAnalysis.location || 'Không có');
                             
-                            // *** PHẦN XỬ LÝ CATEGORY (NÊN GIỮ NGUYÊN) ***
-                            // Logic này sẽ hoạt động đúng với category từ AI,
-                            // miễn là Edge Function đã được cập nhật để trả về category chính xác.
                             if (parsedAnalysis.category && expenseTypes.some(et => et.expense_type === parsedAnalysis.category)) {
                                 expenseTypeSelect.value = parsedAnalysis.category;
                             } else {
@@ -3084,7 +2920,6 @@ if (transaction.type === 'contribution') {
 
 
 
-                // Hàm tiện ích để đặt ngày giờ hiện tại
                 function setDefaultCurrentDateTime(inputElement) {
                     const now = new Date();
                     const year = now.getFullYear();
@@ -3097,14 +2932,12 @@ if (transaction.type === 'contribution') {
 
                 // --- Event Listeners ---
 
-                // Navigation buttons
                 document.getElementById('add-member-btn').onclick = () => { hideAllSections(); addMemberSection.classList.remove('hidden'); scrollToSection('add-member-section'); };
                 document.getElementById('add-transaction-btn').onclick = () => {
                     hideAllSections();
                     addTransactionSection.classList.remove('hidden');
-                    transactionTypeSelect.value = 'contribution'; // Default to contribution
-                    transactionTypeSelect.onchange(); // Trigger change to set correct fields
-                    // Set current date and time
+                    transactionTypeSelect.value = 'contribution';
+                    transactionTypeSelect.onchange();
                     const now = new Date();
                     const year = now.getFullYear();
                     const month = (now.getMonth() + 1).toString().padStart(2, '0');
@@ -3114,7 +2947,6 @@ if (transaction.type === 'contribution') {
                     transactionDateInput.value = `${year}-${month}-${day}T${hours}:${minutes}`;
                     scrollToSection('add-transaction-section');
                 };
-                // document.getElementById('view-transactions-btn').onclick = () => { hideAllSections(); transactionsSection.classList.remove('hidden'); renderTransactionList(); scrollToSection('transactions-section'); }; // Removed
                 document.getElementById('show-report-selection-btn').onclick = () => { hideAllSections(); reportSelectionModal.classList.remove('hidden'); };
                 document.getElementById('get-insights-btn').onclick = () => {
                     hideAllSections();
@@ -3127,43 +2959,41 @@ if (transaction.type === 'contribution') {
                     getGeolocationAndSuggestFood();
                 };
 
-                // Report Selection Modal buttons
                 selectFundReportBtn.onclick = () => { hideAllSections(); fundReportSection.classList.remove('hidden'); renderFundReport(); scrollToSection('fund-report-section'); };
                 selectMemberReportBtn.onclick = () => { hideAllSections(); memberReportsSection.classList.remove('hidden'); renderMemberReportDropdown(); scrollToSection('member-reports-section'); };
                 closeReportSelectionBtn.onclick = () => reportSelectionModal.classList.add('hidden');
 
-                // Edit Transaction Modal buttons
                 cancelEditTransactionBtn.onclick = () => { editTransactionModal.classList.add('hidden'); editingTransaction = null; };
-
-                // Member Details Modal buttons
                 closeMemberDetailsBtn.onclick = () => { memberDetailsModal.classList.add('hidden'); selectedMemberForDetails = null; };
-
-                // Insights Modal buttons
                 closeInsightsBtn.onclick = () => fundInsightsModal.classList.add('hidden');
-
-                // Food Suggestion Modal buttons
                 closeFoodSuggestionBtn.onclick = () => foodSuggestionModal.classList.add('hidden');
 				
-				// NEW: Nút tìm kiếm theo địa chỉ
-					getFoodSuggestionsByAddressBtn.onclick = () => {
-						const address = addressInputForFood.value.trim();
-						if (address) {
-							generateFoodSuggestions(null, null, address); // Gửi chuỗi địa chỉ, không có lat/lon
-						} else {
-							showErrorMessage(translations[currentLanguage].locationError); // Hoặc một thông báo lỗi phù hợp hơn
-							foodSuggestionContent.innerHTML = `<p class="text-center text-red-500">${translations[currentLanguage].locationError}</p>`;
-							isGeneratingFoodSuggestions = false;
-						}
-					};
+                logoutBtn.onclick = async () => {
+                    const { error } = await supabase.auth.signOut();
+                    if (error) {
+                        console.error('Error logging out:', error);
+                        showErrorMessage('Lỗi khi đăng xuất.');
+                    }
+                    // The onAuthStateChange listener will handle the redirect automatically.
+                };
 
+				getFoodSuggestionsByAddressBtn.onclick = () => {
+					const address = addressInputForFood.value.trim();
+					if (address) {
+						generateFoodSuggestions(null, null, address);
+					} else {
+						showErrorMessage(translations[currentLanguage].locationError);
+						foodSuggestionContent.innerHTML = `<p class="text-center text-red-500">${translations[currentLanguage].locationError}</p>`;
+						isGeneratingFoodSuggestions = false;
+					}
+				};
 
-                // Image/Camera Upload
                 aiDescribeBtn.onclick = () => {
                     hideAllSections();
                     cameraModal.classList.remove('hidden');
                     uploadedImagePreview.classList.add('hidden');
-                    imageUploadInput.value = ''; // Clear previous selection
-                    imageUploadInput.click(); // Trigger file input click
+                    imageUploadInput.value = '';
+                    imageUploadInput.click();
                 };
 
                 imageUploadInput.onchange = (event) => {
@@ -3177,7 +3007,6 @@ if (transaction.type === 'contribution') {
                         reader.onloadend = () => {
                             uploadedImagePreview.src = reader.result;
                             uploadedImagePreview.classList.remove('hidden');
-                            // Extract base64 part for API call
                             const base64Data = reader.result.split(',')[1];
                             callGeminiVisionAPI(base64Data);
                         };
@@ -3195,14 +3024,12 @@ if (transaction.type === 'contribution') {
                     imageUploadInput.value = '';
                 };
 
-
-                // Input formatting for amount fields
                 amountInput.oninput = (e) => {
                     const originalCursorPos = e.target.selectionStart;
                     const originalLength = e.target.value.length;
 
-                    let cleanedValue = e.target.value.replace(/[^0-9]/g, ''); // Remove non-digits
-                    if (cleanedValue.startsWith('0') && cleanedValue.length > 1) { // Remove leading zero if not single '0'
+                    let cleanedValue = e.target.value.replace(/[^0-9]/g, '');
+                    if (cleanedValue.startsWith('0') && cleanedValue.length > 1) {
                         cleanedValue = parseInt(cleanedValue, 10).toString();
                     }
                     if (cleanedValue === '') {
@@ -3212,7 +3039,6 @@ if (transaction.type === 'contribution') {
                     const formattedValue = formatNumberForInput(cleanedValue);
                     e.target.value = formattedValue;
 
-                    // Adjust cursor position
                     const newLength = formattedValue.length;
                     const diff = newLength - originalLength;
                     e.target.setSelectionRange(originalCursorPos + diff, originalCursorPos + diff);
@@ -3222,8 +3048,8 @@ if (transaction.type === 'contribution') {
                     const originalCursorPos = e.target.selectionStart;
                     const originalLength = e.target.value.length;
 
-                    let cleanedValue = e.target.value.replace(/[^0-9]/g, ''); // Remove non-digits
-                    if (cleanedValue.startsWith('0') && cleanedValue.length > 1) { // Remove leading zero if not single '0'
+                    let cleanedValue = e.target.value.replace(/[^0-9]/g, '');
+                    if (cleanedValue.startsWith('0') && cleanedValue.length > 1) {
                         cleanedValue = parseInt(cleanedValue, 10).toString();
                     }
                     if (cleanedValue === '') {
@@ -3233,28 +3059,24 @@ if (transaction.type === 'contribution') {
                     const formattedValue = formatNumberForInput(cleanedValue);
                     e.target.value = formattedValue;
 
-                    // Adjust cursor position
                     const newLength = formattedValue.length;
                     const diff = newLength - originalLength;
                     e.target.setSelectionRange(originalCursorPos + diff, originalCursorPos + diff);
                 };
 
-
-                // Handle change for member report dropdown
                 selectMemberReportDropdown.onchange = () => {
                     renderSelectedMemberReport();
                 };
 
-				// NEW: Function to convert coordinates to a human-readable address using AI
 				async function convertCoordinatesToAddress(latitude, longitude) {
 					try {
 						const geocodePrompt = `Chuyển đổi tọa độ GPS (latitude: ${latitude}, longitude: ${longitude}) thành một địa chỉ đường phố đầy đủ ở Việt Nam (bao gồm số nhà, tên đường, phường/xã, quận/huyện, thành phố). Phản hồi chỉ là một chuỗi địa chỉ. Nếu không tìm thấy địa chỉ cụ thể, trả về "Vị trí không xác định"`;
 						
 						const payload = {
-							type: 'geocode_coordinates', // Loại hoạt động cho Edge Function
+							type: 'geocode_coordinates',
 							latitude: latitude,
 							longitude: longitude,
-							prompt: geocodePrompt, // Truyền prompt cho Edge Function
+							prompt: geocodePrompt,
 							currentLanguage: currentLanguage,
 						};
 
@@ -3272,7 +3094,6 @@ if (transaction.type === 'contribution') {
 					}
 				}
 
-                // Function to get geolocation and then suggest food
                 function getGeolocationAndSuggestFood() {
                     if (navigator.geolocation) {
                         navigator.geolocation.getCurrentPosition(
@@ -3314,7 +3135,6 @@ if (transaction.type === 'contribution') {
                     }
                 }
 
-                // --- Scroll to Top Button Logic ---
                 window.onscroll = function() {
                     if (document.body.scrollTop > 20 || document.documentElement.scrollTop > 20) {
                         scrollToTopBtn.classList.add('show');
@@ -3327,15 +3147,12 @@ if (transaction.type === 'contribution') {
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                 };
 
-
-                // Initial data fetch and UI render when DOM is fully loaded
                 document.addEventListener('DOMContentLoaded', () => {
-                    setLanguage(currentLanguage); // Set initial language
+                    setLanguage(currentLanguage);
                     initializeSupabase();
                 });
             </script>
 <script>
-    // When the hamburger button is clicked, toggle the menu
     document.getElementById('hamburger-btn').addEventListener('click', function() {
         const menu = document.getElementById('hamburger-menu');
         console.log('Hamburger button clicked!');
@@ -3345,5 +3162,5 @@ if (transaction.type === 'contribution') {
     });
 </script>
 
-        </body>
-        </html>
+</body>
+</html>
