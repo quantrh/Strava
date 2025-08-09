@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cổng Đăng nhập Tập trung (SSO)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #006b68;
+            --secondary-color: #FFC62F;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f2f5;
+            color: #333;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 600px; /* Increased width for dashboard */
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        
+        main.container {
+            flex-grow: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn-primary {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            transition: background-color 0.3s ease;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            border: none;
+            cursor: pointer;
+        }
+
+        .btn-primary:hover {
+            background-color: #005a57;
+        }
+
+        .btn-danger {
+            @apply bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition duration-300 ease-in-out shadow-md;
+        }
+
+        .form-input {
+            @apply w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500;
+        }
+        
+        .card {
+            background-color: white;
+            border-radius: 0.75rem;
+            padding: 2.5rem;
+            box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
+            width: 100%;
+        }
+
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .modal-content {
+            background-color: white;
+            padding: 2rem;
+            border-radius: 0.75rem;
+            width: 90%;
+            max-width: 400px;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <header class="bg-primary-color text-white p-4 text-center" style="background-color: var(--primary-color);">
+        <h1 class="text-2xl font-bold text-white">Cổng Đăng nhập Tập trung (SSO)</h1>
+    </header>
+
+    <main class="container">
+        <!-- Application Authentication Section -->
+        <section id="app-auth-section" class="card">
+            <!-- Logged Out View -->
+            <div id="logged-out-view">
+                <h2 class="text-2xl font-semibold text-center mb-6">Đăng nhập hoặc Đăng ký</h2>
+                <form id="auth-form" class="space-y-4 mb-4">
+                    <div>
+                        <label for="auth-email" class="block text-gray-700 text-sm font-bold mb-2">Email:</label>
+                        <input type="email" id="auth-email" class="form-input" placeholder="example@email.com" required>
+                    </div>
+                    <div>
+                        <label for="auth-password" class="block text-gray-700 text-sm font-bold mb-2">Mật khẩu:</label>
+                        <input type="password" id="auth-password" class="form-input" placeholder="Mật khẩu của bạn" required>
+                    </div>
+                    <div class="flex justify-end gap-2 pt-2">
+                        <button type="submit" id="signup-btn" class="btn-primary">Đăng ký</button>
+                        <button type="submit" id="signin-btn" class="btn-primary">Đăng nhập</button>
+                    </div>
+                </form>
+                <div id="auth-message" class="mt-4 text-sm text-center text-red-500"></div>
+            </div>
+
+            <!-- Logged In View -->
+            <div id="logged-in-view" class="hidden text-center">
+                <h2 class="text-2xl font-semibold mb-2">Đăng nhập thành công!</h2>
+                <p class="mb-6 text-lg">Chào mừng, <span id="current-app-user-email" class="font-bold"></span>!</p>
+                
+                <!-- Dashboard Section -->
+                <div id="dashboard-section" class="mt-4 border-t pt-6">
+                    <h3 class="text-xl font-semibold mb-4 text-gray-700">Bảng điều khiển ứng dụng</h3>
+                    <div class="space-y-4">
+                        <!-- App 1 Link -->
+                        <a href="./QuycomQuan.html" class="flex items-center p-4 bg-gray-50 hover:bg-gray-100 rounded-lg shadow-sm transition-all duration-300 border border-gray-200 text-decoration-none">
+                            <i class="fas fa-user-circle text-2xl text-primary-color mr-4 w-8 text-center"></i>
+                            <span class="text-left text-lg font-medium text-gray-800">Quản lý tài khoản của Quân</span>
+                            <i class="fas fa-chevron-right text-gray-400 ml-auto"></i>
+                        </a>
+                        
+                        <!-- App 2 Link -->
+                        <a href="./index1.html" class="flex items-center p-4 bg-gray-50 hover:bg-gray-100 rounded-lg shadow-sm transition-all duration-300 border border-gray-200 text-decoration-none">
+                            <i class="fas fa-running text-2xl text-primary-color mr-4 w-8 text-center"></i>
+                            <span class="text-left text-lg font-medium text-gray-800">Ứng dụng quản lý thông tin chạy bộ</span>
+                            <i class="fas fa-chevron-right text-gray-400 ml-auto"></i>
+                        </a>
+                    </div>
+                </div>
+                
+                <button id="signout-btn" class="btn-danger block w-full mt-8">Đăng xuất</button>
+            </div>
+        </section>
+    </main>
+
+    <footer class="bg-primary-color text-white p-4 text-center text-sm" style="background-color: var(--primary-color);">
+        <div style="color: var(--secondary-color);">
+            &copy; 2025 Trương Hồng Quân - Single Sign-On Service.
+        </div>
+    </footer>
+
+    <!-- Custom Alert Modal -->
+    <div id="custom-alert" class="hidden modal">
+        <div class="modal-content">
+            <p id="alert-message" class="mb-4 text-lg"></p>
+            <button id="alert-ok-btn" class="btn-primary">OK</button>
+        </div>
+    </div>
+
+    <script>
+        // --- Helper function for custom alerts ---
+        function showAlert(message) {
+            const customAlert = document.getElementById('custom-alert');
+            const alertMessage = document.getElementById('alert-message');
+            const alertOkBtn = document.getElementById('alert-ok-btn');
+
+            alertMessage.textContent = message;
+            customAlert.classList.remove('hidden');
+
+            alertOkBtn.onclick = () => {
+                customAlert.classList.add('hidden');
+            };
+        }
+
+        // --- Supabase Configuration ---
+        const SUPABASE_URL = 'https://rmbsxccrwrktbjlnezpu.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJtYnN4Y2Nyd3JrdGJqbG5lenB1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg2MjczNjQsImV4cCI6MjA2NDIwMzM2NH0.ydCqificftdtn1niRciFCifeuo8aX6SDGti-hCY5Z_Y';
+
+        // --- Global variables ---
+        let supabaseClientInstance;
+
+        // --- DOM elements ---
+        const loggedOutView = document.getElementById('logged-out-view');
+        const loggedInView = document.getElementById('logged-in-view');
+        const currentAppUserEmail = document.getElementById('current-app-user-email');
+        const authForm = document.getElementById('auth-form');
+        const authEmailInput = document.getElementById('auth-email');
+        const authPasswordInput = document.getElementById('auth-password');
+        const signoutBtn = document.getElementById('signout-btn');
+        const authMessage = document.getElementById('auth-message');
+
+        // --- Supabase App Authentication Functions ---
+
+        /**
+         * Updates the UI based on the current Supabase Authentication state.
+         * @param {Object|null} user - The Supabase user object or null if logged out.
+         */
+        function updateAppAuthUI(user) {
+            if (user) {
+                // User is logged in
+                currentAppUserEmail.textContent = user.email || 'Guest';
+                loggedOutView.classList.add('hidden');
+                loggedInView.classList.remove('hidden');
+            } else {
+                // User is logged out
+                loggedOutView.classList.remove('hidden');
+                loggedInView.classList.add('hidden');
+            }
+        }
+
+        /**
+         * Handles user sign-up or sign-in.
+         * @param {Event} event - Form submission event.
+         */
+        async function handleAuth(event) {
+            event.preventDefault();
+            authMessage.textContent = '';
+            const email = authEmailInput.value.trim();
+            const password = authPasswordInput.value.trim();
+
+            if (!email || !password) {
+                showAlert('Vui lòng nhập đầy đủ Email và Mật khẩu.');
+                return;
+            }
+
+            try {
+                // Determine if it's a sign-up or sign-in action based on the button clicked
+                if (event.submitter.id === 'signup-btn') {
+                    const { data, error } = await supabaseClientInstance.auth.signUp({ email, password });
+                    if (error) throw error;
+                    showAlert('Đăng ký thành công! Vui lòng kiểm tra email của bạn để xác nhận tài khoản.');
+                    authMessage.textContent = 'Vui lòng kiểm tra email của bạn để xác nhận.';
+                } else if (event.submitter.id === 'signin-btn') {
+                    const { data, error } = await supabaseClientInstance.auth.signInWithPassword({ email, password });
+                    if (error) throw error;
+                    // No alert needed on successful sign-in, the UI will update automatically.
+                }
+            } catch (error) {
+                console.error('Lỗi xác thực:', error.message);
+                authMessage.textContent = `Lỗi: ${error.message}`;
+            }
+        }
+
+        /**
+         * Handles user sign-out from the application.
+         */
+        async function handleSignOut() {
+            try {
+                const { error } = await supabaseClientInstance.auth.signOut();
+                if (error) throw error;
+                // UI will update automatically via onAuthStateChange
+            } catch (error) {
+                console.error('Lỗi đăng xuất:', error.message);
+                showAlert(`Lỗi đăng xuất: ${error.message}`);
+            }
+        }
+
+        // --- Page Load and Event Listeners ---
+        window.onload = () => {
+            // Check if Supabase library is loaded
+            if (typeof window.supabase === 'undefined') {
+                showAlert('Lỗi: Không thể tải thư viện Supabase. Vui lòng kiểm tra lại kết nối mạng.');
+                console.error('Supabase library is not defined. Please check the CDN script tag.');
+                return;
+            }
+
+            // Initialize Supabase client
+            supabaseClientInstance = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+            // Set up Supabase auth listener to react to login/logout events
+            supabaseClientInstance.auth.onAuthStateChange((event, session) => {
+                console.log('Trạng thái xác thực thay đổi:', event, session);
+                updateAppAuthUI(session?.user || null);
+            });
+
+            // Set up event listeners for authentication
+            authForm.addEventListener('submit', handleAuth);
+            signoutBtn.addEventListener('click', handleSignOut);
+        };
+    </script>
+</body>
+</html>
