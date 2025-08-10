@@ -1100,6 +1100,7 @@
             }
             showLoading(true);
             try {
+                // Fetch all data directly from Supabase
                 const { data: membersData, error: membersError } = await supabase.from('members_quan').select('*');
                 if (membersError) throw membersError;
 
@@ -1109,43 +1110,14 @@
                 const { data: expenseTypesData, error: expenseTypesError } = await supabase.from('expensetype_quan').select('*');
                 if (expenseTypesError) throw expenseTypesError;
 
-                members = membersData;
-                transactions = transactionsData;
-                expenseTypes = expenseTypesData;
+                // Assign fetched data to global state
+                members = membersData || [];
+                transactions = transactionsData || [];
+                expenseTypes = expenseTypesData || [];
 				
-                if (expenseTypes.length === 0) {
-                    console.log("No expense types found, populating with default data...");
-                    const defaultExpenseTypes = translations[currentLanguage].defaultExpenseTypes.split(', ').map(name => ({ expense_type: name, Type: 'expense' }));
-                    defaultExpenseTypes.unshift({ expense_type: translations[currentLanguage].contributionType, Type: 'contribution' });
-                    const { data: newExpenseTypes, error: newExpenseTypesError } = await supabase.from('expensetype_quan').insert(defaultExpenseTypes).select();
-                    if (newExpenseTypesError) throw newExpenseTypesError;
-                    expenseTypes = newExpenseTypes;
-                }
-
-                if (members.length === 0 && userPermissions.canEdit) {
-                    console.log("No members found, populating with default data...");
-                    const initialMembers = [{ name: 'Trương Hồng Quân' }, { name: 'Bùi Hoàng Giang' }, { name: 'Nguyễn Thị Hoa Hậu' }];
-                    const { data: newMembers, error: newMembersError } = await supabase.from('members_quan').insert(initialMembers).select();
-                    if (newMembersError) throw newMembersError;
-                    members = newMembers;
-
-                    const defaultContributionTypeObj = expenseTypes.find(et => et.Type === 'contribution');
-                    const defaultContributionType = defaultContributionTypeObj ? defaultContributionTypeObj.expense_type : 'Đóng góp';
-                    const defaultExpenseTypeObj = expenseTypes.find(et => et.Type === 'expense');
-                    const defaultExpenseType = defaultExpenseTypeObj ? defaultExpenseTypeObj.expense_type : 'Ăn uống';
-                    const initialTransactions = [
-                        { type: 'contribution', amount: 500000, description: 'Đóng góp ban đầu', date: new Date().toISOString(), contributingMemberId: newMembers[0].id, latitude: null, longitude: null, expense_type: defaultContributionType },
-                        { type: 'contribution', amount: 300000, description: 'Đóng góp thêm', date: new Date().toISOString(), contributingMemberId: newMembers[1].id, latitude: null, longitude: null, expense_type: defaultContributionType },
-                        { type: 'expense', amount: 150000, description: 'Mua đồ ăn nhẹ', date: new Date().toISOString(), involvedMemberIds: [newMembers[0].id, newMembers[1].id, newMembers[2].id], latitude: null, longitude: null, expense_type: defaultExpenseType },
-                        { type: 'contribution', amount: 200000, description: 'Đóng góp tháng 5', date: new Date().toISOString(), contributingMemberId: newMembers[2].id, latitude: null, longitude: null, expense_type: defaultContributionType },
-                        { type: 'expense', amount: 250000, description: 'Tiền nước uống', date: new Date().toISOString(), involvedMemberIds: [newMembers[0].id, newMembers[2].id], latitude: null, longitude: null, expense_type: defaultExpenseType },
-                        { type: 'expense', amount: 300000, description: 'Đặt cơm trưa', date: new Date().toISOString(), involvedMemberIds: [newMembers[0].id, newMembers[1].id, newMembers[2].id], latitude: null, longitude: null, expense_type: defaultExpenseType },
-                    ];
-                    const { data: newTransactions, error: newTransactionsError } = await supabase.from('transactions_quan').insert(initialTransactions).select();
-                    if (newTransactionsError) throw newTransactionsError;
-                    transactions = newTransactions;
-                }
+                // Update the UI with the fetched data
                 updateUI();
+
             } catch (error) {
                 console.error("Error fetching data from Supabase:", error.message);
                 if (error.message.includes('relation "public.')) {
@@ -1409,7 +1381,7 @@
             hideErrorMessage();
             try {
                 const newTransaction = {
-                    type, amount, description, latitude, longitude, expense_type,
+                    type, amount, description, latitude, longitude, expense_type: expenseType,
                     date: new Date(transactionDate).toISOString(),
                     contributingMemberId: type === 'contribution' ? contributingMemberId : null,
                     involvedMemberIds: type === 'expense' ? selectedExpenseMembers : [],
