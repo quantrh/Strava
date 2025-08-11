@@ -607,38 +607,33 @@
 
     <script>
         // Supabase Client Initialization
-        // IMPORTANT: In the Canvas environment, leave SUPABASE_ANON_KEY empty.
-        // It will be automatically provided at runtime.
-        const SUPABASE_URL = 'https://rmbsxccrwrktbjlnezpu.supabase.co'; // Replace with your actual Supabase URL
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJtYnN4Y2Nyd3JrdGJqbG5lenB1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg2MjczNjQsImV4cCI6MjA2NDIwMzM2NH0.ydCqificftdtn1niRciFCifeuo8aX6SDGti-hCY5Z_Y'; // This should be an empty string in Canvas to use provided key
+        const SUPABASE_URL = 'https://rmbsxccrwrktbjlnezpu.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJtYnN4Y2Nyd3JrdGJqbG5lenB1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg2MjczNjQsImV4cCI6MjA2NDIwMzM2NH0.ydCqificftdtn1niRciFCifeuo8aX6SDGti-hCY5Z_Y';
 
         let supabase;
-        let authReady = false; // New state to track if auth is ready
+        let authReady = false;
 
-        // Global state variables (mimicking React state)
+        // Global state variables
         let members = [];
         let transactions = [];
-        let expenseTypes = []; // New global state for expense types
+        let expenseTypes = [];
         let fundBalance = 0;
         let currentErrorMessage = '';
         let selectedMemberForDetails = null;
         let transactionToDelete = null;
-        let memberToDelete = null; // New global variable for member to delete
+        let memberToDelete = null;
         let isGeneratingInsights = false;
         let isGeneratingFoodSuggestions = false;
 
         // Language state
-        let currentLanguage = localStorage.getItem('lang') || 'vi'; // Default to Vietnamese
+        let currentLanguage = localStorage.getItem('lang') || 'vi';
 
         // Translations object
         const translations = {
             'vi': {
-               
-				 // ...
-				addressInputLabel: 'Hoặc nhập địa chỉ cụ thể:',
-				searchByAddressBtn: 'Tìm kiếm theo địa chỉ này',
-				// ...
-				appTitle: 'QUẢN LÝ QUỸ NHÓM',
+                addressInputLabel: 'Hoặc nhập địa chỉ cụ thể:',
+                searchByAddressBtn: 'Tìm kiếm theo địa chỉ này',
+                appTitle: 'QUẢN LÝ QUỸ NHÓM',
                 fundBalanceTitle: 'Số Dư Quỹ Chung',
                 unitCurrency: 'VNĐ',
                 addMemberBtn: 'Thêm Thành Viên',
@@ -654,13 +649,13 @@
                 transactionTypeLabel: 'Loại Giao Dịch',
                 contributionOption: '💵 Đóng Góp',
                 expenseOption: '🍺 Chi Tiêu',
-                expenseTypeLabel: 'Loại Chi Tiêu', // New translation key
-                selectExpenseType: 'Chọn loại chi tiêu', // New translation key
+                expenseTypeLabel: 'Loại Chi Tiêu',
+                selectExpenseType: 'Chọn loại chi tiêu',
                 contributingMemberLabel: 'Thành Viên Đóng Góp',
                 involvedMembersLabel: 'Thành Viên Tham Gia Chi Tiêu',
                 amountLabel: 'Số Tiền (VNĐ)',
                 amountPlaceholder: 'Số tiền',
-                transactionDateLabel: 'Ngày Giao Dịch', // New translation key
+                transactionDateLabel: 'Ngày Giao Dịch',
                 descriptionLabel: 'Mô Tả',
                 descriptionPlaceholder: 'Mô tả giao dịch',
                 aiDescribeBtn: 'Mô tả AI từ Ảnh/Camera',
@@ -688,7 +683,7 @@
                 dateHeader: 'Ngày',
                 typeHeader: 'Loại',
                 descriptionHeader: 'Mô Tả',
-                expenseTypeHeader: 'Loại Chi Tiêu', // New translation key
+                expenseTypeHeader: 'Loại Chi Tiêu',
                 relatedMembersHeader: 'Thành Viên Liên Quan',
                 amountHeader: 'Số Tiền (VNĐ)',
                 memberReportsTitle: 'Báo Cáo Từng Thành Viên',
@@ -736,7 +731,7 @@
                 aiDescriptionModalTitle: 'Mô tả giao dịch bằng AI',
                 supaLoadError: 'Lỗi: Thư viện Supabase chưa được tải. Vui lòng kiểm tra kết nối mạng.',
                 supabaseConfigWarning: 'Cảnh báo: URL hoặc Khóa Supabase vẫn là giá trị mặc định. Vui lòng thay thế bằng thông tin dự án thực của bạn.',
-                supabaseTableError: 'Lỗi: Các bảng dữ liệu (members, transactions, expensetype) chưa được tạo trong Supabase. Vui lòng chạy các script SQL đã cung cấp trước đó.', // Updated
+                supabaseTableError: 'Lỗi: Các bảng dữ liệu (members, transactions, expensetype) chưa được tạo trong Supabase. Vui lòng chạy các script SQL đã cung cấp trước đó.',
                 dataLoadError: 'Lỗi khi tải dữ liệu:',
                 emptyMemberName: 'Tên thành viên không được để trống.',
                 addMemberError: 'Lỗi khi thêm thành viên:',
@@ -768,11 +763,11 @@
                 expenseType: 'Expense',
                 otherCategory: 'Other',
                 totalChart: 'Total:',
-                deleteMemberBtn: 'Delete', // New translation key
-                confirmDeleteMember: 'Are you sure you want to delete member "{memberName}"? All related transactions will be deleted.', // New translation key
-                deleteMemberError: 'Error deleting member:', // New translation key
-                memberBalanceNotZero: 'Cannot delete member with non-zero balance. Please settle up the balance first.', // New translation key
-                defaultExpenseTypes: 'Food, Transport, Shopping, Entertainment, Health, Education, Other', // New translation for default expense types
+                deleteMemberBtn: 'Delete',
+                confirmDeleteMember: 'Are you sure you want to delete member "{memberName}"? All related transactions will be deleted.',
+                deleteMemberError: 'Error deleting member:',
+                memberBalanceNotZero: 'Cannot delete member with non-zero balance. Please settle up the balance first.',
+                defaultExpenseTypes: 'Food, Transport, Shopping, Entertainment, Health, Education, Other',
                 authorizationError: 'Bạn cần được phân quyền vào chương trình này, liên hệ quantrhvn@gmail.com hoặc số điện thoại 0989073739',
                 unauthorizedAccessTitle: 'Không Được Phép Truy Cập',
             }
@@ -780,29 +775,22 @@
 
         // DOM Elements
         const appContainer = document.getElementById('app-container');
-        const appContent = document.getElementById('app-content'); // New element for main content
-		// ... các biến khác
-		const addressInputForFood = document.getElementById('address-input-for-food'); // NEW
-		const getFoodSuggestionsByAddressBtn = document.getElementById('get-food-suggestions-by-address-btn'); // NEW
+        const appContent = document.getElementById('app-content');
+        const addressInputForFood = document.getElementById('address-input-for-food');
+        const getFoodSuggestionsByAddressBtn = document.getElementById('get-food-suggestions-by-address-btn');
         const fundBalanceDisplay = document.getElementById('fund-balance-display');
         const errorMessageDisplay = document.getElementById('error-message-display');
         const addMemberSection = document.getElementById('add-member-section');
         const addTransactionSection = document.getElementById('add-transaction-section');
-        // const transactionsSection = document.getElementById('transactions-section'); // Removed
         const fundReportSection = document.getElementById('fund-report-section');
         const memberReportsSection = document.getElementById('member-reports-section');
         const memberListContainer = document.getElementById('member-list-container');
-        // const transactionListContainer = document.getElementById('transaction-list-container'); // Removed
         const totalContributionsDisplay = document.getElementById('total-contributions-display');
         const totalExpensesDisplay = document.getElementById('total-expenses-display');
         const memberBalancePieChartDiv = document.getElementById('member-balance-pie-chart');
         const categoryPieChartsDiv = document.getElementById('category-pie-charts');
-
-        // Language switch buttons
         const langViBtn = document.getElementById('lang-vi-btn');
         const langEnBtn = document.getElementById('lang-en-btn');
-
-        // Modals
         const editTransactionModal = document.getElementById('edit-transaction-modal');
         const memberDetailsModal = document.getElementById('member-details-modal');
         const confirmationModal = document.getElementById('confirmation-modal');
@@ -812,83 +800,153 @@
         const foodSuggestionModal = document.getElementById('food-suggestion-modal');
         const foodSuggestionContent = document.getElementById('food-suggestion-content');
         const cameraModal = document.getElementById('camera-modal');
-
-        // Forms and Inputs
         const addMemberForm = document.getElementById('add-member-form');
         const memberNameInput = document.getElementById('member-name-input');
         const addTransactionForm = document.getElementById('add-transaction-form');
         const transactionTypeSelect = document.getElementById('transaction-type');
-        const expenseTypeDiv = document.getElementById('expense-type-div'); // New
-        const expenseTypeSelect = document.getElementById('expense-type-select'); // New
+        const expenseTypeDiv = document.getElementById('expense-type-div');
+        const expenseTypeSelect = document.getElementById('expense-type-select');
         const contributingMemberDiv = document.getElementById('contributing-member-div');
         const memberSelect = document.getElementById('member-select');
         const involvedMembersDiv = document.getElementById('involved-members-div');
         const involvedMembersCheckboxes = document.getElementById('involved-members-checkboxes');
         const amountInput = document.getElementById('amount-input');
-        const transactionDateInput = document.getElementById('transaction-date-input'); // New: Date input
+        const transactionDateInput = document.getElementById('transaction-date-input');
         const descriptionInput = document.getElementById('description-input');
-        const latitudeInput = document.getElementById('latitude-input'); // New: Latitude input
-        const longitudeInput = document.getElementById('longitude-input'); // New: Longitude input
+        const latitudeInput = document.getElementById('latitude-input');
+        const longitudeInput = document.getElementById('longitude-input');
         const aiDescribeBtn = document.getElementById('ai-describe-btn');
-
-        // Camera/Image Upload Elements
         const imageUploadInput = document.getElementById('image-upload-input');
         const uploadedImagePreview = document.getElementById('uploaded-image-preview');
         const cancelCameraBtn = document.getElementById('cancel-camera-btn');
         const cameraLoadingSpinner = document.getElementById('camera-loading-spinner');
-
-        // Edit Transaction Form Elements
         let editingTransaction = null;
-        const editTransactionForm = document.getElementById('edit-transaction-form'); // Moved this line here
+        const editTransactionForm = document.getElementById('edit-transaction-form');
         const editTransactionTypeSelect = document.getElementById('edit-transaction-type'); 
-        const editExpenseTypeDiv = document.getElementById('edit-expense-type-div'); // New
-        const editExpenseTypeSelect = document.getElementById('edit-expense-type-select'); // New
+        const editExpenseTypeDiv = document.getElementById('edit-expense-type-div');
+        const editExpenseTypeSelect = document.getElementById('edit-expense-type-select');
         const editContributingMemberDiv = document.getElementById('edit-contributing-member-div');
         const editMemberSelect = document.getElementById('edit-member-select');
         const editInvolvedMembersDiv = document.getElementById('edit-involved-members-div');
         const editInvolvedMembersCheckboxes = document.getElementById('edit-involved-members-checkboxes');
         const editAmountInput = document.getElementById('edit-amount-input');
-        const editTransactionDateInput = document.getElementById('edit-transaction-date-input'); // New: Edit date input
+        const editTransactionDateInput = document.getElementById('edit-transaction-date-input');
         const editDescriptionInput = document.getElementById('edit-description-input');
-        const editLatitudeInput = document.getElementById('edit-latitude-input'); // New: Edit latitude input
-        const editLongitudeInput = document.getElementById('edit-longitude-input'); // New: Edit longitude input
+        const editLatitudeInput = document.getElementById('edit-latitude-input');
+        const editLongitudeInput = document.getElementById('edit-longitude-input');
         const cancelEditTransactionBtn = document.getElementById('cancel-edit-transaction-btn');
-
-        // Member Details Modal Elements
         const memberDetailsName = document.getElementById('member-details-name');
         const memberDetailsBalance = document.getElementById('member-details-balance');
         const memberDetailsTransactionsContainer = document.getElementById('member-details-transactions-container');
         const closeMemberDetailsBtn = document.getElementById('close-member-details-btn');
-
-        // Confirmation Modal Elements
         const confirmationMessage = document.getElementById('confirmation-message');
         const cancelConfirmationBtn = document.getElementById('cancel-confirmation-btn');
         const confirmActionBtn = document.getElementById('confirm-action-btn');
-
-        // Report Selection Modal Elements
         const selectFundReportBtn = document.getElementById('select-fund-report-btn');
         const selectMemberReportBtn = document.getElementById('select-member-report-btn');
         const closeReportSelectionBtn = document.getElementById('close-report-selection-btn');
-
-        // Member Report Specific Elements
         const selectMemberReportDropdown = document.getElementById('select-member-report');
         const memberReportTableContainer = document.getElementById('member-report-table-container');
         const exportMemberReportExcelBtn = document.getElementById('export-member-report-excel');
         const exportMemberReportWordBtn = document.getElementById('export-member-report-word');
-
-        // Fund Report Specific Elements
         const fundReportTableContainer = document.getElementById('fund-report-table-container');
         const exportFundReportExcelBtn = document.getElementById('export-fund-report-excel');
         const exportFundReportWordBtn = document.getElementById('export-fund-report-word');
-
-        // Insights Modal Elements
         const closeInsightsBtn = document.getElementById('close-insights-btn');
-
-        // Food Suggestion Modal Elements
         const closeFoodSuggestionBtn = document.getElementById('close-food-suggestion-btn');
-
-        // Scroll to Top Button Element
         const scrollToTopBtn = document.getElementById('scroll-to-top-btn');
+
+        // --- Supabase and Data Management ---
+
+        // Initializes Supabase client
+        function initializeSupabase() {
+            console.log("Attempting to initialize Supabase...");
+            if (typeof window.supabase === 'undefined') {
+                showErrorMessage(translations[currentLanguage].supaLoadError);
+                return;
+            }
+
+            const anonKey = typeof __supabase_key !== 'undefined' ? __supabase_key : SUPABASE_ANON_KEY;
+            
+            try {
+                if (typeof window.supabase.createClient !== 'function') {
+                    const errorMsg = "Supabase library loaded, but `createClient` function is not available.";
+                    console.error(errorMsg);
+                    showErrorMessage(errorMsg);
+                    return;
+                }
+
+                supabase = window.supabase.createClient(SUPABASE_URL, anonKey);
+                console.log("Supabase client created.");
+
+                // Add authentication listener
+                if (!supabase || !supabase.auth || typeof supabase.auth.onAuthStateChange !== 'function') {
+                    const errorMsg = "Supabase client or auth module not initialized correctly.";
+                    console.error(errorMsg);
+                    showErrorMessage(errorMsg);
+                    return;
+                }
+                
+                // *** MODIFIED: Authorization Check Logic ***
+                supabase.auth.onAuthStateChange(async (event, session) => {
+                    console.log("onAuthStateChange event:", event, "session:", session);
+                    if (session && session.user) {
+                        console.log("User is logged in:", session.user);
+                        const userEmail = session.user.email;
+
+                        try {
+                            // Check if the user's email is in the invited_users_quan table
+                            const { data: invitedUser, error } = await supabase
+                                .from('invited_users_quan')
+                                .select('email')
+                                .eq('email', userEmail)
+                                .maybeSingle(); // Handles 0 or 1 result gracefully
+
+                            if (error) {
+                                console.error("Authorization check error:", error);
+                                showErrorMessage(`Lỗi kiểm tra quyền: ${error.message}`);
+                                authReady = false;
+                                appContent.classList.add('hidden'); // Hide app content on error
+                                return;
+                            }
+
+                            if (invitedUser) {
+                                // User is AUTHORIZED
+                                console.log(`User ${userEmail} is authorized.`);
+                                authReady = true;
+                                appContent.classList.remove('hidden'); // Ensure app content is visible
+                                hideErrorMessage();
+                                fetchData(); // Fetch initial data
+                                setupRealtimeSubscriptions(); // Set up real-time listeners
+                            } else {
+                                // User is NOT AUTHORIZED
+                                console.log(`User ${userEmail} is NOT authorized.`);
+                                authReady = false;
+                                // Hide the main app content and show a clear error message
+                                appContent.classList.add('hidden'); 
+                                showErrorMessage(translations[currentLanguage].authorizationError);
+                            }
+
+                        } catch (e) {
+                            console.error("Critical error during authorization check:", e);
+                            showErrorMessage("Đã xảy ra lỗi nghiêm trọng khi xác thực quyền.");
+                            authReady = false;
+                            appContent.classList.add('hidden');
+                        }
+
+                    } else {
+                        console.log("User is not logged in, redirecting to login page.");
+                        authReady = false;
+                        // Redirect to login page if not authenticated
+                        window.location.href = window.location.origin + '/Strava/LoginQuan.html';
+                    }
+                });
+
+            } catch (error) {
+                console.error("Error during Supabase client creation:", error);
+                showErrorMessage(`Lỗi khi tạo client Supabase: ${error.message}.`);
+            }
+        }
 
         // --- Language Functions ---
         function setLanguage(lang) {
@@ -1040,98 +1098,7 @@
             }
         }
 
-        // --- Supabase and Data Management ---
-
-        // Initializes Supabase client
-        function initializeSupabase() {
-            console.log("Attempting to initialize Supabase...");
-            if (typeof window.supabase === 'undefined') {
-                showErrorMessage(translations[currentLanguage].supaLoadError);
-                return;
-            }
-
-            const anonKey = typeof __supabase_key !== 'undefined' ? __supabase_key : SUPABASE_ANON_KEY;
-            
-            try {
-                if (typeof window.supabase.createClient !== 'function') {
-                    const errorMsg = "Supabase library loaded, but `createClient` function is not available.";
-                    console.error(errorMsg);
-                    showErrorMessage(errorMsg);
-                    return;
-                }
-
-                supabase = window.supabase.createClient(SUPABASE_URL, anonKey);
-                console.log("Supabase client created.");
-
-                // Add authentication listener
-                if (!supabase || !supabase.auth || typeof supabase.auth.onAuthStateChange !== 'function') {
-                    const errorMsg = "Supabase client or auth module not initialized correctly.";
-                    console.error(errorMsg);
-                    showErrorMessage(errorMsg);
-                    return;
-                }
-                
-                // *** MODIFIED: Authorization Check Logic ***
-                supabase.auth.onAuthStateChange(async (event, session) => {
-                    console.log("onAuthStateChange event:", event, "session:", session);
-                    if (session && session.user) {
-                        console.log("User is logged in:", session.user);
-                        const userEmail = session.user.email;
-
-                        try {
-                            // Check if the user's email is in the invited_users_quan table
-                            const { data: invitedUser, error } = await supabase
-                                .from('invited_users_quan')
-                                .select('email')
-                                .eq('email', userEmail)
-                                .maybeSingle(); // Handles 0 or 1 result gracefully
-
-                            if (error) {
-                                console.error("Authorization check error:", error);
-                                showErrorMessage(`Lỗi kiểm tra quyền: ${error.message}`);
-                                authReady = false;
-                                appContent.classList.add('hidden'); // Hide app content on error
-                                return;
-                            }
-
-                            if (invitedUser) {
-                                // User is AUTHORIZED
-                                console.log(`User ${userEmail} is authorized.`);
-                                authReady = true;
-                                appContent.classList.remove('hidden'); // Ensure app content is visible
-                                hideErrorMessage();
-                                fetchData(); // Fetch initial data
-                                setupRealtimeSubscriptions(); // Set up real-time listeners
-                            } else {
-                                // User is NOT AUTHORIZED
-                                console.log(`User ${userEmail} is NOT authorized.`);
-                                authReady = false;
-                                // Hide the main app content and show a clear error message
-                                appContent.classList.add('hidden'); 
-                                showErrorMessage(translations[currentLanguage].authorizationError);
-                            }
-
-                        } catch (e) {
-                            console.error("Critical error during authorization check:", e);
-                            showErrorMessage("Đã xảy ra lỗi nghiêm trọng khi xác thực quyền.");
-                            authReady = false;
-                            appContent.classList.add('hidden');
-                        }
-
-                    } else {
-                        console.log("User is not logged in, redirecting to login page.");
-                        authReady = false;
-                        // Redirect to login page if not authenticated
-                        window.location.href = window.location.origin + '/Strava/LoginQuan.html';
-                    }
-                });
-
-            } catch (error) {
-                console.error("Error during Supabase client creation:", error);
-                showErrorMessage(`Lỗi khi tạo client Supabase: ${error.message}.`);
-            }
-        }
-
+        
         // Fetches all data from Supabase
         async function fetchData() {
             if (!authReady) {
