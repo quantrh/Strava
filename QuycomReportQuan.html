@@ -889,57 +889,58 @@
                         return;
                     }
                     
-                    // *** MODIFIED: Authorization Check Logic ***
+                    // *** Authorization Check Logic with Detailed Logging ***
                     supabase.auth.onAuthStateChange(async (event, session) => {
-                        console.log("onAuthStateChange event:", event, "session:", session);
+                        console.log("AUTH: onAuthStateChange event received:", event);
                         if (session && session.user) {
-                            console.log("User is logged in:", session.user);
+                            console.log("AUTH: Session and user exist. User:", session.user);
                             const userEmail = session.user.email;
+                            console.log(`AUTH: User email is "${userEmail}". Starting authorization check.`);
 
                             try {
-                                // Check if the user's email is in the invited_users_quan table
+                                console.log("AUTH: Entering authorization TRY block.");
                                 const { data: invitedUser, error } = await supabase
                                     .from('invited_users_quan')
                                     .select('email')
                                     .eq('email', userEmail)
-                                    .maybeSingle(); // Handles 0 or 1 result gracefully
+                                    .maybeSingle(); 
+                                
+                                console.log("AUTH: Authorization query completed.");
+                                console.log("AUTH: Query result - data:", invitedUser);
+                                console.log("AUTH: Query result - error:", error);
 
                                 if (error) {
-                                    console.error("Authorization check error:", error);
+                                    console.error("AUTH: Authorization check returned an error:", error);
                                     showErrorMessage(`Lỗi kiểm tra quyền: ${error.message}`);
                                     authReady = false;
-                                    appContent.classList.add('hidden'); // Hide app content on error
+                                    appContent.classList.add('hidden');
                                     return;
                                 }
 
                                 if (invitedUser) {
-                                    // User is AUTHORIZED
-                                    console.log(`User ${userEmail} is authorized.`);
+                                    console.log("AUTH: User is AUTHORIZED. Proceeding to load data.");
                                     authReady = true;
-                                    appContent.classList.remove('hidden'); // Ensure app content is visible
+                                    appContent.classList.remove('hidden');
                                     hideErrorMessage();
-                                    fetchData(); // Fetch initial data
-                                    setupRealtimeSubscriptions(); // Set up real-time listeners
+                                    fetchData();
+                                    setupRealtimeSubscriptions();
                                 } else {
-                                    // User is NOT AUTHORIZED
-                                    console.log(`User ${userEmail} is NOT authorized.`);
+                                    console.log("AUTH: User is NOT AUTHORIZED. Hiding content.");
                                     authReady = false;
-                                    // Hide the main app content and show a clear error message
                                     appContent.classList.add('hidden'); 
                                     showErrorMessage(translations[currentLanguage].authorizationError);
                                 }
 
                             } catch (e) {
-                                console.error("Critical error during authorization check:", e);
+                                console.error("AUTH: CRITICAL ERROR in authorization catch block:", e);
                                 showErrorMessage("Đã xảy ra lỗi nghiêm trọng khi xác thực quyền.");
                                 authReady = false;
                                 appContent.classList.add('hidden');
                             }
 
                         } else {
-                            console.log("User is not logged in, redirecting to login page.");
+                            console.log("AUTH: No session or user. Redirecting to login.");
                             authReady = false;
-                            // Redirect to login page if not authenticated
                             window.location.href = window.location.origin + '/Strava/LoginQuan.html';
                         }
                     });
