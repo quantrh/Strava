@@ -811,13 +811,15 @@
 
         // --- Logout Function ---
         async function handleLogout() {
+            // NEW DEBUG LOG
+            console.log('---> [DEBUG] handleLogout function called.');
             try {
                 const { error } = await supabase.auth.signOut();
                 if (error) {
                     throw error;
                 }
-                // Redirect to index.html after successful sign out
-                window.location.href = '/Strava/index.html';
+                // Temporarily disable redirect for debugging
+                // window.location.href = '/Strava/index.html';
             } catch (error) {
                 console.error("Error signing out:", error.message);
                 showErrorMessage(`${translations[currentLanguage].logoutError} ${error.message}`);
@@ -1025,36 +1027,46 @@
                     if (session && session.user) {
                         const userEmail = session.user.email;
                         
-                        try {
-                            // Check if the user's email is in the invited_users_quan table
-                            const { data, error } = await supabase
-                                .from('invited_users_quan')
-                                .select('email')
-                                .eq('email', userEmail)
-                                .single(); // Use .single() for efficiency as we expect one or zero results
+                        // NEW DEBUG LOG: Show the email being checked
+                        console.log(`---> [DEBUG] Checking authorization for email: ${userEmail}`);
+                        
+                        // NEW DEBUG LOG: Announce the query
+                        console.log('---> [DEBUG] About to query invited_users_quan table...');
 
-                            if (error && error.code !== 'PGRST116') { // Ignore 'PGRST116' which means no rows found
-                                throw error;
-                            }
+                        // Using .then().catch() for more robust error handling
+                        supabase
+                            .from('invited_users_quan')
+                            .select('email')
+                            .eq('email', userEmail)
+                            .single()
+                            .then(({ data, error }) => {
+                                // This block will run if the query completes, successfully or with a known error
+                                console.log('---> [DEBUG] .then() block executed. Query completed.');
+                                console.log('---> [DEBUG] Data:', data);
+                                console.log('---> [DEBUG] Error:', error);
 
-                            if (data) {
-                                // Email exists, user is authorized
-                                console.log("User is authorized. Proceeding with app.");
-                                authReady = true;
-                                fetchData(); // Fetch initial data after successful login
-                                setupRealtimeSubscriptions(); // Set up real-time listeners
-                            } else {
-                                // Email does not exist, user is not authorized
-                                console.log("User is not authorized. Redirecting to index page.");
-                                showErrorMessage(translations[currentLanguage].accessDenied);
-                                // Redirect to index.html instead of logging out
-                                window.location.href = '/Strava/index.html';
-                            }
-                        } catch (authError) {
-                             console.error("Error checking invited users:", authError.message);
-                             showErrorMessage(translations[currentLanguage].authorizationError);
-                             await handleLogout(); // Logout on error
-                        }
+                                if (error && error.code !== 'PGRST116') {
+                                    throw error; // Re-throw actual errors to be caught by .catch()
+                                }
+
+                                if (data) {
+                                    console.log('---> [DEBUG] Verdict: Email FOUND. User is authorized.');
+                                    authReady = true;
+                                    fetchData();
+                                    setupRealtimeSubscriptions();
+                                } else {
+                                    console.log('---> [DEBUG] Verdict: Email NOT FOUND. User is not authorized.');
+                                    showErrorMessage(translations[currentLanguage].accessDenied);
+                                    handleLogout();
+                                }
+                            })
+                            .catch(error => {
+                                // This block will run if the query itself fails unexpectedly
+                                console.error('---> [DEBUG] .catch() block executed. An unexpected error occurred during the query.');
+                                console.error("Error checking invited users:", error.message, error);
+                                showErrorMessage(translations[currentLanguage].authorizationError);
+                                handleLogout();
+                            });
 
                     // Case 2: User is not logged in, redirect
                     } else {
@@ -3006,4 +3018,4 @@ if (transaction.type === 'contribution') {
 </script>
 
         </body>
-        </html
+        </html>
