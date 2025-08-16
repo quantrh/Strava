@@ -275,18 +275,25 @@
                     </div>
                 </div>
             </div>
-             <!-- Monthly Stacked Area Chart Section -->
+             <!-- Monthly Stacked Area Chart Section (Now Monthly Summary) -->
             <div id="monthly-chart-section" class="bg-white rounded-xl shadow overflow-hidden">
                 <div class="p-6 border-b border-gray-200">
-                    <h3 class="text-xl font-bold text-gray-900" data-key="monthlySpendingChartTitle">Biểu đồ chi tiêu theo tháng</h3>
-                </div>
-                <div class="p-6 h-96">
-                    <canvas id="monthlyExpenseChart"></canvas>
+                    <h3 class="text-xl font-bold text-gray-900" data-key="monthlySpendingChartTitle">Báo cáo tổng hợp hàng tháng</h3>
                 </div>
                 <div id="monthly-summary-container" class="p-6 border-t border-gray-200 overflow-x-auto">
                     <!-- Monthly summary tables will be inserted here -->
                 </div>
             </div>
+            <!-- UPDATE START: New Daily Spending Chart Section -->
+            <div id="daily-chart-section" class="bg-white rounded-xl shadow overflow-hidden">
+                <div class="p-6 border-b border-gray-200">
+                    <h3 class="text-xl font-bold text-gray-900" data-key="dailySpendingChartTitle">Biểu đồ chi tiêu hàng ngày (2 tháng gần nhất)</h3>
+                </div>
+                <div class="p-6 h-96">
+                    <canvas id="dailyExpenseChart"></canvas>
+                </div>
+            </div>
+            <!-- UPDATE END -->
         </div>
 
     </main>
@@ -433,11 +440,9 @@
             editMemberSelect: document.getElementById('edit-member'),
             editExpenseTypeSelect: document.getElementById('edit-expense-type'),
             closeEditModalBtn: document.getElementById('close-edit-modal-btn'),
-            // UPDATE START: New elements for involved members
             editInvolvedMembersBtn: document.getElementById('edit-involved-members-btn'),
             editInvolvedMembersText: document.getElementById('edit-involved-members-text'),
             editInvolvedMembersDropdown: document.getElementById('edit-involved-members-dropdown'),
-            // UPDATE END
             // Delete Modal
             deleteModalOverlay: document.getElementById('delete-modal-overlay'),
             confirmDeleteBtn: document.getElementById('confirm-delete-btn'),
@@ -445,8 +450,8 @@
             // Chart elements
             expenseChartCanvas: document.getElementById('expenseChart'),
             expenseLegendContainer: document.getElementById('expense-legend-container'),
-            monthlyExpenseChartCanvas: document.getElementById('monthlyExpenseChart'),
             monthlySummaryContainer: document.getElementById('monthly-summary-container'),
+            dailyExpenseChartCanvas: document.getElementById('dailyExpenseChart'), // UPDATE
             chartDetailModalOverlay: document.getElementById('chart-detail-modal-overlay'),
             chartDetailModalTitle: document.getElementById('chart-detail-modal-title'),
             chartDetailTableBody: document.getElementById('chart-detail-table-body'),
@@ -466,7 +471,7 @@
         const transactionsPerPage = 10;
         let filteredTransactions = [];
         let expenseChartInstance = null;
-        let monthlyChartInstance = null;
+        let dailyChartInstance = null; // UPDATE
         let expenseTypeColors = {};
         let transactionToDeleteId = null;
 
@@ -505,11 +510,12 @@
                 unknownMember: "Thành viên không xác định",
                 unknownType: "Loại không xác định",
                 spendingChartTitle: "Biểu đồ cơ cấu chi tiêu",
-                monthlySpendingChartTitle: "Biểu đồ chi tiêu theo tháng",
+                monthlySpendingChartTitle: "Báo cáo tổng hợp hàng tháng",
+                dailySpendingChartTitle: "Biểu đồ chi tiêu hàng ngày (2 tháng gần nhất)", // UPDATE
                 spendingByType: "Chi tiêu theo loại",
                 chartDetailTitle: "Chi tiết cho",
-                totalSpending: "Tổng chi tiêu",
-                legendType: "Loại chi tiêu",
+                totalSpending: "Tổng cộng",
+                legendType: "Loại",
                 legendAmount: "Số tiền",
                 legendRatio: "Tỷ lệ",
                 selected: "đã chọn",
@@ -520,11 +526,15 @@
                 deleteConfirmationMessage: "Bạn có chắc chắn muốn xóa giao dịch này không? Hành động này không thể hoàn tác.",
                 modalDelete: "Xóa",
                 logout: "Đăng xuất",
-                // UPDATE START: New keys
                 payer: "Người trả tiền",
                 involvedMembersLabel: "Thành viên liên quan",
                 selectMembers: "Chọn thành viên",
-                // UPDATE END
+                income: "Thu nhập", // UPDATE
+                expenses: "Chi tiêu", // UPDATE
+                showMore: "Hiện thêm", // UPDATE
+                showLess: "Thu gọn", // UPDATE
+                currentMonth: "Tháng này", // UPDATE
+                previousMonth: "Tháng trước", // UPDATE
             },
             en: {
                 appTitle: "Transaction History - GROUP FUND MANAGER",
@@ -560,11 +570,12 @@
                 unknownMember: "Unknown Member",
                 unknownType: "Unknown Type",
                 spendingChartTitle: "Spending Structure Chart",
-                monthlySpendingChartTitle: "Monthly Spending Chart",
+                monthlySpendingChartTitle: "Monthly Summary Report",
+                dailySpendingChartTitle: "Daily Spending Chart (Last 2 Months)", // UPDATE
                 spendingByType: "Spending by Type",
                 chartDetailTitle: "Details for",
-                totalSpending: "Total Spending",
-                legendType: "Expense Type",
+                totalSpending: "Total",
+                legendType: "Type",
                 legendAmount: "Amount",
                 legendRatio: "Ratio",
                 selected: "selected",
@@ -575,11 +586,15 @@
                 deleteConfirmationMessage: "Are you sure you want to delete this transaction? This action cannot be undone.",
                 modalDelete: "Delete",
                 logout: "Logout",
-                // UPDATE START: New keys
                 payer: "Payer",
                 involvedMembersLabel: "Involved Members",
                 selectMembers: "Select Members",
-                // UPDATE END
+                income: "Income", // UPDATE
+                expenses: "Expenses", // UPDATE
+                showMore: "Show More", // UPDATE
+                showLess: "Show Less", // UPDATE
+                currentMonth: "Current Month", // UPDATE
+                previousMonth: "Previous Month", // UPDATE
             }
         };
         let currentLanguage = 'vi';
@@ -704,7 +719,8 @@
         
         function renderAllCharts(data) {
             renderDoughnutChart(data);
-            renderMonthlyStackedAreaChart(data);
+            renderMonthlySummaries(data); // UPDATE
+            renderDailySpendingChart(data); // UPDATE
         }
 
         function renderDoughnutChart(data) {
@@ -820,173 +836,238 @@
             });
         }
         
-        function renderMonthlyStackedAreaChart(data) {
-            if (monthlyChartInstance) {
-                monthlyChartInstance.destroy();
-            }
+        // UPDATE START: Reworked monthly summary function
+        function renderMonthlySummaries(data) {
+            const summaryContainer = elements.monthlySummaryContainer;
+            summaryContainer.innerHTML = '';
 
             const monthlyData = data.reduce((acc, t) => {
                 const month = t.date.substring(0, 7); // YYYY-MM
-                if (!acc[month]) acc[month] = { total: 0 };
-                
-                const type = t.expense_type || (translations.unassigned || 'Không xác định');
-                if (!acc[month][type]) acc[month][type] = 0;
-                
-                acc[month][type] += t.amount;
-                acc[month].total += t.amount;
+                if (!acc[month]) {
+                    acc[month] = [];
+                }
+                acc[month].push(t);
                 return acc;
             }, {});
-            
-            const months = Object.keys(monthlyData).sort();
-            const types = [...new Set(data.map(t => t.expense_type || (translations.unassigned || 'Không xác định')))];
 
-            const datasets = types.map(type => {
-                const dataForType = months.map(month => {
-                    const monthData = monthlyData[month];
-                    const typeTotal = monthData[type] || 0;
-                    return monthData.total > 0 ? (typeTotal / monthData.total) * 100 : 0;
-                });
-                return {
-                    label: type,
-                    data: dataForType,
-                    backgroundColor: expenseTypeColors[type] || '#cccccc',
-                    borderColor: expenseTypeColors[type] || '#cccccc',
-                    fill: true,
-                };
-            });
-
-            const ctx = elements.monthlyExpenseChartCanvas.getContext('2d');
-            monthlyChartInstance = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: months,
-                    datasets: datasets
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    onClick: (event, elements, chart) => {
-                        const points = chart.getElementsAtEventForMode(event, 'nearest', { intersect: true }, true);
-                        if (points.length > 0) {
-                            const element = points[0];
-                            const month = chart.data.labels[element.index];
-                            const type = chart.data.datasets[element.datasetIndex].label;
-
-                            const transactionsForMonthAndType = filteredTransactions.filter(t => {
-                                const transactionMonth = t.date.substring(0, 7);
-                                const transactionType = t.expense_type || (translations.unassigned || 'Không xác định');
-                                return transactionMonth === month && transactionType === type;
-                            });
-                            
-                            const modalTitle = `${translations.chartDetailTitle} "${type}" (${month})`;
-                            openChartDetailModal(modalTitle, transactionsForMonthAndType);
-                        }
-                    },
-                    plugins: {
-                        title: {
-                            display: true,
-                            text: translations.monthlySpendingChartTitle,
-                            font: { size: 18, family: "'Inter', sans-serif" }
-                        },
-                        tooltip: {
-                            mode: 'point',
-                            intersect: true,
-                            callbacks: {
-                                label: function(context) {
-                                    const month = context.chart.data.labels[context.dataIndex];
-                                    const type = context.dataset.label;
-                                    const monthDetails = monthlyData[month];
-                                    const typeTotal = monthDetails ? (monthDetails[type] || 0) : 0;
-                                    const totalForMonth = monthDetails ? monthDetails.total : 0;
-                                    const percentage = totalForMonth > 0 ? (typeTotal / totalForMonth * 100).toFixed(2) : 0;
-                                    return `${type}: ${formatCurrency(typeTotal)} (${percentage}%)`;
-                                }
-                            }
-                        },
-                    },
-                    scales: {
-                        x: {
-                            stacked: true,
-                        },
-                        y: {
-                            stacked: true,
-                            max: 100,
-                            ticks: {
-                                callback: function(value) {
-                                    return value + '%';
-                                }
-                            }
-                        }
-                    },
-                    interaction: {
-                        mode: 'index',
-                        intersect: false
-                    },
-                    elements: {
-                        line: {
-                            tension: 0.4
-                        }
-                    }
-                }
-            });
-
-            // Render summary tables below the chart
-            const summaryContainer = elements.monthlySummaryContainer;
-            summaryContainer.innerHTML = ''; 
+            const months = Object.keys(monthlyData).sort().reverse(); // Sort newest to oldest
 
             if (months.length === 0) {
                 summaryContainer.innerHTML = `<p class="text-center text-gray-500">${translations.noTransactions}</p>`;
                 return;
             }
 
-            let summaryHtml = '<div class="space-y-6">';
-            months.forEach(month => {
-                const monthData = monthlyData[month];
-                const sortedTypes = Object.entries(monthData)
-                    .filter(([key]) => key !== 'total')
-                    .sort(([, a], [, b]) => b - a);
+            let summaryHtml = '<div class="space-y-8">';
+            months.forEach((month, index) => {
+                const monthTransactions = monthlyData[month];
+                
+                // Separate into income and expenses
+                const incomeTransactions = monthTransactions.filter(t => t.type === 'contribution');
+                const expenseTransactions = monthTransactions.filter(t => t.type === 'expense');
+
+                const incomeByType = incomeTransactions.reduce((acc, t) => {
+                    const type = t.expense_type || translations.unassigned;
+                    acc[type] = (acc[type] || 0) + t.amount;
+                    return acc;
+                }, {});
+
+                const expenseByType = expenseTransactions.reduce((acc, t) => {
+                    const type = t.expense_type || translations.unassigned;
+                    acc[type] = (acc[type] || 0) + t.amount;
+                    return acc;
+                }, {});
+
+                const totalIncome = Object.values(incomeByType).reduce((sum, amount) => sum + amount, 0);
+                const totalExpense = Object.values(expenseByType).reduce((sum, amount) => sum + amount, 0);
+
+                const isCollapsed = index >= 2;
 
                 summaryHtml += `
-                    <div>
-                        <h4 class="text-lg font-semibold mb-2">${month}</h4>
-                        <table class="w-full text-sm text-left text-gray-500">
-                            <thead class="text-xs text-gray-700 uppercase bg-gray-50">
-                                <tr>
-                                    <th scope="col" class="px-4 py-2">${translations.legendType}</th>
-                                    <th scope="col" class="px-4 py-2 text-right">${translations.legendAmount}</th>
-                                    <th scope="col" class="px-4 py-2 text-right">${translations.legendRatio}</th>
-                                </tr>
-                            </thead>
-                            <tbody>
+                    <div class="month-summary-block">
+                        <div class="flex justify-between items-center mb-2">
+                            <h4 class="text-xl font-bold text-gray-800">${month}</h4>
+                            ${index >= 2 ? `<button class="toggle-month-btn text-sm text-blue-600 font-semibold" data-month="${month}">${translations.showMore}</button>` : ''}
+                        </div>
+                        <div class="month-details space-y-4 ${isCollapsed ? 'hidden' : ''}" id="details-${month}">
                 `;
 
-                sortedTypes.forEach(([type, amount]) => {
-                    const percentage = monthData.total > 0 ? (amount / monthData.total * 100).toFixed(2) : 0;
+                // Income Table
+                if (totalIncome > 0) {
                     summaryHtml += `
-                        <tr class="bg-white border-b hover:bg-gray-50 cursor-pointer summary-row" data-month="${month}" data-type="${type}">
-                            <td class="px-4 py-2 font-medium text-gray-900 whitespace-nowrap">${type}</td>
-                            <td class="px-4 py-2 text-right">${formatCurrency(amount)}</td>
-                            <td class="px-4 py-2 text-right">${percentage}%</td>
-                        </tr>
+                        <div>
+                            <h5 class="text-lg font-semibold text-green-600 mb-2">${translations.income}</h5>
+                            <table class="w-full text-sm text-left text-gray-500">
+                                <thead class="text-xs text-gray-700 uppercase bg-gray-50">
+                                    <tr>
+                                        <th scope="col" class="px-4 py-2">${translations.legendType}</th>
+                                        <th scope="col" class="px-4 py-2 text-right">${translations.legendAmount}</th>
+                                        <th scope="col" class="px-4 py-2 text-right">${translations.legendRatio}</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
                     `;
-                });
+                    Object.entries(incomeByType).sort(([,a],[,b]) => b-a).forEach(([type, amount]) => {
+                        const percentage = totalIncome > 0 ? (amount / totalIncome * 100).toFixed(2) : 0;
+                        summaryHtml += `<tr class="bg-white border-b">
+                                        <td class="px-4 py-2 font-medium text-gray-900">${type}</td>
+                                        <td class="px-4 py-2 text-right">${formatCurrency(amount)}</td>
+                                        <td class="px-4 py-2 text-right">${percentage}%</td>
+                                      </tr>`;
+                    });
+                    summaryHtml += `
+                                </tbody>
+                                <tfoot class="font-semibold text-gray-900">
+                                    <tr>
+                                        <td class="px-4 py-2">${translations.totalSpending}</td>
+                                        <td class="px-4 py-2 text-right">${formatCurrency(totalIncome)}</td>
+                                        <td class="px-4 py-2 text-right">100.00%</td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    `;
+                }
 
-                summaryHtml += `
-                            </tbody>
-                            <tfoot class="font-semibold text-gray-900">
-                                <tr class="hover:bg-gray-100 cursor-pointer summary-row" data-month="${month}" data-type="all">
-                                    <td class="px-4 py-2">${translations.totalSpending}</td>
-                                    <td class="px-4 py-2 text-right">${formatCurrency(monthData.total)}</td>
-                                    <td class="px-4 py-2 text-right">100.00%</td>
-                                </tr>
-                            </tfoot>
-                        </table>
-                    </div>
-                `;
+                // Expense Table
+                if (totalExpense > 0) {
+                     summaryHtml += `
+                        <div>
+                            <h5 class="text-lg font-semibold text-red-600 mb-2">${translations.expenses}</h5>
+                            <table class="w-full text-sm text-left text-gray-500">
+                                <thead class="text-xs text-gray-700 uppercase bg-gray-50">
+                                    <tr>
+                                        <th scope="col" class="px-4 py-2">${translations.legendType}</th>
+                                        <th scope="col" class="px-4 py-2 text-right">${translations.legendAmount}</th>
+                                        <th scope="col" class="px-4 py-2 text-right">${translations.legendRatio}</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                    `;
+                    Object.entries(expenseByType).sort(([,a],[,b]) => b-a).forEach(([type, amount]) => {
+                        const percentage = totalExpense > 0 ? (amount / totalExpense * 100).toFixed(2) : 0;
+                        summaryHtml += `<tr class="bg-white border-b">
+                                        <td class="px-4 py-2 font-medium text-gray-900">${type}</td>
+                                        <td class="px-4 py-2 text-right">${formatCurrency(amount)}</td>
+                                        <td class="px-4 py-2 text-right">${percentage}%</td>
+                                      </tr>`;
+                    });
+                    summaryHtml += `
+                                </tbody>
+                                <tfoot class="font-semibold text-gray-900">
+                                    <tr>
+                                        <td class="px-4 py-2">${translations.totalSpending}</td>
+                                        <td class="px-4 py-2 text-right">${formatCurrency(totalExpense)}</td>
+                                        <td class="px-4 py-2 text-right">100.00%</td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    `;
+                }
+                summaryHtml += `</div></div>`; // Close month-details and month-summary-block
             });
             summaryHtml += '</div>';
             summaryContainer.innerHTML = summaryHtml;
         }
+        // UPDATE END
+
+        // UPDATE START: New daily spending chart function
+        function renderDailySpendingChart(data) {
+            if (dailyChartInstance) {
+                dailyChartInstance.destroy();
+            }
+
+            const expenses = data.filter(t => t.type === 'expense');
+
+            const monthlyData = expenses.reduce((acc, t) => {
+                const month = t.date.substring(0, 7);
+                if (!acc[month]) acc[month] = [];
+                acc[month].push(t);
+                return acc;
+            }, {});
+
+            const months = Object.keys(monthlyData).sort().reverse();
+            if (months.length === 0) return;
+
+            const currentMonthKey = months[0];
+            const previousMonthKey = months[1];
+
+            const getDailyTotals = (monthKey) => {
+                const dailyTotals = Array(31).fill(0);
+                if (!monthKey || !monthlyData[monthKey]) return dailyTotals;
+                
+                monthlyData[monthKey].forEach(t => {
+                    const day = new Date(t.date).getDate() - 1; // 0-indexed
+                    dailyTotals[day] += t.amount;
+                });
+                return dailyTotals;
+            };
+
+            const currentMonthData = getDailyTotals(currentMonthKey);
+            const previousMonthData = getDailyTotals(previousMonthKey);
+            
+            const labels = Array.from({ length: 31 }, (_, i) => i + 1);
+
+            const datasets = [];
+            if(currentMonthKey) {
+                datasets.push({
+                    label: `${translations.currentMonth} (${currentMonthKey})`,
+                    data: currentMonthData,
+                    borderColor: 'rgba(239, 68, 68, 1)',
+                    backgroundColor: 'rgba(239, 68, 68, 0.2)',
+                    fill: true,
+                    tension: 0.4,
+                });
+            }
+            if(previousMonthKey) {
+                 datasets.push({
+                    label: `${translations.previousMonth} (${previousMonthKey})`,
+                    data: previousMonthData,
+                    borderColor: 'rgba(59, 130, 246, 1)',
+                    backgroundColor: 'rgba(59, 130, 246, 0.2)',
+                    fill: true,
+                    tension: 0.4,
+                });
+            }
+
+            const ctx = elements.dailyExpenseChartCanvas.getContext('2d');
+            dailyChartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: datasets
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return formatCurrency(value);
+                                }
+                            }
+                        }
+                    },
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) label += ': ';
+                                    if (context.parsed.y !== null) {
+                                        label += formatCurrency(context.parsed.y);
+                                    }
+                                    return label;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        // UPDATE END
 
         function openChartDetailModal(title, transactionsForType) {
             elements.chartDetailModalTitle.textContent = title;
@@ -1012,7 +1093,6 @@
             elements.chartDetailModalOverlay.classList.remove('hidden');
         }
 
-        // UPDATE START: New helper functions for edit modal multi-select
         function getEditSelectedInvolvedMembers() {
             const selected = [];
             elements.editInvolvedMembersDropdown.querySelectorAll('input[type="checkbox"]:checked').forEach(checkbox => {
@@ -1029,7 +1109,6 @@
                 elements.editInvolvedMembersText.textContent = `${selectedCount} ${translations.selected}`;
             }
         }
-        // UPDATE END
 
         function openEditModal(transactionId) {
             const transaction = transactions.find(t => String(t.id) === transactionId);
@@ -1040,7 +1119,6 @@
             elements.editDescriptionInput.value = transaction.description;
             elements.editAmountInput.value = transaction.amount;
 
-            // Populate contributing member (payer) dropdown
             elements.editMemberSelect.innerHTML = '';
             members.forEach(member => {
                 const option = document.createElement('option');
@@ -1050,7 +1128,6 @@
             });
             elements.editMemberSelect.value = transaction.contributingMemberId || '';
 
-            // UPDATE START: Populate involved members multi-select
             elements.editInvolvedMembersDropdown.innerHTML = '';
             members.forEach(member => {
                 const label = document.createElement('label');
@@ -1071,9 +1148,7 @@
                 elements.editInvolvedMembersDropdown.appendChild(label);
             });
             updateEditInvolvedMembersText();
-            // UPDATE END
 
-            // Populate expense type dropdown
             elements.editExpenseTypeSelect.innerHTML = '';
             expenseTypes.forEach(type => {
                 const option = document.createElement('option');
@@ -1095,7 +1170,6 @@
             const newExpenseTypeId = elements.editExpenseTypeSelect.value;
             const newExpenseTypeName = expenseTypes.find(t => String(t.id) === newExpenseTypeId).expense_type;
             
-            // UPDATE START: Get involved members and add to the payload
             const involvedMemberIds = getEditSelectedInvolvedMembers();
             
             const updatedData = {
@@ -1104,15 +1178,14 @@
                 amount: parseFloat(elements.editAmountInput.value),
                 contributingMemberId: elements.editMemberSelect.value,
                 expense_type: newExpenseTypeName,
-                involvedMemberIds: involvedMemberIds, // Add involved members to the update object
+                involvedMemberIds: involvedMemberIds,
             };
-            // UPDATE END
 
             try {
                 const { error } = await supabaseClient.from('transactions_quan').update(updatedData).eq('id', transactionId);
                 if (error) throw error;
                 elements.editModalOverlay.classList.add('hidden');
-                await fetchSupabaseData(); // Refetch all data to ensure consistency
+                await fetchSupabaseData();
             } catch (error) {
                 console.error('Error updating transaction:', error.message);
                 alert('Lỗi: ' + error.message);
@@ -1133,7 +1206,7 @@
                 const { error } = await supabaseClient.from('transactions_quan').delete().eq('id', transactionToDeleteId);
                 if (error) throw error;
                 elements.deleteModalOverlay.classList.add('hidden');
-                await fetchSupabaseData(); // Refetch all data
+                await fetchSupabaseData();
             } catch (error) {
                 console.error('Error deleting transaction:', error.message);
                  alert('Lỗi: ' + error.message);
@@ -1272,22 +1345,18 @@
         elements.expenseTypeFilterBtn.addEventListener('click', () => {
             elements.expenseTypeFilterDropdown.classList.toggle('hidden');
         });
-        // UPDATE START: Event listener for new multi-select in edit modal
         elements.editInvolvedMembersBtn.addEventListener('click', () => {
             elements.editInvolvedMembersDropdown.classList.toggle('hidden');
         });
-        // UPDATE END
 
         document.addEventListener('click', (e) => {
             if (!elements.expenseTypeFilterBtn.contains(e.target) && !elements.expenseTypeFilterDropdown.contains(e.target)) {
                 elements.expenseTypeFilterDropdown.classList.add('hidden');
             }
-            // UPDATE START: Close involved members dropdown when clicking outside
             if (elements.editModalOverlay.classList.contains('hidden')) return;
             if (!elements.editInvolvedMembersBtn.contains(e.target) && !elements.editInvolvedMembersDropdown.contains(e.target)) {
                 elements.editInvolvedMembersDropdown.classList.add('hidden');
             }
-            // UPDATE END
         });
         
         function updateExpenseTypeFilterText() {
@@ -1348,29 +1417,19 @@
             }
         }
         
+        // UPDATE START: Event listener for toggling month details
         elements.monthlySummaryContainer.addEventListener('click', (event) => {
-            const summaryRow = event.target.closest('.summary-row');
-            if (!summaryRow) return;
-
-            const month = summaryRow.dataset.month;
-            const type = summaryRow.dataset.type;
-
-            const transactionsForSelection = transactions.filter(t => {
-                const transactionMonth = t.date.substring(0, 7);
-                const transactionType = t.expense_type || (translations.unassigned || 'Không xác định');
-                
-                const monthMatch = transactionMonth === month;
-                const typeMatch = (type === 'all') || (transactionType === type);
-
-                return monthMatch && typeMatch;
-            });
-
-            const modalTitle = type === 'all' 
-                ? `${translations.chartDetailTitle} ${month}`
-                : `${translations.chartDetailTitle} "${type}" (${month})`;
-            
-            openChartDetailModal(modalTitle, transactionsForSelection);
+            const toggleButton = event.target.closest('.toggle-month-btn');
+            if (toggleButton) {
+                const month = toggleButton.dataset.month;
+                const detailsDiv = document.getElementById(`details-${month}`);
+                if (detailsDiv) {
+                    const isHidden = detailsDiv.classList.toggle('hidden');
+                    toggleButton.textContent = isHidden ? translations.showMore : translations.showLess;
+                }
+            }
         });
+        // UPDATE END
 
         document.addEventListener('DOMContentLoaded', async () => {
             try {
