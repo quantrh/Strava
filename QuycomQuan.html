@@ -1027,49 +1027,46 @@
                     if (session && session.user) {
                         const userEmail = session.user.email;
                         
-                        try {
-                            // NEW DEBUG LOG: Show the email being checked
-                            console.log(`---> [DEBUG] Checking authorization for email: ${userEmail}`);
-                            
-                            // NEW DEBUG LOG: Announce the query
-                            console.log('---> [DEBUG] About to query invited_users_quan table...');
+                        // NEW DEBUG LOG: Show the email being checked
+                        console.log(`---> [DEBUG] Checking authorization for email: ${userEmail}`);
+                        
+                        // NEW DEBUG LOG: Announce the query
+                        console.log('---> [DEBUG] About to query invited_users_quan table...');
 
-                            // Check if the user's email is in the invited_users_quan table
-                            const { data, error } = await supabase
-                                .from('invited_users_quan')
-                                .select('email')
-                                .eq('email', userEmail)
-                                .single(); // Use .single() for efficiency as we expect one or zero results
+                        // Using .then().catch() for more robust error handling
+                        supabase
+                            .from('invited_users_quan')
+                            .select('email')
+                            .eq('email', userEmail)
+                            .single()
+                            .then(({ data, error }) => {
+                                // This block will run if the query completes, successfully or with a known error
+                                console.log('---> [DEBUG] .then() block executed. Query completed.');
+                                console.log('---> [DEBUG] Data:', data);
+                                console.log('---> [DEBUG] Error:', error);
 
-                            // NEW DEBUG LOGS: Show the result of the check
-                            console.log('---> [DEBUG] Result from invited_users_quan check:');
-                            console.log('---> [DEBUG] Data:', data);
-                            console.log('---> [DEBUG] Error:', error);
+                                if (error && error.code !== 'PGRST116') {
+                                    throw error; // Re-throw actual errors to be caught by .catch()
+                                }
 
-
-                            if (error && error.code !== 'PGRST116') { // Ignore 'PGRST116' which means no rows found
-                                throw error;
-                            }
-
-                            if (data) {
-                                // NEW DEBUG LOG: Show the final verdict
-                                console.log('---> [DEBUG] Verdict: Email FOUND. User is authorized.');
-                                // Email exists, user is authorized
-                                authReady = true;
-                                fetchData(); // Fetch initial data after successful login
-                                setupRealtimeSubscriptions(); // Set up real-time listeners
-                            } else {
-                                // NEW DEBUG LOG: Show the final verdict
-                                console.log('---> [DEBUG] Verdict: Email NOT FOUND. User is not authorized.');
-                                // Email does not exist, user is not authorized
-                                showErrorMessage(translations[currentLanguage].accessDenied);
-                                await handleLogout(); // Logout and redirect
-                            }
-                        } catch (authError) {
-                             console.error("Error checking invited users:", authError.message);
-                             showErrorMessage(translations[currentLanguage].authorizationError);
-                             await handleLogout(); // Logout on error
-                        }
+                                if (data) {
+                                    console.log('---> [DEBUG] Verdict: Email FOUND. User is authorized.');
+                                    authReady = true;
+                                    fetchData();
+                                    setupRealtimeSubscriptions();
+                                } else {
+                                    console.log('---> [DEBUG] Verdict: Email NOT FOUND. User is not authorized.');
+                                    showErrorMessage(translations[currentLanguage].accessDenied);
+                                    handleLogout();
+                                }
+                            })
+                            .catch(error => {
+                                // This block will run if the query itself fails unexpectedly
+                                console.error('---> [DEBUG] .catch() block executed. An unexpected error occurred during the query.');
+                                console.error("Error checking invited users:", error.message, error);
+                                showErrorMessage(translations[currentLanguage].authorizationError);
+                                handleLogout();
+                            });
 
                     // Case 2: User is not logged in, redirect
                     } else {
