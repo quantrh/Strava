@@ -1171,24 +1171,43 @@
             saveAs(new Blob([wbout], { type: 'application/octet-stream' }), 'lich_su_giao_dich.xlsx');
         }
 
-        async function callGeminiAPI(payload, retries = 3, delay = 1000) {
-            const apiKey = ""; // Left empty for Canvas environment
-            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
-            for (let i = 0; i < retries; i++) {
-                try {
-                    const response = await fetch(apiUrl, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(payload)
-                    });
-                    if (!response.ok) throw new Error(`API Error (${response.status})`);
-                    const result = await response.json();
-                    if (result.candidates?.[0]?.content?.parts?.[0]) return result;
-                    throw new Error("Invalid API response structure.");
-                } catch (error) {
-                    if (i === retries - 1) throw error;
-                    await new Promise(res => setTimeout(res, delay * 2 ** i));
+        // UPDATE START: Switched to Supabase Edge Function call
+        async function generateFundInsights() {
+            elements.fundInsightsContent.innerHTML = `<div class="flex flex-col items-center"><div class="spinner"></div><p class="mt-2">${translations.generatingInsights}</p></div>`;
+            
+            const totalContributions = filteredTransactions.filter(t => t.type === 'contribution').reduce((sum, t) => sum + t.amount, 0);
+            const totalExpenses = filteredTransactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
+            const currentBalance = totalContributions - totalExpenses;
+
+            const promptData = {
+                type: 'fund_insights',
+                fundBalance: currentBalance,
+                transactions: filteredTransactions.slice(0, 20).map(t => ({
+                    type: t.type,
+                    amount: t.amount,
+                    description: t.description,
+                    date: t.date,
+                    category: t.expense_type,
+                    member: getMemberNames(t.involvedMemberIds, t.contributingMemberId)
+                })),
+                currentLanguage: currentLanguage
+            };
+
+            try {
+                const { data, error } = await supabaseClient.functions.invoke('process-ai-requests_quan', {
+                    body: promptData
+                });
+
+                if (error) throw error;
+
+                if (data.success && data.analysis) {
+                    elements.fundInsightsContent.innerHTML = markdownToHtml(data.analysis);
+                } else {
+                    throw new Error(data.error || "Invalid response from Edge Function.");
                 }
+            } catch (error) {
+                console.error("Error calling Supabase Edge Function:", error);
+                elements.fundInsightsContent.innerHTML = `<p class="text-red-500">${translations.aiConnectionError}</p>`;
             }
         }
 
@@ -1202,47 +1221,7 @@
             html = html.split('\n').map(line => line.trim() ? `<p class="mb-2">${line}</p>` : '').join('').replace(/<p class="mb-2">((<h[23]>.*<\/h[23]>)|(<li.*<\/li>))<\/p>/g, '$1');
             return html;
         }
-
-        async function generateFundInsights() {
-            elements.fundInsightsContent.innerHTML = `<div class="flex flex-col items-center"><div class="spinner"></div><p class="mt-2">${translations.generatingInsights}</p></div>`;
-            
-            const totalContributions = filteredTransactions.filter(t => t.type === 'contribution').reduce((sum, t) => sum + t.amount, 0);
-            const totalExpenses = filteredTransactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
-            const currentBalance = totalContributions - totalExpenses;
-
-            const promptData = {
-                fundBalance: currentBalance,
-                transactions: filteredTransactions.slice(0, 20).map(t => ({
-                    type: t.type,
-                    amount: t.amount,
-                    description: t.description,
-                    date: t.date,
-                    category: t.expense_type,
-                    member: getMemberNames(t.involvedMemberIds, t.contributingMemberId)
-                }))
-            };
-
-            const prompt = `Bạn là một chuyên gia tư vấn tài chính. Dựa vào dữ liệu quỹ sau (bằng VNĐ), hãy đưa ra phân tích và nhận xét.
-            Dữ liệu: ${JSON.stringify(promptData)}
-            Hãy trả lời bằng tiếng Việt theo định dạng Markdown, bao gồm:
-            ## Tình hình chung
-            - Nhận xét về số dư và tổng thu/chi trong giai đoạn được lọc.
-            ## Phân tích chi tiêu
-            - Các khoản chi lớn nhất là gì?
-            - Nhóm đang chi tiêu nhiều nhất cho loại nào?
-            ## Gợi ý
-            - Đưa ra lời khuyên để quản lý chi tiêu tốt hơn.`;
-
-            const payload = { contents: [{ role: "user", parts: [{ text: prompt }] }] };
-
-            try {
-                const result = await callGeminiAPI(payload);
-                const text = result.candidates[0].content.parts[0].text;
-                elements.fundInsightsContent.innerHTML = markdownToHtml(text);
-            } catch (error) {
-                elements.fundInsightsContent.innerHTML = `<p class="text-red-500">${translations.aiConnectionError}</p>`;
-            }
-        }
+        // UPDATE END
 
         // --- Event Listeners ---
         elements.applyFilterBtn.addEventListener('click', applyFilters);
