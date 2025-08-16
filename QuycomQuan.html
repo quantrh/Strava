@@ -1024,9 +1024,11 @@
                     // Case 1: User is logged in, check for authorization
                     if (session && session.user) {
                         const userEmail = session.user.email;
-                        console.log("User is logged in with email:", userEmail);
-
+                        
                         try {
+                            // NEW DEBUG LOG: Show the email being checked
+                            console.log(`---> [DEBUG] Checking authorization for email: ${userEmail}`);
+
                             // Check if the user's email is in the invited_users_quan table
                             const { data, error } = await supabase
                                 .from('invited_users_quan')
@@ -1034,19 +1036,27 @@
                                 .eq('email', userEmail)
                                 .single(); // Use .single() for efficiency as we expect one or zero results
 
+                            // NEW DEBUG LOGS: Show the result of the check
+                            console.log('---> [DEBUG] Result from invited_users_quan check:');
+                            console.log('---> [DEBUG] Data:', data);
+                            console.log('---> [DEBUG] Error:', error);
+
+
                             if (error && error.code !== 'PGRST116') { // Ignore 'PGRST116' which means no rows found
                                 throw error;
                             }
 
                             if (data) {
+                                // NEW DEBUG LOG: Show the final verdict
+                                console.log('---> [DEBUG] Verdict: Email FOUND. User is authorized.');
                                 // Email exists, user is authorized
-                                console.log("User is authorized. Proceeding with app.");
                                 authReady = true;
                                 fetchData(); // Fetch initial data after successful login
                                 setupRealtimeSubscriptions(); // Set up real-time listeners
                             } else {
+                                // NEW DEBUG LOG: Show the final verdict
+                                console.log('---> [DEBUG] Verdict: Email NOT FOUND. User is not authorized.');
                                 // Email does not exist, user is not authorized
-                                console.log("User is not authorized. Logging out and redirecting.");
                                 showErrorMessage(translations[currentLanguage].accessDenied);
                                 await handleLogout(); // Logout and redirect
                             }
