@@ -3,70 +3,169 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title data-key="appTitle">Lịch Sử Giao Dịch - QUẢN LÝ QUỸ NHÓM</title>
+    <title data-key="appTitle">QUẢN LÝ QUỸ NHÓM</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
     <style>
         body { font-family: 'Inter', sans-serif; }
+        .card {
+            background-color: #fff;
+            border-radius: 1rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            padding: 1.5rem;
+        }
         .btn-primary {
-            background-color: #006B68;
+            background-color: #006B68; /* BIDV Brand Blue */
             color: white;
             padding: 0.75rem 1.5rem;
             border-radius: 0.75rem;
             font-weight: 600;
-            transition: background-color: 0.3s;
+            transition: background-color 0.2s;
         }
-        .btn-primary:hover { background-color: #005654; }
+        .btn-primary:hover { background-color: #005A58; /* Darker BIDV Blue */ }
         .btn-secondary {
-            background-color: #F3F4F6;
-            color: #1F2937;
+            background-color: #E0E7FF; /* Light background */
+            color: #006B68; /* BIDV Brand Blue for text */
             padding: 0.75rem 1.5rem;
             border-radius: 0.75rem;
             font-weight: 600;
-            transition: background-color: 0.3s;
+            transition: background-color 0.2s;
         }
-        .btn-secondary:hover { background-color: #E5E7EB; }
-        .table-header { background-color: #F9FAFB; }
-        .table-cell { padding: 1rem; border-bottom: 1px solid #E5E7EB; }
+        .btn-secondary:hover { background-color: #CCF0EF; /* Lighter BIDV Blue for hover */ }
+        .input-field {
+            border: 1px solid #D1D5DB;
+            border-radius: 0.5rem;
+            padding: 0.75rem 1rem;
+            width: 100%;
+        }
+        .table-header th {
+            padding: 0.75rem;
+            text-align: left;
+            font-weight: 600;
+            color: #4B5563;
+            border-bottom: 1px solid #E5E7EB;
+        }
+        .table-row td {
+            padding: 0.75rem;
+            border-bottom: 1px solid #F3F4F6;
+        }
+        .balance-positive { color: #10B981; font-weight: 600; } /* Green */
+        .balance-negative { color: #EF4444; font-weight: 600; } /* Red */
+        .balance-zero { color: #6B7280; } /* Gray */
+        .error-message {
+            background-color: #FEE2E2;
+            color: #DC2626;
+            padding: 0.75rem;
+            border-radius: 0.5rem;
+            margin-bottom: 1rem;
+            text-align: center;
+        }
         .modal-overlay {
-            background-color: rgba(0, 0, 0, 0.5);
-            backdrop-filter: blur(5px);
-        }
-        .scroll-to-top {
             position: fixed;
-            bottom: 2rem;
-            right: 2rem;
-            width: 3rem;
-            height: 3rem;
-            background-color: #006B68;
-            color: white;
-            border-radius: 50%;
-            display: none;
-            align-items: center;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
             justify-content: center;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-            cursor: pointer;
-            transition: opacity 0.3s, transform 0.3s;
-            opacity: 0;
-            transform: translateY(20px);
+            align-items: center;
             z-index: 1000;
         }
-        .scroll-to-top.show {
+        .modal-content {
+            background-color: white;
+            padding: 2rem;
+            border-radius: 1rem;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            max-width: 90%;
+            max-height: 90%;
+            overflow-y: auto;
+        }
+        .text-right-aligned {
+            text-align: right; /* Custom class for right alignment */
+        }
+        /* Styles for the scroll-to-top button */
+        #scroll-to-top-btn {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background-color: #006B68;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            font-size: 24px;
             display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: opacity 0.3s, transform 0.3s;
+            opacity: 0; /* Initially hidden */
+            transform: scale(0.8); /* Slightly smaller when hidden */
+            z-index: 999; /* Ensure it's above other content */
+        }
+        #scroll-to-top-btn.show {
             opacity: 1;
-            transform: translateY(0);
+            transform: scale(1);
         }
-        .navbar {
-            background-color: #ffffff;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            padding: 0.75rem 1rem;
-            position: relative;
-            z-index: 50;
+
+        /* Styles for Word export - ensure table borders are visible */
+        /* These styles will be embedded directly into the HTML for Word export */
+        .word-export-table {
+            border-collapse: collapse;
+            width: 100%;
         }
+        .word-export-table th,
+        .word-export-table td {
+            border: 1px solid #e5e7eb; /* Add borders for Word */
+            padding: 0.75rem;
+            text-align: left;
+        }
+        .word-export-table th {
+            background-color: #f3f4f6; /* Light background for headers */
+            font-weight: 600;
+        }
+        .word-export-table .balance-positive { color: #10B981; }
+        .word-export-table .balance-negative { color: #EF4444; }
+        .word-export-table .balance-zero { color: #6B7280; }
+        .word-export-table .text-right-aligned { text-align: right; }
+
+        /* Camera Modal Specific Styles */
+        #camera-modal .modal-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1rem;
+            max-width: 95%;
+            width: 600px; /* Max width for camera feed */
+        }
+        #uploaded-image-preview { /* Renamed from captured-image */
+            max-width: 100%;
+            height: auto;
+            border-radius: 0.5rem;
+            margin-top: 1rem;
+            display: none; /* Hidden by default */
+        }
+        #camera-loading-spinner {
+            display: none; /* Hidden by default */
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-top: 4px solid #006B68;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Language Switch Styles */
         .language-switch {
             display: flex;
             align-items: center;
@@ -90,1409 +189,1750 @@
             color: white;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
-        .loading-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(255, 255, 255, 0.8);
-            display: flex;
-            justify-content: center;
+
+        /* Hamburger Menu Specific Styles */
+        .navbar {
+            background-color: #ffffff;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            padding: 0.75rem 1rem;
+            position: relative; /* Changed to relative to contain absolute menu */
+            z-index: 50;
+        }
+        #hamburger-btn {
+            display: inline-flex;
             align-items: center;
-            z-index: 2000;
-        }
-        .spinner {
-            border: 4px solid rgba(0, 0, 0, 0.1);
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
-            border-left-color: #006B68;
-            animation: spin 1s ease infinite;
-        }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        /* Custom multi-select dropdown */
-        .multi-select-container {
-            position: relative;
-        }
-        .multi-select-dropdown {
-            position: absolute;
-            top: 100%;
-            left: 0;
-            right: 0;
-            background-color: white;
-            border: 1px solid #d1d5db;
+            justify-content: center;
+            padding: 0.5rem;
             border-radius: 0.375rem;
-            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
-            max-height: 200px;
-            overflow-y: auto;
-            z-index: 100;
-        }
-        .multi-select-dropdown label {
-            display: block;
-            padding: 0.5rem 1rem;
             cursor: pointer;
         }
-        .multi-select-dropdown label:hover {
-            background-color: #f3f4f6;
+        #hamburger-btn:hover {
+            background-color: #F3F4F6;
+        }
+        #hamburger-menu {
+            position: absolute; /* Changed to absolute */
+            top: 100%; /* Position below the navbar */
+            left: 1rem;
+            margin-top: 0.5rem;
+            background-color: #ffffff; /* Added background color */
+            border-radius: 0.5rem;
+            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05);
+            width: 12rem;
+            overflow: hidden;
+            z-index: 60; /* Increased z-index to ensure it's above navbar content */
+        }
+        #hamburger-menu a {
+            display: flex; /* Use flex to align icon and text */
+            align-items: center;
+            padding: 0.75rem 1rem;
+            color: #374151;
+            font-weight: 500;
+            text-decoration: none;
+            transition: background-color 0.2s;
+        }
+        #hamburger-menu a:hover {
+            background-color: #F3F4F6;
+        }
+        #hamburger-menu.hidden {
+            display: none;
         }
     </style>
 </head>
-<body class="bg-gray-100 text-gray-800">
-    <!-- Loading Overlay -->
-    <div id="loading-overlay" class="loading-overlay">
-        <div class="spinner"></div>
+<body class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4 font-sans text-gray-800">
+
+  
+<!-- Navbar with Hamburger Menu -->
+<div class="navbar flex items-center">
+    <!-- Hamburger button on the left -->
+    <button id="hamburger-btn" aria-label="Mở menu">
+        <!-- SVG 3-line icon -->
+        <svg class="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"></path>
+        </svg>
+    </button>
+
+    <!-- Hidden menu when not active -->
+    <div id="hamburger-menu" class="hidden">
+        <a href="CalendarMaker.html">
+            <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+            </svg>
+            Tạo Lịch
+        </a>
     </div>
 
-    <!-- Header -->
-    <div class="navbar flex items-center">
-        <!-- Logo and Title -->
-        <div class="flex items-center ml-4 flex-grow">
-            <img src="LogoQuy.png" alt="Logo Quản Lý Quỹ Nhóm" class="h-12 w-auto rounded-lg shadow-md mr-3" onerror="this.onerror=null;this.src='https://placehold.co/100x100/006B68/FFFFFF?text=Logo';">
-            <h1 class="text-2xl font-bold text-[#006B68]" data-key="appName">QUẢN LÝ QUỸ NHÓM</h1>
+    <!-- Logo and Title (pushed to the right) -->
+    <div class="flex items-center ml-4 flex-grow">
+        <img src="LogoQuy.png" alt="Logo Quản Lý Quỹ Nhóm" class="h-12 w-auto rounded-lg shadow-md mr-3" onerror="this.onerror=null;this.src='https://placehold.co/100x100/006B68/FFFFFF?text=Logo';">
+        <h1 class="text-2xl font-bold text-[#006B68]" data-key="appTitle">QUẢN LÝ QUỸ NHÓM</h1>
+    </div>
+  <div class="language-switch">
+            <button id="lang-vi-btn" data-lang="vi" class="active">VI</button>
+            <button id="lang-en-btn" data-lang="en">EN</button>
         </div>
-        <!-- Desktop Nav and Language Switcher -->
-        <div class="hidden md:flex items-center gap-4">
-            <a href="./QuycomQuan.html" class="text-gray-700 hover:text-gray-900 font-semibold" data-key="navDashboard">Trang chủ</a>
-            <a href="./QuycomReportQuan.html" class="text-gray-700 hover:text-gray-900 font-semibold" data-key="navReport">Báo cáo</a>
-            <div class="language-switch">
-                <button id="lang-vi-btn" data-lang="vi" class="active">VI</button>
-                <button id="lang-en-btn" data-lang="en">EN</button>
+
+</div>
+
+
+    <div id="fund-balance-card" class="card mb-8 text-center">
+        <h2 class="text-2xl font-semibold text-gray-700 mb-4" data-key="fundBalanceTitle">Số Dư Quỹ Chung</h2>
+        <p id="fund-balance-display" class="text-5xl font-extrabold text-green-600">0 VNĐ</p>
+    </div>
+
+    <div id="error-message-display" class="error-message mb-4 hidden"></div>
+
+    <div class="flex flex-col sm:flex-row justify-center gap-4 mb-8">
+        <button id="add-member-btn" class="btn-primary flex items-center justify-center w-full sm:w-auto">
+            <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"></path></svg>
+            <span data-key="addMemberBtn">Thêm Thành Viên</span>
+        </button>
+        <button id="add-transaction-btn" class="btn-primary flex items-center justify-center w-full sm:w-auto">
+            <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z" clip-rule="evenodd"></path></svg>
+            <span data-key="addTransactionBtn">Thêm Giao Dịch</span>
+        </button>
+        <button id="view-transactions-btn" class="btn-secondary flex items-center justify-center w-full sm:w-auto" onclick="window.location.href='QuycomReportQuan.html'">
+            <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"></path><path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h.01a1 1 0 100-2H10zm3 0a1 1 0 000 2h.01a1 1 0 100-2H13zm-3 4a1 1 0 000 2h.01a1 1 0 100-2H10zm3 0a1 1 0 000 2h.01a1 1 0 100-2H13z" clip-rule="evenodd"></path></svg>
+            <span data-key="viewHistoryBtn">Xem Lịch Sử</span>
+        </button>
+        <button id="show-report-selection-btn" class="btn-secondary flex items-center justify-center w-full sm:w-auto">
+            <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M3 3a1 1 0 011-1h12a1 1 0 011 1v14a1 1 0 01-1 1H4a1 1 0 01-1-1V3zm4.5 9.5a.5.5 0 000 1h5a.5.5 0 000-1h-5zM7 7a1 1 0 011-1h4a1 1 0 110 2H8a1 1 0 01-1-1z" clip-rule="evenodd"></path></svg>
+            <span data-key="reportBtn">Báo Cáo</span>
+        </button>
+        <button id="get-insights-btn" class="btn-primary flex items-center justify-center w-full sm:w-auto">
+            ✨ <span data-key="aiInsightsBtn">AI Nhận xét Quỹ</span>
+        </button>
+        <button id="get-food-suggestions-btn" class="btn-primary flex items-center justify-center w-full sm:w-auto">
+            🍜 <span data-key="foodSuggestionsBtn">Gợi ý món ăn</span>
+        </button>
+    </div>
+
+    <div id="add-member-section" class="card mb-8 hidden">
+        <h2 class="text-xl font-semibold mb-4 text-[#006B68]" data-key="addMemberTitle">Thêm Thành Viên Mới</h2>
+        <form id="add-member-form" class="flex flex-col sm:flex-row gap-4">
+            <input type="text" id="member-name-input" name="memberName" data-key="memberNamePlaceholder" placeholder="Tên thành viên" class="input-field flex-grow" required />
+            <button type="submit" class="btn-primary flex-shrink-0 w-full sm:w-auto" data-key="addBtn">Thêm</button>
+        </form>
+    </div>
+
+    <div id="add-transaction-section" class="card mb-8 hidden">
+        <h2 class="text-xl font-semibold mb-4 text-[#006B68]" data-key="addTransactionTitle">Thêm Giao Dịch Mới</h2>
+        <form id="add-transaction-form" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="col-span-full">
+                <label for="transaction-type" class="block text-sm font-medium text-gray-700 mb-1" data-key="transactionTypeLabel">Loại Giao Dịch</label>
+                <select id="transaction-type" name="transactionType" class="input-field">
+                    <option value="contribution" data-key="contributionOption">💵 Đóng Góp</option>
+                    <option value="expense" data-key="expenseOption">🍺 Chi Tiêu</option>
+                </select>
             </div>
-            <!-- Logout Button -->
-            <button id="logout-btn" class="ml-4 btn-secondary bg-red-100 text-red-700 hover:bg-red-200" data-key="logout">Đăng xuất</button>
+
+            <div id="expense-type-div" class="col-span-full hidden">
+                <label for="expense-type-select" class="block text-sm font-medium text-gray-700 mb-1" data-key="expenseTypeLabel">Loại Chi Tiêu</label>
+                <select id="expense-type-select" name="expenseType" class="input-field"></select>
+            </div>
+
+            <div id="contributing-member-div" class="col-span-full">
+                <label for="member-select" class="block text-sm font-medium text-gray-700 mb-1" data-key="contributingMemberLabel">Thành Viên Đóng Góp</label>
+                <select id="member-select" name="contributingMember" class="input-field" required></select>
+            </div>
+
+            <div id="involved-members-div" class="col-span-full hidden">
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-key="involvedMembersLabel">Thành Viên Tham Gia Chi Tiêu</label>
+                <div id="involved-members-checkboxes" class="grid grid-cols-2 sm:grid-cols-3 gap-2 p-2 border border-gray-300 rounded-md bg-gray-50">
+                    </div>
+            </div>
+
+            <div>
+                <label for="amount" class="block text-sm font-medium text-gray-700 mb-1" data-key="amountLabel">Số Tiền (VNĐ)</label>
+                <input type="text" id="amount-input" name="amount" data-key="amountPlaceholder" placeholder="Số tiền" class="input-field text-right" required />
+            </div>
+            
+            <!-- New: Date input field -->
+            <div>
+                <label for="transaction-date" class="block text-sm font-medium text-gray-700 mb-1" data-key="transactionDateLabel">Ngày Giao Dịch</label>
+                <input type="datetime-local" id="transaction-date-input" name="transactionDate" class="input-field" required />
+            </div>
+
+            <div>
+                <label for="description" class="block text-sm font-medium text-gray-700 mb-1" data-key="descriptionLabel">Mô Tả</label>
+                <textarea id="description-input" name="description" data-key="descriptionPlaceholder" placeholder="Mô tả giao dịch" class="input-field resize-y overflow-auto" rows="3" required></textarea>
+                <button type="button" id="ai-describe-btn" class="btn-secondary mt-2 w-full flex items-center justify-center">
+                    ✨
+                    <span data-key="aiDescribeBtn">Mô tả AI từ Ảnh/Camera</span>
+                </button>
+            </div>
+            <!-- Hidden input for GPS coordinates -->
+            <input type="hidden" id="latitude-input" name="latitude">
+            <input type="hidden" id="longitude-input" name="longitude">
+
+            <div class="col-span-full">
+                <button type="submit" class="btn-primary w-full" data-key="recordTransactionBtn">Ghi Lại Giao Dịch</button>
+            </div>
+        </form>
+    </div>
+
+    <div class="card mb-8">
+        <h2 class="text-xl font-semibold mb-4 text-[#006B68]" data-key="memberListTitle">Danh Sách Thành Viên</h2>
+        <div id="member-list-container" class="overflow-x-auto">
+            <p class="text-center text-gray-500" data-key="loadingMembers">Đang tải thành viên...</p>
         </div>
     </div>
-    <main class="container mx-auto p-4 mt-8">
-        <h2 class="text-3xl font-bold text-gray-900 mb-6" data-key="reportTitle">Lịch Sử Giao Dịch</h2>
-        <!-- Filters and Actions Section -->
-        <div class="bg-white rounded-xl shadow p-6 mb-6">
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-                <!-- Start Date Filter -->
-                <div>
-                    <label for="start-date-filter" class="block text-sm font-medium text-gray-700" data-key="filterStartDate">Từ ngày</label>
-                    <!-- UPDATE START: Changed input type to text -->
-                    <input type="text" id="start-date-filter" placeholder="dd/mm/yyyy" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
-                    <!-- UPDATE END -->
-                </div>
-                <!-- End Date Filter -->
-                <div>
-                    <label for="end-date-filter" class="block text-sm font-medium text-gray-700" data-key="filterEndDate">Đến ngày</label>
-                    <!-- UPDATE START: Changed input type to text -->
-                    <input type="text" id="end-date-filter" placeholder="dd/mm/yyyy" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
-                    <!-- UPDATE END -->
-                </div>
-                <!-- Member Filter -->
-                <div>
-                    <label for="member-filter" class="block text-sm font-medium text-gray-700" data-key="filterMember">Người giao dịch</label>
-                    <select id="member-filter" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
-                        <option value="all" data-key="allMembers">Tất cả</option>
+
+    <div class="card mb-8">
+        <h2 class="text-xl font-semibold mb-4 text-[#006B68]" data-key="summaryReportTitle">Báo Cáo Tóm Tắt</h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-center">
+            <div class="p-4 bg-green-50 rounded-lg">
+                <p class="text-lg font-medium text-green-700" data-key="totalContributions">Tổng Đóng Góp</p>
+                <p id="total-contributions-display" class="text-3xl font-bold text-green-600">0 VNĐ</p>
+            </div>
+            <div class="p-4 bg-red-50 rounded-lg">
+                <p class="text-lg font-medium text-red-700" data-key="totalExpenses">Tổng Chi Tiêu</p>
+                <p id="total-expenses-display" class="text-3xl font-bold text-red-600">0 VNĐ</p>
+            </div>
+        </div>
+        <h3 class="text-xl font-semibold mt-8 mb-4 text-[#006B68] text-center" data-key="memberBalanceChartTitle">Số Dư Thành Viên (Biểu Đồ Tròn)</h3>
+        <div id="member-balance-pie-chart" class="flex justify-center items-center w-full my-4">
+            <p class="text-center text-gray-500 mt-4" data-key="loadingChart">Đang tải biểu đồ...</p>
+        </div>
+
+        <h3 class="text-xl font-semibold mt-8 mb-4 text-[#006B68] text-center" data-key="categoryChartsTitle">Thu/Chi Theo Phân Loại (Biểu Đồ Bánh)</h3>
+        <div id="category-pie-charts" class="flex flex-col md:flex-row justify-around items-center w-full my-4 gap-8">
+            <div id="income-pie-chart-container" class="flex flex-col items-center">
+                <h4 class="text-lg font-semibold text-green-700 mb-2" data-key="incomeByCategory">Thu nhập theo loại</h4>
+                <p class="text-center text-gray-500 mt-4" data-key="loadingChart">Đang tải biểu đồ...</p>
+            </div>
+            <div id="expense-pie-chart-container" class="flex flex-col items-center">
+                <h4 class="text-lg font-semibold text-red-700 mb-2" data-key="expenseByCategory">Chi tiêu theo loại</h4>
+                <p class="text-center text-gray-500 mt-4" data-key="loadingChart">Đang tải biểu đồ...</p>
+            </div>
+        </div>
+    </div>
+
+    <div id="fund-report-section" class="card mb-8 hidden">
+        <h2 class="text-xl font-semibold mb-4 text-[#006B68]" data-key="fundReportTitle">Báo Cáo Quỹ Chung</h2>
+        <div class="flex flex-wrap justify-end gap-4 mb-4">
+            <button id="export-fund-report-excel" class="btn-secondary flex items-center">
+                <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd"></path></svg>
+                <span data-key="exportExcelBtn">Xuất Excel</span>
+            </button>
+            <button id="export-fund-report-word" class="btn-secondary flex items-center">
+                <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path d="M4 4a2 2 0 012-2h8a2 2 0 012 2v12a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 2a1 1 0 000 2h8a1 1 0 000-2H6zm0 4a1 1 0 000 2h8a1 1 0 000-2H6zm0 4a1 1 0 000 2h8a1 1 0 000-2H6z" clip-rule="evenodd"></path></svg>
+                <span data-key="exportWordBtn">Xuất Word</span>
+            </button>
+        </div>
+        <div id="fund-report-table-container" class="overflow-x-auto">
+            <p class="text-center text-gray-500" data-key="noTransactionsReport">Chưa có giao dịch nào để báo cáo.</p>
+        </div>
+    </div>
+
+    <div id="member-reports-section" class="card mb-8 hidden">
+        <h2 class="text-xl font-semibold mb-4 text-[#006B68]" data-key="memberReportsTitle">Báo Cáo Từng Thành Viên</h2>
+        <div class="mb-4">
+            <label for="select-member-report" class="block text-sm font-medium text-gray-700 mb-1" data-key="selectMemberReportLabel">Chọn Thành Viên:</label>
+            <select id="select-member-report" name="selectMemberReport" class="input-field"></select>
+        </div>
+        <div class="flex flex-wrap justify-end gap-4 mb-4">
+            <button id="export-member-report-excel" class="btn-secondary flex items-center">
+                <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd"></path></svg>
+                <span data-key="exportExcelBtn">Xuất Excel</span>
+            </button>
+            <button id="export-member-report-word" class="btn-secondary flex items-center">
+                <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M4 4a2 2 0 012-2h8a2 2 0 012 2v12a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 2a1 1 0 000 2h8a1 1 0 000-2H6zm0 4a1 1 0 000 2h8a1 1 0 000-2H6zm0 4a1 1 0 000 2h8a1 1 0 000-2H6z" clip-rule="evenodd"></path></svg>
+                <span data-key="exportWordBtn">Xuất Word</span>
+            </button>
+        </div>
+        <div id="member-report-table-container" class="overflow-x-auto">
+            <p class="text-center text-gray-500" data-key="selectMemberToReport">Vui lòng chọn một thành viên để xem báo cáo.</p>
+        </div>
+    </div>
+
+    <!-- The transactions-section is now removed from here -->
+
+    <div id="edit-transaction-modal" class="modal-overlay hidden">
+        <div class="modal-content w-11/12 md:w-2/3 lg:w-1/2">
+            <h2 class="text-2xl font-semibold mb-6 text-[#006B68]" data-key="editTransactionModalTitle">Chỉnh Sửa Giao Dịch</h2>
+            <form id="edit-transaction-form" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="col-span-full">
+                    <label for="edit-transaction-type" class="block text-sm font-medium text-gray-700 mb-1" data-key="transactionTypeLabel">Loại Giao Dịch</label>
+                    <select id="edit-transaction-type" name="editTransactionType" class="input-field">
+                        <option value="contribution" data-key="contributionOption">💵 Đóng Góp</option>
+                        <option value="expense" data-key="expenseOption">🍺 Chi Tiêu</option>
                     </select>
                 </div>
-                <!-- Expense Type Filter -->
-                <div class="relative">
-                    <label for="expense-type-filter-btn" class="block text-sm font-medium text-gray-700" data-key="filterType">Loại giao dịch</label>
-                    <div class="multi-select-container">
-                        <button id="expense-type-filter-btn" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm bg-white p-2 text-left">
-                            <span id="expense-type-filter-text" data-key="allTypes">Tất cả</span>
-                        </button>
-                        <div id="expense-type-filter-dropdown" class="multi-select-dropdown hidden">
-                            <!-- Checkboxes will be populated here -->
+
+                <div id="edit-expense-type-div" class="col-span-full hidden">
+                    <label for="edit-expense-type-select" class="block text-sm font-medium text-gray-700 mb-1" data-key="expenseTypeLabel">Loại Chi Tiêu</label>
+                    <select id="edit-expense-type-select" name="editExpenseType" class="input-field"></select>
+                </div>
+
+                <div id="edit-contributing-member-div" class="col-span-full">
+                    <label for="edit-member-select" class="block text-sm font-medium text-gray-700 mb-1" data-key="contributingMemberLabel">Thành Viên Đóng Góp</label>
+                    <select id="edit-member-select" name="editContributingMember" class="input-field" required></select>
+                </div>
+
+                <div id="edit-involved-members-div" class="col-span-full hidden">
+                    <label class="block text-sm font-medium text-gray-700 mb-1" data-key="involvedMembersLabel">Thành Viên Tham Gia Chi Tiêu</label>
+                    <div id="edit-involved-members-checkboxes" class="grid grid-cols-2 sm:grid-cols-3 gap-2 p-2 border border-gray-300 rounded-md bg-gray-50">
                         </div>
-                    </div>
                 </div>
-            </div>
-            <!-- NEW FILTERS ROW -->
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+
                 <div>
-                    <label for="description-filter" class="block text-sm font-medium text-gray-700" data-key="filterDescription">Mô tả</label>
-                    <input type="text" id="description-filter" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" placeholder="Tìm theo mô tả...">
+                    <label for="edit-amount" class="block text-sm font-medium text-gray-700 mb-1" data-key="amountLabel">Số Tiền (VNĐ)</label>
+                    <input type="text" id="edit-amount-input" name="editAmount" data-key="amountPlaceholder" placeholder="Số tiền" class="input-field text-right" required />
                 </div>
+                <!-- New: Date input field for edit modal -->
                 <div>
-                    <label for="min-amount-filter" class="block text-sm font-medium text-gray-700" data-key="filterMinAmount">Số tiền từ</label>
-                    <input type="number" id="min-amount-filter" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" placeholder="0">
+                    <label for="edit-transaction-date" class="block text-sm font-medium text-gray-700 mb-1" data-key="transactionDateLabel">Ngày Giao Dịch</label>
+                    <input type="datetime-local" id="edit-transaction-date-input" name="editTransactionDate" class="input-field" required />
                 </div>
                 <div>
-                    <label for="max-amount-filter" class="block text-sm font-medium text-gray-700" data-key="filterMaxAmount">Số tiền đến</label>
-                    <input type="number" id="max-amount-filter" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" placeholder="1000000">
+                    <label for="edit-description" class="block text-sm font-medium text-gray-700 mb-1" data-key="descriptionLabel">Mô Tả</label>
+                    <textarea id="edit-description-input" name="editDescription" data-key="descriptionPlaceholder" placeholder="Mô tả giao dịch" class="input-field resize-y overflow-auto" rows="3" required></textarea>
                 </div>
+                <!-- Hidden inputs for GPS coordinates in edit modal -->
+                <input type="hidden" id="edit-latitude-input" name="editLatitude">
+                <input type="hidden" id="edit-longitude-input" name="editLongitude">
+
+                <div class="col-span-full flex flex-col sm:flex-row justify-end gap-4 mt-4">
+                    <button type="button" id="cancel-edit-transaction-btn" class="btn-secondary w-full sm:w-auto" data-key="cancelBtn">Hủy</button>
+                    <button type="submit" class="btn-primary w-full sm:w-auto" data-key="saveChangesBtn">Lưu Thay Đổi</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="member-details-modal" class="modal-overlay hidden">
+        <div class="modal-content w-11/12 md:w-2/3 lg:w-1/2">
+            <h2 id="member-details-name" class="text-2xl font-semibold mb-6 text-[#006B68]"></h2>
+            <div class="mb-4">
+                <p class="text-lg font-medium text-gray-700" data-key="currentBalance">Số Dư Hiện Tại:</p>
+                <p id="member-details-balance" class="text-3xl font-bold"></p>
             </div>
-            <div class="flex flex-col sm:flex-row gap-2 mt-4">
-                <button id="apply-filter-btn" class="btn-primary flex-1" data-key="filterApply">Áp dụng</button>
-                <button id="clear-filter-btn" class="btn-secondary flex-1" data-key="filterClear">Xóa bộ lọc</button>
+
+            <h3 class="text-xl font-semibold mb-3 text-[#006B68]" data-key="relatedTransactions">Các Giao Dịch Liên Quan</h3>
+            <div id="member-details-transactions-container" class="overflow-x-auto max-h-80">
+                <p class="text-center text-gray-500" data-key="noRelatedTransactions">Chưa có giao dịch nào liên quan đến thành viên này.</p>
             </div>
-            <div class="flex justify-end mt-4">
-                <button id="export-excel-btn" class="btn-primary flex items-center gap-2" data-key="exportExcel">
-                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path d="M10 2a1 1 0 011 1v6h6a1 1 0 110 2h-6v6a1 1 0 11-2 0v-6H3a1 1 0 110-2h6V3a1 1 0 011-1z" clip-rule="evenodd" fill-rule="evenodd"></path></svg>
-                    Xuất Excel
+            <div class="flex justify-end mt-6">
+                <button type="button" id="close-member-details-btn" class="btn-primary" data-key="closeBtn">Đóng</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="confirmation-modal" class="modal-overlay hidden">
+        <div class="modal-content w-11/12 md:w-1/2 lg:w-1/3">
+            <h2 class="text-xl font-semibold mb-4 text-gray-800" data-key="confirmationTitle">Xác Nhận</h2>
+            <p id="confirmation-message" class="mb-6 text-gray-700"></p>
+            <div class="flex flex-col sm:flex-row justify-end gap-4">
+                <button type="button" id="cancel-confirmation-btn" class="btn-secondary w-full sm:w-auto" data-key="cancelBtn">Hủy</button>
+                <button type="button" id="confirm-action-btn" class="btn-primary w-full sm:w-auto" data-key="confirmBtn">Xác Nhận</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="report-selection-modal" class="modal-overlay hidden">
+        <div class="modal-content w-11/12 md:w-1/2 lg:w-1/3">
+            <h2 class="text-2xl font-semibold mb-6 text-[#006B68] text-center" data-key="selectReportTypeTitle">Chọn Loại Báo Cáo</h2>
+            <div class="flex flex-col gap-4">
+                <button id="select-fund-report-btn" class="btn-primary flex items-center justify-center w-full">
+                    <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path d="M10 12a2 2 0 100-4 2 2 0 000 4z"></path><path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd"></path></svg>
+                    <span data-key="fundReportOption">Báo Cáo Quỹ Chung</span>
+                </button>
+                <button id="select-member-report-btn" class="btn-primary flex items-center justify-center w-full">
+                    <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-6-3a2 2 0 11-4 0 2 2 0 014 0zm-2 4a4 4 0 00-4 4h8a4 4 0 00-4-4z" clip-rule="evenodd"></path></svg>
+                    <span data-key="memberReportOption">Báo Cáo Từng Thành Viên</span>
+                </button>
+            </div>
+            <div class="flex justify-end mt-6">
+                <button type="button" id="close-report-selection-btn" class="btn-secondary" data-key="closeBtn">Đóng</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="fund-insights-modal" class="modal-overlay hidden">
+        <div class="modal-content w-11/12 md:w-2/3 lg:w-1/2">
+            <h2 class="text-2xl font-semibold mb-6 text-[#006B68]" data-key="fundInsightsModalTitle">Thông Tin Chi Tiết Quỹ ✨</h2>
+            <div id="fund-insights-content">
+                </div>
+            <div class="flex justify-end mt-6">
+                <button type="button" id="close-insights-btn" class="btn-primary" data-key="closeBtn">Đóng</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="food-suggestion-modal" class="modal-overlay hidden">
+        <div class="modal-content w-11/12 md:w-2/3 lg:w-1/2">
+            <h2 class="text-2xl font-semibold mb-6 text-[#006B68]" data-key="foodSuggestionModalTitle">Gợi Ý Món Ăn ✨</h2>
+
+            <!-- Thêm ô nhập liệu địa chỉ và nút -->
+            <div class="mb-4">
+                <label for="address-input-for-food" class="block text-sm font-medium text-gray-700 mb-1" data-key="addressInputLabel">Hoặc nhập địa chỉ cụ thể:</label>
+                <input type="text" id="address-input-for-food" placeholder="Ví dụ: 123 Đường ABC, Quận 1, TP.HCM" class="input-field mb-2" />
+                <button id="get-food-suggestions-by-address-btn" class="btn-primary flex items-center justify-center w-full sm:w-auto">
+                    🍜 <span data-key="searchByAddressBtn">Tìm kiếm theo địa chỉ này</span>
+                </button>
+            </div>
+
+            <div id="food-suggestion-content">
+                <!-- Nội dung gợi ý món ăn sẽ được điền vào đây -->
+            </div>
+            <div class="flex justify-end mt-6">
+                <button type="button" id="close-food-suggestion-btn" class="btn-primary" data-key="closeBtn">Đóng</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="camera-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h2 class="text-2xl font-semibold mb-4 text-[#006B68]" data-key="aiDescriptionModalTitle">Mô tả giao dịch bằng AI</h2>
+            <input type="file" id="image-upload-input" accept="image/*" class="hidden">
+            <img id="uploaded-image-preview" alt="Uploaded Image" class="max-w-full h-auto rounded-md my-4 hidden">
+            <div id="camera-loading-spinner" class="hidden"></div>
+            <div id="camera-controls" class="flex gap-4 mt-4">
+                <button id="cancel-camera-btn" class="btn-secondary flex items-center justify-center w-full">
+                    <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg>
+                    <span data-key="cancelBtn">Hủy</span>
                 </button>
             </div>
         </div>
-
-        <!-- Transaction Table Section -->
-        <div id="transaction-section" class="bg-white rounded-xl shadow overflow-hidden">
-            <div class="p-6 border-b border-gray-200 flex justify-between items-center">
-                <h3 class="text-xl font-bold text-gray-900" data-key="transactionHistory">Lịch Sử Giao Dịch</h3>
-                <span id="transaction-count" class="text-gray-500 text-sm font-medium"></span>
-            </div>
-            <div class="overflow-x-auto">
-                <table class="min-w-full divide-y divide-gray-200">
-                    <thead class="table-header">
-                        <tr>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" data-key="tableDate">Ngày</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" data-key="tableDescription">Mô tả</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" data-key="tableMember">Người giao dịch</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" data-key="tableType">Loại</th>
-                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider" data-key="tableAmount">Số tiền</th>
-                            <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider" data-key="tableActions">Hành động</th>
-                        </tr>
-                    </thead>
-                    <tbody id="transaction-table-body" class="bg-white divide-y divide-gray-200">
-                        <!-- Transaction rows will be dynamically inserted here -->
-                    </tbody>
-                </table>
-            </div>
-            <!-- Pagination Controls -->
-            <div class="px-6 py-4 flex items-center justify-between border-t border-gray-200">
-                <button id="prev-page-btn" class="btn-secondary" data-key="paginationPrevious">Trước</button>
-                <span id="page-info" class="text-sm text-gray-700"></span>
-                <button id="next-page-btn" class="btn-secondary" data-key="paginationNext">Sau</button>
-            </div>
-        </div>
-        
-        <!-- Charts Section -->
-        <div class="grid grid-cols-1 gap-8 mt-8">
-            <!-- Doughnut Chart Section -->
-            <div id="chart-section" class="bg-white rounded-xl shadow overflow-hidden">
-                <div class="p-6 border-b border-gray-200">
-                    <h3 class="text-xl font-bold text-gray-900" data-key="spendingChartTitle">Biểu đồ cơ cấu chi tiêu</h3>
-                </div>
-                <div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
-                    <div id="expense-legend-container" class="overflow-y-auto max-h-96">
-                        <!-- Legend table will be inserted here -->
-                    </div>
-                    <div class="h-96">
-                        <canvas id="expenseChart"></canvas>
-                    </div>
-                </div>
-            </div>
-             <!-- Monthly Stacked Area Chart Section (Now Monthly Summary) -->
-            <div id="monthly-chart-section" class="bg-white rounded-xl shadow overflow-hidden">
-                <div class="p-6 border-b border-gray-200">
-                    <h3 class="text-xl font-bold text-gray-900" data-key="monthlySpendingChartTitle">Báo cáo tổng hợp hàng tháng</h3>
-                </div>
-                <div id="monthly-summary-container" class="p-6 border-t border-gray-200 overflow-x-auto">
-                    <!-- Monthly summary tables will be inserted here -->
-                </div>
-            </div>
-            <!-- UPDATE START: New Daily Spending Chart Section -->
-            <div id="daily-chart-section" class="bg-white rounded-xl shadow overflow-hidden">
-                <div class="p-6 border-b border-gray-200">
-                    <h3 class="text-xl font-bold text-gray-900" data-key="dailySpendingChartTitle">Biểu đồ chi tiêu hàng ngày (2 tháng gần nhất)</h3>
-                </div>
-                <div class="p-6 h-96">
-                    <canvas id="dailyExpenseChart"></canvas>
-                </div>
-            </div>
-            <!-- UPDATE END -->
-        </div>
-
-    </main>
-
-    <!-- Scroll to Top Button -->
-    <button id="scroll-to-top-btn" class="scroll-to-top">
-        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"></path></svg>
+    </div>
+    <button id="scroll-to-top-btn" data-key="scrollToTopBtn" title="Cuộn lên đầu">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"></path>
+        </svg>
     </button>
-    
-    <!-- Modals -->
-    <!-- Edit Transaction Modal -->
-    <div id="edit-modal-overlay" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-40 modal-overlay">
-        <div class="relative top-10 mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white">
-            <div class="mt-3">
-                <h3 class="text-lg leading-6 font-medium text-gray-900 text-center" data-key="editTransactionTitle">Sửa Giao Dịch</h3>
-                <div class="mt-2 px-7 py-3 max-h-[70vh] overflow-y-auto">
-                    <form id="edit-transaction-form">
-                        <input type="hidden" id="edit-transaction-id">
-                        <div class="mb-4">
-                            <label for="edit-date" class="block text-sm font-medium text-gray-700 text-left" data-key="tableDate">Ngày</label>
-                            <input type="date" id="edit-date" class="mt-1 p-2 w-full border rounded-md" required>
-                        </div>
-                        <div class="mb-4">
-                            <label for="edit-description" class="block text-sm font-medium text-gray-700 text-left" data-key="tableDescription">Mô tả</label>
-                            <input type="text" id="edit-description" class="mt-1 p-2 w-full border rounded-md" required>
-                        </div>
-                        <div class="mb-4">
-                            <label for="edit-amount" class="block text-sm font-medium text-gray-700 text-left" data-key="tableAmount">Số tiền</label>
-                            <input type="number" id="edit-amount" class="mt-1 p-2 w-full border rounded-md" required>
-                        </div>
-                        <div class="mb-4">
-                            <label for="edit-member" class="block text-sm font-medium text-gray-700 text-left" data-key="payer">Người trả tiền</label>
-                            <select id="edit-member" class="mt-1 p-2 w-full border rounded-md" required>
-                                <!-- Members will be populated here -->
-                            </select>
-                        </div>
-                        <!-- UPDATE START: Involved Members Multi-select -->
-                        <div class="mb-4">
-                            <label for="edit-involved-members-btn" class="block text-sm font-medium text-gray-700 text-left" data-key="involvedMembersLabel">Thành viên liên quan</label>
-                            <div class="multi-select-container">
-                                <button type="button" id="edit-involved-members-btn" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm bg-white p-2 text-left">
-                                    <span id="edit-involved-members-text" data-key="selectMembers">Chọn thành viên</span>
-                                </button>
-                                <div id="edit-involved-members-dropdown" class="multi-select-dropdown hidden">
-                                    <!-- Checkboxes will be populated here -->
-                                </div>
-                            </div>
-                        </div>
-                        <!-- UPDATE END -->
-                        <div class="mb-4">
-                            <label for="edit-expense-type" class="block text-sm font-medium text-gray-700 text-left" data-key="filterType">Loại giao dịch</label>
-                            <select id="edit-expense-type" class="mt-1 p-2 w-full border rounded-md" required>
-                                <!-- Expense types will be populated here -->
-                            </select>
-                        </div>
-                        <div class="flex items-center justify-end gap-2 mt-4">
-                            <button type="submit" class="btn-primary" data-key="modalSave">Lưu</button>
-                            <button type="button" id="close-edit-modal-btn" class="btn-secondary" data-key="modalCancel">Hủy</button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Delete Confirmation Modal -->
-    <div id="delete-modal-overlay" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-40 modal-overlay">
-        <div class="relative top-20 mx-auto p-5 border w-full max-w-sm shadow-lg rounded-md bg-white">
-            <div class="mt-3 text-center">
-                <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100">
-                    <svg class="h-6 w-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
-                </div>
-                <h3 class="text-lg leading-6 font-medium text-gray-900 mt-4" data-key="deleteConfirmationTitle">Xác Nhận Xóa</h3>
-                <div class="mt-2 px-7 py-3">
-                    <p class="text-sm text-gray-500" data-key="deleteConfirmationMessage">Bạn có chắc chắn muốn xóa giao dịch này không? Hành động này không thể hoàn tác.</p>
-                </div>
-                <div class="items-center px-4 py-3 flex justify-center gap-4">
-                    <button id="confirm-delete-btn" class="btn-primary bg-red-600 hover:bg-red-700" data-key="modalDelete">Xóa</button>
-                    <button id="cancel-delete-btn" class="btn-secondary" data-key="modalCancel">Hủy</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Chart Detail Modal -->
-    <div id="chart-detail-modal-overlay" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
-        <div class="relative top-10 mx-auto p-5 border w-full max-w-2xl shadow-lg rounded-md bg-white">
-            <div class="mt-3">
-                <div class="flex justify-between items-center pb-3">
-                     <h3 class="text-lg leading-6 font-medium text-gray-900" id="chart-detail-modal-title">Chi tiết chi tiêu</h3>
-                     <button id="close-chart-detail-modal-btn" class="text-gray-400 hover:text-gray-600">
-                        <span class="text-2xl">&times;</span>
-                    </button>
-                </div>
-                <div class="overflow-y-auto" style="max-height: 60vh;">
-                    <table class="min-w-full divide-y divide-gray-200">
-                        <thead class="bg-gray-50 sticky top-0">
-                            <tr>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" data-key="tableDate">Ngày</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" data-key="tableDescription">Mô tả</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" data-key="tableMember">Người giao dịch</th>
-                                <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider" data-key="tableAmount">Số tiền</th>
-                            </tr>
-                        </thead>
-                        <tbody id="chart-detail-table-body" class="bg-white divide-y divide-gray-200">
-                            <!-- Details will be populated here -->
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-    </div>
-
 
     <script>
-        // DOM elements initialization
-        const elements = {
-            transactionTableBody: document.getElementById('transaction-table-body'),
-            applyFilterBtn: document.getElementById('apply-filter-btn'),
-            clearFilterBtn: document.getElementById('clear-filter-btn'),
-            startDateFilter: document.getElementById('start-date-filter'),
-            endDateFilter: document.getElementById('end-date-filter'),
-            memberFilter: document.getElementById('member-filter'),
-            expenseTypeFilterBtn: document.getElementById('expense-type-filter-btn'),
-            expenseTypeFilterText: document.getElementById('expense-type-filter-text'),
-            expenseTypeFilterDropdown: document.getElementById('expense-type-filter-dropdown'),
-            descriptionFilter: document.getElementById('description-filter'), 
-            minAmountFilter: document.getElementById('min-amount-filter'), 
-            maxAmountFilter: document.getElementById('max-amount-filter'), 
-            transactionCountSpan: document.getElementById('transaction-count'),
-            prevPageBtn: document.getElementById('prev-page-btn'),
-            nextPageBtn: document.getElementById('next-page-btn'),
-            pageInfoSpan: document.getElementById('page-info'),
-            exportExcelBtn: document.getElementById('export-excel-btn'),
-            scrollToTopBtn: document.getElementById('scroll-to-top-btn'),
-            loadingOverlay: document.getElementById('loading-overlay'),
-            // Edit Modal
-            editModalOverlay: document.getElementById('edit-modal-overlay'),
-            editTransactionForm: document.getElementById('edit-transaction-form'),
-            editTransactionId: document.getElementById('edit-transaction-id'),
-            editDateInput: document.getElementById('edit-date'),
-            editDescriptionInput: document.getElementById('edit-description'),
-            editAmountInput: document.getElementById('edit-amount'),
-            editMemberSelect: document.getElementById('edit-member'),
-            editExpenseTypeSelect: document.getElementById('edit-expense-type'),
-            closeEditModalBtn: document.getElementById('close-edit-modal-btn'),
-            editInvolvedMembersBtn: document.getElementById('edit-involved-members-btn'),
-            editInvolvedMembersText: document.getElementById('edit-involved-members-text'),
-            editInvolvedMembersDropdown: document.getElementById('edit-involved-members-dropdown'),
-            // Delete Modal
-            deleteModalOverlay: document.getElementById('delete-modal-overlay'),
-            confirmDeleteBtn: document.getElementById('confirm-delete-btn'),
-            cancelDeleteBtn: document.getElementById('cancel-delete-btn'),
-            // Chart elements
-            expenseChartCanvas: document.getElementById('expenseChart'),
-            expenseLegendContainer: document.getElementById('expense-legend-container'),
-            monthlySummaryContainer: document.getElementById('monthly-summary-container'),
-            dailyExpenseChartCanvas: document.getElementById('dailyExpenseChart'), // UPDATE
-            chartDetailModalOverlay: document.getElementById('chart-detail-modal-overlay'),
-            chartDetailModalTitle: document.getElementById('chart-detail-modal-title'),
-            chartDetailTableBody: document.getElementById('chart-detail-table-body'),
-            closeChartDetailModalBtn: document.getElementById('close-chart-detail-modal-btn'),
-        };
+        // Supabase Client Initialization
+        const SUPABASE_URL = 'https://rmbsxccrwrktbjlnezpu.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJtYnN4Y2Nyd3JrdGJqbG5lenB1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg2MjczNjQsImV4cCI6MjA2NDIwMzM2NH0.ydCqificftdtn1niRciFCifeuo8aX6SDGti-hCY5Z_Y';
+        let supabase;
+        let authReady = false;
 
-        // --- Supabase Client Initialization ---
-        const supabaseUrl = 'https://rmbsxccrwrktbjlnezpu.supabase.co';
-        const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJtYnN4Y2Nyd3JrdGJqbG5lenB1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg2MjczNjQsImV4cCI6MjA2NDIwMzM2NH0.ydCqificftdtn1niRciFCifeuo8aX6SDGti-hCY5Z_Y';
-
-        const supabaseClient = supabase.createClient(supabaseUrl, supabaseAnonKey);
-
+        // Global state variables
         let members = [];
         let transactions = [];
         let expenseTypes = [];
-        let currentPage = 1;
-        const transactionsPerPage = 10;
-        let filteredTransactions = [];
-        let expenseChartInstance = null;
-        let dailyChartInstance = null; // UPDATE
-        let expenseTypeColors = {};
-        let transactionToDeleteId = null;
+        let fundBalance = 0;
+        let currentErrorMessage = '';
+        let selectedMemberForDetails = null;
+        let transactionToDelete = null;
+        let memberToDelete = null;
+        let isGeneratingInsights = false;
+        let isGeneratingFoodSuggestions = false;
 
-        const localization = {
-            vi: {
-                appTitle: "Lịch Sử Giao Dịch - QUẢN LÝ QUỸ NHÓM",
-                appName: "QUẢN LÝ QUỸ NHÓM",
-                navDashboard: "Trang chủ",
-                navReport: "Báo cáo",
-                reportTitle: "Lịch Sử Giao Dịch",
-                filterStartDate: "Từ ngày",
-                filterEndDate: "Đến ngày",
-                filterMember: "Người giao dịch",
-                filterType: "Loại giao dịch",
-                filterDescription: "Mô tả",
-                filterMinAmount: "Số tiền từ",
-                filterMaxAmount: "Số tiền đến",
-                allMembers: "Tất cả",
-                allTypes: "Tất cả",
-                filterApply: "Áp dụng",
-                filterClear: "Xóa bộ lọc",
-                exportExcel: "Xuất Excel",
-                transactionHistory: "Lịch Sử Giao Dịch",
-                tableDate: "Ngày",
-                tableDescription: "Mô tả",
-                tableMember: "Người giao dịch",
-                tableType: "Loại",
-                tableAmount: "Số tiền",
-                tableActions: "Hành động",
-                noTransactions: "Không có giao dịch nào",
-                paginationPrevious: "Trước",
-                paginationNext: "Sau",
-                page: "Trang",
-                of: "của",
-                unassigned: "Không xác định",
-                unknownMember: "Thành viên không xác định",
-                unknownType: "Loại không xác định",
-                spendingChartTitle: "Biểu đồ cơ cấu chi tiêu",
-                monthlySpendingChartTitle: "Báo cáo tổng hợp hàng tháng",
-                dailySpendingChartTitle: "Biểu đồ chi tiêu hàng ngày (2 tháng gần nhất)", // UPDATE
-                spendingByType: "Chi tiêu theo loại",
-                chartDetailTitle: "Chi tiết cho",
-                totalSpending: "Tổng cộng",
-                legendType: "Loại",
-                legendAmount: "Số tiền",
-                legendRatio: "Tỷ lệ",
-                selected: "đã chọn",
-                editTransactionTitle: "Sửa Giao Dịch",
-                modalSave: "Lưu",
-                modalCancel: "Hủy",
-                deleteConfirmationTitle: "Xác Nhận Xóa",
-                deleteConfirmationMessage: "Bạn có chắc chắn muốn xóa giao dịch này không? Hành động này không thể hoàn tác.",
-                modalDelete: "Xóa",
-                logout: "Đăng xuất",
-                payer: "Người trả tiền",
-                involvedMembersLabel: "Thành viên liên quan",
-                selectMembers: "Chọn thành viên",
-                income: "Thu nhập", // UPDATE
-                expenses: "Chi tiêu", // UPDATE
-                showMore: "Hiện thêm", // UPDATE
-                showLess: "Thu gọn", // UPDATE
-                currentMonth: "Tháng này", // UPDATE
-                previousMonth: "Tháng trước", // UPDATE
-            },
-            en: {
-                appTitle: "Transaction History - GROUP FUND MANAGER",
-                appName: "GROUP FUND MANAGER",
-                navDashboard: "Dashboard",
-                navReport: "Report",
-                reportTitle: "Transaction History",
-                filterStartDate: "Start Date",
-                filterEndDate: "End Date",
-                filterMember: "Member",
-                filterType: "Type",
-                filterDescription: "Description",
-                filterMinAmount: "Amount from",
-                filterMaxAmount: "Amount to",
-                allMembers: "All Members",
-                allTypes: "All Types",
-                filterApply: "Apply",
-                filterClear: "Clear",
-                exportExcel: "Export Excel",
-                transactionHistory: "Transaction History",
-                tableDate: "Date",
-                tableDescription: "Description",
-                tableMember: "Member",
-                tableType: "Type",
-                tableAmount: "Amount",
-                tableActions: "Actions",
-                noTransactions: "No transactions found",
-                paginationPrevious: "Previous",
-                paginationNext: "Next",
-                page: "Page",
-                of: "of",
-                unassigned: "Unassigned",
-                unknownMember: "Unknown Member",
-                unknownType: "Unknown Type",
-                spendingChartTitle: "Spending Structure Chart",
-                monthlySpendingChartTitle: "Monthly Summary Report",
-                dailySpendingChartTitle: "Daily Spending Chart (Last 2 Months)", // UPDATE
-                spendingByType: "Spending by Type",
-                chartDetailTitle: "Details for",
-                totalSpending: "Total",
-                legendType: "Type",
-                legendAmount: "Amount",
-                legendRatio: "Ratio",
-                selected: "selected",
-                editTransactionTitle: "Edit Transaction",
-                modalSave: "Save",
-                modalCancel: "Cancel",
-                deleteConfirmationTitle: "Delete Confirmation",
-                deleteConfirmationMessage: "Are you sure you want to delete this transaction? This action cannot be undone.",
-                modalDelete: "Delete",
-                logout: "Logout",
-                payer: "Payer",
-                involvedMembersLabel: "Involved Members",
-                selectMembers: "Select Members",
-                income: "Income", // UPDATE
-                expenses: "Expenses", // UPDATE
-                showMore: "Show More", // UPDATE
-                showLess: "Show Less", // UPDATE
-                currentMonth: "Current Month", // UPDATE
-                previousMonth: "Previous Month", // UPDATE
+        // Language state
+        let currentLanguage = localStorage.getItem('lang') || 'vi';
+
+        // Translations object
+        const translations = {
+            'vi': {
+                addressInputLabel: 'Hoặc nhập địa chỉ cụ thể:',
+                searchByAddressBtn: 'Tìm kiếm theo địa chỉ này',
+                appTitle: 'QUẢN LÝ QUỸ NHÓM',
+                fundBalanceTitle: 'Số Dư Quỹ Chung',
+                unitCurrency: 'VNĐ',
+                addMemberBtn: 'Thêm Thành Viên',
+                addTransactionBtn: 'Thêm Giao Dịch',
+                viewHistoryBtn: 'Xem Lịch Sử',
+                reportBtn: 'Báo Cáo',
+                aiInsightsBtn: 'AI Nhận xét Quỹ',
+                foodSuggestionsBtn: 'Gợi ý món ăn',
+                addMemberTitle: 'Thêm Thành Viên Mới',
+                memberNamePlaceholder: 'Tên thành viên',
+                addBtn: 'Thêm',
+                addTransactionTitle: 'Thêm Giao Dịch Mới',
+                transactionTypeLabel: 'Loại Giao Dịch',
+                contributionOption: '💵 Đóng Góp',
+                expenseOption: '🍺 Chi Tiêu',
+                expenseTypeLabel: 'Loại Chi Tiêu',
+                selectExpenseType: 'Chọn loại chi tiêu',
+                contributingMemberLabel: 'Thành Viên Đóng Góp',
+                involvedMembersLabel: 'Thành Viên Tham Gia Chi Tiêu',
+                amountLabel: 'Số Tiền (VNĐ)',
+                amountPlaceholder: 'Số tiền',
+                transactionDateLabel: 'Ngày Giao Dịch',
+                descriptionLabel: 'Mô Tả',
+                descriptionPlaceholder: 'Mô tả giao dịch',
+                aiDescribeBtn: 'Mô tả AI từ Ảnh/Camera',
+                recordTransactionBtn: 'Ghi Lại Giao Dịch',
+                memberListTitle: 'Danh Sách Thành Viên',
+                loadingMembers: 'Đang tải thành viên...',
+                memberNameHeader: 'Tên Thành Viên',
+                balanceHeader: 'Số Dư',
+                actionHeader: 'Hành Động',
+                settleUpBtn: 'Thanh Toán',
+                viewDetailsBtn: 'Xem chi tiết',
+                noMembers: 'Chưa có thành viên nào. Hãy thêm thành viên!',
+                summaryReportTitle: 'Báo Cáo Tóm Tắt',
+                totalContributions: 'Tổng Đóng Góp',
+                totalExpenses: 'Tổng Chi Tiêu',
+                memberBalanceChartTitle: 'Số Dư Thành Viên (Biểu Đồ Tròn)',
+                loadingChart: 'Đang tải biểu đồ...',
+                categoryChartsTitle: 'Thu/Chi Theo Phân Loại (Biểu Đồ Bánh)',
+                incomeByCategory: 'Thu nhập theo loại',
+                expenseByCategory: 'Chi tiêu theo loại',
+                fundReportTitle: 'Báo Cáo Quỹ Chung',
+                exportExcelBtn: 'Xuất Excel',
+                exportWordBtn: 'Xuất Word',
+                noTransactionsReport: 'Chưa có giao dịch nào để báo cáo.',
+                dateHeader: 'Ngày',
+                typeHeader: 'Loại',
+                descriptionHeader: 'Mô Tả',
+                expenseTypeHeader: 'Loại Chi Tiêu',
+                relatedMembersHeader: 'Thành Viên Liên Quan',
+                amountHeader: 'Số Tiền (VNĐ)',
+                memberReportsTitle: 'Báo Cáo Từng Thành Viên',
+                selectMemberReportLabel: 'Chọn Thành Viên:',
+                selectMemberToReport: 'Vui lòng chọn một thành viên để xem báo cáo.',
+                noMemberTransactions: 'Thành viên này chưa có giao dịch nào.',
+                transactionHistoryTitle: 'Lịch Sử Giao Dịch',
+                loadingTransactions: 'Đang tải giao dịch...',
+                noTransactions: 'Chưa có giao dịch nào.',
+                editBtn: 'Sửa',
+                deleteBtn: 'Xóa',
+                editTransactionModalTitle: 'Chỉnh Sửa Giao Dịch',
+                cancelBtn: 'Hủy',
+                saveChangesBtn: 'Lưu Thay Đổi',
+                memberDetailsModalTitle: 'Chi Tiết Thành Viên:',
+                currentBalance: 'Số Dư Hiện Tại:',
+                relatedTransactions: 'Các Giao Dịch Liên Quan',
+                noRelatedTransactions: 'Chưa có giao dịch nào liên quan đến thành viên này.',
+                closeBtn: 'Đóng',
+                confirmationTitle: 'Xác Nhận',
+                confirmBtn: 'Xác Nhận',
+                selectReportTypeTitle: 'Chọn Loại Báo Cáo',
+                fundReportOption: 'Báo Cáo Quỹ Chung',
+                memberReportOption: 'Báo Cáo Từng Thành Viên',
+                fundInsightsModalTitle: 'Thông Tin Chi Tiết Quỹ ✨',
+                generatingInsights: 'Đang tạo thông tin chi tiết từ AI...',
+                noInsights: 'Không thể tạo thông tin chi tiết. Vui lòng thử lại.',
+                aiConnectionError: 'Đã xảy ra lỗi khi kết nối với AI. Vui lòng thử lại.',
+                foodSuggestionModalTitle: 'Gợi ý món ăn ✨',
+                generatingFoodSuggestions: 'Đang tìm kiếm gợi ý món ăn gần bạn...',
+                locationError: 'Không thể lấy vị trí hiện tại của bạn. Vui lòng cho phép truy cập vị trí.',
+                permissionDenied: 'Bạn đã từ chối quyền truy cập vị trí. Vui lòng cho phép trong cài đặt trình duyệt để nhận gợi ý món ăn.',
+                positionUnavailable: 'Thông tin vị trí không khả dụng.',
+                timeout: 'Hết thời gian chờ khi cố gắng lấy vị trí.',
+                geolocationNotSupported: 'Trình duyệt của bạn không hỗ trợ tính năng định vị địa lý.',
+                noFoodSuggestions: 'Không tìm thấy gợi ý món ăn nào.',
+                foodSuggestionError: 'Không thể tạo gợi ý món ăn. Vui lòng thử lại.',
+                addressLabel: 'Địa chỉ:',
+                phoneLabel: 'Điện thoại:',
+                ratingLabel: 'Đánh giá:',
+                distanceLabel: 'Khoảng cách:',
+                descriptionLabelShort: 'Mô tả:',
+                menuLabel: 'Menu:',
+                viewOnMaps: 'Xem trên Google Maps',
+                aiDescriptionModalTitle: 'Mô tả giao dịch bằng AI',
+                supaLoadError: 'Lỗi: Thư viện Supabase chưa được tải. Vui lòng kiểm tra kết nối mạng.',
+                supabaseConfigWarning: 'Cảnh báo: URL hoặc Khóa Supabase vẫn là giá trị mặc định. Vui lòng thay thế bằng thông tin dự án thực của bạn.',
+                supabaseTableError: 'Lỗi: Các bảng dữ liệu (members, transactions, expensetype) chưa được tạo trong Supabase. Vui lòng chạy các script SQL đã cung cấp trước đó.', // Updated
+                dataLoadError: 'Lỗi khi tải dữ liệu:',
+                emptyMemberName: 'Tên thành viên không được để trống.',
+                addMemberError: 'Lỗi khi thêm thành viên:',
+                settleUpError: 'Lỗi khi thanh toán số dư:',
+                invalidAmountDesc: 'Vui lòng nhập số tiền hợp lệ và mô tả.',
+                selectContributingMember: 'Vui lòng chọn thành viên đóng góp.',
+                selectInvolvedMembers: 'Vui lòng chọn ít nhất một thành viên tham gia chi tiêu.',
+                addTransactionError: 'Lỗi khi thêm giao dịch:',
+                editInvalidAmountDesc: 'Vui lòng nhập số tiền hợp lệ và mô tả cho giao dịch.',
+                editSelectContributingMember: 'Vui lòng chọn thành viên đóng góp cho giao dịch này.',
+                editSelectInvolvedMembers: 'Vui lòng chọn ít nhất một thành viên tham gia chi tiêu cho giao dịch này.',
+                editTransactionError: 'Lỗi khi sửa giao dịch:',
+                confirmDeleteTransaction: 'Bạn có chắc chắn muốn xóa giao dịch "{description}" này không?',
+                deleteTransactionError: 'Lỗi khi xóa giao dịch:',
+                noBalanceChart: 'Chưa có số dư nào để hiển thị biểu đồ.',
+                noCategoryChart: 'Chưa có {type} để hiển thị biểu đồ.',
+                chartLegend: 'Chú Thích:',
+                chartLegendFor: 'Chú Thích {title}:',
+                xlsxLoadError: 'Thư viện XLSX chưa được tải. Vui lòng thử lại sau.',
+                selectMemberForExport: 'Vui lòng chọn một thành viên để xuất báo cáo.',
+                fileSaverLoadError: 'Thư viện FileSaver.js chưa được tải. Vui lòng thử lại sau.',
+                selectMemberForWordExport: 'Vui lòng chọn một thành viên để xuất báo cáo Word.',
+                apiError: 'Lỗi API:',
+                noImageDescription: 'Không thể lấy mô tả hình ảnh từ AI. Vui lòng thử lại.',
+                aiCallError: 'Lỗi khi gọi AI:',
+                scrollToTopBtn: ' ↑',
+                allMembers: 'All',
+                contributionType: 'Contribution',
+                expenseType: 'Expense',
+                otherCategory: 'Other',
+                totalChart: 'Total:',
+                deleteMemberBtn: 'Delete', // New translation key
+                confirmDeleteMember: 'Are you sure you want to delete member "{memberName}"? All related transactions will be deleted.', // New translation key
+                deleteMemberError: 'Error deleting member:', // New translation key
+                memberBalanceNotZero: 'Cannot delete member with non-zero balance. Please settle up the balance first.', // New translation key
+                defaultExpenseTypes: 'Food, Transport, Shopping, Entertainment, Health, Education, Other', // New translation for default expense types
             }
         };
-        let currentLanguage = 'vi';
-        let translations = localization[currentLanguage];
 
-        function updateContent() {
-            translations = localization[currentLanguage];
-            document.querySelectorAll('[data-key]').forEach(element => {
-                const key = element.dataset.key;
-                if (translations[key]) {
-                    if (element.id !== 'expense-type-filter-text' || getSelectedExpenseTypes().length === 0) {
-                       element.textContent = translations[key];
-                    }
-                }
-            });
-            renderTransactions(filteredTransactions);
-            renderAllCharts(filteredTransactions);
-        }
+        // DOM Elements
+		const addressInputForFood = document.getElementById('address-input-for-food');
+		const getFoodSuggestionsByAddressBtn = document.getElementById('get-food-suggestions-by-address-btn');
+        const fundBalanceDisplay = document.getElementById('fund-balance-display');
+        const errorMessageDisplay = document.getElementById('error-message-display');
+        const addMemberSection = document.getElementById('add-member-section');
+        const addTransactionSection = document.getElementById('add-transaction-section');
+        const fundReportSection = document.getElementById('fund-report-section');
+        const memberReportsSection = document.getElementById('member-reports-section');
+        const memberListContainer = document.getElementById('member-list-container');
+        const totalContributionsDisplay = document.getElementById('total-contributions-display');
+        const totalExpensesDisplay = document.getElementById('total-expenses-display');
+        const memberBalancePieChartDiv = document.getElementById('member-balance-pie-chart');
+        const categoryPieChartsDiv = document.getElementById('category-pie-charts');
 
+        // Language switch buttons
+        const langViBtn = document.getElementById('lang-vi-btn');
+        const langEnBtn = document.getElementById('lang-en-btn');
+
+        // Modals
+        const editTransactionModal = document.getElementById('edit-transaction-modal');
+        const memberDetailsModal = document.getElementById('member-details-modal');
+        const confirmationModal = document.getElementById('confirmation-modal');
+        const reportSelectionModal = document.getElementById('report-selection-modal');
+        const fundInsightsModal = document.getElementById('fund-insights-modal');
+        const fundInsightsContent = document.getElementById('fund-insights-content');
+        const foodSuggestionModal = document.getElementById('food-suggestion-modal');
+        const foodSuggestionContent = document.getElementById('food-suggestion-content');
+        const cameraModal = document.getElementById('camera-modal');
+
+        // Forms and Inputs
+        const addMemberForm = document.getElementById('add-member-form');
+        const memberNameInput = document.getElementById('member-name-input');
+        const addTransactionForm = document.getElementById('add-transaction-form');
+        const transactionTypeSelect = document.getElementById('transaction-type');
+        const expenseTypeDiv = document.getElementById('expense-type-div');
+        const expenseTypeSelect = document.getElementById('expense-type-select');
+        const contributingMemberDiv = document.getElementById('contributing-member-div');
+        const memberSelect = document.getElementById('member-select');
+        const involvedMembersDiv = document.getElementById('involved-members-div');
+        const involvedMembersCheckboxes = document.getElementById('involved-members-checkboxes');
+        const amountInput = document.getElementById('amount-input');
+        const transactionDateInput = document.getElementById('transaction-date-input');
+        const descriptionInput = document.getElementById('description-input');
+        const latitudeInput = document.getElementById('latitude-input');
+        const longitudeInput = document.getElementById('longitude-input');
+        const aiDescribeBtn = document.getElementById('ai-describe-btn');
+
+        // Camera/Image Upload Elements
+        const imageUploadInput = document.getElementById('image-upload-input');
+        const uploadedImagePreview = document.getElementById('uploaded-image-preview');
+        const cancelCameraBtn = document.getElementById('cancel-camera-btn');
+        const cameraLoadingSpinner = document.getElementById('camera-loading-spinner');
+
+        // Edit Transaction Form Elements
+        let editingTransaction = null;
+        const editTransactionForm = document.getElementById('edit-transaction-form');
+        const editTransactionTypeSelect = document.getElementById('edit-transaction-type'); 
+        const editExpenseTypeDiv = document.getElementById('edit-expense-type-div');
+        const editExpenseTypeSelect = document.getElementById('edit-expense-type-select');
+        const editContributingMemberDiv = document.getElementById('edit-contributing-member-div');
+        const editMemberSelect = document.getElementById('edit-member-select');
+        const editInvolvedMembersDiv = document.getElementById('edit-involved-members-div');
+        const editInvolvedMembersCheckboxes = document.getElementById('edit-involved-members-checkboxes');
+        const editAmountInput = document.getElementById('edit-amount-input');
+        const editTransactionDateInput = document.getElementById('edit-transaction-date-input');
+        const editLatitudeInput = document.getElementById('edit-latitude-input');
+        const editLongitudeInput = document.getElementById('edit-longitude-input');
+        const cancelEditTransactionBtn = document.getElementById('cancel-edit-transaction-btn');
+
+        // Member Details Modal Elements
+        const memberDetailsName = document.getElementById('member-details-name');
+        const memberDetailsBalance = document.getElementById('member-details-balance');
+        const memberDetailsTransactionsContainer = document.getElementById('member-details-transactions-container');
+        const closeMemberDetailsBtn = document.getElementById('close-member-details-btn');
+
+        // Confirmation Modal Elements
+        const confirmationMessage = document.getElementById('confirmation-message');
+        const cancelConfirmationBtn = document.getElementById('cancel-confirmation-btn');
+        const confirmActionBtn = document.getElementById('confirm-action-btn');
+
+        // Report Selection Modal Elements
+        const selectFundReportBtn = document.getElementById('select-fund-report-btn');
+        const selectMemberReportBtn = document.getElementById('select-member-report-btn');
+        const closeReportSelectionBtn = document.getElementById('close-report-selection-btn');
+
+        // Member Report Specific Elements
+        const selectMemberReportDropdown = document.getElementById('select-member-report');
+        const memberReportTableContainer = document.getElementById('member-report-table-container');
+        const exportMemberReportExcelBtn = document.getElementById('export-member-report-excel');
+        const exportMemberReportWordBtn = document.getElementById('export-member-report-word');
+
+        // Fund Report Specific Elements
+        const fundReportTableContainer = document.getElementById('fund-report-table-container');
+        const exportFundReportExcelBtn = document.getElementById('export-fund-report-excel');
+        const exportFundReportWordBtn = document.getElementById('export-fund-report-word');
+
+        // Insights Modal Elements
+        const closeInsightsBtn = document.getElementById('close-insights-btn');
+
+        // Food Suggestion Modal Elements
+        const closeFoodSuggestionBtn = document.getElementById('close-food-suggestion-btn');
+
+        // Scroll to Top Button Element
+        const scrollToTopBtn = document.getElementById('scroll-to-top-btn');
+
+        // --- Language Functions ---
         function setLanguage(lang) {
             currentLanguage = lang;
-            document.getElementById('lang-vi-btn').classList.toggle('active', lang === 'vi');
-            document.getElementById('lang-en-btn').classList.toggle('active', lang === 'en');
+            localStorage.setItem('lang', lang);
             updateContent();
+            updateLanguageButtons();
+            renderMemberList();
+            renderFundReport();
+            renderSelectedMemberReport();
+            renderMemberBalancePieChart();
+            renderCategoryPieCharts();
+            document.getElementById('member-name-input').placeholder = translations[currentLanguage].memberNamePlaceholder;
+            document.getElementById('amount-input').placeholder = translations[currentLanguage].amountPlaceholder;
+            document.getElementById('description-input').placeholder = translations[currentLanguage].descriptionPlaceholder;
+            document.getElementById('edit-amount-input').placeholder = translations[currentLanguage].amountPlaceholder;
+            document.getElementById('edit-description-input').placeholder = translations[currentLanguage].descriptionPlaceholder;
+            document.getElementById('scroll-to-top-btn').title = translations[currentLanguage].scrollToTopBtn;
         }
 
-        document.getElementById('lang-vi-btn').addEventListener('click', () => setLanguage('vi'));
-        document.getElementById('lang-en-btn').addEventListener('click', () => setLanguage('en'));
-
-        async function fetchSupabaseData() {
-            elements.loadingOverlay.classList.remove('hidden');
-            try {
-                const { data: membersData, error: membersError } = await supabaseClient.from('members_quan').select('*');
-                if (membersError) throw membersError;
-                members = membersData;
-
-                const { data: expenseTypesData, error: expenseTypesError } = await supabaseClient.from('expensetype_quan').select('*');
-                if (expenseTypesError) throw expenseTypesError;
-                expenseTypes = expenseTypesData;
-                
-                expenseTypes.forEach((type, index) => {
-                    expenseTypeColors[type.expense_type] = `hsl(${(index * 60) % 360}, 70%, 60%)`;
-                });
-
-                const { data: transactionsData, error: transactionsError } = await supabaseClient.from('transactions_quan').select('*');
-                if (transactionsError) throw transactionsError;
-                transactions = transactionsData;
-
-                transactions.sort((a, b) => new Date(b.date) - new Date(a.date));
-
-                initializePageWithData();
-
-            } catch (error) {
-                console.error('Error fetching data from Supabase:', error.message);
-            } finally {
-                elements.loadingOverlay.classList.add('hidden');
-            }
-        }
-
-        function getMemberNames(memberIds, contributingMemberId) {
-            let ids = [];
-            if (memberIds) ids = [...memberIds];
-            if (contributingMemberId && !ids.includes(contributingMemberId)) ids.push(contributingMemberId);
-
-            if (ids.length === 0) return translations.unassigned || 'Không xác định';
-            return ids.map(id => {
-                const member = members.find(m => m.id === id);
-                return member ? member.name : (translations.unknownMember || 'Thành viên không xác định');
-            }).join(', ');
-        }
-
-        function formatCurrency(amount) {
-            return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
-        }
-
-        function renderTransactions(data) {
-            elements.transactionTableBody.innerHTML = '';
-            const startIndex = (currentPage - 1) * transactionsPerPage;
-            const endIndex = startIndex + transactionsPerPage;
-            const paginatedData = data.slice(startIndex, endIndex);
-
-            if (paginatedData.length === 0) {
-                elements.transactionTableBody.innerHTML = `<tr><td colspan="6" class="text-center py-4 text-gray-500">${translations.noTransactions}</td></tr>`;
-            } else {
-                paginatedData.forEach(transaction => {
-                    const memberName = getMemberNames(transaction.involvedMemberIds, transaction.contributingMemberId);
-                    const expenseTypeName = transaction.expense_type;
-                    const formattedDate = new Date(transaction.date).toLocaleDateString('vi-VN');
-                    const formattedAmount = formatCurrency(transaction.amount);
-
-                    const row = `
-                        <tr class="hover:bg-gray-50" data-id="${transaction.id}">
-                            <td class="table-cell">${formattedDate}</td>
-                            <td class="table-cell truncate max-w-xs">${transaction.description}</td>
-                            <td class="table-cell">${memberName}</td>
-                            <td class="table-cell">${expenseTypeName}</td>
-                            <td class="table-cell font-medium text-right">${formattedAmount}</td>
-                            <td class="table-cell text-center">
-                                <div class="flex items-center justify-center gap-2">
-                                    <button class="text-blue-600 hover:text-blue-900 p-1 edit-btn" data-id="${transaction.id}" title="Sửa">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                                          <path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z" />
-                                          <path fill-rule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clip-rule="evenodd" />
-                                        </svg>
-                                    </button>
-                                    <button class="text-red-600 hover:text-red-900 p-1 delete-btn" data-id="${transaction.id}" title="Xóa">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                                          <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm4 0a1 1 0 012 0v6a1 1 0 11-2 0V8z" clip-rule="evenodd" />
-                                        </svg>
-                                    </button>
-                                </div>
-                            </td>
-                        </tr>
-                    `;
-                    elements.transactionTableBody.innerHTML += row;
-                });
-            }
-
-            elements.transactionCountSpan.textContent = `(${data.length} ${translations.transactionHistory.toLowerCase()})`;
-            updatePaginationControls(data.length);
-        }
-        
-        function renderAllCharts(data) {
-            renderDoughnutChart(data);
-            renderMonthlySummaries(data); // UPDATE
-            renderDailySpendingChart(data); // UPDATE
-        }
-
-        function renderDoughnutChart(data) {
-            if (expenseChartInstance) {
-                expenseChartInstance.destroy();
-            }
-
-            // UPDATE START: Filter out contributions, only show expenses
-            const expenseData = data.filter(transaction => transaction.type === 'expense');
-            // UPDATE END
-
-            const spendingByType = expenseData.reduce((acc, transaction) => {
-                const type = transaction.expense_type || (translations.unassigned || 'Không xác định');
-                const amount = transaction.amount;
-                if (!acc[type]) {
-                    acc[type] = { total: 0, transactions: [] };
+        function updateContent() {
+            document.querySelectorAll('[data-key]').forEach(element => {
+                const key = element.dataset.key;
+                if (translations[currentLanguage][key]) {
+                    element.textContent = translations[currentLanguage][key];
                 }
-                acc[type].total += amount;
-                acc[type].transactions.push(transaction);
-                return acc;
-            }, {});
-
-            const sortedData = Object.entries(spendingByType)
-                .sort(([, a], [, b]) => b.total - a.total);
-
-            const totalSpending = sortedData.reduce((sum, [, item]) => sum + item.total, 0);
-
-            // Render legend table
-            let legendHtml = `
-                <table class="w-full text-sm text-left text-gray-500">
-                    <thead class="text-xs text-gray-700 uppercase bg-gray-50">
-                        <tr>
-                            <th scope="col" class="px-2 py-2">${translations.legendType}</th>
-                            <th scope="col" class="px-2 py-2 text-right">${translations.legendAmount}</th>
-                            <th scope="col" class="px-2 py-2 text-right">${translations.legendRatio}</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-            `;
-            
-            sortedData.forEach(([label, item]) => {
-                const percentage = totalSpending > 0 ? ((item.total / totalSpending) * 100).toFixed(2) : 0;
-                const color = expenseTypeColors[label] || '#cccccc';
-                legendHtml += `
-                    <tr class="bg-white border-b">
-                        <td class="px-2 py-2 font-medium text-gray-900 whitespace-nowrap">
-                            <span class="inline-block w-3 h-3 mr-2 rounded-full" style="background-color: ${color};"></span>
-                            ${label}
-                        </td>
-                        <td class="px-2 py-2 text-right">${formatCurrency(item.total)}</td>
-                        <td class="px-2 py-2 text-right">${percentage}%</td>
-                    </tr>
-                `;
             });
+            document.title = translations[currentLanguage].appTitle;
+            document.querySelector('#transaction-type option[value="contribution"]').textContent = translations[currentLanguage].contributionOption;
+            document.querySelector('#transaction-type option[value="expense"]').textContent = translations[currentLanguage].expenseOption;
+            document.querySelector('#edit-transaction-type option[value="contribution"]').textContent = translations[currentLanguage].contributionOption;
+            document.querySelector('#edit-transaction-type option[value="expense"]').textContent = translations[currentLanguage].expenseOption;
+        }
 
-            legendHtml += `
-                    </tbody>
-                    <tfoot class="font-semibold text-gray-900">
-                        <tr>
-                            <td class="px-2 py-2">${translations.totalSpending}</td>
-                            <td class="px-2 py-2 text-right" colspan="2">${formatCurrency(totalSpending)}</td>
-                        </tr>
-                    </tfoot>
-                </table>
-            `;
-            elements.expenseLegendContainer.innerHTML = legendHtml;
+        function updateLanguageButtons() {
+            langViBtn.classList.remove('active');
+            langEnBtn.classList.remove('active');
+            if (currentLanguage === 'vi') {
+                langViBtn.classList.add('active');
+            } else {
+                langEnBtn.classList.add('active');
+            }
+        }
 
+        // --- Helper Functions ---
+        function formatNumberForDisplay(num) {
+            if (typeof num !== 'number' || isNaN(num)) {
+                return '';
+            }
+            const roundedNum = Math.round(num);
+            return roundedNum.toLocaleString(currentLanguage === 'vi' ? 'vi-VN' : 'en-US', {
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 0
+            });
+        }
 
-            // Render chart
-            const chartLabels = sortedData.map(([label]) => label);
-            const chartData = sortedData.map(([, item]) => item.total);
-            const chartColors = chartLabels.map(label => expenseTypeColors[label] || '#cccccc');
+        function parseFormattedNumber(formattedValue) {
+            const locale = currentLanguage === 'vi' ? 'vi-VN' : 'en-US';
+            const formatter = new Intl.NumberFormat(locale, { useGrouping: true, minimumFractionDigits: 0 });
+            const parts = formatter.formatToParts(1000.50); 
+            let thousandsSeparator = '';
+            let decimalSeparator = '';
 
-            const ctx = elements.expenseChartCanvas.getContext('2d');
-            expenseChartInstance = new Chart(ctx, {
-                type: 'doughnut',
-                data: {
-                    labels: chartLabels,
-                    datasets: [{
-                        data: chartData,
-                        backgroundColor: chartColors,
-                        borderColor: '#fff',
-                        borderWidth: 2,
-                        hoverOffset: 4
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    onClick: (event, chartElements) => {
-                        if (chartElements.length > 0) {
-                            const chartElement = chartElements[0];
-                            const label = chartLabels[chartElement.index];
-                            const transactionsForType = spendingByType[label].transactions;
-                            const title = `${translations.chartDetailTitle} "${label}"`;
-                            openChartDetailModal(title, transactionsForType);
-                        }
-                    },
-                    plugins: {
-                        legend: { display: false },
-                        tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    let label = context.label || '';
-                                    if (label) label += ': ';
-                                    if (context.parsed !== null) {
-                                        const value = context.parsed;
-                                        const percentage = totalSpending > 0 ? ((value / totalSpending) * 100).toFixed(2) : 0;
-                                        label += `${formatCurrency(value)} (${percentage}%)`;
-                                    }
-                                    return label;
-                                }
+            for (const part of parts) {
+                if (part.type === 'group') {
+                    thousandsSeparator = part.value;
+                } else if (part.type === 'decimal') {
+                    decimalSeparator = part.value;
+                }
+            }
+
+            let cleanedValue = formattedValue;
+            if (thousandsSeparator) {
+                const thousandsSeparatorRegex = new RegExp(thousandsSeparator.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&'), 'g');
+                cleanedValue = cleanedValue.replace(thousandsSeparatorRegex, '');
+            }
+
+            cleanedValue = cleanedValue.replace(decimalSeparator, '.');
+            cleanedValue = cleanedValue.replace(/[^0-9.]/g, '');
+            const parsed = parseFloat(cleanedValue);
+            return isNaN(parsed) ? 0 : parsed;
+        }
+
+        function formatNumberForInput(value) {
+            const rawNumber = parseFormattedNumber(value);
+            const roundedNum = Math.round(rawNumber);
+            return roundedNum.toLocaleString(currentLanguage === 'vi' ? 'vi-VN' : 'en-US', {
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 0
+            });
+        }
+
+        function showErrorMessage(message) {
+            currentErrorMessage = message;
+            errorMessageDisplay.textContent = message;
+            errorMessageDisplay.classList.remove('hidden');
+        }
+
+        function hideErrorMessage() {
+            currentErrorMessage = '';
+            errorMessageDisplay.classList.add('hidden');
+        }
+
+        function hideAllSections() {
+            addMemberSection.classList.add('hidden');
+            addTransactionSection.classList.add('hidden');
+            fundReportSection.classList.add('hidden');
+            memberReportsSection.classList.add('hidden');
+            editTransactionModal.classList.add('hidden');
+            memberDetailsModal.classList.add('hidden');
+            confirmationModal.classList.add('hidden');
+            reportSelectionModal.classList.add('hidden');
+            fundInsightsModal.classList.add('hidden');
+            foodSuggestionModal.classList.add('hidden');
+            cameraModal.classList.add('hidden');
+            hideErrorMessage();
+        }
+
+        function scrollToSection(elementId) {
+            const element = document.getElementById(elementId);
+            if (element) {
+                element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        }
+
+        // --- Supabase and Data Management ---
+        function initializeSupabase() {
+            if (typeof window.supabase === 'undefined') {
+                showErrorMessage(translations[currentLanguage].supaLoadError);
+                return;
+            }
+            const anonKey = typeof __supabase_key !== 'undefined' ? __supabase_key : SUPABASE_ANON_KEY;
+            supabase = window.supabase.createClient(SUPABASE_URL, anonKey);
+
+            if (!supabase || !supabase.auth || typeof supabase.auth.onAuthStateChange !== 'function') {
+                const errorMsg = "Supabase client or auth module not initialized correctly.";
+                showErrorMessage(errorMsg);
+                return;
+            }
+            supabase.auth.onAuthStateChange((event, session) => {
+                if (session) {
+                    authReady = true;
+                    fetchData();
+                    setupRealtimeSubscriptions();
+                } else {
+                    authReady = false;
+                    window.location.href = window.location.origin + '/Strava/LoginQuan.html';
+                }
+            });
+        }
+
+        async function fetchData() {
+            if (!authReady) return;
+            showLoading(true);
+            try {
+                const { data: membersData, error: membersError } = await supabase.from('members_quan').select('*');
+                if (membersError) throw membersError;
+
+                const { data: transactionsData, error: transactionsError } = await supabase.from('transactions_quan').select('*');
+                if (transactionsError) throw transactionsError;
+
+                const { data: expenseTypesData, error: expenseTypesError } = await supabase.from('expensetype_quan').select('*');
+                if (expenseTypesError) throw expenseTypesError;
+
+                members = membersData;
+                transactions = transactionsData;
+                expenseTypes = expenseTypesData;
+				
+                if (expenseTypes.length === 0) {
+                    const defaultExpenseTypes = translations[currentLanguage].defaultExpenseTypes.split(', ').map(name => ({
+                        expense_type: name,
+                        Type: 'expense'
+                    }));
+                    defaultExpenseTypes.unshift({
+                        expense_type: translations[currentLanguage].contributionType,
+                        Type: 'contribution'
+                    });
+                    const { data: newExpenseTypes, error: newExpenseTypesError } = await supabase.from('expensetype_quan').insert(defaultExpenseTypes).select();
+                    if (newExpenseTypesError) throw newExpenseTypesError;
+                    expenseTypes = newExpenseTypes;
+                }
+                updateUI();
+            } catch (error) {
+                showErrorMessage(`${translations[currentLanguage].dataLoadError} ${error.message}`);
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        function setupRealtimeSubscriptions() {
+            if (!authReady) return;
+            supabase.channel('public:members_quan').on('postgres_changes', { event: '*', schema: 'public', table: 'members_quan' }, payload => fetchData()).subscribe();
+            supabase.channel('public:transactions_quan').on('postgres_changes', { event: '*', schema: 'public', table: 'transactions_quan' }, payload => fetchData()).subscribe();
+            supabase.channel('public:expensetype').on('postgres_changes', { event: '*', schema: 'public', table: 'expensetype' }, payload => fetchData()).subscribe();
+        }
+
+        function showLoading(isLoading) {
+            const loadingDiv = document.getElementById('loading-overlay');
+            if (loadingDiv) {
+                loadingDiv.classList.toggle('hidden', !isLoading);
+            }
+        }
+
+        // --- UI Update Functions ---
+        function updateUI() {
+            calculateBalances();
+            renderFundBalance();
+            renderMemberList();
+            renderReportingSummary();
+            renderMemberReportDropdown();
+            renderMemberBalancePieChart();
+            renderCategoryPieCharts();
+            populateSelectors();
+        }
+
+        function calculateBalances() {
+            let totalBalance = 0;
+            const tempMemberBalances = new Map(members.map(m => [m.id, 0]));
+
+            transactions.forEach(t => {
+                if (t.type === 'contribution') {
+                    totalBalance += t.amount;
+                    if (tempMemberBalances.has(t.contributingMemberId)) {
+                        tempMemberBalances.set(t.contributingMemberId, tempMemberBalances.get(t.contributingMemberId) + t.amount);
+                    }
+                } else if (t.type === 'expense') {
+                    totalBalance -= t.amount;
+                    const involvedMembers = t.involvedMemberIds && t.involvedMemberIds.length > 0 ? t.involvedMemberIds : members.map(m => m.id);
+                    if (involvedMembers.length > 0) {
+                        const costPerMember = t.amount / involvedMembers.length;
+                        involvedMembers.forEach(memberId => {
+                            if (tempMemberBalances.has(memberId)) {
+                                tempMemberBalances.set(memberId, tempMemberBalances.get(memberId) - costPerMember);
                             }
-                        }
+                        });
                     }
                 }
             });
+
+            members = members.map(member => ({ ...member, balance: tempMemberBalances.get(member.id) || 0 }));
+            fundBalance = totalBalance;
         }
-        
-        // UPDATE START: Reworked monthly summary function
-        function renderMonthlySummaries(data) {
-            const summaryContainer = elements.monthlySummaryContainer;
-            summaryContainer.innerHTML = '';
 
-            const monthlyData = data.reduce((acc, t) => {
-                const month = t.date.substring(0, 7); // YYYY-MM
-                if (!acc[month]) {
-                    acc[month] = [];
-                }
-                acc[month].push(t);
-                return acc;
-            }, {});
+        function renderFundBalance() {
+            fundBalanceDisplay.textContent = `${formatNumberForDisplay(fundBalance)} ${translations[currentLanguage].unitCurrency}`;
+            fundBalanceDisplay.classList.toggle('text-green-600', fundBalance >= 0);
+            fundBalanceDisplay.classList.toggle('text-red-600', fundBalance < 0);
+        }
 
-            const months = Object.keys(monthlyData).sort().reverse(); // Sort newest to oldest
-
-            if (months.length === 0) {
-                summaryContainer.innerHTML = `<p class="text-center text-gray-500">${translations.noTransactions}</p>`;
+        function renderMemberList() {
+            if (members.length === 0) {
+                memberListContainer.innerHTML = `<p class="text-center text-gray-500">${translations[currentLanguage].noMembers}</p>`;
                 return;
             }
 
-            let summaryHtml = '<div class="space-y-8">';
-            months.forEach((month, index) => {
-                const monthTransactions = monthlyData[month];
-                
-                // Separate into income and expenses
-                const incomeTransactions = monthTransactions.filter(t => t.type === 'contribution');
-                const expenseTransactions = monthTransactions.filter(t => t.type === 'expense');
-
-                const incomeByType = incomeTransactions.reduce((acc, t) => {
-                    const type = t.expense_type || translations.unassigned;
-                    acc[type] = (acc[type] || 0) + t.amount;
-                    return acc;
-                }, {});
-
-                const expenseByType = expenseTransactions.reduce((acc, t) => {
-                    const type = t.expense_type || translations.unassigned;
-                    acc[type] = (acc[type] || 0) + t.amount;
-                    return acc;
-                }, {});
-
-                const totalIncome = Object.values(incomeByType).reduce((sum, amount) => sum + amount, 0);
-                const totalExpense = Object.values(expenseByType).reduce((sum, amount) => sum + amount, 0);
-
-                const isCollapsed = index >= 2;
-
-                summaryHtml += `
-                    <div class="month-summary-block">
-                        <div class="flex justify-between items-center mb-2">
-                            <h4 class="text-xl font-bold text-gray-800">${month}</h4>
-                            ${index >= 2 ? `<button class="toggle-month-btn text-sm text-blue-600 font-semibold" data-month="${month}">${translations.showMore}</button>` : ''}
-                        </div>
-                        <div class="month-details space-y-4 ${isCollapsed ? 'hidden' : ''}" id="details-${month}">
-                `;
-
-                // Income Table
-                if (totalIncome > 0) {
-                    summaryHtml += `
-                        <div>
-                            <h5 class="text-lg font-semibold text-green-600 mb-2">${translations.income}</h5>
-                            <table class="w-full text-sm text-left text-gray-500">
-                                <thead class="text-xs text-gray-700 uppercase bg-gray-50">
-                                    <tr>
-                                        <th scope="col" class="px-4 py-2">${translations.legendType}</th>
-                                        <th scope="col" class="px-4 py-2 text-right">${translations.legendAmount}</th>
-                                        <th scope="col" class="px-4 py-2 text-right">${translations.legendRatio}</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                    `;
-                    Object.entries(incomeByType).sort(([,a],[,b]) => b-a).forEach(([type, amount]) => {
-                        const percentage = totalIncome > 0 ? (amount / totalIncome * 100).toFixed(2) : 0;
-                        summaryHtml += `<tr class="bg-white border-b">
-                                        <td class="px-4 py-2 font-medium text-gray-900">${type}</td>
-                                        <td class="px-4 py-2 text-right">${formatCurrency(amount)}</td>
-                                        <td class="px-4 py-2 text-right">${percentage}%</td>
-                                      </tr>`;
-                    });
-                    summaryHtml += `
-                                </tbody>
-                                <tfoot class="font-semibold text-gray-900">
-                                    <tr>
-                                        <td class="px-4 py-2">${translations.totalSpending}</td>
-                                        <td class="px-4 py-2 text-right">${formatCurrency(totalIncome)}</td>
-                                        <td class="px-4 py-2 text-right">100.00%</td>
-                                    </tr>
-                                </tfoot>
-                            </table>
-                        </div>
-                    `;
-                }
-
-                // Expense Table
-                if (totalExpense > 0) {
-                     summaryHtml += `
-                        <div>
-                            <h5 class="text-lg font-semibold text-red-600 mb-2">${translations.expenses}</h5>
-                            <table class="w-full text-sm text-left text-gray-500">
-                                <thead class="text-xs text-gray-700 uppercase bg-gray-50">
-                                    <tr>
-                                        <th scope="col" class="px-4 py-2">${translations.legendType}</th>
-                                        <th scope="col" class="px-4 py-2 text-right">${translations.legendAmount}</th>
-                                        <th scope="col" class="px-4 py-2 text-right">${translations.legendRatio}</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                    `;
-                    Object.entries(expenseByType).sort(([,a],[,b]) => b-a).forEach(([type, amount]) => {
-                        const percentage = totalExpense > 0 ? (amount / totalExpense * 100).toFixed(2) : 0;
-                        summaryHtml += `<tr class="bg-white border-b">
-                                        <td class="px-4 py-2 font-medium text-gray-900">${type}</td>
-                                        <td class="px-4 py-2 text-right">${formatCurrency(amount)}</td>
-                                        <td class="px-4 py-2 text-right">${percentage}%</td>
-                                      </tr>`;
-                    });
-                    summaryHtml += `
-                                </tbody>
-                                <tfoot class="font-semibold text-gray-900">
-                                    <tr>
-                                        <td class="px-4 py-2">${translations.totalSpending}</td>
-                                        <td class="px-4 py-2 text-right">${formatCurrency(totalExpense)}</td>
-                                        <td class="px-4 py-2 text-right">100.00%</td>
-                                    </tr>
-                                </tfoot>
-                            </table>
-                        </div>
-                    `;
-                }
-                summaryHtml += `</div></div>`; // Close month-details and month-summary-block
+            let tableHtml = `<table class="min-w-full bg-white rounded-lg shadow-sm"><thead><tr>
+                <th class="table-header">${translations[currentLanguage].memberNameHeader}</th>
+                <th class="table-header text-right-aligned">${translations[currentLanguage].balanceHeader}</th>
+                <th class="table-header">${translations[currentLanguage].actionHeader}</th></tr></thead><tbody>`;
+            
+            members.forEach(member => {
+                const balanceClass = member.balance > 0 ? 'balance-positive' : member.balance < 0 ? 'balance-negative' : 'balance-zero';
+                tableHtml += `<tr class="table-row">
+                    <td class="font-medium text-gray-900">${member.name}</td>
+                    <td class="text-right-aligned"><span class="text-lg font-bold ${balanceClass}">${formatNumberForDisplay(member.balance)} ${translations[currentLanguage].unitCurrency}</span></td>
+                    <td class="flex flex-col sm:flex-row gap-2">
+                        <button data-member-id="${member.id}" class="settle-up-btn text-[#006B68] hover:text-[#005A58] font-semibold text-sm w-full sm:w-auto" ${Math.abs(member.balance) < 0.01 ? 'disabled' : ''}>${translations[currentLanguage].settleUpBtn}</button>
+                        <button data-member-id="${member.id}" class="view-details-btn text-blue-600 hover:text-blue-900 font-semibold text-sm w-full sm:w-auto">${translations[currentLanguage].viewDetailsBtn}</button>
+                        <button data-member-id="${member.id}" class="delete-member-btn text-red-600 hover:text-red-900 font-semibold text-sm w-full sm:w-auto" ${Math.abs(member.balance) > 0.01 ? 'disabled' : ''}>${translations[currentLanguage].deleteBtn}</button>
+                    </td></tr>`;
             });
-            summaryHtml += '</div>';
-            summaryContainer.innerHTML = summaryHtml;
+            tableHtml += `</tbody></table>`;
+            memberListContainer.innerHTML = tableHtml;
+
+            memberListContainer.querySelectorAll('.settle-up-btn').forEach(button => button.onclick = (e) => settleUpMember(e.target.dataset.memberId));
+            memberListContainer.querySelectorAll('.view-details-btn').forEach(button => button.onclick = (e) => showMemberDetailsModal(members.find(m => m.id === e.target.dataset.memberId)));
+            memberListContainer.querySelectorAll('.delete-member-btn').forEach(button => button.onclick = (e) => confirmDeleteMember(members.find(m => m.id === e.target.dataset.memberId)));
         }
-        // UPDATE END
 
-        // UPDATE START: New daily spending chart function
-        function renderDailySpendingChart(data) {
-            if (dailyChartInstance) {
-                dailyChartInstance.destroy();
+        function renderReportingSummary() {
+            const totalContributions = transactions.filter(t => t.type === 'contribution').reduce((sum, t) => sum + t.amount, 0);
+            const totalExpenses = transactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
+            totalContributionsDisplay.textContent = `${formatNumberForDisplay(totalContributions)} ${translations[currentLanguage].unitCurrency}`;
+            totalExpensesDisplay.textContent = `${formatNumberForDisplay(totalExpenses)} ${translations[currentLanguage].unitCurrency}`;
+        }
+
+        function getMemberName(memberId) {
+            const member = members.find(m => m.id === memberId);
+            return member ? member.name : 'N/A';
+        }
+
+        function getInvolvedMembersNames(involvedMemberIds) {
+            if (!involvedMemberIds || involvedMemberIds.length === 0) return translations[currentLanguage].allMembers;
+            return involvedMemberIds.map(id => getMemberName(id)).join(', ');
+        }
+
+        // --- Member Actions ---
+        addMemberForm.onsubmit = async (e) => {
+            e.preventDefault();
+            const name = memberNameInput.value.trim();
+            if (!name) {
+                showErrorMessage(translations[currentLanguage].emptyMemberName);
+                return;
             }
+            hideErrorMessage();
+            try {
+                const { error } = await supabase.from('members_quan').insert({ name: name, balance: 0 });
+                if (error) throw error;
+                memberNameInput.value = '';
+                addMemberSection.classList.add('hidden');
+            } catch (error) {
+                showErrorMessage(`${translations[currentLanguage].addMemberError} ${error.message}`);
+            }
+        };
 
-            const expenses = data.filter(t => t.type === 'expense');
+        async function settleUpMember(memberId) {
+            const memberToSettle = members.find(m => m.id === memberId);
+            if (!memberToSettle || Math.abs(memberToSettle.balance) < 0.01) return;
 
-            const monthlyData = expenses.reduce((acc, t) => {
-                const month = t.date.substring(0, 7);
-                if (!acc[month]) acc[month] = [];
-                acc[month].push(t);
-                return acc;
-            }, {});
+            const settlementAmount = Math.abs(memberToSettle.balance);
+            const settlementType = memberToSettle.balance < 0 ? 'contribution' : 'expense';
+            const description = `${translations[currentLanguage].settleUpBtn} ${memberToSettle.name}`;
 
-            const months = Object.keys(monthlyData).sort().reverse();
-            if (months.length === 0) return;
+            try {
+                const newTransaction = {
+                    type: settlementType,
+                    amount: settlementAmount,
+                    description: description,
+                    date: new Date().toISOString(),
+                    contributingMemberId: settlementType === 'contribution' ? memberToSettle.id : null,
+                    involvedMemberIds: settlementType === 'expense' ? [memberToSettle.id] : [],
+                    expense_type: settlementType === 'expense' ? translations[currentLanguage].otherCategory : null,
+                };
+                const { error } = await supabase.from('transactions_quan').insert(newTransaction);
+                if (error) throw error;
+            } catch (error) {
+                showErrorMessage(`${translations[currentLanguage].settleUpError} ${error.message}`);
+            }
+        };
 
-            const currentMonthKey = months[0];
-            const previousMonthKey = months[1];
+        function confirmDeleteMember(member) {
+            if (Math.abs(member.balance) > 0.01) {
+                showErrorMessage(translations[currentLanguage].memberBalanceNotZero);
+                return;
+            }
+            memberToDelete = member;
+            confirmationMessage.textContent = translations[currentLanguage].confirmDeleteMember.replace('{memberName}', member.name);
+            confirmationModal.classList.remove('hidden');
+            confirmActionBtn.onclick = deleteMemberConfirmed;
+        }
 
-            const getDailyTotals = (monthKey) => {
-                const dailyTotals = Array(31).fill(0);
-                if (!monthKey || !monthlyData[monthKey]) return dailyTotals;
-                
-                monthlyData[monthKey].forEach(t => {
-                    const day = new Date(t.date).getDate() - 1; // 0-indexed
-                    dailyTotals[day] += t.amount;
+        async function deleteMemberConfirmed() {
+            if (memberToDelete) {
+                try {
+                    const { error: transactionsError } = await supabase.from('transactions_quan').delete().or(`contributingMemberId.eq.${memberToDelete.id},involvedMemberIds.cs.{${memberToDelete.id}}`);
+                    if (transactionsError) throw transactionsError;
+                    const { error: memberError } = await supabase.from('members_quan').delete().eq('id', memberToDelete.id);
+                    if (memberError) throw memberError;
+                } catch (error) {
+                    showErrorMessage(`${translations[currentLanguage].deleteMemberError} ${error.message}`);
+                }
+            }
+            confirmationModal.classList.add('hidden');
+            memberToDelete = null;
+            confirmActionBtn.onclick = deleteTransactionConfirmed;
+        }
+
+        // --- Transaction Actions ---
+        addTransactionForm.onsubmit = async (e) => {
+            e.preventDefault();
+            const type = transactionTypeSelect.value;
+            const amount = parseFormattedNumber(amountInput.value);
+            const transactionDate = transactionDateInput.value;
+            const description = descriptionInput.value.trim();
+            const contributingMemberId = memberSelect.value;
+            const selectedExpenseMembers = Array.from(involvedMembersCheckboxes.querySelectorAll('input:checked')).map(input => input.value);
+            const latitude = latitudeInput.value ? parseFloat(latitudeInput.value) : null;
+            const longitude = longitudeInput.value ? parseFloat(longitudeInput.value) : null;
+            const expenseType = expenseTypeSelect.value;
+
+            if (isNaN(amount) || amount <= 0 || !description || !transactionDate) {
+                showErrorMessage(translations[currentLanguage].invalidAmountDesc);
+                return;
+            }
+            if (type === 'contribution' && !contributingMemberId) {
+                showErrorMessage(translations[currentLanguage].selectContributingMember);
+                return;
+            }
+            if (type === 'expense' && selectedExpenseMembers.length === 0) {
+                showErrorMessage(translations[currentLanguage].selectInvolvedMembers);
+                return;
+            }
+            if (expenseTypeDiv.classList.contains('hidden') === false && !expenseType) {
+                showErrorMessage(translations[currentLanguage].selectExpenseType);
+                return;
+            }
+            hideErrorMessage();
+            try {
+                const newTransaction = {
+                    type: type,
+                    amount: amount,
+                    description: description,
+                    date: new Date(transactionDate).toISOString(),
+                    contributingMemberId: type === 'contribution' ? contributingMemberId : null,
+                    involvedMemberIds: type === 'expense' ? selectedExpenseMembers : [],
+                    latitude: latitude,
+                    longitude: longitude,
+                    expense_type: expenseType,
+                };
+                const { error } = await supabase.from('transactions_quan').insert(newTransaction);
+                if (error) throw error;
+                addTransactionForm.reset();
+                addTransactionSection.classList.add('hidden');
+            } catch (error) {
+                showErrorMessage(`${translations[currentLanguage].addTransactionError} ${error.message}`);
+            }
+        };
+
+        function populateSelectors() {
+            memberSelect.innerHTML = '';
+            involvedMembersCheckboxes.innerHTML = '';
+            editMemberSelect.innerHTML = '';
+            editInvolvedMembersCheckboxes.innerHTML = '';
+
+            if (members.length === 0) {
+                const noMemberMsg = `<option value="">${translations[currentLanguage].noMembers}</option>`;
+                memberSelect.innerHTML = noMemberMsg;
+                editMemberSelect.innerHTML = noMemberMsg;
+                involvedMembersCheckboxes.innerHTML = `<p class="text-gray-500 text-sm">${translations[currentLanguage].noMembers}</p>`;
+                editInvolvedMembersCheckboxes.innerHTML = `<p class="text-gray-500 text-sm">${translations[currentLanguage].noMembers}</p>`;
+            } else {
+                members.forEach(member => {
+                    const option = `<option value="${member.id}">${member.name}</option>`;
+                    memberSelect.innerHTML += option;
+                    editMemberSelect.innerHTML += option;
+
+                    const checkbox = `<label class="inline-flex items-center cursor-pointer">
+                        <input type="checkbox" class="form-checkbox h-4 w-4 text-[#006B68] rounded focus:ring-[#006B68]" value="${member.id}">
+                        <span class="ml-2 text-sm text-gray-700">${member.name}</span></label>`;
+                    involvedMembersCheckboxes.innerHTML += checkbox;
+                    editInvolvedMembersCheckboxes.innerHTML += checkbox;
                 });
-                return dailyTotals;
+                if (members.length > 0) memberSelect.value = members[0].id;
+            }
+            populateExpenseTypeSelect(expenseTypeSelect, transactionTypeSelect.value); 
+            populateExpenseTypeSelect(editExpenseTypeSelect, editTransactionTypeSelect.value); 
+        }
+
+        function populateExpenseTypeSelect(selectElement, transactionType) {
+            selectElement.innerHTML = '';
+            const filteredTypes = expenseTypes.filter(type => type.Type === transactionType);
+            if (filteredTypes.length === 0) {
+                selectElement.innerHTML = `<option value="">${translations[currentLanguage].selectExpenseType}</option>`;
+            } else {
+                selectElement.innerHTML = `<option value="">${translations[currentLanguage].selectExpenseType}</option>`;
+                filteredTypes.forEach(type => {
+                    selectElement.innerHTML += `<option value="${type.expense_type}">${type.expense_type}</option>`;
+                });
+            }
+        }
+
+        transactionTypeSelect.onchange = () => {
+            const isContribution = transactionTypeSelect.value === 'contribution';
+            contributingMemberDiv.classList.toggle('hidden', !isContribution);
+            memberSelect.required = isContribution;
+            involvedMembersDiv.classList.toggle('hidden', isContribution);
+            expenseTypeDiv.classList.remove('hidden');
+            expenseTypeSelect.required = true;
+            expenseTypeDiv.querySelector('label').textContent = isContribution ? "Loại thu" : translations[currentLanguage].expenseTypeLabel;
+            populateExpenseTypeSelect(expenseTypeSelect, transactionTypeSelect.value);
+        };
+
+        function showEditTransactionModal(transaction) {
+            editingTransaction = transaction;
+            editTransactionModal.classList.remove('hidden');
+            hideErrorMessage();
+
+            editTransactionTypeSelect.value = transaction.type;
+            editAmountInput.value = formatNumberForInput(transaction.amount.toString());
+            const transactionDate = new Date(transaction.date);
+            editTransactionDateInput.value = `${transactionDate.getFullYear()}-${(transactionDate.getMonth() + 1).toString().padStart(2, '0')}-${transactionDate.getDate().toString().padStart(2, '0')}T${transactionDate.getHours().toString().padStart(2, '0')}:${transactionDate.getMinutes().toString().padStart(2, '0')}`;
+            editDescriptionInput.value = transaction.description;
+            
+            const isContribution = transaction.type === 'contribution';
+            editContributingMemberDiv.classList.toggle('hidden', !isContribution);
+            editMemberSelect.required = isContribution;
+            editInvolvedMembersDiv.classList.toggle('hidden', isContribution);
+            editMemberSelect.value = transaction.contributingMemberId || '';
+            
+            editInvolvedMembersCheckboxes.querySelectorAll('input').forEach(cb => cb.checked = false);
+            if (transaction.involvedMemberIds) {
+                transaction.involvedMemberIds.forEach(id => {
+                    const checkbox = editInvolvedMembersCheckboxes.querySelector(`input[value="${id}"]`);
+                    if (checkbox) checkbox.checked = true;
+                });
+            }
+            
+            editExpenseTypeDiv.classList.remove('hidden');
+            editExpenseTypeSelect.required = true;
+            editExpenseTypeDiv.querySelector('label').textContent = isContribution ? "Loại thu" : translations[currentLanguage].expenseTypeLabel;
+            populateExpenseTypeSelect(editExpenseTypeSelect, transaction.type);
+            editExpenseTypeSelect.value = transaction.expense_type || '';
+        }
+
+        editTransactionTypeSelect.onchange = () => {
+            const isContribution = editTransactionTypeSelect.value === 'contribution';
+            editContributingMemberDiv.classList.toggle('hidden', !isContribution);
+            editMemberSelect.required = isContribution;
+            editInvolvedMembersDiv.classList.toggle('hidden', isContribution);
+            editExpenseTypeDiv.classList.remove('hidden');
+            editExpenseTypeSelect.required = true;
+            editExpenseTypeDiv.querySelector('label').textContent = isContribution ? "Loại thu" : translations[currentLanguage].expenseTypeLabel;
+            populateExpenseTypeSelect(editExpenseTypeSelect, editTransactionTypeSelect.value);
+        };
+
+        editTransactionForm.onsubmit = async (e) => {
+            e.preventDefault();
+            if (!editingTransaction) return;
+            const type = editTransactionTypeSelect.value;
+            const amount = parseFormattedNumber(editAmountInput.value);
+            const transactionDate = editTransactionDateInput.value;
+            const description = editDescriptionInput.value.trim();
+            const contributingMemberId = editMemberSelect.value;
+            const involvedMemberIds = Array.from(editInvolvedMembersCheckboxes.querySelectorAll('input:checked')).map(input => input.value);
+            const expenseType = editExpenseTypeSelect.value;
+
+            if (isNaN(amount) || amount <= 0 || !description || !transactionDate) {
+                showErrorMessage(translations[currentLanguage].editInvalidAmountDesc); return;
+            }
+            if (type === 'contribution' && !contributingMemberId) {
+                showErrorMessage(translations[currentLanguage].editSelectContributingMember); return;
+            }
+            if (editExpenseTypeDiv.classList.contains('hidden') === false && !expenseType) { 
+                showErrorMessage(translations[currentLanguage].selectExpenseType); return;
+            }
+            hideErrorMessage();
+            try {
+                const { error } = await supabase.from('transactions_quan').update({
+                    type, amount, description, date: new Date(transactionDate).toISOString(),
+                    contributingMemberId: type === 'contribution' ? contributingMemberId : null,
+                    involvedMemberIds: type === 'expense' ? involvedMemberIds : [],
+                    expense_type: expenseType,
+                }).eq('id', editingTransaction.id);
+                if (error) throw error;
+                editTransactionModal.classList.add('hidden');
+                editingTransaction = null;
+            } catch (error) {
+                showErrorMessage(`${translations[currentLanguage].editTransactionError} ${error.message}`);
+            }
+        };
+
+        function confirmDeleteTransaction(transaction) {
+            transactionToDelete = transaction;
+            confirmationMessage.textContent = translations[currentLanguage].confirmDeleteTransaction.replace('{description}', transaction.description);
+            confirmationModal.classList.remove('hidden');
+            confirmActionBtn.onclick = deleteTransactionConfirmed;
+        }
+
+        async function deleteTransactionConfirmed() {
+            if (transactionToDelete) {
+                try {
+                    const { error } = await supabase.from('transactions_quan').delete().eq('id', transactionToDelete.id);
+                    if (error) throw error;
+                } catch (error) {
+                    showErrorMessage(`${translations[currentLanguage].deleteTransactionError} ${error.message}`);
+                }
+            }
+            confirmationModal.classList.add('hidden');
+            transactionToDelete = null;
+            confirmActionBtn.onclick = deleteTransactionConfirmed;
+        }
+
+        cancelConfirmationBtn.onclick = () => {
+            confirmationModal.classList.add('hidden');
+            transactionToDelete = null;
+            memberToDelete = null;
+            confirmActionBtn.onclick = deleteTransactionConfirmed;
+        };
+
+        // --- Member Details Modal ---
+        function showMemberDetailsModal(member) {
+            selectedMemberForDetails = member;
+            memberDetailsModal.classList.remove('hidden');
+            hideErrorMessage();
+
+            memberDetailsName.textContent = `${translations[currentLanguage].memberDetailsModalTitle} ${member.name}`;
+            memberDetailsBalance.textContent = `${formatNumberForDisplay(member.balance)} ${translations[currentLanguage].unitCurrency}`;
+            memberDetailsBalance.className = `text-3xl font-bold ${member.balance >= 0 ? 'text-green-600' : 'text-red-600'}`;
+
+            const memberTransactions = transactions.filter(t => (t.contributingMemberId === member.id) || (t.involvedMemberIds && t.involvedMemberIds.includes(member.id))).sort((a, b) => new Date(b.date) - new Date(a.date));
+
+            if (memberTransactions.length === 0) {
+                memberDetailsTransactionsContainer.innerHTML = `<p class="text-center text-gray-500">${translations[currentLanguage].noRelatedTransactions}</p>`;
+            } else {
+                let tableHtml = `<table class="min-w-full bg-white"><thead><tr>
+                    <th>${translations[currentLanguage].dateHeader}</th>
+                    <th>${translations[currentLanguage].typeHeader}</th>
+                    <th>${translations[currentLanguage].descriptionHeader}</th>
+                    <th>${translations[currentLanguage].expenseTypeHeader}</th>
+                    <th class="text-right-aligned">${translations[currentLanguage].amountHeader}</th></tr></thead><tbody>`;
+                
+                memberTransactions.forEach(t => {
+                    let displayedAmount = t.amount;
+                    if (t.type === 'expense' && t.involvedMemberIds && t.involvedMemberIds.length > 0) {
+                        displayedAmount /= t.involvedMemberIds.length;
+                    }
+                    tableHtml += `<tr class="table-row">
+                        <td>${new Date(t.date).toLocaleDateString(currentLanguage === 'vi' ? 'vi-VN' : 'en-US')}</td>
+                        <td><span class="px-2 py-1 rounded-full text-xs font-semibold ${t.type === 'contribution' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">${t.type === 'contribution' ? 'Thu' : 'Chi'}</span></td>
+                        <td>${t.description}</td>
+                        <td>${t.expense_type || 'N/A'}</td>
+                        <td class="text-right-aligned ${t.type === 'contribution' ? 'balance-positive' : 'balance-negative'}">${t.type === 'contribution' ? '+' : '-'}${formatNumberForDisplay(displayedAmount)}</td></tr>`;
+                });
+                tableHtml += `</tbody></table>`;
+                memberDetailsTransactionsContainer.innerHTML = tableHtml;
+            }
+        }
+
+        // --- Reporting Functions ---
+        function renderFundReport() {
+            if (transactions.length === 0) {
+                fundReportTableContainer.innerHTML = `<p class="text-center text-gray-500">${translations[currentLanguage].noTransactionsReport}</p>`;
+                return;
+            }
+            let tableHtml = `<table class="min-w-full bg-white"><thead><tr>
+                <th>${translations[currentLanguage].dateHeader}</th><th>${translations[currentLanguage].typeHeader}</th>
+                <th>${translations[currentLanguage].descriptionHeader}</th><th>${translations[currentLanguage].expenseTypeHeader}</th>
+                <th>${translations[currentLanguage].relatedMembersHeader}</th><th class="text-right-aligned">${translations[currentLanguage].amountHeader}</th></tr></thead><tbody>`;
+            
+            transactions.slice().sort((a, b) => new Date(b.date) - new Date(a.date)).forEach(t => {
+                tableHtml += `<tr class="table-row">
+                    <td>${new Date(t.date).toLocaleDateString(currentLanguage === 'vi' ? 'vi-VN' : 'en-US')}</td>
+                    <td><span class="px-2 py-1 rounded-full text-xs font-semibold ${t.type === 'contribution' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">${t.type === 'contribution' ? 'Thu' : 'Chi'}</span></td>
+                    <td>${t.description}</td><td>${t.expense_type || 'N/A'}</td>
+                    <td>${t.type === 'contribution' ? getMemberName(t.contributingMemberId) : getInvolvedMembersNames(t.involvedMemberIds)}</td>
+                    <td class="text-right-aligned ${t.type === 'contribution' ? 'balance-positive' : 'balance-negative'}">${t.type === 'contribution' ? '+' : '-'}${formatNumberForDisplay(t.amount)}</td></tr>`;
+            });
+            tableHtml += `</tbody></table>`;
+            fundReportTableContainer.innerHTML = tableHtml;
+        }
+
+        function renderMemberReportDropdown() {
+            selectMemberReportDropdown.innerHTML = '';
+            if (members.length > 0) {
+                members.forEach(member => selectMemberReportDropdown.innerHTML += `<option value="${member.id}">${member.name}</option>`);
+                renderSelectedMemberReport();
+            }
+        }
+
+        function renderSelectedMemberReport() {
+            const selectedMemberId = selectMemberReportDropdown.value;
+            if (!selectedMemberId) {
+                memberReportTableContainer.innerHTML = `<p class="text-center text-gray-500">${translations[currentLanguage].selectMemberToReport}</p>`;
+                return;
+            }
+            const memberTransactions = transactions.filter(t => (t.contributingMemberId === selectedMemberId) || (t.involvedMemberIds && t.involvedMemberIds.includes(selectedMemberId))).sort((a, b) => new Date(b.date) - new Date(a.date));
+            if (memberTransactions.length === 0) {
+                memberReportTableContainer.innerHTML = `<p class="text-center text-gray-500">${translations[currentLanguage].noMemberTransactions}</p>`;
+                return;
+            }
+            let tableHtml = `<table class="min-w-full bg-white"><thead><tr>
+                <th>${translations[currentLanguage].dateHeader}</th><th>${translations[currentLanguage].typeHeader}</th>
+                <th>${translations[currentLanguage].descriptionHeader}</th><th>${translations[currentLanguage].expenseTypeHeader}</th>
+                <th class="text-right-aligned">${translations[currentLanguage].amountHeader}</th></tr></thead><tbody>`;
+            
+            memberTransactions.forEach(t => {
+                let displayedAmount = t.amount;
+                if (t.type === 'expense' && t.involvedMemberIds && t.involvedMemberIds.length > 0) {
+                    displayedAmount /= t.involvedMemberIds.length;
+                }
+                tableHtml += `<tr class="table-row">
+                    <td>${new Date(t.date).toLocaleDateString(currentLanguage === 'vi' ? 'vi-VN' : 'en-US')}</td>
+                    <td><span class="px-2 py-1 rounded-full text-xs font-semibold ${t.type === 'contribution' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">${t.type === 'contribution' ? 'Thu' : 'Chi'}</span></td>
+                    <td>${t.description}</td><td>${t.expense_type || 'N/A'}</td>
+                    <td class="text-right-aligned ${t.type === 'contribution' ? 'balance-positive' : 'balance-negative'}">${t.type === 'contribution' ? '+' : '-'}${formatNumberForDisplay(displayedAmount)}</td></tr>`;
+            });
+            tableHtml += `</tbody></table>`;
+            memberReportTableContainer.innerHTML = tableHtml;
+        }
+
+        // --- Chart Functions ---
+        function polarToCartesian(centerX, centerY, radius, angleInDegrees) {
+            const angleInRadians = (angleInDegrees - 90) * Math.PI / 180.0;
+            return { x: centerX + (radius * Math.cos(angleInRadians)), y: centerY + (radius * Math.sin(angleInRadians)) };
+        }
+
+        function describePieSlice(centerX, centerY, radius, startAngle, endAngle) {
+            const start = polarToCartesian(centerX, centerY, radius, endAngle);
+            const end = polarToCartesian(centerX, centerY, radius, startAngle);
+            const largeArcFlag = endAngle - startAngle <= 180 ? "0" : "1";
+            return `M ${centerX} ${centerY} L ${start.x} ${start.y} A ${radius} ${radius} 0 ${largeArcFlag} 0 ${end.x} ${end.y} L ${centerX} ${centerY} Z`;
+        }
+
+        function renderMemberBalancePieChart() {
+            const chartData = members.filter(m => Math.abs(m.balance) > 0.01);
+            const totalAbsoluteBalance = chartData.reduce((sum, m) => sum + Math.abs(m.balance), 0);
+            if (chartData.length === 0) {
+                memberBalancePieChartDiv.innerHTML = `<p class="text-center text-gray-500 mt-4">${translations[currentLanguage].noBalanceChart}</p>`;
+                return;
+            }
+            let currentAngle = 0, slicesSvg = '', legendHtml = '';
+            chartData.forEach((member, index) => {
+                const sliceAngle = (Math.abs(member.balance) / totalAbsoluteBalance) * 360;
+                const color = ['#4CAF50', '#2196F3', '#FFC107', '#F44336', '#9C27B0', '#FF9800', '#00BCD4', '#E91E63'][index % 8];
+                slicesSvg += `<path d="${describePieSlice(100, 100, 90, currentAngle, currentAngle + sliceAngle)}" fill="${color}" stroke="white" stroke-width="1" />`;
+                currentAngle += sliceAngle;
+                legendHtml += `<div class="flex items-center mb-1"><span class="inline-block w-4 h-4 rounded-full mr-2" style="background-color: ${color};"></span><span class="text-sm">${member.name}</span></div>`;
+            });
+            memberBalancePieChartDiv.innerHTML = `<svg viewBox="0 0 200 200" width="200" height="200">${slicesSvg}</svg><div class="ml-8">${legendHtml}</div>`;
+        }
+
+        function calculateCategoryBalances() {
+            const incomeCategories = new Map(), expenseCategories = new Map();
+            transactions.forEach(t => {
+                if (t.type === 'contribution') {
+                    const category = t.expense_type || translations[currentLanguage].contributionType;
+                    incomeCategories.set(category, (incomeCategories.get(category) || 0) + t.amount);
+                } else if (t.type === 'expense') {
+                    const category = t.expense_type || translations[currentLanguage].otherCategory;
+                    expenseCategories.set(category, (expenseCategories.get(category) || 0) + t.amount);
+                }
+            });
+            return { incomeCategories, expenseCategories };
+        }
+
+        function renderSingleCategoryPieChart(container, title, dataMap, colors) {
+            const totalAmount = Array.from(dataMap.values()).reduce((sum, val) => sum + val, 0);
+            if (totalAmount === 0) {
+                container.innerHTML = `<p class="text-center text-gray-500 mt-4">${translations[currentLanguage].noCategoryChart.replace('{type}', title.toLowerCase())}</p>`;
+                return;
+            }
+            let currentAngle = 0, slicesSvg = '', legendHtml = '';
+            Array.from(dataMap.keys()).sort().forEach((category, index) => {
+                const amount = dataMap.get(category);
+                const sliceAngle = (amount / totalAmount) * 360;
+                const color = colors[index % colors.length];
+                slicesSvg += `<path d="${describePieSlice(100, 100, 90, currentAngle, currentAngle + sliceAngle)}" fill="${color}" stroke="white" stroke-width="1" />`;
+                currentAngle += sliceAngle;
+                legendHtml += `<div class="flex items-center mb-1"><span class="inline-block w-4 h-4 rounded-full mr-2" style="background-color: ${color};"></span><span>${category}: ${formatNumberForDisplay(amount)}</span></div>`;
+            });
+            container.innerHTML = `<svg viewBox="0 0 200 200" width="200" height="200">${slicesSvg}</svg><div class="mt-4">${legendHtml}</div>`;
+        }
+
+        function renderCategoryPieCharts() {
+            const { incomeCategories, expenseCategories } = calculateCategoryBalances();
+            renderSingleCategoryPieChart(document.getElementById('income-pie-chart-container'), translations[currentLanguage].incomeByCategory, incomeCategories, ['#4CAF50', '#8BC34A', '#CDDC39']);
+            renderSingleCategoryPieChart(document.getElementById('expense-pie-chart-container'), translations[currentLanguage].expenseByCategory, expenseCategories, ['#F44336', '#FF9800', '#FFC107']);
+        }
+
+        // --- Gemini API Integration ---
+        async function callGeminiAPI(payload, retries = 3, delay = 1000) {
+            const apiKey = ""; // Left empty for Canvas environment
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+            
+            for (let i = 0; i < retries; i++) {
+                try {
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    if (!response.ok) {
+                        const errorBody = await response.json();
+                        throw new Error(`API Error (${response.status}): ${errorBody.error?.message || 'Unknown error'}`);
+                    }
+                    const result = await response.json();
+                    if (result.candidates && result.candidates.length > 0 && result.candidates[0].content?.parts?.length > 0) {
+                        return result;
+                    } else {
+                         throw new Error("Invalid response structure from API.");
+                    }
+                } catch (error) {
+                    console.error(`Attempt ${i + 1} failed:`, error.message);
+                    if (i === retries - 1) throw error;
+                    await new Promise(res => setTimeout(res, delay * Math.pow(2, i)));
+                }
+            }
+        }
+
+        function markdownToHtml(markdown) {
+            let html = markdown;
+            html = html.replace(/^### (.*$)/gim, '<h3 class="text-lg font-semibold mt-4 mb-2">$1</h3>');
+            html = html.replace(/^## (.*$)/gim, '<h2 class="text-xl font-bold mt-6 mb-3">$1</h2>');
+            html = html.replace(/\*\*(.*?)\*\*/gim, '<strong>$1</strong>');
+            html = html.replace(/\*(.*?)\*/gim, '<em>$1</em>');
+            html = html.replace(/^\s*-\s(.*)$/gim, '<li class="ml-5 list-disc">$1</li>');
+            html = html.split('\n').map(line => line.trim() ? `<p class="mb-2">${line}</p>` : '').join('').replace(/<p class="mb-2">((<h[23]>.*<\/h[23]>)|(<li.*<\/li>))<\/p>/g, '$1');
+            return html;
+        }
+
+        async function generateFundInsights() {
+            isGeneratingInsights = true;
+            fundInsightsContent.innerHTML = `<div class="flex flex-col items-center"><div class="spinner"></div><p class="mt-2">${translations[currentLanguage].generatingInsights}</p></div>`;
+            hideErrorMessage();
+
+            const promptData = {
+                fundBalance: fundBalance,
+                transactions: transactions.slice(0, 20).map(t => ({
+                    type: t.type,
+                    amount: t.amount,
+                    description: t.description,
+                    date: t.date,
+                    category: t.expense_type,
+                    member: getMemberName(t.contributingMemberId) || getInvolvedMembersNames(t.involvedMemberIds)
+                }))
             };
 
-            const currentMonthData = getDailyTotals(currentMonthKey);
-            const previousMonthData = getDailyTotals(previousMonthKey);
+            const prompt = `Bạn là một chuyên gia tư vấn tài chính cho một nhóm bạn. Dựa vào dữ liệu quỹ sau đây (bằng VNĐ), hãy đưa ra những phân tích và nhận xét hữu ích.
+            Dữ liệu: ${JSON.stringify(promptData)}
             
-            const labels = Array.from({ length: 31 }, (_, i) => i + 1);
+            Hãy trả lời bằng tiếng Việt theo định dạng Markdown, bao gồm các phần sau:
+            ## Tình hình chung
+            - Nhận xét về số dư hiện tại.
+            ## Phân tích chi tiêu
+            - Các khoản chi lớn nhất gần đây là gì?
+            - Nhóm đang chi tiêu nhiều nhất cho những loại nào?
+            ## Gợi ý
+            - Đưa ra một vài lời khuyên để nhóm quản lý chi tiêu tốt hơn hoặc các hoạt động nhóm có thể thực hiện dựa trên thói quen chi tiêu.`;
 
-            const datasets = [];
-            if(currentMonthKey) {
-                datasets.push({
-                    label: `${translations.currentMonth} (${currentMonthKey})`,
-                    data: currentMonthData,
-                    borderColor: 'rgba(239, 68, 68, 1)',
-                    backgroundColor: 'rgba(239, 68, 68, 0.2)',
-                    fill: true,
-                    tension: 0.4,
-                });
-            }
-            if(previousMonthKey) {
-                 datasets.push({
-                    label: `${translations.previousMonth} (${previousMonthKey})`,
-                    data: previousMonthData,
-                    borderColor: 'rgba(59, 130, 246, 1)',
-                    backgroundColor: 'rgba(59, 130, 246, 0.2)',
-                    fill: true,
-                    tension: 0.4,
-                });
-            }
+            const payload = { contents: [{ role: "user", parts: [{ text: prompt }] }] };
 
-            const ctx = elements.dailyExpenseChartCanvas.getContext('2d');
-            dailyChartInstance = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: labels,
-                    datasets: datasets
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            ticks: {
-                                callback: function(value) {
-                                    return formatCurrency(value);
-                                }
-                            }
-                        }
-                    },
-                    plugins: {
-                        tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    let label = context.dataset.label || '';
-                                    if (label) label += ': ';
-                                    if (context.parsed.y !== null) {
-                                        label += formatCurrency(context.parsed.y);
-                                    }
-                                    return label;
-                                }
+            try {
+                const result = await callGeminiAPI(payload);
+                const text = result.candidates[0].content.parts[0].text;
+                fundInsightsContent.innerHTML = markdownToHtml(text);
+            } catch (error) {
+                showErrorMessage(`${translations[currentLanguage].aiCallError} ${error.message}`);
+                fundInsightsContent.innerHTML = `<p class="text-red-500">${translations[currentLanguage].noInsights}</p>`;
+            } finally {
+                isGeneratingInsights = false;
+            }
+        }
+
+        async function generateFoodSuggestions(latitude, longitude, addressString = null) {
+            isGeneratingFoodSuggestions = true;
+            foodSuggestionContent.innerHTML = `<div class="flex flex-col items-center"><div class="spinner"></div><p class="mt-2">${translations[currentLanguage].generatingFoodSuggestions}</p></div>`;
+            hideErrorMessage();
+
+            let locationPrompt = addressString ? `gần địa chỉ "${addressString}"` : `gần vị trí có tọa độ GPS là ${latitude}, ${longitude}`;
+
+            const prompt = `Gợi ý 5 nhà hàng hoặc quán ăn ngon ${locationPrompt} ở Việt Nam.
+            Chỉ trả lời bằng một đối tượng JSON hợp lệ theo schema đã cho.`;
+            
+            const payload = {
+                contents: [{ role: "user", parts: [{ text: prompt }] }],
+                generationConfig: {
+                    responseMimeType: "application/json",
+                    responseSchema: {
+                        type: "ARRAY",
+                        items: {
+                            type: "OBJECT",
+                            properties: {
+                                "name": { "type": "STRING" },
+                                "address": { "type": "STRING" },
+                                "description": { "type": "STRING" },
+                                "rating": { "type": "NUMBER" },
+                                "specialty_dishes": { "type": "ARRAY", "items": { "type": "STRING" } }
                             }
                         }
                     }
                 }
-            });
-        }
-        // UPDATE END
-
-        function openChartDetailModal(title, transactionsForType) {
-            elements.chartDetailModalTitle.textContent = title;
-            elements.chartDetailTableBody.innerHTML = '';
-
-            transactionsForType.sort((a, b) => new Date(b.date) - new Date(a.date));
-
-            if (transactionsForType.length === 0) {
-                 elements.chartDetailTableBody.innerHTML = `<tr><td colspan="4" class="text-center py-4 text-gray-500">${translations.noTransactions}</td></tr>`;
-            } else {
-                transactionsForType.forEach(t => {
-                    const row = `
-                        <tr>
-                            <td class="table-cell">${new Date(t.date).toLocaleDateString('vi-VN')}</td>
-                            <td class="table-cell">${t.description}</td>
-                            <td class="table-cell">${getMemberNames(t.involvedMemberIds, t.contributingMemberId)}</td>
-                            <td class="table-cell text-right">${formatCurrency(t.amount)}</td>
-                        </tr>
-                    `;
-                    elements.chartDetailTableBody.innerHTML += row;
-                });
-            }
-            elements.chartDetailModalOverlay.classList.remove('hidden');
-        }
-
-        function getEditSelectedInvolvedMembers() {
-            const selected = [];
-            elements.editInvolvedMembersDropdown.querySelectorAll('input[type="checkbox"]:checked').forEach(checkbox => {
-                selected.push(checkbox.value);
-            });
-            return selected;
-        }
-
-        function updateEditInvolvedMembersText() {
-            const selectedCount = getEditSelectedInvolvedMembers().length;
-            if (selectedCount === 0) {
-                elements.editInvolvedMembersText.textContent = translations.selectMembers || "Chọn thành viên";
-            } else {
-                elements.editInvolvedMembersText.textContent = `${selectedCount} ${translations.selected}`;
-            }
-        }
-
-        function openEditModal(transactionId) {
-            const transaction = transactions.find(t => String(t.id) === transactionId);
-            if (!transaction) return;
-
-            elements.editTransactionId.value = transaction.id;
-            elements.editDateInput.value = new Date(transaction.date).toISOString().split('T')[0];
-            elements.editDescriptionInput.value = transaction.description;
-            elements.editAmountInput.value = transaction.amount;
-
-            elements.editMemberSelect.innerHTML = '';
-            members.forEach(member => {
-                const option = document.createElement('option');
-                option.value = member.id;
-                option.textContent = member.name;
-                elements.editMemberSelect.appendChild(option);
-            });
-            elements.editMemberSelect.value = transaction.contributingMemberId || '';
-
-            elements.editInvolvedMembersDropdown.innerHTML = '';
-            members.forEach(member => {
-                const label = document.createElement('label');
-                label.className = 'flex items-center space-x-2 p-2 hover:bg-gray-100 cursor-pointer';
-                const checkbox = document.createElement('input');
-                checkbox.type = 'checkbox';
-                checkbox.value = member.id;
-                checkbox.className = 'rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-300 focus:ring focus:ring-offset-0 focus:ring-indigo-200 focus:ring-opacity-50';
-                
-                if (transaction.involvedMemberIds && transaction.involvedMemberIds.includes(member.id)) {
-                    checkbox.checked = true;
+            };
+            
+            try {
+                const result = await callGeminiAPI(payload);
+                const suggestions = JSON.parse(result.candidates[0].content.parts[0].text);
+                let htmlContent = '<div class="space-y-4">';
+                if (suggestions.length > 0) {
+                    suggestions.forEach(s => {
+                        const googleMapsSearchLink = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(s.name + ", " + s.address)}`;
+                        htmlContent += `<div class="p-4 border rounded-lg bg-white">
+                            <h3 class="text-lg font-semibold text-[#006B68]">${s.name}</h3>
+                            <p><strong>${translations[currentLanguage].addressLabel}</strong> ${s.address || 'N/A'}</p>
+                            <p><strong>${translations[currentLanguage].ratingLabel}</strong> ${s.rating ? `${s.rating} ⭐` : 'N/A'}</p>
+                            <p><strong>Món đặc sắc:</strong> ${s.specialty_dishes?.join(', ') || 'N/A'}</p>
+                            <p class="mt-1">${s.description || ''}</p>
+                            <a href="${googleMapsSearchLink}" target="_blank" class="text-blue-500 hover:underline">${translations[currentLanguage].viewOnMaps}</a>
+                        </div>`;
+                    });
+                } else {
+                    htmlContent += `<p>${translations[currentLanguage].noFoodSuggestions}</p>`;
                 }
-
-                checkbox.addEventListener('change', updateEditInvolvedMembersText);
-
-                label.appendChild(checkbox);
-                label.appendChild(document.createTextNode(` ${member.name}`));
-                elements.editInvolvedMembersDropdown.appendChild(label);
-            });
-            updateEditInvolvedMembersText();
-
-            elements.editExpenseTypeSelect.innerHTML = '';
-            expenseTypes.forEach(type => {
-                const option = document.createElement('option');
-                option.value = type.id;
-                option.textContent = type.expense_type;
-                elements.editExpenseTypeSelect.appendChild(option);
-            });
-            const expenseType = expenseTypes.find(t => t.expense_type === transaction.expense_type);
-            if (expenseType) elements.editExpenseTypeSelect.value = expenseType.id;
-
-            elements.editModalOverlay.classList.remove('hidden');
+                htmlContent += '</div>';
+                foodSuggestionContent.innerHTML = htmlContent;
+            } catch (error) {
+                showErrorMessage(`${translations[currentLanguage].aiCallError} ${error.message}`);
+                foodSuggestionContent.innerHTML = `<p class="text-red-500">${translations[currentLanguage].foodSuggestionError}</p>`;
+            } finally {
+                isGeneratingFoodSuggestions = false;
+            }
         }
 
-        async function handleEditFormSubmit(event) {
-            event.preventDefault();
-            elements.loadingOverlay.classList.remove('hidden');
+        async function callGeminiVisionAPI(base64ImageData) {
+            cameraLoadingSpinner.classList.remove('hidden');
+            descriptionInput.value = translations[currentLanguage].generatingInsights; 
+            aiDescribeBtn.disabled = true;
+            
+            const prompt = `Phân tích hình ảnh này (có thể là hóa đơn hoặc một món ăn/đồ vật) và trích xuất thông tin.
+            Chỉ trả lời bằng một đối tượng JSON hợp lệ theo schema.
+            Nếu là hóa đơn, cố gắng tìm tổng số tiền. Nếu là món ăn, hãy ước tính giá tiền hợp lý bằng VNĐ.
+            Xác định ngày tháng nếu có.
+            Đưa ra một mô tả ngắn gọn.
+            Phân loại chi tiêu vào một trong các mục sau: ${expenseTypes.filter(et => et.Type === 'expense').map(et => et.expense_type).join(', ')}.`;
 
-            const transactionId = elements.editTransactionId.value;
-            const newExpenseTypeId = elements.editExpenseTypeSelect.value;
-            const newExpenseTypeName = expenseTypes.find(t => String(t.id) === newExpenseTypeId).expense_type;
-            
-            const involvedMemberIds = getEditSelectedInvolvedMembers();
-            
-            const updatedData = {
-                date: elements.editDateInput.value,
-                description: elements.editDescriptionInput.value,
-                amount: parseFloat(elements.editAmountInput.value),
-                contributingMemberId: elements.editMemberSelect.value,
-                expense_type: newExpenseTypeName,
-                involvedMemberIds: involvedMemberIds,
+            const payload = {
+                contents: [{
+                    parts: [
+                        { text: prompt },
+                        { inlineData: { mimeType: "image/png", data: base64ImageData } }
+                    ]
+                }],
+                generationConfig: {
+                    responseMimeType: "application/json",
+                    responseSchema: {
+                        type: "OBJECT",
+                        properties: {
+                            "description": { "type": "STRING" },
+                            "estimated_amount": { "type": "NUMBER" },
+                            "category": { "type": "STRING" },
+                            "date": { "type": "STRING", "description": "ISO 8601 format, e.g., 2025-08-16T11:20:00" }
+                        }
+                    }
+                }
             };
 
             try {
-                const { error } = await supabaseClient.from('transactions_quan').update(updatedData).eq('id', transactionId);
-                if (error) throw error;
-                elements.editModalOverlay.classList.add('hidden');
-                await fetchSupabaseData();
+                const result = await callGeminiAPI(payload);
+                const parsedAnalysis = JSON.parse(result.candidates[0].content.parts[0].text);
+                
+                descriptionInput.value = parsedAnalysis.description || '';
+                amountInput.value = parsedAnalysis.estimated_amount ? formatNumberForInput(String(parsedAnalysis.estimated_amount)) : '';
+                transactionTypeSelect.value = 'expense';
+                transactionTypeSelect.dispatchEvent(new Event('change'));
+
+                if (parsedAnalysis.category && expenseTypes.some(et => et.expense_type === parsedAnalysis.category)) {
+                    expenseTypeSelect.value = parsedAnalysis.category;
+                }
+                
+                if (parsedAnalysis.date) {
+                    const dateObj = new Date(parsedAnalysis.date);
+                    if (!isNaN(dateObj.getTime())) {
+                        const year = dateObj.getFullYear();
+                        const month = (dateObj.getMonth() + 1).toString().padStart(2, '0');
+                        const day = dateObj.getDate().toString().padStart(2, '0');
+                        const hours = dateObj.getHours().toString().padStart(2, '0');
+                        const minutes = dateObj.getMinutes().toString().padStart(2, '0');
+                        transactionDateInput.value = `${year}-${month}-${day}T${hours}:${minutes}`;
+                    }
+                } else {
+                    setDefaultCurrentDateTime(transactionDateInput);
+                }
+                addTransactionSection.classList.remove('hidden');
+                scrollToSection('add-transaction-section');
             } catch (error) {
-                console.error('Error updating transaction:', error.message);
-                alert('Lỗi: ' + error.message);
+                showErrorMessage(`${translations[currentLanguage].aiCallError} ${error.message}`);
+                descriptionInput.value = translations[currentLanguage].noImageDescription;
             } finally {
-                elements.loadingOverlay.classList.add('hidden');
+                cameraLoadingSpinner.classList.add('hidden');
+                aiDescribeBtn.disabled = false;
+                cameraModal.classList.add('hidden');
             }
         }
 
-        function openDeleteModal(transactionId) {
-            transactionToDeleteId = transactionId;
-            elements.deleteModalOverlay.classList.remove('hidden');
-        }
-
-        async function deleteTransaction() {
-            if (!transactionToDeleteId) return;
-            elements.loadingOverlay.classList.remove('hidden');
-            try {
-                const { error } = await supabaseClient.from('transactions_quan').delete().eq('id', transactionToDeleteId);
-                if (error) throw error;
-                elements.deleteModalOverlay.classList.add('hidden');
-                await fetchSupabaseData();
-            } catch (error) {
-                console.error('Error deleting transaction:', error.message);
-                 alert('Lỗi: ' + error.message);
-            } finally {
-                elements.loadingOverlay.classList.add('hidden');
-                transactionToDeleteId = null;
-            }
-        }
-
-        function updatePaginationControls(totalTransactions) {
-            const totalPages = Math.ceil(totalTransactions / transactionsPerPage);
-            elements.pageInfoSpan.textContent = `${translations.page} ${currentPage} ${translations.of} ${totalPages}`;
-            elements.prevPageBtn.disabled = currentPage === 1;
-            elements.nextPageBtn.disabled = currentPage === totalPages || totalPages === 0;
-            elements.prevPageBtn.classList.toggle('opacity-50', currentPage === 1);
-            elements.nextPageBtn.classList.toggle('opacity-50', currentPage === totalPages || totalPages === 0);
-        }
-
-        function getSelectedExpenseTypes() {
-            const selectedTypes = [];
-            elements.expenseTypeFilterDropdown.querySelectorAll('input[type="checkbox"]:checked').forEach(checkbox => {
-                selectedTypes.push(checkbox.value);
-            });
-            return selectedTypes;
-        }
-
-        // UPDATE START: New function to parse dd/mm/yyyy
-        function parseDateString(dateStr) {
-            if (!dateStr || !/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(dateStr)) {
-                return null;
-            }
-            const parts = dateStr.split('/');
-            const day = parseInt(parts[0], 10);
-            const month = parseInt(parts[1], 10) - 1; // Month is 0-indexed
-            const year = parseInt(parts[2], 10);
-            const date = new Date(year, month, day);
-            if (date.getFullYear() === year && date.getMonth() === month && date.getDate() === day) {
-                return date;
-            }
-            return null;
-        }
-        // UPDATE END
-
-        function applyFilters() {
-            // UPDATE START: Use new parsing and date logic
-            const startDate = parseDateString(elements.startDateFilter.value);
-            let endDate = parseDateString(elements.endDateFilter.value);
-
-            if (startDate) {
-                startDate.setHours(0, 0, 0, 0);
-            }
-            if (endDate) {
-                endDate.setHours(23, 59, 59, 999);
-            }
-            // UPDATE END
-            
-            const memberId = elements.memberFilter.value;
-            const selectedExpenseTypeIds = getSelectedExpenseTypes();
-            const description = elements.descriptionFilter.value.toLowerCase().trim();
-            const minAmount = parseFloat(elements.minAmountFilter.value);
-            const maxAmount = parseFloat(elements.maxAmountFilter.value);
-
-            const selectedExpenseTypeNames = selectedExpenseTypeIds.map(id => {
-                const type = expenseTypes.find(t => String(t.id) === id);
-                return type ? type.expense_type : null;
-            }).filter(name => name !== null);
-
-            filteredTransactions = transactions.filter(t => {
-                const transactionDate = new Date(t.date);
-                const memberMatch = memberId === 'all' || (t.involvedMemberIds && t.involvedMemberIds.includes(memberId)) || (t.contributingMemberId && t.contributingMemberId === memberId);
-                const typeMatch = selectedExpenseTypeNames.length === 0 || selectedExpenseTypeNames.includes(t.expense_type);
-                // UPDATE START: Use new dateMatch logic
-                const dateMatch = (!startDate || transactionDate >= startDate) && (!endDate || transactionDate <= endDate);
-                // UPDATE END
-                const descriptionMatch = !description || t.description.toLowerCase().includes(description);
-                const minAmountMatch = isNaN(minAmount) || t.amount >= minAmount;
-                const maxAmountMatch = isNaN(maxAmount) || t.amount <= maxAmount;
-
-                return memberMatch && typeMatch && dateMatch && descriptionMatch && minAmountMatch && maxAmountMatch;
-            });
-
-            currentPage = 1;
-            renderTransactions(filteredTransactions);
-            renderAllCharts(filteredTransactions);
-        }
-
-        function exportToExcel() {
-            const dataToExport = filteredTransactions.map(t => ({
-                'Ngày': new Date(t.date).toLocaleDateString('vi-VN'),
-                'Mô tả': t.description,
-                'Người giao dịch': getMemberNames(t.involvedMemberIds, t.contributingMemberId),
-                'Loại': t.expense_type,
-                'Số tiền (VND)': t.amount
-            }));
-
-            const worksheet = XLSX.utils.json_to_sheet(dataToExport);
-            const workbook = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(workbook, worksheet, 'Lịch Sử Giao Dịch');
-            const wbout = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
-            saveAs(new Blob([wbout], { type: 'application/octet-stream' }), 'lich_su_giao_dich.xlsx');
+        function setDefaultCurrentDateTime(inputElement) {
+            const now = new Date();
+            now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+            inputElement.value = now.toISOString().slice(0,16);
         }
 
         // --- Event Listeners ---
-        elements.applyFilterBtn.addEventListener('click', applyFilters);
-        elements.clearFilterBtn.addEventListener('click', () => {
-            elements.startDateFilter.value = '';
-            elements.endDateFilter.value = '';
-            elements.memberFilter.value = 'all';
-            elements.descriptionFilter.value = '';
-            elements.minAmountFilter.value = '';
-            elements.maxAmountFilter.value = '';
-            elements.expenseTypeFilterDropdown.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
-                checkbox.checked = false;
-            });
-            updateExpenseTypeFilterText();
-            
-            filteredTransactions = transactions;
-            currentPage = 1;
-            renderTransactions(filteredTransactions);
-            renderAllCharts(filteredTransactions);
-        });
-
-        elements.prevPageBtn.addEventListener('click', () => {
-            if (currentPage > 1) {
-                currentPage--;
-                renderTransactions(filteredTransactions);
+        document.getElementById('add-member-btn').onclick = () => { hideAllSections(); addMemberSection.classList.remove('hidden'); scrollToSection('add-member-section'); };
+        document.getElementById('add-transaction-btn').onclick = () => {
+            hideAllSections();
+            addTransactionSection.classList.remove('hidden');
+            transactionTypeSelect.value = 'expense';
+            transactionTypeSelect.dispatchEvent(new Event('change'));
+            setDefaultCurrentDateTime(transactionDateInput);
+            scrollToSection('add-transaction-section');
+        };
+        document.getElementById('show-report-selection-btn').onclick = () => { hideAllSections(); reportSelectionModal.classList.remove('hidden'); };
+        document.getElementById('get-insights-btn').onclick = () => { hideAllSections(); fundInsightsModal.classList.remove('hidden'); generateFundInsights(); };
+        document.getElementById('get-food-suggestions-btn').onclick = () => {
+            hideAllSections();
+            foodSuggestionModal.classList.remove('hidden');
+            getGeolocationAndSuggestFood();
+        };
+        getFoodSuggestionsByAddressBtn.onclick = () => {
+            const address = addressInputForFood.value.trim();
+            if (address) {
+                generateFoodSuggestions(null, null, address);
             }
-        });
+        };
 
-        elements.nextPageBtn.addEventListener('click', () => {
-            const totalPages = Math.ceil(filteredTransactions.length / transactionsPerPage);
-            if (currentPage < totalPages) {
-                currentPage++;
-                renderTransactions(filteredTransactions);
+        selectFundReportBtn.onclick = () => { hideAllSections(); fundReportSection.classList.remove('hidden'); renderFundReport(); scrollToSection('fund-report-section'); };
+        selectMemberReportBtn.onclick = () => { hideAllSections(); memberReportsSection.classList.remove('hidden'); renderMemberReportDropdown(); scrollToSection('member-reports-section'); };
+        closeReportSelectionBtn.onclick = () => reportSelectionModal.classList.add('hidden');
+        cancelEditTransactionBtn.onclick = () => { editTransactionModal.classList.add('hidden'); editingTransaction = null; };
+        closeMemberDetailsBtn.onclick = () => { memberDetailsModal.classList.add('hidden'); selectedMemberForDetails = null; };
+        closeInsightsBtn.onclick = () => fundInsightsModal.classList.add('hidden');
+        closeFoodSuggestionBtn.onclick = () => foodSuggestionModal.classList.add('hidden');
+
+        aiDescribeBtn.onclick = () => {
+            hideAllSections();
+            cameraModal.classList.remove('hidden');
+            uploadedImagePreview.src = '';
+            uploadedImagePreview.classList.add('hidden');
+            imageUploadInput.value = '';
+            imageUploadInput.click();
+        };
+
+        imageUploadInput.onchange = (event) => {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onloadstart = () => {
+                    cameraLoadingSpinner.classList.remove('hidden');
+                    uploadedImagePreview.classList.add('hidden');
+                };
+                reader.onloadend = () => {
+                    uploadedImagePreview.src = reader.result;
+                    uploadedImagePreview.classList.remove('hidden');
+                    const base64Data = reader.result.split(',')[1];
+                    callGeminiVisionAPI(base64Data);
+                };
+                reader.readAsDataURL(file);
             }
-        });
+        };
+        cancelCameraBtn.onclick = () => cameraModal.classList.add('hidden');
 
-        elements.exportExcelBtn.addEventListener('click', exportToExcel);
-        elements.closeChartDetailModalBtn.addEventListener('click', () => elements.chartDetailModalOverlay.classList.add('hidden'));
+        amountInput.oninput = (e) => e.target.value = formatNumberForInput(e.target.value);
+        editAmountInput.oninput = (e) => e.target.value = formatNumberForInput(e.target.value);
+        selectMemberReportDropdown.onchange = renderSelectedMemberReport;
 
-        elements.transactionTableBody.addEventListener('click', (event) => {
-            const target = event.target;
-            const editButton = target.closest('.edit-btn');
-            const deleteButton = target.closest('.delete-btn');
-
-            if (editButton) {
-                const transactionId = editButton.getAttribute('data-id');
-                openEditModal(transactionId);
-            } else if (deleteButton) {
-                const transactionId = deleteButton.getAttribute('data-id');
-                openDeleteModal(transactionId);
-            }
-        });
-        
-        elements.closeEditModalBtn.addEventListener('click', () => elements.editModalOverlay.classList.add('hidden'));
-        elements.editTransactionForm.addEventListener('submit', handleEditFormSubmit);
-        elements.cancelDeleteBtn.addEventListener('click', () => elements.deleteModalOverlay.classList.add('hidden'));
-        elements.confirmDeleteBtn.addEventListener('click', deleteTransaction);
-
-        // Multi-select dropdown logic
-        elements.expenseTypeFilterBtn.addEventListener('click', () => {
-            elements.expenseTypeFilterDropdown.classList.toggle('hidden');
-        });
-        elements.editInvolvedMembersBtn.addEventListener('click', () => {
-            elements.editInvolvedMembersDropdown.classList.toggle('hidden');
-        });
-
-        document.addEventListener('click', (e) => {
-            if (!elements.expenseTypeFilterBtn.contains(e.target) && !elements.expenseTypeFilterDropdown.contains(e.target)) {
-                elements.expenseTypeFilterDropdown.classList.add('hidden');
-            }
-            if (elements.editModalOverlay.classList.contains('hidden')) return;
-            if (!elements.editInvolvedMembersBtn.contains(e.target) && !elements.editInvolvedMembersDropdown.contains(e.target)) {
-                elements.editInvolvedMembersDropdown.classList.add('hidden');
-            }
-        });
-        
-        function updateExpenseTypeFilterText() {
-            const selectedCount = getSelectedExpenseTypes().length;
-            if (selectedCount === 0) {
-                elements.expenseTypeFilterText.textContent = translations.allTypes;
+        function getGeolocationAndSuggestFood() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    (position) => generateFoodSuggestions(position.coords.latitude, position.coords.longitude),
+                    (error) => {
+                        let msg = translations[currentLanguage].locationError;
+                        if (error.code === 1) msg = translations[currentLanguage].permissionDenied;
+                        showErrorMessage(msg);
+                        foodSuggestionContent.innerHTML = `<p class="text-red-500">${msg}</p>`;
+                    }
+                );
             } else {
-                elements.expenseTypeFilterText.textContent = `${selectedCount} ${translations.selected}`;
+                showErrorMessage(translations[currentLanguage].geolocationNotSupported);
             }
         }
 
-        function initializePageWithData() {
-            elements.memberFilter.innerHTML = `<option value="all" data-key="allMembers">${localization[currentLanguage].allMembers}</option>`;
-            members.forEach(member => {
-                const option = document.createElement('option');
-                option.value = member.id;
-                option.textContent = member.name;
-                elements.memberFilter.appendChild(option);
-            });
+        window.onscroll = () => scrollToTopBtn.classList.toggle('show', document.body.scrollTop > 20 || document.documentElement.scrollTop > 20);
+        scrollToTopBtn.onclick = () => window.scrollTo({ top: 0, behavior: 'smooth' });
 
-            elements.expenseTypeFilterDropdown.innerHTML = '';
-            expenseTypes.forEach(type => {
-                const label = document.createElement('label');
-                label.className = 'flex items-center space-x-2 p-2 hover:bg-gray-100 cursor-pointer';
-                const checkbox = document.createElement('input');
-                checkbox.type = 'checkbox';
-                checkbox.value = type.id;
-                checkbox.className = 'rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-300 focus:ring focus:ring-offset-0 focus:ring-indigo-200 focus:ring-opacity-50';
-                
-                checkbox.addEventListener('change', updateExpenseTypeFilterText);
-
-                label.appendChild(checkbox);
-                label.appendChild(document.createTextNode(` ${type.expense_type}`));
-                elements.expenseTypeFilterDropdown.appendChild(label);
-            });
-
+        document.addEventListener('DOMContentLoaded', () => {
             setLanguage(currentLanguage);
-
-            filteredTransactions = transactions;
-            renderTransactions(filteredTransactions);
-            renderAllCharts(filteredTransactions);
-        }
-        
-        async function handleLogout() {
-            elements.loadingOverlay.classList.remove('hidden');
-            try {
-                const { error } = await supabaseClient.auth.signOut();
-                if (error) throw error;
-                const pathArray = window.location.pathname.split('/');
-                pathArray.pop();
-                pathArray.push('index.html');
-                window.location.href = window.location.origin + pathArray.join('/');
-            } catch (error) {
-                console.error('Error logging out:', error.message);
-                alert('Lỗi khi đăng xuất: ' + error.message);
-            } finally {
-                elements.loadingOverlay.classList.add('hidden');
-            }
-        }
-        
-        // UPDATE START: Event listener for toggling month details
-        elements.monthlySummaryContainer.addEventListener('click', (event) => {
-            const toggleButton = event.target.closest('.toggle-month-btn');
-            if (toggleButton) {
-                const month = toggleButton.dataset.month;
-                const detailsDiv = document.getElementById(`details-${month}`);
-                if (detailsDiv) {
-                    const isHidden = detailsDiv.classList.toggle('hidden');
-                    toggleButton.textContent = isHidden ? translations.showMore : translations.showLess;
-                }
-            }
+            initializeSupabase();
         });
-        // UPDATE END
-
-        document.addEventListener('DOMContentLoaded', async () => {
-            try {
-                const { data: { session }, error: sessionError } = await supabaseClient.auth.getSession();
-                if (sessionError) throw sessionError;
-
-                if (!session) {
-                    const pathArray = window.location.pathname.split('/');
-                    pathArray.pop();
-                    pathArray.push('index.html');
-                    window.location.href = window.location.origin + pathArray.join('/');
-                    return; 
-                }
-
-                console.log('User is logged in:', session.user.email);
-
-                const logoutBtn = document.getElementById('logout-btn');
-                if (logoutBtn) {
-                    logoutBtn.addEventListener('click', handleLogout);
-                }
-
-                await fetchSupabaseData();
-
-            } catch (error) {
-                console.error('Initialization error:', error.message);
-                elements.loadingOverlay.classList.add('hidden');
-                document.body.innerHTML = `<div class="text-center p-8 text-red-600">Lỗi khởi tạo: ${error.message}</div>`;
-            }
-        });
-
     </script>
+<script>
+    document.getElementById('hamburger-btn').addEventListener('click', function() {
+        document.getElementById('hamburger-menu').classList.toggle('hidden');
+    });
+</script>
+
 </body>
 </html>
