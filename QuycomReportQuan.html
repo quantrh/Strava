@@ -299,10 +299,10 @@
     <!-- Modals -->
     <!-- Edit Transaction Modal -->
     <div id="edit-modal-overlay" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-40 modal-overlay">
-        <div class="relative top-20 mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white">
+        <div class="relative top-10 mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white">
             <div class="mt-3">
                 <h3 class="text-lg leading-6 font-medium text-gray-900 text-center" data-key="editTransactionTitle">Sửa Giao Dịch</h3>
-                <div class="mt-2 px-7 py-3">
+                <div class="mt-2 px-7 py-3 max-h-[70vh] overflow-y-auto">
                     <form id="edit-transaction-form">
                         <input type="hidden" id="edit-transaction-id">
                         <div class="mb-4">
@@ -318,11 +318,24 @@
                             <input type="number" id="edit-amount" class="mt-1 p-2 w-full border rounded-md" required>
                         </div>
                         <div class="mb-4">
-                            <label for="edit-member" class="block text-sm font-medium text-gray-700 text-left" data-key="filterMember">Người giao dịch</label>
+                            <label for="edit-member" class="block text-sm font-medium text-gray-700 text-left" data-key="payer">Người trả tiền</label>
                             <select id="edit-member" class="mt-1 p-2 w-full border rounded-md" required>
                                 <!-- Members will be populated here -->
                             </select>
                         </div>
+                        <!-- UPDATE START: Involved Members Multi-select -->
+                        <div class="mb-4">
+                            <label for="edit-involved-members-btn" class="block text-sm font-medium text-gray-700 text-left" data-key="involvedMembersLabel">Thành viên liên quan</label>
+                            <div class="multi-select-container">
+                                <button type="button" id="edit-involved-members-btn" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm bg-white p-2 text-left">
+                                    <span id="edit-involved-members-text" data-key="selectMembers">Chọn thành viên</span>
+                                </button>
+                                <div id="edit-involved-members-dropdown" class="multi-select-dropdown hidden">
+                                    <!-- Checkboxes will be populated here -->
+                                </div>
+                            </div>
+                        </div>
+                        <!-- UPDATE END -->
                         <div class="mb-4">
                             <label for="edit-expense-type" class="block text-sm font-medium text-gray-700 text-left" data-key="filterType">Loại giao dịch</label>
                             <select id="edit-expense-type" class="mt-1 p-2 w-full border rounded-md" required>
@@ -400,9 +413,9 @@
             expenseTypeFilterBtn: document.getElementById('expense-type-filter-btn'),
             expenseTypeFilterText: document.getElementById('expense-type-filter-text'),
             expenseTypeFilterDropdown: document.getElementById('expense-type-filter-dropdown'),
-            descriptionFilter: document.getElementById('description-filter'), // New
-            minAmountFilter: document.getElementById('min-amount-filter'), // New
-            maxAmountFilter: document.getElementById('max-amount-filter'), // New
+            descriptionFilter: document.getElementById('description-filter'), 
+            minAmountFilter: document.getElementById('min-amount-filter'), 
+            maxAmountFilter: document.getElementById('max-amount-filter'), 
             transactionCountSpan: document.getElementById('transaction-count'),
             prevPageBtn: document.getElementById('prev-page-btn'),
             nextPageBtn: document.getElementById('next-page-btn'),
@@ -420,6 +433,11 @@
             editMemberSelect: document.getElementById('edit-member'),
             editExpenseTypeSelect: document.getElementById('edit-expense-type'),
             closeEditModalBtn: document.getElementById('close-edit-modal-btn'),
+            // UPDATE START: New elements for involved members
+            editInvolvedMembersBtn: document.getElementById('edit-involved-members-btn'),
+            editInvolvedMembersText: document.getElementById('edit-involved-members-text'),
+            editInvolvedMembersDropdown: document.getElementById('edit-involved-members-dropdown'),
+            // UPDATE END
             // Delete Modal
             deleteModalOverlay: document.getElementById('delete-modal-overlay'),
             confirmDeleteBtn: document.getElementById('confirm-delete-btn'),
@@ -502,6 +520,11 @@
                 deleteConfirmationMessage: "Bạn có chắc chắn muốn xóa giao dịch này không? Hành động này không thể hoàn tác.",
                 modalDelete: "Xóa",
                 logout: "Đăng xuất",
+                // UPDATE START: New keys
+                payer: "Người trả tiền",
+                involvedMembersLabel: "Thành viên liên quan",
+                selectMembers: "Chọn thành viên",
+                // UPDATE END
             },
             en: {
                 appTitle: "Transaction History - GROUP FUND MANAGER",
@@ -552,6 +575,11 @@
                 deleteConfirmationMessage: "Are you sure you want to delete this transaction? This action cannot be undone.",
                 modalDelete: "Delete",
                 logout: "Logout",
+                // UPDATE START: New keys
+                payer: "Payer",
+                involvedMembersLabel: "Involved Members",
+                selectMembers: "Select Members",
+                // UPDATE END
             }
         };
         let currentLanguage = 'vi';
@@ -984,6 +1012,25 @@
             elements.chartDetailModalOverlay.classList.remove('hidden');
         }
 
+        // UPDATE START: New helper functions for edit modal multi-select
+        function getEditSelectedInvolvedMembers() {
+            const selected = [];
+            elements.editInvolvedMembersDropdown.querySelectorAll('input[type="checkbox"]:checked').forEach(checkbox => {
+                selected.push(checkbox.value);
+            });
+            return selected;
+        }
+
+        function updateEditInvolvedMembersText() {
+            const selectedCount = getEditSelectedInvolvedMembers().length;
+            if (selectedCount === 0) {
+                elements.editInvolvedMembersText.textContent = translations.selectMembers || "Chọn thành viên";
+            } else {
+                elements.editInvolvedMembersText.textContent = `${selectedCount} ${translations.selected}`;
+            }
+        }
+        // UPDATE END
+
         function openEditModal(transactionId) {
             const transaction = transactions.find(t => String(t.id) === transactionId);
             if (!transaction) return;
@@ -993,6 +1040,7 @@
             elements.editDescriptionInput.value = transaction.description;
             elements.editAmountInput.value = transaction.amount;
 
+            // Populate contributing member (payer) dropdown
             elements.editMemberSelect.innerHTML = '';
             members.forEach(member => {
                 const option = document.createElement('option');
@@ -1000,12 +1048,32 @@
                 option.textContent = member.name;
                 elements.editMemberSelect.appendChild(option);
             });
-            if (transaction.contributingMemberId) {
-                elements.editMemberSelect.value = transaction.contributingMemberId;
-            } else if (transaction.involvedMemberIds && transaction.involvedMemberIds.length > 0) {
-                 elements.editMemberSelect.value = transaction.involvedMemberIds[0];
-            }
+            elements.editMemberSelect.value = transaction.contributingMemberId || '';
 
+            // UPDATE START: Populate involved members multi-select
+            elements.editInvolvedMembersDropdown.innerHTML = '';
+            members.forEach(member => {
+                const label = document.createElement('label');
+                label.className = 'flex items-center space-x-2 p-2 hover:bg-gray-100 cursor-pointer';
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.value = member.id;
+                checkbox.className = 'rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-300 focus:ring focus:ring-offset-0 focus:ring-indigo-200 focus:ring-opacity-50';
+                
+                if (transaction.involvedMemberIds && transaction.involvedMemberIds.includes(member.id)) {
+                    checkbox.checked = true;
+                }
+
+                checkbox.addEventListener('change', updateEditInvolvedMembersText);
+
+                label.appendChild(checkbox);
+                label.appendChild(document.createTextNode(` ${member.name}`));
+                elements.editInvolvedMembersDropdown.appendChild(label);
+            });
+            updateEditInvolvedMembersText();
+            // UPDATE END
+
+            // Populate expense type dropdown
             elements.editExpenseTypeSelect.innerHTML = '';
             expenseTypes.forEach(type => {
                 const option = document.createElement('option');
@@ -1027,13 +1095,18 @@
             const newExpenseTypeId = elements.editExpenseTypeSelect.value;
             const newExpenseTypeName = expenseTypes.find(t => String(t.id) === newExpenseTypeId).expense_type;
             
+            // UPDATE START: Get involved members and add to the payload
+            const involvedMemberIds = getEditSelectedInvolvedMembers();
+            
             const updatedData = {
                 date: elements.editDateInput.value,
                 description: elements.editDescriptionInput.value,
                 amount: parseFloat(elements.editAmountInput.value),
                 contributingMemberId: elements.editMemberSelect.value,
                 expense_type: newExpenseTypeName,
+                involvedMemberIds: involvedMemberIds, // Add involved members to the update object
             };
+            // UPDATE END
 
             try {
                 const { error } = await supabaseClient.from('transactions_quan').update(updatedData).eq('id', transactionId);
@@ -1199,11 +1272,22 @@
         elements.expenseTypeFilterBtn.addEventListener('click', () => {
             elements.expenseTypeFilterDropdown.classList.toggle('hidden');
         });
+        // UPDATE START: Event listener for new multi-select in edit modal
+        elements.editInvolvedMembersBtn.addEventListener('click', () => {
+            elements.editInvolvedMembersDropdown.classList.toggle('hidden');
+        });
+        // UPDATE END
 
         document.addEventListener('click', (e) => {
             if (!elements.expenseTypeFilterBtn.contains(e.target) && !elements.expenseTypeFilterDropdown.contains(e.target)) {
                 elements.expenseTypeFilterDropdown.classList.add('hidden');
             }
+            // UPDATE START: Close involved members dropdown when clicking outside
+            if (elements.editModalOverlay.classList.contains('hidden')) return;
+            if (!elements.editInvolvedMembersBtn.contains(e.target) && !elements.editInvolvedMembersDropdown.contains(e.target)) {
+                elements.editInvolvedMembersDropdown.classList.add('hidden');
+            }
+            // UPDATE END
         });
         
         function updateExpenseTypeFilterText() {
@@ -1247,13 +1331,11 @@
             renderAllCharts(filteredTransactions);
         }
         
-        // --- NEW: Logout Function ---
         async function handleLogout() {
             elements.loadingOverlay.classList.remove('hidden');
             try {
                 const { error } = await supabaseClient.auth.signOut();
                 if (error) throw error;
-                // FIX: Manually construct the absolute URL
                 const pathArray = window.location.pathname.split('/');
                 pathArray.pop();
                 pathArray.push('index.html');
@@ -1266,7 +1348,6 @@
             }
         }
         
-        // --- NEW: Event listener for monthly summary table ---
         elements.monthlySummaryContainer.addEventListener('click', (event) => {
             const summaryRow = event.target.closest('.summary-row');
             if (!summaryRow) return;
@@ -1291,42 +1372,31 @@
             openChartDetailModal(modalTitle, transactionsForSelection);
         });
 
-        // --- REVISED: Page Initialization ---
         document.addEventListener('DOMContentLoaded', async () => {
-            // The loading overlay is visible by default now.
-            
-            // 1. Check user session
             try {
                 const { data: { session }, error: sessionError } = await supabaseClient.auth.getSession();
                 if (sessionError) throw sessionError;
 
                 if (!session) {
-                    // No user is signed in, redirect to login page
-                    // FIX: Manually construct the absolute URL
                     const pathArray = window.location.pathname.split('/');
                     pathArray.pop();
                     pathArray.push('index.html');
                     window.location.href = window.location.origin + pathArray.join('/');
-                    return; // Stop executing further code
+                    return; 
                 }
 
-                // User is logged in, proceed.
                 console.log('User is logged in:', session.user.email);
 
-                // 2. Add event listener for the new logout button
                 const logoutBtn = document.getElementById('logout-btn');
                 if (logoutBtn) {
                     logoutBtn.addEventListener('click', handleLogout);
                 }
 
-                // 3. Fetch data (the original purpose of the event listener)
                 await fetchSupabaseData();
 
             } catch (error) {
                 console.error('Initialization error:', error.message);
-                // Hide loading overlay on error
                 elements.loadingOverlay.classList.add('hidden');
-                // Optionally show an error message on the page
                 document.body.innerHTML = `<div class="text-center p-8 text-red-600">Lỗi khởi tạo: ${error.message}</div>`;
             }
         });
