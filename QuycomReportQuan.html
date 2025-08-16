@@ -174,15 +174,15 @@
                 <!-- Start Date Filter -->
                 <div>
                     <label for="start-date-filter" class="block text-sm font-medium text-gray-700" data-key="filterStartDate">Từ ngày</label>
-                    <!-- UPDATE START: Changed input type to text -->
-                    <input type="text" id="start-date-filter" placeholder="dd/mm/yyyy" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                    <!-- UPDATE START: Changed input type to datetime-local -->
+                    <input type="datetime-local" id="start-date-filter" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
                     <!-- UPDATE END -->
                 </div>
                 <!-- End Date Filter -->
                 <div>
                     <label for="end-date-filter" class="block text-sm font-medium text-gray-700" data-key="filterEndDate">Đến ngày</label>
-                    <!-- UPDATE START: Changed input type to text -->
-                    <input type="text" id="end-date-filter" placeholder="dd/mm/yyyy" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                    <!-- UPDATE START: Changed input type to datetime-local -->
+                    <input type="datetime-local" id="end-date-filter" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
                     <!-- UPDATE END -->
                 </div>
                 <!-- Member Filter -->
@@ -224,7 +224,10 @@
                 <button id="apply-filter-btn" class="btn-primary flex-1" data-key="filterApply">Áp dụng</button>
                 <button id="clear-filter-btn" class="btn-secondary flex-1" data-key="filterClear">Xóa bộ lọc</button>
             </div>
-            <div class="flex justify-end mt-4">
+            <div class="flex justify-end mt-4 gap-2">
+                <button id="get-insights-btn" class="btn-primary flex items-center gap-2">
+                    ✨ <span data-key="aiInsightsBtn">AI Nhận xét Quỹ</span>
+                </button>
                 <button id="export-excel-btn" class="btn-primary flex items-center gap-2" data-key="exportExcel">
                     <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path d="M10 2a1 1 0 011 1v6h6a1 1 0 110 2h-6v6a1 1 0 11-2 0v-6H3a1 1 0 110-2h6V3a1 1 0 011-1z" clip-rule="evenodd" fill-rule="evenodd"></path></svg>
                     Xuất Excel
@@ -318,7 +321,9 @@
                         <input type="hidden" id="edit-transaction-id">
                         <div class="mb-4">
                             <label for="edit-date" class="block text-sm font-medium text-gray-700 text-left" data-key="tableDate">Ngày</label>
-                            <input type="date" id="edit-date" class="mt-1 p-2 w-full border rounded-md" required>
+                            <!-- UPDATE START: Changed input type to datetime-local -->
+                            <input type="datetime-local" id="edit-date" class="mt-1 p-2 w-full border rounded-md" required>
+                            <!-- UPDATE END -->
                         </div>
                         <div class="mb-4">
                             <label for="edit-description" class="block text-sm font-medium text-gray-700 text-left" data-key="tableDescription">Mô tả</label>
@@ -334,7 +339,6 @@
                                 <!-- Members will be populated here -->
                             </select>
                         </div>
-                        <!-- UPDATE START: Involved Members Multi-select -->
                         <div class="mb-4">
                             <label for="edit-involved-members-btn" class="block text-sm font-medium text-gray-700 text-left" data-key="involvedMembersLabel">Thành viên liên quan</label>
                             <div class="multi-select-container">
@@ -346,7 +350,6 @@
                                 </div>
                             </div>
                         </div>
-                        <!-- UPDATE END -->
                         <div class="mb-4">
                             <label for="edit-expense-type" class="block text-sm font-medium text-gray-700 text-left" data-key="filterType">Loại giao dịch</label>
                             <select id="edit-expense-type" class="mt-1 p-2 w-full border rounded-md" required>
@@ -411,6 +414,23 @@
         </div>
     </div>
 
+    <!-- Fund Insights Modal -->
+    <div id="fund-insights-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
+        <div class="relative top-10 mx-auto p-5 border w-full max-w-2xl shadow-lg rounded-md bg-white">
+            <div class="mt-3">
+                <div class="flex justify-between items-center pb-3">
+                    <h3 class="text-lg leading-6 font-medium text-gray-900" data-key="fundInsightsModalTitle">Thông Tin Chi Tiết Quỹ ✨</h3>
+                    <button id="close-insights-btn" class="text-gray-400 hover:text-gray-600">
+                        <span class="text-2xl">&times;</span>
+                    </button>
+                </div>
+                <div id="fund-insights-content" class="overflow-y-auto" style="max-height: 60vh;">
+                    <!-- Insights will be populated here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
 
     <script>
         // DOM elements initialization
@@ -455,11 +475,15 @@
             expenseChartCanvas: document.getElementById('expenseChart'),
             expenseLegendContainer: document.getElementById('expense-legend-container'),
             monthlySummaryContainer: document.getElementById('monthly-summary-container'),
-            dailyExpenseChartCanvas: document.getElementById('dailyExpenseChart'), // UPDATE
+            dailyExpenseChartCanvas: document.getElementById('dailyExpenseChart'),
             chartDetailModalOverlay: document.getElementById('chart-detail-modal-overlay'),
             chartDetailModalTitle: document.getElementById('chart-detail-modal-title'),
             chartDetailTableBody: document.getElementById('chart-detail-table-body'),
             closeChartDetailModalBtn: document.getElementById('close-chart-detail-modal-btn'),
+            getInsightsBtn: document.getElementById('get-insights-btn'),
+            fundInsightsModal: document.getElementById('fund-insights-modal'),
+            fundInsightsContent: document.getElementById('fund-insights-content'),
+            closeInsightsBtn: document.getElementById('close-insights-btn'),
         };
 
         // --- Supabase Client Initialization ---
@@ -475,7 +499,7 @@
         const transactionsPerPage = 10;
         let filteredTransactions = [];
         let expenseChartInstance = null;
-        let dailyChartInstance = null; // UPDATE
+        let dailyChartInstance = null;
         let expenseTypeColors = {};
         let transactionToDeleteId = null;
 
@@ -515,7 +539,7 @@
                 unknownType: "Loại không xác định",
                 spendingChartTitle: "Biểu đồ cơ cấu chi tiêu",
                 monthlySpendingChartTitle: "Báo cáo tổng hợp hàng tháng",
-                dailySpendingChartTitle: "Biểu đồ chi tiêu hàng ngày (2 tháng gần nhất)", // UPDATE
+                dailySpendingChartTitle: "Biểu đồ chi tiêu hàng ngày (2 tháng gần nhất)",
                 spendingByType: "Chi tiêu theo loại",
                 chartDetailTitle: "Chi tiết cho",
                 totalSpending: "Tổng cộng",
@@ -533,12 +557,17 @@
                 payer: "Người trả tiền",
                 involvedMembersLabel: "Thành viên liên quan",
                 selectMembers: "Chọn thành viên",
-                income: "Thu nhập", // UPDATE
-                expenses: "Chi tiêu", // UPDATE
-                showMore: "Hiện thêm", // UPDATE
-                showLess: "Thu gọn", // UPDATE
-                currentMonth: "Tháng này", // UPDATE
-                previousMonth: "Tháng trước", // UPDATE
+                income: "Thu nhập",
+                expenses: "Chi tiêu",
+                showMore: "Hiện thêm",
+                showLess: "Thu gọn",
+                currentMonth: "Tháng này",
+                previousMonth: "Tháng trước",
+                aiInsightsBtn: "AI Nhận xét Quỹ",
+                fundInsightsModalTitle: "Thông Tin Chi Tiết Quỹ ✨",
+                generatingInsights: "Đang tạo thông tin chi tiết từ AI...",
+                noInsights: "Không thể tạo thông tin chi tiết. Vui lòng thử lại.",
+                aiConnectionError: "Đã xảy ra lỗi khi kết nối với AI. Vui lòng thử lại.",
             },
             en: {
                 appTitle: "Transaction History - GROUP FUND MANAGER",
@@ -575,7 +604,7 @@
                 unknownType: "Unknown Type",
                 spendingChartTitle: "Spending Structure Chart",
                 monthlySpendingChartTitle: "Monthly Summary Report",
-                dailySpendingChartTitle: "Daily Spending Chart (Last 2 Months)", // UPDATE
+                dailySpendingChartTitle: "Daily Spending Chart (Last 2 Months)",
                 spendingByType: "Spending by Type",
                 chartDetailTitle: "Details for",
                 totalSpending: "Total",
@@ -593,12 +622,17 @@
                 payer: "Payer",
                 involvedMembersLabel: "Involved Members",
                 selectMembers: "Select Members",
-                income: "Income", // UPDATE
-                expenses: "Expenses", // UPDATE
-                showMore: "Show More", // UPDATE
-                showLess: "Show Less", // UPDATE
-                currentMonth: "Current Month", // UPDATE
-                previousMonth: "Previous Month", // UPDATE
+                income: "Income",
+                expenses: "Expenses",
+                showMore: "Show More",
+                showLess: "Show Less",
+                currentMonth: "Current Month",
+                previousMonth: "Previous Month",
+                aiInsightsBtn: "AI Fund Insights",
+                fundInsightsModalTitle: "Fund Insights ✨",
+                generatingInsights: "Generating insights from AI...",
+                noInsights: "Could not generate insights. Please try again.",
+                aiConnectionError: "An error occurred while connecting to the AI. Please try again.",
             }
         };
         let currentLanguage = 'vi';
@@ -723,8 +757,8 @@
         
         function renderAllCharts(data) {
             renderDoughnutChart(data);
-            renderMonthlySummaries(data); // UPDATE
-            renderDailySpendingChart(data); // UPDATE
+            renderMonthlySummaries(data);
+            renderDailySpendingChart(data);
         }
 
         function renderDoughnutChart(data) {
@@ -732,9 +766,7 @@
                 expenseChartInstance.destroy();
             }
 
-            // UPDATE START: Filter out contributions, only show expenses
             const expenseData = data.filter(transaction => transaction.type === 'expense');
-            // UPDATE END
 
             const spendingByType = expenseData.reduce((acc, transaction) => {
                 const type = transaction.expense_type || (translations.unassigned || 'Không xác định');
@@ -752,7 +784,6 @@
 
             const totalSpending = sortedData.reduce((sum, [, item]) => sum + item.total, 0);
 
-            // Render legend table
             let legendHtml = `
                 <table class="w-full text-sm text-left text-gray-500">
                     <thead class="text-xs text-gray-700 uppercase bg-gray-50">
@@ -792,8 +823,6 @@
             `;
             elements.expenseLegendContainer.innerHTML = legendHtml;
 
-
-            // Render chart
             const chartLabels = sortedData.map(([label]) => label);
             const chartData = sortedData.map(([, item]) => item.total);
             const chartColors = chartLabels.map(label => expenseTypeColors[label] || '#cccccc');
@@ -844,21 +873,18 @@
             });
         }
         
-        // UPDATE START: Reworked monthly summary function
         function renderMonthlySummaries(data) {
             const summaryContainer = elements.monthlySummaryContainer;
             summaryContainer.innerHTML = '';
 
             const monthlyData = data.reduce((acc, t) => {
-                const month = t.date.substring(0, 7); // YYYY-MM
-                if (!acc[month]) {
-                    acc[month] = [];
-                }
+                const month = t.date.substring(0, 7);
+                if (!acc[month]) acc[month] = [];
                 acc[month].push(t);
                 return acc;
             }, {});
 
-            const months = Object.keys(monthlyData).sort().reverse(); // Sort newest to oldest
+            const months = Object.keys(monthlyData).sort().reverse();
 
             if (months.length === 0) {
                 summaryContainer.innerHTML = `<p class="text-center text-gray-500">${translations.noTransactions}</p>`;
@@ -868,8 +894,6 @@
             let summaryHtml = '<div class="space-y-8">';
             months.forEach((month, index) => {
                 const monthTransactions = monthlyData[month];
-                
-                // Separate into income and expenses
                 const incomeTransactions = monthTransactions.filter(t => t.type === 'contribution');
                 const expenseTransactions = monthTransactions.filter(t => t.type === 'expense');
 
@@ -878,7 +902,6 @@
                     acc[type] = (acc[type] || 0) + t.amount;
                     return acc;
                 }, {});
-
                 const expenseByType = expenseTransactions.reduce((acc, t) => {
                     const type = t.expense_type || translations.unassigned;
                     acc[type] = (acc[type] || 0) + t.amount;
@@ -887,106 +910,51 @@
 
                 const totalIncome = Object.values(incomeByType).reduce((sum, amount) => sum + amount, 0);
                 const totalExpense = Object.values(expenseByType).reduce((sum, amount) => sum + amount, 0);
-
                 const isCollapsed = index >= 2;
 
-                summaryHtml += `
-                    <div class="month-summary-block">
-                        <div class="flex justify-between items-center mb-2">
-                            <h4 class="text-xl font-bold text-gray-800">${month}</h4>
-                            ${index >= 2 ? `<button class="toggle-month-btn text-sm text-blue-600 font-semibold" data-month="${month}">${translations.showMore}</button>` : ''}
-                        </div>
-                        <div class="month-details space-y-4 ${isCollapsed ? 'hidden' : ''}" id="details-${month}">
-                `;
+                summaryHtml += `<div class="month-summary-block">
+                    <div class="flex justify-between items-center mb-2">
+                        <h4 class="text-xl font-bold text-gray-800">${month}</h4>
+                        ${index >= 2 ? `<button class="toggle-month-btn text-sm text-blue-600 font-semibold" data-month="${month}">${translations.showMore}</button>` : ''}
+                    </div>
+                    <div class="month-details space-y-4 ${isCollapsed ? 'hidden' : ''}" id="details-${month}">`;
 
-                // Income Table
                 if (totalIncome > 0) {
-                    summaryHtml += `
-                        <div>
-                            <h5 class="text-lg font-semibold text-green-600 mb-2">${translations.income}</h5>
-                            <table class="w-full text-sm text-left text-gray-500">
-                                <thead class="text-xs text-gray-700 uppercase bg-gray-50">
-                                    <tr>
-                                        <th scope="col" class="px-4 py-2">${translations.legendType}</th>
-                                        <th scope="col" class="px-4 py-2 text-right">${translations.legendAmount}</th>
-                                        <th scope="col" class="px-4 py-2 text-right">${translations.legendRatio}</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                    `;
+                    summaryHtml += `<div><h5 class="text-lg font-semibold text-green-600 mb-2">${translations.income}</h5><table class="w-full text-sm text-left text-gray-500">
+                        <thead class="text-xs text-gray-700 uppercase bg-gray-50"><tr>
+                            <th scope="col" class="px-4 py-2">${translations.legendType}</th><th scope="col" class="px-4 py-2 text-right">${translations.legendAmount}</th><th scope="col" class="px-4 py-2 text-right">${translations.legendRatio}</th>
+                        </tr></thead><tbody>`;
                     Object.entries(incomeByType).sort(([,a],[,b]) => b-a).forEach(([type, amount]) => {
                         const percentage = totalIncome > 0 ? (amount / totalIncome * 100).toFixed(2) : 0;
-                        summaryHtml += `<tr class="bg-white border-b">
-                                        <td class="px-4 py-2 font-medium text-gray-900">${type}</td>
-                                        <td class="px-4 py-2 text-right">${formatCurrency(amount)}</td>
-                                        <td class="px-4 py-2 text-right">${percentage}%</td>
-                                      </tr>`;
+                        summaryHtml += `<tr class="bg-white border-b"><td class="px-4 py-2 font-medium text-gray-900">${type}</td><td class="px-4 py-2 text-right">${formatCurrency(amount)}</td><td class="px-4 py-2 text-right">${percentage}%</td></tr>`;
                     });
-                    summaryHtml += `
-                                </tbody>
-                                <tfoot class="font-semibold text-gray-900">
-                                    <tr>
-                                        <td class="px-4 py-2">${translations.totalSpending}</td>
-                                        <td class="px-4 py-2 text-right">${formatCurrency(totalIncome)}</td>
-                                        <td class="px-4 py-2 text-right">100.00%</td>
-                                    </tr>
-                                </tfoot>
-                            </table>
-                        </div>
-                    `;
+                    summaryHtml += `</tbody><tfoot class="font-semibold text-gray-900"><tr>
+                        <td class="px-4 py-2">${translations.totalSpending}</td><td class="px-4 py-2 text-right">${formatCurrency(totalIncome)}</td><td class="px-4 py-2 text-right">100.00%</td>
+                    </tr></tfoot></table></div>`;
                 }
 
-                // Expense Table
                 if (totalExpense > 0) {
-                     summaryHtml += `
-                        <div>
-                            <h5 class="text-lg font-semibold text-red-600 mb-2">${translations.expenses}</h5>
-                            <table class="w-full text-sm text-left text-gray-500">
-                                <thead class="text-xs text-gray-700 uppercase bg-gray-50">
-                                    <tr>
-                                        <th scope="col" class="px-4 py-2">${translations.legendType}</th>
-                                        <th scope="col" class="px-4 py-2 text-right">${translations.legendAmount}</th>
-                                        <th scope="col" class="px-4 py-2 text-right">${translations.legendRatio}</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                    `;
+                     summaryHtml += `<div><h5 class="text-lg font-semibold text-red-600 mb-2">${translations.expenses}</h5><table class="w-full text-sm text-left text-gray-500">
+                        <thead class="text-xs text-gray-700 uppercase bg-gray-50"><tr>
+                            <th scope="col" class="px-4 py-2">${translations.legendType}</th><th scope="col" class="px-4 py-2 text-right">${translations.legendAmount}</th><th scope="col" class="px-4 py-2 text-right">${translations.legendRatio}</th>
+                        </tr></thead><tbody>`;
                     Object.entries(expenseByType).sort(([,a],[,b]) => b-a).forEach(([type, amount]) => {
                         const percentage = totalExpense > 0 ? (amount / totalExpense * 100).toFixed(2) : 0;
-                        summaryHtml += `<tr class="bg-white border-b">
-                                        <td class="px-4 py-2 font-medium text-gray-900">${type}</td>
-                                        <td class="px-4 py-2 text-right">${formatCurrency(amount)}</td>
-                                        <td class="px-4 py-2 text-right">${percentage}%</td>
-                                      </tr>`;
+                        summaryHtml += `<tr class="bg-white border-b"><td class="px-4 py-2 font-medium text-gray-900">${type}</td><td class="px-4 py-2 text-right">${formatCurrency(amount)}</td><td class="px-4 py-2 text-right">${percentage}%</td></tr>`;
                     });
-                    summaryHtml += `
-                                </tbody>
-                                <tfoot class="font-semibold text-gray-900">
-                                    <tr>
-                                        <td class="px-4 py-2">${translations.totalSpending}</td>
-                                        <td class="px-4 py-2 text-right">${formatCurrency(totalExpense)}</td>
-                                        <td class="px-4 py-2 text-right">100.00%</td>
-                                    </tr>
-                                </tfoot>
-                            </table>
-                        </div>
-                    `;
+                    summaryHtml += `</tbody><tfoot class="font-semibold text-gray-900"><tr>
+                        <td class="px-4 py-2">${translations.totalSpending}</td><td class="px-4 py-2 text-right">${formatCurrency(totalExpense)}</td><td class="px-4 py-2 text-right">100.00%</td>
+                    </tr></tfoot></table></div>`;
                 }
-                summaryHtml += `</div></div>`; // Close month-details and month-summary-block
+                summaryHtml += `</div></div>`;
             });
             summaryHtml += '</div>';
             summaryContainer.innerHTML = summaryHtml;
         }
-        // UPDATE END
 
-        // UPDATE START: New daily spending chart function
         function renderDailySpendingChart(data) {
-            if (dailyChartInstance) {
-                dailyChartInstance.destroy();
-            }
-
+            if (dailyChartInstance) dailyChartInstance.destroy();
             const expenses = data.filter(t => t.type === 'expense');
-
             const monthlyData = expenses.reduce((acc, t) => {
                 const month = t.date.substring(0, 7);
                 if (!acc[month]) acc[month] = [];
@@ -1003,119 +971,67 @@
             const getDailyTotals = (monthKey) => {
                 const dailyTotals = Array(31).fill(0);
                 if (!monthKey || !monthlyData[monthKey]) return dailyTotals;
-                
                 monthlyData[monthKey].forEach(t => {
-                    const day = new Date(t.date).getDate() - 1; // 0-indexed
+                    const day = new Date(t.date).getDate() - 1;
                     dailyTotals[day] += t.amount;
                 });
                 return dailyTotals;
             };
 
-            const currentMonthData = getDailyTotals(currentMonthKey);
-            const previousMonthData = getDailyTotals(previousMonthKey);
-            
-            const labels = Array.from({ length: 31 }, (_, i) => i + 1);
-
             const datasets = [];
-            if(currentMonthKey) {
-                datasets.push({
-                    label: `${translations.currentMonth} (${currentMonthKey})`,
-                    data: currentMonthData,
-                    borderColor: 'rgba(239, 68, 68, 1)',
-                    backgroundColor: 'rgba(239, 68, 68, 0.2)',
-                    fill: true,
-                    tension: 0.4,
-                });
-            }
-            if(previousMonthKey) {
-                 datasets.push({
-                    label: `${translations.previousMonth} (${previousMonthKey})`,
-                    data: previousMonthData,
-                    borderColor: 'rgba(59, 130, 246, 1)',
-                    backgroundColor: 'rgba(59, 130, 246, 0.2)',
-                    fill: true,
-                    tension: 0.4,
-                });
-            }
+            if(currentMonthKey) datasets.push({
+                label: `${translations.currentMonth} (${currentMonthKey})`,
+                data: getDailyTotals(currentMonthKey),
+                borderColor: 'rgba(239, 68, 68, 1)',
+                backgroundColor: 'rgba(239, 68, 68, 0.2)',
+                fill: true, tension: 0.4,
+            });
+            if(previousMonthKey) datasets.push({
+                label: `${translations.previousMonth} (${previousMonthKey})`,
+                data: getDailyTotals(previousMonthKey),
+                borderColor: 'rgba(59, 130, 246, 1)',
+                backgroundColor: 'rgba(59, 130, 246, 0.2)',
+                fill: true, tension: 0.4,
+            });
 
             const ctx = elements.dailyExpenseChartCanvas.getContext('2d');
             dailyChartInstance = new Chart(ctx, {
                 type: 'line',
-                data: {
-                    labels: labels,
-                    datasets: datasets
-                },
+                data: { labels: Array.from({ length: 31 }, (_, i) => i + 1), datasets },
                 options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            ticks: {
-                                callback: function(value) {
-                                    return formatCurrency(value);
-                                }
-                            }
-                        }
-                    },
-                    plugins: {
-                        tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    let label = context.dataset.label || '';
-                                    if (label) label += ': ';
-                                    if (context.parsed.y !== null) {
-                                        label += formatCurrency(context.parsed.y);
-                                    }
-                                    return label;
-                                }
-                            }
-                        }
-                    }
+                    responsive: true, maintainAspectRatio: false,
+                    scales: { y: { beginAtZero: true, ticks: { callback: (value) => formatCurrency(value) } } },
+                    plugins: { tooltip: { callbacks: { label: (context) => `${context.dataset.label || ''}: ${formatCurrency(context.parsed.y)}` } } }
                 }
             });
         }
-        // UPDATE END
 
         function openChartDetailModal(title, transactionsForType) {
             elements.chartDetailModalTitle.textContent = title;
             elements.chartDetailTableBody.innerHTML = '';
-
             transactionsForType.sort((a, b) => new Date(b.date) - new Date(a.date));
-
             if (transactionsForType.length === 0) {
                  elements.chartDetailTableBody.innerHTML = `<tr><td colspan="4" class="text-center py-4 text-gray-500">${translations.noTransactions}</td></tr>`;
             } else {
                 transactionsForType.forEach(t => {
-                    const row = `
-                        <tr>
-                            <td class="table-cell">${new Date(t.date).toLocaleDateString('vi-VN')}</td>
-                            <td class="table-cell">${t.description}</td>
-                            <td class="table-cell">${getMemberNames(t.involvedMemberIds, t.contributingMemberId)}</td>
-                            <td class="table-cell text-right">${formatCurrency(t.amount)}</td>
-                        </tr>
-                    `;
-                    elements.chartDetailTableBody.innerHTML += row;
+                    elements.chartDetailTableBody.innerHTML += `<tr>
+                        <td class="table-cell">${new Date(t.date).toLocaleDateString('vi-VN')}</td>
+                        <td class="table-cell">${t.description}</td>
+                        <td class="table-cell">${getMemberNames(t.involvedMemberIds, t.contributingMemberId)}</td>
+                        <td class="table-cell text-right">${formatCurrency(t.amount)}</td>
+                    </tr>`;
                 });
             }
             elements.chartDetailModalOverlay.classList.remove('hidden');
         }
 
         function getEditSelectedInvolvedMembers() {
-            const selected = [];
-            elements.editInvolvedMembersDropdown.querySelectorAll('input[type="checkbox"]:checked').forEach(checkbox => {
-                selected.push(checkbox.value);
-            });
-            return selected;
+            return Array.from(elements.editInvolvedMembersDropdown.querySelectorAll('input:checked')).map(cb => cb.value);
         }
 
         function updateEditInvolvedMembersText() {
-            const selectedCount = getEditSelectedInvolvedMembers().length;
-            if (selectedCount === 0) {
-                elements.editInvolvedMembersText.textContent = translations.selectMembers || "Chọn thành viên";
-            } else {
-                elements.editInvolvedMembersText.textContent = `${selectedCount} ${translations.selected}`;
-            }
+            const count = getEditSelectedInvolvedMembers().length;
+            elements.editInvolvedMembersText.textContent = count === 0 ? (translations.selectMembers || "Chọn thành viên") : `${count} ${translations.selected}`;
         }
 
         function openEditModal(transactionId) {
@@ -1123,46 +1039,36 @@
             if (!transaction) return;
 
             elements.editTransactionId.value = transaction.id;
-            elements.editDateInput.value = new Date(transaction.date).toISOString().split('T')[0];
+            
+            // UPDATE START: Format date for datetime-local input
+            const localDate = new Date(transaction.date);
+            localDate.setMinutes(localDate.getMinutes() - localDate.getTimezoneOffset());
+            elements.editDateInput.value = localDate.toISOString().slice(0, 16);
+            // UPDATE END
+            
             elements.editDescriptionInput.value = transaction.description;
             elements.editAmountInput.value = transaction.amount;
 
             elements.editMemberSelect.innerHTML = '';
             members.forEach(member => {
-                const option = document.createElement('option');
-                option.value = member.id;
-                option.textContent = member.name;
-                elements.editMemberSelect.appendChild(option);
+                elements.editMemberSelect.innerHTML += `<option value="${member.id}">${member.name}</option>`;
             });
             elements.editMemberSelect.value = transaction.contributingMemberId || '';
 
             elements.editInvolvedMembersDropdown.innerHTML = '';
             members.forEach(member => {
+                const isChecked = transaction.involvedMemberIds && transaction.involvedMemberIds.includes(member.id);
                 const label = document.createElement('label');
                 label.className = 'flex items-center space-x-2 p-2 hover:bg-gray-100 cursor-pointer';
-                const checkbox = document.createElement('input');
-                checkbox.type = 'checkbox';
-                checkbox.value = member.id;
-                checkbox.className = 'rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-300 focus:ring focus:ring-offset-0 focus:ring-indigo-200 focus:ring-opacity-50';
-                
-                if (transaction.involvedMemberIds && transaction.involvedMemberIds.includes(member.id)) {
-                    checkbox.checked = true;
-                }
-
-                checkbox.addEventListener('change', updateEditInvolvedMembersText);
-
-                label.appendChild(checkbox);
-                label.appendChild(document.createTextNode(` ${member.name}`));
+                label.innerHTML = `<input type="checkbox" value="${member.id}" class="rounded border-gray-300" ${isChecked ? 'checked' : ''}> <span>${member.name}</span>`;
+                label.querySelector('input').addEventListener('change', updateEditInvolvedMembersText);
                 elements.editInvolvedMembersDropdown.appendChild(label);
             });
             updateEditInvolvedMembersText();
 
             elements.editExpenseTypeSelect.innerHTML = '';
             expenseTypes.forEach(type => {
-                const option = document.createElement('option');
-                option.value = type.id;
-                option.textContent = type.expense_type;
-                elements.editExpenseTypeSelect.appendChild(option);
+                elements.editExpenseTypeSelect.innerHTML += `<option value="${type.id}">${type.expense_type}</option>`;
             });
             const expenseType = expenseTypes.find(t => t.expense_type === transaction.expense_type);
             if (expenseType) elements.editExpenseTypeSelect.value = expenseType.id;
@@ -1173,29 +1079,25 @@
         async function handleEditFormSubmit(event) {
             event.preventDefault();
             elements.loadingOverlay.classList.remove('hidden');
-
             const transactionId = elements.editTransactionId.value;
             const newExpenseTypeId = elements.editExpenseTypeSelect.value;
             const newExpenseTypeName = expenseTypes.find(t => String(t.id) === newExpenseTypeId).expense_type;
-            
-            const involvedMemberIds = getEditSelectedInvolvedMembers();
-            
             const updatedData = {
-                date: elements.editDateInput.value,
+                // UPDATE START: Read from datetime-local and convert to ISO string
+                date: new Date(elements.editDateInput.value).toISOString(),
+                // UPDATE END
                 description: elements.editDescriptionInput.value,
                 amount: parseFloat(elements.editAmountInput.value),
                 contributingMemberId: elements.editMemberSelect.value,
                 expense_type: newExpenseTypeName,
-                involvedMemberIds: involvedMemberIds,
+                involvedMemberIds: getEditSelectedInvolvedMembers(),
             };
-
             try {
                 const { error } = await supabaseClient.from('transactions_quan').update(updatedData).eq('id', transactionId);
                 if (error) throw error;
                 elements.editModalOverlay.classList.add('hidden');
                 await fetchSupabaseData();
             } catch (error) {
-                console.error('Error updating transaction:', error.message);
                 alert('Lỗi: ' + error.message);
             } finally {
                 elements.loadingOverlay.classList.add('hidden');
@@ -1216,7 +1118,6 @@
                 elements.deleteModalOverlay.classList.add('hidden');
                 await fetchSupabaseData();
             } catch (error) {
-                console.error('Error deleting transaction:', error.message);
                  alert('Lỗi: ' + error.message);
             } finally {
                 elements.loadingOverlay.classList.add('hidden');
@@ -1229,46 +1130,16 @@
             elements.pageInfoSpan.textContent = `${translations.page} ${currentPage} ${translations.of} ${totalPages}`;
             elements.prevPageBtn.disabled = currentPage === 1;
             elements.nextPageBtn.disabled = currentPage === totalPages || totalPages === 0;
-            elements.prevPageBtn.classList.toggle('opacity-50', currentPage === 1);
-            elements.nextPageBtn.classList.toggle('opacity-50', currentPage === totalPages || totalPages === 0);
         }
 
         function getSelectedExpenseTypes() {
-            const selectedTypes = [];
-            elements.expenseTypeFilterDropdown.querySelectorAll('input[type="checkbox"]:checked').forEach(checkbox => {
-                selectedTypes.push(checkbox.value);
-            });
-            return selectedTypes;
+            return Array.from(elements.expenseTypeFilterDropdown.querySelectorAll('input:checked')).map(cb => cb.value);
         }
-
-        // UPDATE START: New function to parse dd/mm/yyyy
-        function parseDateString(dateStr) {
-            if (!dateStr || !/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(dateStr)) {
-                return null;
-            }
-            const parts = dateStr.split('/');
-            const day = parseInt(parts[0], 10);
-            const month = parseInt(parts[1], 10) - 1; // Month is 0-indexed
-            const year = parseInt(parts[2], 10);
-            const date = new Date(year, month, day);
-            if (date.getFullYear() === year && date.getMonth() === month && date.getDate() === day) {
-                return date;
-            }
-            return null;
-        }
-        // UPDATE END
 
         function applyFilters() {
-            // UPDATE START: Use new parsing and date logic
-            const startDate = parseDateString(elements.startDateFilter.value);
-            let endDate = parseDateString(elements.endDateFilter.value);
-
-            if (startDate) {
-                startDate.setHours(0, 0, 0, 0);
-            }
-            if (endDate) {
-                endDate.setHours(23, 59, 59, 999);
-            }
+            // UPDATE START: Read from datetime-local inputs
+            const startDate = elements.startDateFilter.value ? new Date(elements.startDateFilter.value) : null;
+            const endDate = elements.endDateFilter.value ? new Date(elements.endDateFilter.value) : null;
             // UPDATE END
             
             const memberId = elements.memberFilter.value;
@@ -1276,23 +1147,18 @@
             const description = elements.descriptionFilter.value.toLowerCase().trim();
             const minAmount = parseFloat(elements.minAmountFilter.value);
             const maxAmount = parseFloat(elements.maxAmountFilter.value);
-
-            const selectedExpenseTypeNames = selectedExpenseTypeIds.map(id => {
-                const type = expenseTypes.find(t => String(t.id) === id);
-                return type ? type.expense_type : null;
-            }).filter(name => name !== null);
+            const selectedExpenseTypeNames = selectedExpenseTypeIds.map(id => expenseTypes.find(t => String(t.id) === id)?.expense_type).filter(Boolean);
 
             filteredTransactions = transactions.filter(t => {
                 const transactionDate = new Date(t.date);
-                const memberMatch = memberId === 'all' || (t.involvedMemberIds && t.involvedMemberIds.includes(memberId)) || (t.contributingMemberId && t.contributingMemberId === memberId);
+                const memberMatch = memberId === 'all' || (t.involvedMemberIds && t.involvedMemberIds.includes(memberId)) || (t.contributingMemberId === memberId);
                 const typeMatch = selectedExpenseTypeNames.length === 0 || selectedExpenseTypeNames.includes(t.expense_type);
-                // UPDATE START: Use new dateMatch logic
+                // UPDATE START: Use direct date comparison
                 const dateMatch = (!startDate || transactionDate >= startDate) && (!endDate || transactionDate <= endDate);
                 // UPDATE END
                 const descriptionMatch = !description || t.description.toLowerCase().includes(description);
                 const minAmountMatch = isNaN(minAmount) || t.amount >= minAmount;
                 const maxAmountMatch = isNaN(maxAmount) || t.amount <= maxAmount;
-
                 return memberMatch && typeMatch && dateMatch && descriptionMatch && minAmountMatch && maxAmountMatch;
             });
 
@@ -1309,12 +1175,84 @@
                 'Loại': t.expense_type,
                 'Số tiền (VND)': t.amount
             }));
-
             const worksheet = XLSX.utils.json_to_sheet(dataToExport);
             const workbook = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(workbook, worksheet, 'Lịch Sử Giao Dịch');
             const wbout = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
             saveAs(new Blob([wbout], { type: 'application/octet-stream' }), 'lich_su_giao_dich.xlsx');
+        }
+
+        async function callGeminiAPI(payload, retries = 3, delay = 1000) {
+            const apiKey = ""; // Left empty for Canvas environment
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+            for (let i = 0; i < retries; i++) {
+                try {
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    if (!response.ok) throw new Error(`API Error (${response.status})`);
+                    const result = await response.json();
+                    if (result.candidates?.[0]?.content?.parts?.[0]) return result;
+                    throw new Error("Invalid API response structure.");
+                } catch (error) {
+                    if (i === retries - 1) throw error;
+                    await new Promise(res => setTimeout(res, delay * 2 ** i));
+                }
+            }
+        }
+
+        function markdownToHtml(markdown) {
+            let html = markdown;
+            html = html.replace(/^### (.*$)/gim, '<h3 class="text-lg font-semibold mt-4 mb-2">$1</h3>');
+            html = html.replace(/^## (.*$)/gim, '<h2 class="text-xl font-bold mt-6 mb-3">$1</h2>');
+            html = html.replace(/\*\*(.*?)\*\*/gim, '<strong>$1</strong>');
+            html = html.replace(/\*(.*?)\*/gim, '<em>$1</em>');
+            html = html.replace(/^\s*-\s(.*)$/gim, '<li class="ml-5 list-disc">$1</li>');
+            html = html.split('\n').map(line => line.trim() ? `<p class="mb-2">${line}</p>` : '').join('').replace(/<p class="mb-2">((<h[23]>.*<\/h[23]>)|(<li.*<\/li>))<\/p>/g, '$1');
+            return html;
+        }
+
+        async function generateFundInsights() {
+            elements.fundInsightsContent.innerHTML = `<div class="flex flex-col items-center"><div class="spinner"></div><p class="mt-2">${translations.generatingInsights}</p></div>`;
+            
+            const totalContributions = filteredTransactions.filter(t => t.type === 'contribution').reduce((sum, t) => sum + t.amount, 0);
+            const totalExpenses = filteredTransactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
+            const currentBalance = totalContributions - totalExpenses;
+
+            const promptData = {
+                fundBalance: currentBalance,
+                transactions: filteredTransactions.slice(0, 20).map(t => ({
+                    type: t.type,
+                    amount: t.amount,
+                    description: t.description,
+                    date: t.date,
+                    category: t.expense_type,
+                    member: getMemberNames(t.involvedMemberIds, t.contributingMemberId)
+                }))
+            };
+
+            const prompt = `Bạn là một chuyên gia tư vấn tài chính. Dựa vào dữ liệu quỹ sau (bằng VNĐ), hãy đưa ra phân tích và nhận xét.
+            Dữ liệu: ${JSON.stringify(promptData)}
+            Hãy trả lời bằng tiếng Việt theo định dạng Markdown, bao gồm:
+            ## Tình hình chung
+            - Nhận xét về số dư và tổng thu/chi trong giai đoạn được lọc.
+            ## Phân tích chi tiêu
+            - Các khoản chi lớn nhất là gì?
+            - Nhóm đang chi tiêu nhiều nhất cho loại nào?
+            ## Gợi ý
+            - Đưa ra lời khuyên để quản lý chi tiêu tốt hơn.`;
+
+            const payload = { contents: [{ role: "user", parts: [{ text: prompt }] }] };
+
+            try {
+                const result = await callGeminiAPI(payload);
+                const text = result.candidates[0].content.parts[0].text;
+                elements.fundInsightsContent.innerHTML = markdownToHtml(text);
+            } catch (error) {
+                elements.fundInsightsContent.innerHTML = `<p class="text-red-500">${translations.aiConnectionError}</p>`;
+            }
         }
 
         // --- Event Listeners ---
@@ -1326,108 +1264,52 @@
             elements.descriptionFilter.value = '';
             elements.minAmountFilter.value = '';
             elements.maxAmountFilter.value = '';
-            elements.expenseTypeFilterDropdown.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
-                checkbox.checked = false;
-            });
+            elements.expenseTypeFilterDropdown.querySelectorAll('input').forEach(cb => cb.checked = false);
             updateExpenseTypeFilterText();
-            
             filteredTransactions = transactions;
             currentPage = 1;
             renderTransactions(filteredTransactions);
             renderAllCharts(filteredTransactions);
         });
 
-        elements.prevPageBtn.addEventListener('click', () => {
-            if (currentPage > 1) {
-                currentPage--;
-                renderTransactions(filteredTransactions);
-            }
-        });
-
-        elements.nextPageBtn.addEventListener('click', () => {
-            const totalPages = Math.ceil(filteredTransactions.length / transactionsPerPage);
-            if (currentPage < totalPages) {
-                currentPage++;
-                renderTransactions(filteredTransactions);
-            }
-        });
-
+        elements.prevPageBtn.addEventListener('click', () => { if (currentPage > 1) { currentPage--; renderTransactions(filteredTransactions); } });
+        elements.nextPageBtn.addEventListener('click', () => { if (currentPage < Math.ceil(filteredTransactions.length / transactionsPerPage)) { currentPage++; renderTransactions(filteredTransactions); } });
         elements.exportExcelBtn.addEventListener('click', exportToExcel);
         elements.closeChartDetailModalBtn.addEventListener('click', () => elements.chartDetailModalOverlay.classList.add('hidden'));
-
         elements.transactionTableBody.addEventListener('click', (event) => {
-            const target = event.target;
-            const editButton = target.closest('.edit-btn');
-            const deleteButton = target.closest('.delete-btn');
-
-            if (editButton) {
-                const transactionId = editButton.getAttribute('data-id');
-                openEditModal(transactionId);
-            } else if (deleteButton) {
-                const transactionId = deleteButton.getAttribute('data-id');
-                openDeleteModal(transactionId);
-            }
+            const editButton = event.target.closest('.edit-btn');
+            const deleteButton = event.target.closest('.delete-btn');
+            if (editButton) openEditModal(editButton.dataset.id);
+            if (deleteButton) openDeleteModal(deleteButton.dataset.id);
         });
-        
         elements.closeEditModalBtn.addEventListener('click', () => elements.editModalOverlay.classList.add('hidden'));
         elements.editTransactionForm.addEventListener('submit', handleEditFormSubmit);
         elements.cancelDeleteBtn.addEventListener('click', () => elements.deleteModalOverlay.classList.add('hidden'));
         elements.confirmDeleteBtn.addEventListener('click', deleteTransaction);
-
-        // Multi-select dropdown logic
-        elements.expenseTypeFilterBtn.addEventListener('click', () => {
-            elements.expenseTypeFilterDropdown.classList.toggle('hidden');
-        });
-        elements.editInvolvedMembersBtn.addEventListener('click', () => {
-            elements.editInvolvedMembersDropdown.classList.toggle('hidden');
-        });
-
+        elements.expenseTypeFilterBtn.addEventListener('click', () => elements.expenseTypeFilterDropdown.classList.toggle('hidden'));
+        elements.editInvolvedMembersBtn.addEventListener('click', () => elements.editInvolvedMembersDropdown.classList.toggle('hidden'));
         document.addEventListener('click', (e) => {
-            if (!elements.expenseTypeFilterBtn.contains(e.target) && !elements.expenseTypeFilterDropdown.contains(e.target)) {
-                elements.expenseTypeFilterDropdown.classList.add('hidden');
-            }
-            if (elements.editModalOverlay.classList.contains('hidden')) return;
-            if (!elements.editInvolvedMembersBtn.contains(e.target) && !elements.editInvolvedMembersDropdown.contains(e.target)) {
-                elements.editInvolvedMembersDropdown.classList.add('hidden');
-            }
+            if (!elements.expenseTypeFilterBtn.parentElement.contains(e.target)) elements.expenseTypeFilterDropdown.classList.add('hidden');
+            if (!elements.editInvolvedMembersBtn.parentElement.contains(e.target)) elements.editInvolvedMembersDropdown.classList.add('hidden');
         });
         
         function updateExpenseTypeFilterText() {
-            const selectedCount = getSelectedExpenseTypes().length;
-            if (selectedCount === 0) {
-                elements.expenseTypeFilterText.textContent = translations.allTypes;
-            } else {
-                elements.expenseTypeFilterText.textContent = `${selectedCount} ${translations.selected}`;
-            }
+            const count = getSelectedExpenseTypes().length;
+            elements.expenseTypeFilterText.textContent = count === 0 ? translations.allTypes : `${count} ${translations.selected}`;
         }
 
         function initializePageWithData() {
             elements.memberFilter.innerHTML = `<option value="all" data-key="allMembers">${localization[currentLanguage].allMembers}</option>`;
-            members.forEach(member => {
-                const option = document.createElement('option');
-                option.value = member.id;
-                option.textContent = member.name;
-                elements.memberFilter.appendChild(option);
-            });
-
+            members.forEach(member => elements.memberFilter.innerHTML += `<option value="${member.id}">${member.name}</option>`);
             elements.expenseTypeFilterDropdown.innerHTML = '';
             expenseTypes.forEach(type => {
                 const label = document.createElement('label');
                 label.className = 'flex items-center space-x-2 p-2 hover:bg-gray-100 cursor-pointer';
-                const checkbox = document.createElement('input');
-                checkbox.type = 'checkbox';
-                checkbox.value = type.id;
-                checkbox.className = 'rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-300 focus:ring focus:ring-offset-0 focus:ring-indigo-200 focus:ring-opacity-50';
-                
-                checkbox.addEventListener('change', updateExpenseTypeFilterText);
-
-                label.appendChild(checkbox);
-                label.appendChild(document.createTextNode(` ${type.expense_type}`));
+                label.innerHTML = `<input type="checkbox" value="${type.id}" class="rounded border-gray-300"> <span>${type.expense_type}</span>`;
+                label.querySelector('input').addEventListener('change', updateExpenseTypeFilterText);
                 elements.expenseTypeFilterDropdown.appendChild(label);
             });
-
             setLanguage(currentLanguage);
-
             filteredTransactions = transactions;
             renderTransactions(filteredTransactions);
             renderAllCharts(filteredTransactions);
@@ -1436,58 +1318,43 @@
         async function handleLogout() {
             elements.loadingOverlay.classList.remove('hidden');
             try {
-                const { error } = await supabaseClient.auth.signOut();
-                if (error) throw error;
-                const pathArray = window.location.pathname.split('/');
-                pathArray.pop();
-                pathArray.push('index.html');
-                window.location.href = window.location.origin + pathArray.join('/');
+                await supabaseClient.auth.signOut();
+                window.location.href = window.location.origin + '/index.html';
             } catch (error) {
-                console.error('Error logging out:', error.message);
                 alert('Lỗi khi đăng xuất: ' + error.message);
             } finally {
                 elements.loadingOverlay.classList.add('hidden');
             }
         }
         
-        // UPDATE START: Event listener for toggling month details
         elements.monthlySummaryContainer.addEventListener('click', (event) => {
             const toggleButton = event.target.closest('.toggle-month-btn');
             if (toggleButton) {
                 const month = toggleButton.dataset.month;
                 const detailsDiv = document.getElementById(`details-${month}`);
-                if (detailsDiv) {
-                    const isHidden = detailsDiv.classList.toggle('hidden');
-                    toggleButton.textContent = isHidden ? translations.showMore : translations.showLess;
-                }
+                const isHidden = detailsDiv.classList.toggle('hidden');
+                toggleButton.textContent = isHidden ? translations.showMore : translations.showLess;
             }
         });
-        // UPDATE END
+
+        elements.getInsightsBtn.addEventListener('click', () => {
+            elements.fundInsightsModal.classList.remove('hidden');
+            generateFundInsights();
+        });
+        elements.closeInsightsBtn.addEventListener('click', () => {
+            elements.fundInsightsModal.classList.add('hidden');
+        });
 
         document.addEventListener('DOMContentLoaded', async () => {
             try {
-                const { data: { session }, error: sessionError } = await supabaseClient.auth.getSession();
-                if (sessionError) throw sessionError;
-
+                const { data: { session } } = await supabaseClient.auth.getSession();
                 if (!session) {
-                    const pathArray = window.location.pathname.split('/');
-                    pathArray.pop();
-                    pathArray.push('index.html');
-                    window.location.href = window.location.origin + pathArray.join('/');
+                    window.location.href = window.location.origin + '/index.html';
                     return; 
                 }
-
-                console.log('User is logged in:', session.user.email);
-
-                const logoutBtn = document.getElementById('logout-btn');
-                if (logoutBtn) {
-                    logoutBtn.addEventListener('click', handleLogout);
-                }
-
+                document.getElementById('logout-btn')?.addEventListener('click', handleLogout);
                 await fetchSupabaseData();
-
             } catch (error) {
-                console.error('Initialization error:', error.message);
                 elements.loadingOverlay.classList.add('hidden');
                 document.body.innerHTML = `<div class="text-center p-8 text-red-600">Lỗi khởi tạo: ${error.message}</div>`;
             }
