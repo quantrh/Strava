@@ -221,6 +221,11 @@
                 <button id="clear-filter-btn" class="btn-secondary flex-1" data-key="filterClear">Xóa bộ lọc</button>
             </div>
             <div class="flex justify-end mt-4 gap-2">
+                 <!-- UPDATE START: Added Food Suggestion Button -->
+                <button id="get-food-history-suggestions-btn" class="btn-primary flex items-center gap-2">
+                    🍜 <span data-key="foodHistorySuggestionsBtn">Gợi ý món ăn theo lịch sử</span>
+                </button>
+                <!-- UPDATE END -->
                 <button id="get-insights-btn" class="btn-primary flex items-center gap-2">
                     ✨ <span data-key="aiInsightsBtn">Gemini Nhận xét Quỹ</span>
                 </button>
@@ -425,6 +430,24 @@
         </div>
     </div>
 
+    <!-- UPDATE START: Added Food History Suggestion Modal -->
+    <div id="food-history-suggestion-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
+        <div class="relative top-10 mx-auto p-5 border w-full max-w-2xl shadow-lg rounded-md bg-white">
+            <div class="mt-3">
+                <div class="flex justify-between items-center pb-3">
+                    <h3 class="text-lg leading-6 font-medium text-gray-900" data-key="foodHistorySuggestionModalTitle">Gợi ý món ăn theo lịch sử ✨</h3>
+                    <button id="close-food-history-suggestion-btn" class="text-gray-400 hover:text-gray-600">
+                        <span class="text-2xl">&times;</span>
+                    </button>
+                </div>
+                <div id="food-history-suggestion-content" class="overflow-y-auto" style="max-height: 60vh;">
+                    <!-- Suggestions will be populated here -->
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- UPDATE END -->
+
 
     <script>
         // DOM elements initialization
@@ -478,6 +501,12 @@
             fundInsightsModal: document.getElementById('fund-insights-modal'),
             fundInsightsContent: document.getElementById('fund-insights-content'),
             closeInsightsBtn: document.getElementById('close-insights-btn'),
+            // UPDATE START: Added Food History Suggestion elements
+            getFoodHistorySuggestionsBtn: document.getElementById('get-food-history-suggestions-btn'),
+            foodHistorySuggestionModal: document.getElementById('food-history-suggestion-modal'),
+            foodHistorySuggestionContent: document.getElementById('food-history-suggestion-content'),
+            closeFoodHistorySuggestionBtn: document.getElementById('close-food-history-suggestion-btn'),
+            // UPDATE END
         };
 
         // --- Supabase Client Initialization ---
@@ -562,6 +591,12 @@
                 generatingInsights: "Đang tạo thông tin chi tiết từ AI...",
                 noInsights: "Không thể tạo thông tin chi tiết. Vui lòng thử lại.",
                 aiConnectionError: "Đã xảy ra lỗi khi kết nối với AI. Vui lòng thử lại.",
+                // UPDATE START: Added translations for new feature
+                foodHistorySuggestionsBtn: "Gợi ý món ăn theo lịch sử",
+                foodHistorySuggestionModalTitle: "Gợi ý món ăn theo lịch sử ✨",
+                generatingFoodHistorySuggestions: "Đang phân tích lịch sử và tìm gợi ý...",
+                noFoodHistorySuggestions: "Không thể tạo gợi ý từ lịch sử chi tiêu hiện tại.",
+                // UPDATE END
             },
             en: {
                 appTitle: "Transaction History - GROUP FUND MANAGER",
@@ -627,6 +662,12 @@
                 generatingInsights: "Generating insights from AI...",
                 noInsights: "Could not generate insights. Please try again.",
                 aiConnectionError: "An error occurred while connecting to the AI. Please try again.",
+                 // UPDATE START: Added translations for new feature
+                foodHistorySuggestionsBtn: "Suggest Food by History",
+                foodHistorySuggestionModalTitle: "Food Suggestions by History ✨",
+                generatingFoodHistorySuggestions: "Analyzing history and finding suggestions...",
+                noFoodHistorySuggestions: "Could not generate suggestions from the current spending history.",
+                // UPDATE END
             }
         };
         let currentLanguage = 'vi';
@@ -1210,6 +1251,49 @@
             }
         }
 
+        // UPDATE START: New function for food suggestions from history
+        async function generateFoodSuggestionsFromHistory() {
+            elements.foodHistorySuggestionContent.innerHTML = `<div class="flex flex-col items-center"><div class="spinner"></div><p class="mt-2">${translations.generatingFoodHistorySuggestions}</p></div>`;
+            
+            const foodTransactions = filteredTransactions
+                .filter(t => t.type === 'expense' && t.expense_type && (t.expense_type.toLowerCase().includes('ăn') || t.expense_type.toLowerCase().includes('food')))
+                .slice(0, 15) // Limit to the last 15 food-related transactions
+                .map(t => ({
+                    description: t.description,
+                    amount: t.amount,
+                    time: new Date(t.date).getHours() // Get the hour of the day
+                }));
+
+            if (foodTransactions.length < 3) {
+                elements.foodHistorySuggestionContent.innerHTML = `<p class="text-center text-gray-500">${translations.noFoodHistorySuggestions}</p>`;
+                return;
+            }
+
+            const promptData = {
+                type: 'food_history_suggestions',
+                transactions: foodTransactions,
+                currentLanguage: currentLanguage
+            };
+
+            try {
+                const { data, error } = await supabaseClient.functions.invoke('process-ai-requests_quan', {
+                    body: { activities: promptData }
+                });
+
+                if (error) throw error;
+
+                if (data.success && data.analysis) {
+                    elements.foodHistorySuggestionContent.innerHTML = markdownToHtml(data.analysis);
+                } else {
+                    throw new Error(data.error || "Invalid response from Edge Function.");
+                }
+            } catch (error) {
+                console.error("Error calling Supabase Edge Function for food history:", error);
+                elements.foodHistorySuggestionContent.innerHTML = `<p class="text-red-500">${translations.aiConnectionError}</p>`;
+            }
+        }
+        // UPDATE END
+
         function markdownToHtml(markdown) {
             let html = markdown;
             html = html.replace(/^### (.*$)/gim, '<h3 class="text-lg font-semibold mt-4 mb-2">$1</h3>');
@@ -1310,6 +1394,16 @@
         elements.closeInsightsBtn.addEventListener('click', () => {
             elements.fundInsightsModal.classList.add('hidden');
         });
+
+        // UPDATE START: Added event listeners for new food suggestion feature
+        elements.getFoodHistorySuggestionsBtn.addEventListener('click', () => {
+            elements.foodHistorySuggestionModal.classList.remove('hidden');
+            generateFoodSuggestionsFromHistory();
+        });
+        elements.closeFoodHistorySuggestionBtn.addEventListener('click', () => {
+            elements.foodHistorySuggestionModal.classList.add('hidden');
+        });
+        // UPDATE END
 
         document.addEventListener('DOMContentLoaded', async () => {
             try {
