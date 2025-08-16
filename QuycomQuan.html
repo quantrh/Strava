@@ -260,6 +260,13 @@
             </svg>
             Tạo Lịch
         </a>
+        <!-- Logout Button Added -->
+        <a href="#" id="logout-btn">
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+            </svg>
+            <span data-key="logoutBtn">Đăng Xuất</span>
+        </a>
     </div>
 
     <!-- Logo and Title (pushed to the right) -->
@@ -770,6 +777,8 @@
                 deleteMemberError: 'Error deleting member:', // New translation key
                 memberBalanceNotZero: 'Cannot delete member with non-zero balance. Please settle up the balance first.', // New translation key
                 defaultExpenseTypes: 'Food, Transport, Shopping, Entertainment, Health, Education, Other', // New translation for default expense types
+                logoutBtn: 'Đăng Xuất', // Added
+                logoutError: 'Lỗi khi đăng xuất:', // Added
             }
         };
 
@@ -882,6 +891,21 @@
 
         // Scroll to Top Button Element
         const scrollToTopBtn = document.getElementById('scroll-to-top-btn');
+
+        // --- Logout Function ---
+        async function handleLogout() {
+            try {
+                const { error } = await supabase.auth.signOut();
+                if (error) {
+                    throw error;
+                }
+                // Redirect to index.html after successful sign out
+                window.location.href = '/index.html';
+            } catch (error) {
+                console.error("Error signing out:", error.message);
+                showErrorMessage(`${translations[currentLanguage].logoutError} ${error.message}`);
+            }
+        }
 
         // --- Language Functions ---
         function setLanguage(lang) {
@@ -1096,8 +1120,7 @@
                         console.log("User is not logged in, redirecting to login page.");
                         authReady = false;
                         // Redirect to login page if not authenticated
-                        // Use window.location.origin to construct an absolute URL
-                        window.location.href = window.location.origin + '/Strava/LoginQuan.html';
+                        window.location.href = '/index.html';
                     }
                 });
 
@@ -3332,6 +3355,15 @@ if (transaction.type === 'contribution') {
                 document.addEventListener('DOMContentLoaded', () => {
                     setLanguage(currentLanguage); // Set initial language
                     initializeSupabase();
+
+                    // Add logout button event listener
+                    const logoutBtn = document.getElementById('logout-btn');
+                    if (logoutBtn) {
+                        logoutBtn.addEventListener('click', (e) => {
+                            e.preventDefault(); // Prevent the link from navigating
+                            handleLogout();
+                        });
+                    }
                 });
             </script>
 <script>
