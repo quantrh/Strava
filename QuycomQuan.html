@@ -779,7 +779,6 @@
                 defaultExpenseTypes: 'Food, Transport, Shopping, Entertainment, Health, Education, Other', // New translation for default expense types
                 logoutBtn: 'Đăng Xuất', // Added
                 logoutError: 'Lỗi khi đăng xuất:', // Added
-                notInvitedError: 'Bạn không có quyền truy cập vào trang này. Vui lòng liên hệ quản trị viên.', // Added
             }
         };
 
@@ -1063,83 +1062,74 @@
         // Initializes Supabase client
         function initializeSupabase() {
             console.log("Attempting to initialize Supabase...");
+            console.log("Type of window.supabase:", typeof window.supabase);
             if (typeof window.supabase === 'undefined') {
-                console.error("window.supabase is undefined. Supabase library not loaded.");
+                console.error("window.supabase is undefined. Supabase library not loaded. Check network connection and CDN link.");
                 showErrorMessage(translations[currentLanguage].supaLoadError);
                 return;
             }
+            console.log("window.supabase is available.");
 
+            // Determine the API key to use
+            // In Canvas environment, __supabase_key is provided. Otherwise, use the hardcoded SUPABASE_ANON_KEY.
             const anonKey = typeof __supabase_key !== 'undefined' ? __supabase_key : SUPABASE_ANON_KEY;
-            
+            console.log("Using Supabase Anon Key:", anonKey ? "Provided/Non-empty" : "Empty/Default");
+
+            // Warn if default URL is still in use
             if (SUPABASE_URL === 'https://1rmbsxccrwrktbjlnezpu.supabase.co') {
-                 console.warn("Supabase configuration warning: SUPABASE_URL is still the default value.");
+                 console.warn("Supabase configuration warning: SUPABASE_URL is still the default value. Please replace with your actual Supabase Project URL.");
                  showErrorMessage(translations[currentLanguage].supabaseConfigWarning);
             }
+            // Also warn if anonKey is empty and not running in Canvas (where __supabase_key would be injected)
             if (!anonKey && typeof __supabase_key === 'undefined') {
-                console.warn("Supabase configuration warning: SUPABASE_ANON_KEY is empty.");
-                showErrorMessage(translations[currentLanguage].supabaseConfigWarning + " (API Key is empty)");
+                console.warn("Supabase configuration warning: SUPABASE_ANON_KEY is empty and __supabase_key is not defined. This app might not connect to Supabase correctly outside Canvas.");
+                showErrorMessage(translations[currentLanguage].supabaseConfigWarning + " (Khóa API trống)");
             }
 
-            try {
-                supabase = window.supabase.createClient(SUPABASE_URL, anonKey);
-                console.log("Supabase client created.");
 
-                if (!supabase || !supabase.auth || typeof supabase.auth.onAuthStateChange !== 'function') {
-                    const errorMsg = "Supabase client or auth module not initialized correctly.";
+            try {
+                // Ensure we are getting the createClient function correctly.
+                // It's usually directly available on the global `supabase` object from the CDN.
+                if (typeof window.supabase.createClient !== 'function') {
+                    const errorMsg = "Supabase library loaded, but `createClient` function is not available on `window.supabase`. This might indicate a corrupted load or version issue.";
                     console.error(errorMsg);
                     showErrorMessage(errorMsg);
                     return;
                 }
 
-                supabase.auth.onAuthStateChange(async (event, session) => {
+                supabase = window.supabase.createClient(SUPABASE_URL, anonKey);
+                console.log("Supabase client created:", supabase); // Log the full client object
+                console.log("Supabase auth module:", supabase.auth); // Log the auth module
+
+                // Add authentication listener
+                if (!supabase || !supabase.auth || typeof supabase.auth.onAuthStateChange !== 'function') { // Corrected method name to onAuthStateChange
+                    console.error("DEBUG: Value of supabase.auth:", supabase.auth);
+                    const errorMsg = "Supabase client hoặc mô-đun xác thực không được khởi tạo đúng cách. `onAuthStateChange` không phải là một hàm. Vui lòng kiểm tra lại SUPABASE_URL và SUPABASE_ANON_KEY trong mã của bạn. Quan trọng hơn, hãy đảm bảo rằng dịch vụ **Xác thực (Authentication)** đã được kích hoạt và cấu hình đúng trong **Bảng điều khiển Supabase** của dự án của bạn (phần 'Authentication' -> 'Settings').";
+                    console.error(errorMsg);
+                    showErrorMessage(errorMsg);
+                    return;
+                }
+                supabase.auth.onAuthStateChange((event, session) => { // Corrected method name to onAuthStateChange
                     console.log("onAuthStateChange event:", event, "session:", session);
                     if (session) {
                         console.log("User is logged in:", session.user);
-                        const userEmail = session.user.email;
-
-                        // Check if the user is in the invited list
-                        const { data: invitedUser, error: inviteError } = await supabase
-                            .from('invited_users_quan')
-                            .select('email')
-                            .eq('email', userEmail)
-                            .single();
-
-                        // PGRST116 means no rows found, which is the case for non-invited users. We don't treat it as a fatal error.
-                        if (inviteError && inviteError.code !== 'PGRST116') {
-                            console.error("Error checking invitation:", inviteError);
-                            showErrorMessage("Lỗi khi kiểm tra quyền truy cập.");
-                            await handleLogout();
-                            return;
-                        }
-
-                        if (!invitedUser) {
-                            // User is not in the invited list, log them out and redirect
-                            console.log(`User ${userEmail} is not invited. Logging out and redirecting.`);
-                            showErrorMessage(translations[currentLanguage].notInvitedError);
-                            // Delay logout slightly to allow user to see the message
-                            setTimeout(async () => {
-                                await handleLogout();
-                            }, 3000);
-                        } else {
-                            // User is invited, proceed with app initialization
-                            console.log(`User ${userEmail} is invited. Initializing app.`);
-                            authReady = true;
-                            fetchData();
-                            setupRealtimeSubscriptions();
-                        }
+                        authReady = true;
+                        fetchData(); // Fetch initial data after successful login
+                        setupRealtimeSubscriptions(); // Set up real-time listeners
                     } else {
                         console.log("User is not logged in, redirecting to login page.");
                         authReady = false;
+                        // Redirect to login page if not authenticated
                         window.location.href = '/Strava/index.html';
                     }
                 });
 
             } catch (error) {
-                console.error("Error during Supabase client creation:", error);
-                showErrorMessage(`Error creating Supabase client: ${error.message}.`);
+                console.error("Error during Supabase client creation or initialization:", error);
+                showErrorMessage(`Lỗi khi tạo client Supabase: ${error.message}. Vui lòng kiểm tra URL và khóa API.`);
+                return;
             }
         }
-
 
         // Fetches all data from Supabase
         async function fetchData() {
@@ -3389,4 +3379,3 @@ if (transaction.type === 'contribution') {
 
         </body>
         </html>
-
