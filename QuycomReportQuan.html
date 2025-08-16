@@ -1171,7 +1171,6 @@
             saveAs(new Blob([wbout], { type: 'application/octet-stream' }), 'lich_su_giao_dich.xlsx');
         }
 
-        // UPDATE START: Switched to Supabase Edge Function call
         async function generateFundInsights() {
             elements.fundInsightsContent.innerHTML = `<div class="flex flex-col items-center"><div class="spinner"></div><p class="mt-2">${translations.generatingInsights}</p></div>`;
             
@@ -1195,7 +1194,7 @@
 
             try {
                 const { data, error } = await supabaseClient.functions.invoke('process-ai-requests_quan', {
-                    body: promptData
+                    body: { activities: promptData }
                 });
 
                 if (error) throw error;
@@ -1221,7 +1220,6 @@
             html = html.split('\n').map(line => line.trim() ? `<p class="mb-2">${line}</p>` : '').join('').replace(/<p class="mb-2">((<h[23]>.*<\/h[23]>)|(<li.*<\/li>))<\/p>/g, '$1');
             return html;
         }
-        // UPDATE END
 
         // --- Event Listeners ---
         elements.applyFilterBtn.addEventListener('click', applyFilters);
