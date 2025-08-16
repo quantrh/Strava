@@ -18,7 +18,7 @@
             padding: 0.75rem 1.5rem;
             border-radius: 0.75rem;
             font-weight: 600;
-            transition: background-color 0.3s;
+            transition: background-color: 0.3s;
         }
         .btn-primary:hover { background-color: #005654; }
         .btn-secondary {
@@ -27,7 +27,7 @@
             padding: 0.75rem 1.5rem;
             border-radius: 0.75rem;
             font-weight: 600;
-            transition: background-color 0.3s;
+            transition: background-color: 0.3s;
         }
         .btn-secondary:hover { background-color: #E5E7EB; }
         .table-header { background-color: #F9FAFB; }
@@ -174,12 +174,16 @@
                 <!-- Start Date Filter -->
                 <div>
                     <label for="start-date-filter" class="block text-sm font-medium text-gray-700" data-key="filterStartDate">Từ ngày</label>
-                    <input type="date" id="start-date-filter" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                    <!-- UPDATE START: Changed input type to text -->
+                    <input type="text" id="start-date-filter" placeholder="dd/mm/yyyy" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                    <!-- UPDATE END -->
                 </div>
                 <!-- End Date Filter -->
                 <div>
                     <label for="end-date-filter" class="block text-sm font-medium text-gray-700" data-key="filterEndDate">Đến ngày</label>
-                    <input type="date" id="end-date-filter" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                    <!-- UPDATE START: Changed input type to text -->
+                    <input type="text" id="end-date-filter" placeholder="dd/mm/yyyy" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                    <!-- UPDATE END -->
                 </div>
                 <!-- Member Filter -->
                 <div>
@@ -1237,13 +1241,36 @@
             return selectedTypes;
         }
 
-        function applyFilters() {
-            const startDate = elements.startDateFilter.value ? new Date(elements.startDateFilter.value) : null;
-            let endDate = null;
-            if (elements.endDateFilter.value) {
-                endDate = new Date(elements.endDateFilter.value);
-                endDate.setDate(endDate.getDate() + 1);
+        // UPDATE START: New function to parse dd/mm/yyyy
+        function parseDateString(dateStr) {
+            if (!dateStr || !/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(dateStr)) {
+                return null;
             }
+            const parts = dateStr.split('/');
+            const day = parseInt(parts[0], 10);
+            const month = parseInt(parts[1], 10) - 1; // Month is 0-indexed
+            const year = parseInt(parts[2], 10);
+            const date = new Date(year, month, day);
+            if (date.getFullYear() === year && date.getMonth() === month && date.getDate() === day) {
+                return date;
+            }
+            return null;
+        }
+        // UPDATE END
+
+        function applyFilters() {
+            // UPDATE START: Use new parsing and date logic
+            const startDate = parseDateString(elements.startDateFilter.value);
+            let endDate = parseDateString(elements.endDateFilter.value);
+
+            if (startDate) {
+                startDate.setHours(0, 0, 0, 0);
+            }
+            if (endDate) {
+                endDate.setHours(23, 59, 59, 999);
+            }
+            // UPDATE END
+            
             const memberId = elements.memberFilter.value;
             const selectedExpenseTypeIds = getSelectedExpenseTypes();
             const description = elements.descriptionFilter.value.toLowerCase().trim();
@@ -1259,7 +1286,9 @@
                 const transactionDate = new Date(t.date);
                 const memberMatch = memberId === 'all' || (t.involvedMemberIds && t.involvedMemberIds.includes(memberId)) || (t.contributingMemberId && t.contributingMemberId === memberId);
                 const typeMatch = selectedExpenseTypeNames.length === 0 || selectedExpenseTypeNames.includes(t.expense_type);
-                const dateMatch = (!startDate || transactionDate >= startDate) && (!endDate || transactionDate < endDate);
+                // UPDATE START: Use new dateMatch logic
+                const dateMatch = (!startDate || transactionDate >= startDate) && (!endDate || transactionDate <= endDate);
+                // UPDATE END
                 const descriptionMatch = !description || t.description.toLowerCase().includes(description);
                 const minAmountMatch = isNaN(minAmount) || t.amount >= minAmount;
                 const maxAmountMatch = isNaN(maxAmount) || t.amount <= maxAmount;
