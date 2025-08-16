@@ -174,15 +174,15 @@
                 <!-- Start Date Filter -->
                 <div>
                     <label for="start-date-filter" class="block text-sm font-medium text-gray-700" data-key="filterStartDate">Từ ngày</label>
-                    <!-- UPDATE START: Changed input type to datetime-local -->
-                    <input type="datetime-local" id="start-date-filter" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                    <!-- UPDATE START: Changed input type to date -->
+                    <input type="date" id="start-date-filter" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
                     <!-- UPDATE END -->
                 </div>
                 <!-- End Date Filter -->
                 <div>
                     <label for="end-date-filter" class="block text-sm font-medium text-gray-700" data-key="filterEndDate">Đến ngày</label>
-                    <!-- UPDATE START: Changed input type to datetime-local -->
-                    <input type="datetime-local" id="end-date-filter" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                    <!-- UPDATE START: Changed input type to date -->
+                    <input type="date" id="end-date-filter" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
                     <!-- UPDATE END -->
                 </div>
                 <!-- Member Filter -->
@@ -1137,9 +1137,12 @@
         }
 
         function applyFilters() {
-            // UPDATE START: Read from datetime-local inputs
+            // UPDATE START: Read from date inputs and adjust time
             const startDate = elements.startDateFilter.value ? new Date(elements.startDateFilter.value) : null;
+            if (startDate) startDate.setHours(0, 0, 0, 0);
+
             const endDate = elements.endDateFilter.value ? new Date(elements.endDateFilter.value) : null;
+            if (endDate) endDate.setHours(23, 59, 59, 999);
             // UPDATE END
             
             const memberId = elements.memberFilter.value;
@@ -1153,9 +1156,7 @@
                 const transactionDate = new Date(t.date);
                 const memberMatch = memberId === 'all' || (t.involvedMemberIds && t.involvedMemberIds.includes(memberId)) || (t.contributingMemberId === memberId);
                 const typeMatch = selectedExpenseTypeNames.length === 0 || selectedExpenseTypeNames.includes(t.expense_type);
-                // UPDATE START: Use direct date comparison
                 const dateMatch = (!startDate || transactionDate >= startDate) && (!endDate || transactionDate <= endDate);
-                // UPDATE END
                 const descriptionMatch = !description || t.description.toLowerCase().includes(description);
                 const minAmountMatch = isNaN(minAmount) || t.amount >= minAmount;
                 const maxAmountMatch = isNaN(maxAmount) || t.amount <= maxAmount;
