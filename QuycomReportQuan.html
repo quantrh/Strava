@@ -1251,17 +1251,19 @@
             }
         }
 
-        // UPDATE START: New function for food suggestions from history
+        // --- Hàm gọi Supabase Function để gợi ý món ăn ---
         async function generateFoodSuggestionsFromHistory() {
+            // Hiển thị loading spinner
             elements.foodHistorySuggestionContent.innerHTML = `<div class="flex flex-col items-center"><div class="spinner"></div><p class="mt-2">${translations.generatingFoodHistorySuggestions}</p></div>`;
             
+            // BƯỚC 1: Lọc và chuẩn bị dữ liệu
             const foodTransactions = filteredTransactions
                 .filter(t => t.type === 'expense' && t.expense_type && (t.expense_type.toLowerCase().includes('ăn') || t.expense_type.toLowerCase().includes('food')))
-                .slice(0, 15) // Limit to the last 15 food-related transactions
+                .slice(0, 15)
                 .map(t => ({
                     description: t.description,
                     amount: t.amount,
-                    time: new Date(t.date).getHours() // Get the hour of the day
+                    time: new Date(t.date).getHours()
                 }));
 
             if (foodTransactions.length < 3) {
@@ -1269,6 +1271,7 @@
                 return;
             }
 
+            // BƯỚC 2: Chuẩn bị payload để gửi đi
             const promptData = {
                 type: 'food_history_suggestions',
                 transactions: foodTransactions,
@@ -1276,23 +1279,24 @@
             };
 
             try {
-                const { data, error } = await supabaseClient.functions.invoke('process-ai-requests_quan', {
+                // BƯỚC 3: Gọi Edge Function chuyên dụng 'ai-food-recommendation'
+                const { data, error } = await supabaseClient.functions.invoke('ai-food-recommendation', {
                     body: { activities: promptData }
                 });
 
                 if (error) throw error;
 
+                // BƯỚC 4: Xử lý kết quả trả về
                 if (data.success && data.analysis) {
                     elements.foodHistorySuggestionContent.innerHTML = markdownToHtml(data.analysis);
                 } else {
                     throw new Error(data.error || "Invalid response from Edge Function.");
                 }
             } catch (error) {
-                console.error("Error calling Supabase Edge Function for food history:", error);
+                console.error("Error calling Supabase Edge Function 'ai-food-recommendation':", error);
                 elements.foodHistorySuggestionContent.innerHTML = `<p class="text-red-500">${translations.aiConnectionError}</p>`;
             }
         }
-        // UPDATE END
 
         function markdownToHtml(markdown) {
             let html = markdown;
