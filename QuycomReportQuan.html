@@ -448,20 +448,6 @@
     </div>
     <!-- UPDATE END -->
 
-    <!-- Alert Modal -->
-    <div id="alert-modal" class="modal-overlay hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-        <div class="relative top-20 mx-auto p-5 border w-full max-w-sm shadow-lg rounded-md bg-white">
-            <div class="mt-3 text-center">
-                <h3 class="text-lg leading-6 font-medium text-gray-900">Thông Báo</h3>
-                <div class="mt-2 px-7 py-3">
-                    <p id="alert-message" class="text-sm text-gray-500"></p>
-                </div>
-                <div class="items-center px-4 py-3">
-                    <button id="alert-ok-btn" class="btn-primary w-full">OK</button>
-                </div>
-            </div>
-        </div>
-    </div>
 
     <script>
         // DOM elements initialization
@@ -526,14 +512,8 @@
         // --- Supabase Client Initialization ---
         const supabaseUrl = 'https://rmbsxccrwrktbjlnezpu.supabase.co';
         const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJtYnN4Y2Nyd3JrdGJqbG5lenB1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg2MjczNjQsImV4cCI6MjA2NDIwMzM2NH0.ydCqificftdtn1niRciFCifeuo8aX6SDGti-hCY5Z_Y';
-        // IMPORTANT: In a real production environment, the service_role key should NEVER be exposed on the client-side.
-        // This is used here for demonstration purposes to bypass RLS for a specific check.
-        // The proper long-term solution is to use a Supabase Edge Function (server-side) for authorization checks.
-        const supabaseServiceRoleKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJtYnN4Y2Nyd3JrdGJqbG5lenB1Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0ODYyNzM2NCwiZXhwIjoyMDY0MjAzMzY0fQ.S-0Is-e1L6-p-5a-L3J7j-e-S_r-p-J-s-Y-o-R-i-E';
 
         const supabaseClient = supabase.createClient(supabaseUrl, supabaseAnonKey);
-        // Create a separate client with the service role key for authorization checks
-        const supabaseAdmin = supabase.createClient(supabaseUrl, supabaseServiceRoleKey);
 
         let members = [];
         let transactions = [];
@@ -545,34 +525,6 @@
         let dailyChartInstance = null;
         let expenseTypeColors = {};
         let transactionToDeleteId = null;
-
-        // Shows a custom alert modal
-        function showAlert(message, callback) {
-            const alertModal = document.getElementById('alert-modal');
-            const alertMessage = document.getElementById('alert-message');
-            const alertOkBtn = document.getElementById('alert-ok-btn');
-
-            if (!alertModal || !alertMessage || !alertOkBtn) {
-                console.error("Alert modal elements not found!");
-                // Fallback to default alert if modal is missing
-                alert(message);
-                if (typeof callback === 'function') {
-                    callback();
-                }
-                return;
-            }
-
-            alertMessage.textContent = message;
-            alertModal.classList.remove('hidden');
-
-            // Use a one-time event listener to avoid stacking listeners
-            alertOkBtn.onclick = () => {
-                alertModal.classList.add('hidden');
-                if (typeof callback === 'function') {
-                    callback();
-                }
-            };
-        }
 
         const localization = {
             vi: {
@@ -1177,7 +1129,7 @@
                 elements.editModalOverlay.classList.add('hidden');
                 await fetchSupabaseData();
             } catch (error) {
-                showAlert('Lỗi: ' + error.message);
+                alert('Lỗi: ' + error.message);
             } finally {
                 elements.loadingOverlay.classList.add('hidden');
             }
@@ -1197,7 +1149,7 @@
                 elements.deleteModalOverlay.classList.add('hidden');
                 await fetchSupabaseData();
             } catch (error) {
-                 showAlert('Lỗi: ' + error.message);
+                 alert('Lỗi: ' + error.message);
             } finally {
                 elements.loadingOverlay.classList.add('hidden');
                 transactionToDeleteId = null;
@@ -1423,7 +1375,7 @@
                 await supabaseClient.auth.signOut();
                 window.location.href = 'index.html';
             } catch (error) {
-                showAlert('Lỗi khi đăng xuất: ' + error.message);
+                alert('Lỗi khi đăng xuất: ' + error.message);
             } finally {
                 elements.loadingOverlay.classList.add('hidden');
             }
@@ -1477,8 +1429,7 @@
                     const userEmail = session.user.email;
                     console.log(`Checking authorization for: ${userEmail}`);
 
-                    // Use the admin client to bypass RLS for this specific check
-                    const { data: authData, error: authError } = await supabaseAdmin
+                    const { data: authData, error: authError } = await supabaseClient
                         .from('invited_users_quan')
                         .select('email')
                         .eq('email', userEmail)
@@ -1493,9 +1444,8 @@
                         await initializeApp();
                     } else {
                         console.log('User is not in the invited list. Redirecting.');
-                        showAlert('Tài khoản của bạn không có quyền truy cập vào quỹ này.', () => {
-                            window.location.href = 'index.html'; // Redirect to index
-                        });
+                        alert('Tài khoản của bạn không có quyền truy cập vào quỹ này.');
+                        window.location.href = 'index.html'; // Redirect to index
                     }
                 } else {
                     console.log('No active session. Redirecting to login.');
