@@ -1409,20 +1409,63 @@
         });
         // UPDATE END
 
+        // =================================================================
+        // === UPDATED AUTHENTICATION AND AUTHORIZATION LOGIC STARTS HERE ===
+        // =================================================================
         document.addEventListener('DOMContentLoaded', async () => {
-            try {
-                const { data: { session } } = await supabaseClient.auth.getSession();
-                if (!session) {
-                    window.location.href = window.location.origin + '/index.html';
-                    return; 
-                }
+            // This function will be called by the auth check after authorization
+            const initializeApp = async () => {
                 document.getElementById('logout-btn')?.addEventListener('click', handleLogout);
                 await fetchSupabaseData();
+            };
+
+            try {
+                // Use onAuthStateChange to listen for login/logout events
+                supabaseClient.auth.onAuthStateChange(async (event, session) => {
+                    if (session && session.user) {
+                        // User is logged in, now check if they are in the invited list
+                        const userEmail = session.user.email;
+                        console.log(`Checking authorization for: ${userEmail}`);
+
+                        const { data, error } = await supabaseClient
+                            .from('invited_users_quan')
+                            .select('email')
+                            .eq('email', userEmail)
+                            .single();
+
+                        // Handle potential errors during the check
+                        if (error && error.code !== 'PGRST116') { // PGRST116 means "Not Found", which is a valid case for us
+                            console.error('Authorization check error:', error);
+                            alert('Lỗi khi kiểm tra quyền truy cập. Vui lòng thử đăng nhập lại.');
+                            await handleLogout(); // Log out the user for safety
+                            return;
+                        }
+
+                        // If data is returned, the user is authorized
+                        if (data) {
+                            console.log('User is authorized. Initializing app.');
+                            await initializeApp();
+                        } else {
+                            // If no data, user is not in the invited list
+                            console.log('User is not in the invited list. Redirecting.');
+                            alert('Tài khoản của bạn không có quyền truy cập vào quỹ này.');
+                            await handleLogout(); // Log out and redirect
+                        }
+                    } else {
+                        // No active session, redirect to login page
+                        console.log('No active session. Redirecting to login.');
+                        window.location.href = window.location.origin + '/index.html';
+                    }
+                });
             } catch (error) {
+                // Catch any critical errors during initial setup
                 elements.loadingOverlay.classList.add('hidden');
-                document.body.innerHTML = `<div class="text-center p-8 text-red-600">Lỗi khởi tạo: ${error.message}</div>`;
+                document.body.innerHTML = `<div class="text-center p-8 text-red-600">Lỗi khởi tạo nghiêm trọng: ${error.message}</div>`;
             }
         });
+        // ===============================================================
+        // === UPDATED AUTHENTICATION AND AUTHORIZATION LOGIC ENDS HERE ===
+        // ===============================================================
 
     </script>
 </body>
