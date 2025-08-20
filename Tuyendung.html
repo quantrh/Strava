@@ -77,14 +77,14 @@
         details > summary::-webkit-details-marker {
             display: none;
         }
-        #reportViewContent ul {
+        #reportViewContent ul, #interviewQuestionsContent ul {
             list-style-type: none;
             padding-left: 0;
         }
-        #reportViewContent ul li {
+        #reportViewContent ul li, #interviewQuestionsContent ul li {
             margin-bottom: 1em;
         }
-        #reportViewContent ul ul {
+        #reportViewContent ul ul, #interviewQuestionsContent ul ul {
             list-style-type: none;
             padding-left: 20px;
         }
@@ -131,6 +131,13 @@
                             <li><i class="fas fa-trash text-red-600"></i> <strong>Xóa:</strong> Xóa hồ sơ ứng viên khỏi danh sách.</li>
                         </ul>
                     </li>
+                     <li>
+                        <strong>Chuẩn bị Phỏng vấn:</strong>
+                        <ul>
+                            <li>Khi đang xem báo cáo của một ứng viên, nhấn nút <strong>"✨ Tạo câu hỏi phỏng vấn"</strong>.</li>
+                            <li>AI sẽ đề xuất các câu hỏi phỏng vấn phù hợp dựa trên hồ sơ và vị trí ứng tuyển.</li>
+                        </ul>
+                    </li>
                     <li>
                         <strong>Xuất Báo cáo:</strong>
                         <ul>
@@ -139,6 +146,16 @@
                         </ul>
                     </li>
                 </ol>
+            </div>
+        </details>
+        
+        <details class="bg-white rounded-lg shadow-md p-6 mb-6">
+            <summary class="font-semibold text-xl text-gray-700 cursor-pointer flex justify-between items-center">
+                <span><i class="fas fa-bullseye mr-2 text-green-500"></i> Vị trí & Tiêu chí Tuyển dụng</span>
+                <i class="fas fa-chevron-down transform transition-transform"></i>
+            </summary>
+            <div id="job-criteria-section" class="mt-4 text-gray-600">
+                <!-- Job criteria will be populated by JS -->
             </div>
         </details>
 
@@ -210,6 +227,9 @@
                     <div class="flex justify-between items-center border-b pb-4 mb-4">
                          <h2 id="reportViewTitle" class="text-2xl font-semibold text-gray-700">Báo cáo Đánh giá</h2>
                          <div class="flex items-center gap-4">
+                             <button id="generateQuestionsBtn" class="flex items-center gap-2 bg-purple-500 hover:bg-purple-600 text-white font-bold py-2 px-4 rounded-lg transition duration-300">
+                                <i class="fas fa-question-circle"></i> ✨ Tạo câu hỏi phỏng vấn
+                            </button>
                             <button id="exportWordBtn" class="flex items-center gap-2 bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg transition duration-300">
                                 <i class="fas fa-file-word"></i> Xuất ra Word
                             </button>
@@ -286,6 +306,24 @@
         </div>
     </div>
 
+    <!-- Modal Câu hỏi Phỏng vấn -->
+    <div id="interviewModal" class="modal bg-white rounded-lg shadow-xl w-11/12 md:w-3/4 lg:w-2/3 max-h-[90vh] overflow-y-auto">
+        <div class="p-6 border-b sticky top-0 bg-white z-10 flex justify-between items-center">
+            <h3 class="text-xl font-semibold text-gray-800" id="interviewModalTitle">Câu hỏi Phỏng vấn Gợi ý</h3>
+            <button id="closeInterviewModalBtn" class="text-gray-400 hover:text-gray-600">
+                <i class="fas fa-times fa-lg"></i>
+            </button>
+        </div>
+        <div id="interviewQuestionsContent" class="p-8 prose max-w-none">
+            <!-- Nội dung câu hỏi sẽ được chèn vào đây -->
+        </div>
+        <div class="p-4 border-t sticky bottom-0 bg-white flex justify-end">
+             <button id="copyQuestionsBtn" class="flex items-center gap-2 bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg transition duration-300">
+                <i class="fas fa-copy"></i> Sao chép
+            </button>
+        </div>
+    </div>
+
 <script>
     document.addEventListener('DOMContentLoaded', () => {
         // UI Elements
@@ -309,6 +347,7 @@
         const aiError = document.getElementById('aiError');
         const aiSuccess = document.getElementById('aiSuccess');
         const evaluationTable = document.getElementById('evaluation-table');
+        const jobCriteriaSection = document.getElementById('job-criteria-section');
         
         const tableView = document.getElementById('table-view');
         const reportView = document.getElementById('report-view');
@@ -316,16 +355,85 @@
         const reportViewContent = document.getElementById('reportViewContent');
         const closeReportViewBtn = document.getElementById('closeReportViewBtn');
         const exportWordBtn = document.getElementById('exportWordBtn');
+        const generateQuestionsBtn = document.getElementById('generateQuestionsBtn');
+        
+        const interviewModal = document.getElementById('interviewModal');
+        const interviewModalTitle = document.getElementById('interviewModalTitle');
+        const interviewQuestionsContent = document.getElementById('interviewQuestionsContent');
+        const closeInterviewModalBtn = document.getElementById('closeInterviewModalBtn');
+        const copyQuestionsBtn = document.getElementById('copyQuestionsBtn');
+
 
         // Data
         let candidates = [];
         let currentlyViewingCandidateId = null;
         pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js`;
+        
+        const jobCriteriaData = {
+            "Chuyên viên Phân tích nghiệp vụ (BA) (Nguồn nội bộ)": [
+                "<strong>Yêu cầu độ tuổi:</strong> Dưới 35 tuổi.",
+                "<strong>Trình độ chuyên môn:</strong> Tốt nghiệp Đại học trở lên chuyên ngành Hệ thống thông tin quản lý, CNTT, Toán-Tin hoặc các chuyên ngành liên quan.",
+                "<strong>Trình độ ngoại ngữ, tin học:</strong> Có khả năng đọc hiểu tài liệu chuyên ngành tiếng Anh tốt. Sử dụng thành thạo các công cụ như Visio, SQL.",
+                "<strong>Kinh nghiệm công tác:</strong> Tối thiểu 02 năm kinh nghiệm làm BA. Ưu tiên kinh nghiệm trong lĩnh vực ngân hàng, tài chính.",
+                "<strong>Yêu cầu khác:</strong> Kỹ năng giao tiếp, làm việc nhóm, giải quyết vấn đề tốt. Có tư duy logic và sáng tạo."
+            ],
+            "Chuyên viên Phân tích nghiệp vụ (BA) (Nguồn ngoài hệ thống)": [
+                "<strong>Yêu cầu độ tuổi:</strong> Dưới 35 tuổi.",
+                "<strong>Trình độ chuyên môn:</strong> Tốt nghiệp Đại học trở lên chuyên ngành Hệ thống thông tin quản lý, CNTT, Toán-Tin hoặc các chuyên ngành liên quan.",
+                "<strong>Trình độ ngoại ngữ, tin học:</strong> Có khả năng đọc hiểu tài liệu chuyên ngành tiếng Anh tốt. Sử dụng thành thạo các công cụ như Visio, SQL.",
+                "<strong>Kinh nghiệm công tác:</strong> Tối thiểu 02 năm kinh nghiệm làm BA. Ưu tiên kinh nghiệm trong lĩnh vực ngân hàng, tài chính.",
+                "<strong>Yêu cầu khác:</strong> Kỹ năng giao tiếp, làm việc nhóm, giải quyết vấn đề tốt. Có tư duy logic và sáng tạo. Ưu tiên ứng viên có các chứng chỉ BA quốc tế."
+            ],
+            "Lập trình viên Java (Nguồn nội bộ)": [
+                "<strong>Trình độ chuyên môn:</strong> Tốt nghiệp Đại học/Cao đẳng chuyên ngành Công nghệ thông tin hoặc tương đương.",
+                "<strong>Trình độ ngoại ngữ, tin học:</strong> Đọc hiểu tài liệu tiếng Anh. Thành thạo Java Core, Spring Framework.",
+                "<strong>Kinh nghiệm công tác:</strong> Ít nhất 01 năm kinh nghiệm làm việc với Java.",
+                "<strong>Yêu cầu khác:</strong> Có khả năng làm việc độc lập và làm việc nhóm. Tinh thần trách nhiệm cao."
+            ],
+            "Lập trình viên Java (Nguồn ngoài hệ thống)": [
+                "<strong>Trình độ chuyên môn:</strong> Tốt nghiệp Đại học/Cao đẳng chuyên ngành Công nghệ thông tin hoặc tương đương.",
+                "<strong>Trình độ ngoại ngữ, tin học:</strong> Đọc hiểu tài liệu tiếng Anh. Thành thạo Java Core, Spring Framework (Spring Boot, Spring MVC).",
+                "<strong>Kinh nghiệm công tác:</strong> Ít nhất 02 năm kinh nghiệm làm việc với Java. Có kinh nghiệm làm việc với RESTful API, Microservices là một lợi thế.",
+                "<strong>Yêu cầu khác:</strong> Có khả năng làm việc độc lập và làm việc nhóm. Tinh thần trách nhiệm cao."
+            ],
+             "Chuyên viên Quản trị hệ thống ứng dụng Core banking": [
+                "<strong>Yêu cầu độ tuổi:</strong> Dưới 35 tuổi.",
+                "<strong>Trình độ chuyên môn:</strong> Tốt nghiệp Đại học trở lên các chuyên ngành CNTT, Toán tin, Hệ thống thông tin, Công nghệ phần mềm...",
+                "<strong>Trình độ ngoại ngữ, tin học:</strong> Có chứng chỉ tiếng Anh tương đương TOEIC 600/990, Toefl PBT/IPT 500/677, Toefl CBT 173/300, Toefl iBT 61/120, IELTS 5.5/9.0, Cambridge Exam PET/FCE/CAE.",
+                "<strong>Kinh nghiệm công tác:</strong> Có tối thiểu 01 năm kinh nghiệm tại vị trí tương đương.",
+                "<strong>Yêu cầu khác:</strong> Có kiến thức về hệ thống Corebanking là một lợi thế."
+            ],
+            "Chuyên viên Phát triển ứng dụng Core banking": [
+                "<strong>Yêu cầu độ tuổi:</strong> Dưới 35 tuổi.",
+                "<strong>Trình độ chuyên môn:</strong> Tốt nghiệp các trường Đại học trong và ngoài nước về chuyên ngành CNTT, Toán tin, Hệ thống thông tin, Công nghệ phần mềm...",
+                "<strong>Trình độ ngoại ngữ, tin học:</strong> Có chứng chỉ tiếng Anh tương đương TOEIC 600/990, Toefl PBT/IPT 500/677, Toefl CBT 173/300, Toefl iBT 61/120, IELTS 5.5/9.0, Cambridge Exam PET/FCE/CAE.",
+                "<strong>Kinh nghiệm công tác:</strong> Có tối thiểu 01 năm kinh nghiệm tại vị trí tương đương.",
+                "<strong>Yêu cầu khác:</strong> Có kiến thức về hệ thống Corebanking, am hiểu quy trình nghiệp vụ ngân hàng là một lợi thế."
+            ],
+             "Chuyên viên Kiểm thử tự động (QC automation)": [
+                "<strong>Yêu cầu độ tuổi:</strong> Dưới 35 tuổi.",
+                "<strong>Trình độ chuyên môn:</strong> Tốt nghiệp các trường Đại học trong và ngoài nước về chuyên ngành CNTT, Toán tin, Hệ thống thông tin, Công nghệ phần mềm...",
+                "<strong>Trình độ ngoại ngữ, tin học:</strong> Có chứng chỉ tiếng Anh tương đương TOEIC 600/990, Toefl PBT/IPT 500/677, Toefl CBT 173/300, Toefl iBT 61/120, IELTS 5.5/9.0, Cambridge Exam PET/FCE/CAE.",
+                "<strong>Kinh nghiệm công tác:</strong> Có tối thiểu 01 năm kinh nghiệm tại vị trí tương đương.",
+                "<strong>Yêu cầu khác:</strong> Có kinh nghiệm làm việc với các công cụ kiểm thử tự động như Selenium, JUnit, TestNG, Appium, Katalon."
+            ],
+             "Chuyên viên Phát triển API và Tích hợp": [
+                "<strong>Yêu cầu độ tuổi:</strong> Dưới 35 tuổi.",
+                "<strong>Trình độ chuyên môn:</strong> Tốt nghiệp các trường Đại học trong và ngoài nước về chuyên ngành CNTT, Toán tin, Hệ thống thông tin, Công nghệ phần mềm...",
+                "<strong>Trình độ ngoại ngữ, tin học:</strong> Có chứng chỉ tiếng Anh tương đương TOEIC 600/990, Toefl PBT/IPT 500/677, Toefl CBT 173/300, Toefl iBT 61/120, IELTS 5.5/9.0, Cambridge Exam PET/FCE/CAE.",
+                "<strong>Kinh nghiệm công tác:</strong> Có tối thiểu 01 năm kinh nghiệm tại vị trí tương đương.",
+                "<strong>Yêu cầu khác:</strong> Có kinh nghiệm làm việc với Restful APIs, JSON, XML và các hệ thống tích hợp."
+            ],
+        };
 
         // --- Functions ---
 
-        const toggleModal = (show) => {
-            candidateModal.classList.toggle('active', show);
+        const getApiKey = () => {
+            return "AIzaSyBaLi7TzZJ9SwmHilU24SRcV2i7lU6gqdQ";
+        };
+        
+        const toggleModal = (modal, show) => {
+            modal.classList.toggle('active', show);
             modalBackdrop.classList.toggle('active', show);
         };
 
@@ -347,9 +455,9 @@
             }
         };
 
-        const saveToLocalStorage = () => localStorage.setItem('candidatesData_v12', JSON.stringify(candidates));
+        const saveToLocalStorage = () => localStorage.setItem('candidatesData_v14', JSON.stringify(candidates));
         const loadFromLocalStorage = () => {
-            const data = localStorage.getItem('candidatesData_v12');
+            const data = localStorage.getItem('candidatesData_v14');
             candidates = data ? JSON.parse(data) : [];
         };
 
@@ -416,7 +524,7 @@
 
             const processedCandidates = candidates.map(calculateScores);
             const filteredCandidates = processedCandidates.filter(c => 
-                c.fullName.toLowerCase().includes(searchTerm) && 
+                (c.fullName || '').toLowerCase().includes(searchTerm) && 
                 (filterValue === 'all' || c.result === filterValue)
             );
 
@@ -483,9 +591,13 @@
         };
         
         const evaluateWithAI = async (resumeText) => {
+            const apiKey = getApiKey();
+            if (!apiKey) {
+                throw new Error("API Key chưa được cung cấp.");
+            }
             const prompt = `Bạn là một chuyên gia tuyển dụng. Dựa vào nội dung CV sau đây: "${resumeText}". Hãy thực hiện các yêu cầu sau:
 1. Trích xuất thông tin cơ bản: Họ và tên, Vị trí ứng tuyển, Email, Số điện thoại.
-2. Xác định các tiêu chí tuyển dụng chính cho vị trí này (Yêu cầu độ tuổi; trình độ chuyên môn; Trình độ ngoại ngữ, tin học; Kinh nghiệm công tác; yêu cầu khác).
+2. Xác định các tiêu chí tuyển dụng chính cho vị trí này, bao gồm: Yêu cầu độ tuổi, Trình độ chuyên môn, Trình độ ngoại ngữ/tin học, Kinh nghiệm công tác, và các Yêu cầu khác (nếu có).
 3. Với mỗi tiêu chí, hãy trả về một đối tượng chứa:
     - 'criterion': Tên tiêu chí.
     - 'requirement': Yêu cầu của vị trí. Ví dụ: "Tốt nghiệp Đại học ngành CNTT, Toán-Tin, hoặc tương đương".
@@ -527,7 +639,6 @@ Hãy trả về một đối tượng JSON duy nhất.`;
                 generationConfig: { responseMimeType: "application/json", responseSchema: schema }
             };
             
-            const apiKey = "AIzaSyBaLi7TzZJ9SwmHilU24SRcV2i7lU6gqdQ";
             const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
 
             try {
@@ -536,30 +647,40 @@ Hãy trả về một đối tượng JSON duy nhất.`;
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
                 });
-                if (!response.ok) throw new Error(`API request failed with status ${response.status}`);
+                if (!response.ok) {
+                    const errorBody = await response.json();
+                    console.error("API Error:", errorBody);
+                    throw new Error(`Lỗi API: ${errorBody.error?.message || response.statusText}`);
+                }
                 const result = await response.json();
+                if (!result.candidates || !result.candidates[0].content) {
+                    throw new Error("Phản hồi từ AI không hợp lệ.");
+                }
                 return JSON.parse(result.candidates[0].content.parts[0].text);
             } catch (error) {
                 console.error("Error calling Gemini API:", error);
-                throw new Error("Có lỗi xảy ra trong quá trình đánh giá của AI.");
+                throw new Error("Có lỗi xảy ra trong quá trình đánh giá của AI. Vui lòng kiểm tra lại API Key.");
             }
         };
 
         const generateAIReport = async (candidate) => {
+            const apiKey = getApiKey();
+            if (!apiKey) return "<p>Vui lòng nhập API Key để tạo báo cáo.</p>";
+            
             const fullCandidateData = calculateScores(candidate);
-            const dataString = JSON.stringify(fullCandidateData.evaluation, null, 2);
+            const dataString = JSON.stringify(fullCandidateData, null, 2);
             const prompt = `Bạn là một chuyên gia tuyển dụng. Dựa trên dữ liệu JSON về việc đánh giá ứng viên ${fullCandidateData.fullName} cho vị trí ${fullCandidateData.position} sau đây: ${dataString}. Hãy viết một báo cáo đánh giá chuyên nghiệp bằng tiếng Việt, **sử dụng các thẻ HTML để định dạng**.
 Báo cáo phải có các phần sau:
 1.  <h2 style="font-size: 1.25rem; font-weight: 600; border-bottom: 1px solid #e5e7eb; padding-bottom: 0.5rem; margin-bottom: 1rem;">Tổng quan</h2><p>Tóm tắt ngắn gọn về ứng viên và kết quả đánh giá chung. Ví dụ: <strong>Điểm trung bình: ${fullCandidateData.averageScore}</strong>, <strong>Kết quả: ${fullCandidateData.result}</strong>.</p>
 2.  <h2 style="font-size: 1.25rem; font-weight: 600; border-bottom: 1px solid #e5e7eb; padding-bottom: 0.5rem; margin-bottom: 1rem;">Phân tích chi tiết</h2><p>Dưới đây là phân tích chi tiết từng tiêu chí đánh giá:</p><ul style="list-style: none; padding: 0;">...</ul>
-3.  <h2 style="font-size: 1.25rem; font-weight: 600; border-bottom: 1px solid #e5e7eb; padding-bottom: 0.5rem; margin-bottom: 1rem;">Điểm mạnh</h2><p>...</p>
-4.  <h2 style="font-size: 1.25rem; font-weight: 600; border-bottom: 1px solid #e5e7eb; padding-bottom: 0.5rem; margin-bottom: 1rem;">Điểm cần cải thiện</h2><p>...</p>
-5.  <h2 style="font-size: 1.25rem; font-weight: 600; border-bottom: 1px solid #e5e7eb; padding-bottom: 0.5rem; margin-bottom: 1rem;">Kết luận và Đề xuất</h2><p>...</p>
+3.  <h2 style="font-size: 1.25rem; font-weight: 600; border-bottom: 1px solid #e5e7eb; padding-bottom: 0.5rem; margin-bottom: 1rem;">Tóm tắt quá trình công tác</h2><p>Trích xuất và tóm tắt quá trình công tác của ứng viên từ CV (nếu có). Với mỗi kinh nghiệm, nêu rõ: Tên công ty, thời gian làm việc, vị trí, và các công việc/thành tích chính.</p>
+4.  <h2 style="font-size: 1.25rem; font-weight: 600; border-bottom: 1px solid #e5e7eb; padding-bottom: 0.5rem; margin-bottom: 1rem;">Điểm mạnh</h2><p>...</p>
+5.  <h2 style="font-size: 1.25rem; font-weight: 600; border-bottom: 1px solid #e5e7eb; padding-bottom: 0.5rem; margin-bottom: 1rem;">Điểm cần cải thiện</h2><p>...</p>
+6.  <h2 style="font-size: 1.25rem; font-weight: 600; border-bottom: 1px solid #e5e7eb; padding-bottom: 0.5rem; margin-bottom: 1rem;">Kết luận và Đề xuất</h2><p>...</p>
 Trong phần "Phân tích chi tiết", với mỗi tiêu chí, hãy tạo một thẻ <li style="margin-bottom: 1.25rem;">. Bên trong, đầu tiên là thẻ <strong>Tiêu chí (Điểm: X/10)</strong>. Tiếp theo là một <ul style="list-style-type: none; padding-left: 1.25rem; margin-top: 0.5rem;"> lồng nhau với 3 <li> con: <li style="margin-bottom: 0.25rem;"><strong style="color: #4b5563;">Yêu cầu:</strong> [nội dung]</li>, <li style="margin-bottom: 0.25rem;"><strong style="color: #4b5563;">Thông tin ứng viên:</strong> [nội dung]</li>, và <li style="margin-bottom: 0.25rem;"><strong style="color: #4b5563;">Nhận xét:</strong> [nội dung]</li>.
 Chỉ trả về chuỗi HTML bên trong, không bao gồm thẻ <html>, <head>, hoặc <body>.`;
 
             const payload = { contents: [{ parts: [{ text: prompt }] }] };
-            const apiKey = "AIzaSyBaLi7TzZJ9SwmHilU24SRcV2i7lU6gqdQ";
             const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
 
             try {
@@ -577,6 +698,51 @@ Chỉ trả về chuỗi HTML bên trong, không bao gồm thẻ <html>, <head>,
             }
         };
 
+        const generateInterviewQuestions = async (candidate) => {
+            const apiKey = getApiKey();
+            if (!apiKey) return "<p>Vui lòng nhập API Key để tạo câu hỏi.</p>";
+            
+            const fullCandidateData = calculateScores(candidate);
+            const dataString = JSON.stringify(fullCandidateData, null, 2);
+            const prompt = `Với vai trò là một nhà tuyển dụng kinh nghiệm, hãy tạo một bộ câu hỏi phỏng vấn cho ứng viên ${fullCandidateData.fullName} ứng tuyển vào vị trí ${fullCandidateData.position}. Dựa vào dữ liệu đánh giá sau: ${dataString}.
+Hãy tạo các câu hỏi để:
+1.  **Làm rõ các điểm yếu:** Tập trung vào các tiêu chí có điểm thấp (dưới 6) để hiểu rõ hơn về kinh nghiệm và kiến thức của ứng viên.
+2.  **Xác thực các điểm mạnh:** Đặt câu hỏi tình huống để kiểm tra xem các kỹ năng được đánh giá cao (từ 8 trở lên) có thực sự vững chắc không.
+3.  **Đánh giá sự phù hợp:** Các câu hỏi về hành vi và tình huống để xem sự phù hợp của ứng viên với văn hóa công ty.
+Hãy trả về kết quả dưới dạng HTML, phân loại câu hỏi thành các mục: <h2>Câu hỏi hành vi</h2>, <h2>Câu hỏi kỹ thuật/chuyên môn</h2>, <h2>Câu hỏi tình huống</h2>.`;
+
+            const payload = { contents: [{ parts: [{ text: prompt }] }] };
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+
+            try {
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                if (!response.ok) throw new Error('API request failed');
+                const result = await response.json();
+                return result.candidates[0].content.parts[0].text;
+            } catch (error) {
+                console.error("Error generating interview questions:", error);
+                throw new Error("Không thể tạo câu hỏi phỏng vấn.");
+            }
+        };
+        
+        const renderJobCriteria = () => {
+            let html = '';
+            for (const position in jobCriteriaData) {
+                html += `<div class="mb-4">`;
+                html += `<h4 class="font-semibold text-gray-800">${position}</h4>`;
+                html += `<ul class="list-disc list-inside mt-2 text-sm">`;
+                jobCriteriaData[position].forEach(criterion => {
+                    html += `<li>${criterion}</li>`;
+                });
+                html += `</ul></div>`;
+            }
+            jobCriteriaSection.innerHTML = html;
+        };
+
         // --- Event Listeners ---
 
         addCandidateBtn.addEventListener('click', () => {
@@ -587,14 +753,16 @@ Chỉ trả về chuỗi HTML bên trong, không bao gồm thẻ <html>, <head>,
             aiError.classList.add('hidden');
             aiSuccess.classList.add('hidden');
             document.getElementById('candidateId').value = '';
-            toggleModal(true);
+            toggleModal(candidateModal, true);
         });
 
-        cancelBtn.addEventListener('click', () => toggleModal(false));
+        cancelBtn.addEventListener('click', () => toggleModal(candidateModal, false));
         closeReportViewBtn.addEventListener('click', () => showReportView(false));
+        closeInterviewModalBtn.addEventListener('click', () => toggleModal(interviewModal, false));
         
         modalBackdrop.addEventListener('click', () => {
-            toggleModal(false);
+            toggleModal(candidateModal, false);
+            toggleModal(interviewModal, false);
         });
 
         candidateForm.addEventListener('submit', (e) => {
@@ -632,7 +800,7 @@ Chỉ trả về chuỗi HTML bên trong, không bao gồm thẻ <html>, <head>,
 
             saveToLocalStorage();
             renderTable();
-            toggleModal(false);
+            toggleModal(candidateModal, false);
         });
 
         candidateTableBody.addEventListener('click', async (e) => {
@@ -658,7 +826,7 @@ Chỉ trả về chuỗi HTML bên trong, không bao gồm thẻ <html>, <head>,
                 aiError.classList.add('hidden');
                 aiSuccess.classList.add('hidden');
                 createEvaluationUI(candidate.evaluation || []);
-                toggleModal(true);
+                toggleModal(candidateModal, true);
             }
 
             if (target.classList.contains('delete-btn')) {
@@ -713,7 +881,7 @@ Chỉ trả về chuỗi HTML bên trong, không bao gồm thẻ <html>, <head>,
                     renderTable();
                     aiSuccess.textContent = `Đã xử lý và thêm thành công ${processedCount} ứng viên.`;
                     aiSuccess.classList.remove('hidden');
-                    setTimeout(() => toggleModal(false), 2000);
+                    setTimeout(() => toggleModal(candidateModal, false), 2000);
                 } else {
                     throw new Error("Không thể xử lý bất kỳ file nào đã chọn.");
                 }
@@ -727,6 +895,35 @@ Chỉ trả về chuỗi HTML bên trong, không bao gồm thẻ <html>, <head>,
                 aiEvaluateBtn.disabled = false;
                 cvFile.value = '';
             }
+        });
+
+        generateQuestionsBtn.addEventListener('click', async () => {
+            if (!currentlyViewingCandidateId) return;
+            const candidate = candidates.find(c => c.id == currentlyViewingCandidateId);
+            if (!candidate) return;
+
+            interviewModalTitle.textContent = `Câu hỏi Phỏng vấn Gợi ý cho ${candidate.fullName}`;
+            interviewQuestionsContent.innerHTML = '<div class="flex justify-center items-center p-8"><div class="loader"></div></div>';
+            toggleModal(interviewModal, true);
+
+            try {
+                const questionsHTML = await generateInterviewQuestions(candidate);
+                interviewQuestionsContent.innerHTML = questionsHTML;
+            } catch (error) {
+                interviewQuestionsContent.innerHTML = `<p class="text-red-500">${error.message}</p>`;
+            }
+        });
+
+        copyQuestionsBtn.addEventListener('click', () => {
+            const textToCopy = interviewQuestionsContent.innerText;
+            navigator.clipboard.writeText(textToCopy).then(() => {
+                copyQuestionsBtn.innerHTML = '<i class="fas fa-check"></i> Đã sao chép';
+                setTimeout(() => {
+                    copyQuestionsBtn.innerHTML = '<i class="fas fa-copy"></i> Sao chép';
+                }, 2000);
+            }).catch(err => {
+                console.error('Failed to copy text: ', err);
+            });
         });
 
         exportWordBtn.addEventListener('click', () => {
@@ -804,10 +1001,10 @@ Chỉ trả về chuỗi HTML bên trong, không bao gồm thẻ <html>, <head>,
         filterAssessment.addEventListener('change', renderTable);
 
         // --- Initialization ---
+        renderJobCriteria();
         loadFromLocalStorage();
         renderTable();
     });
 </script>
 </body>
 </html>
-
