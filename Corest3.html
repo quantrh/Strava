@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bảng điều khiển Theo dõi Tiến độ Dự án Core Banking Myanmar</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+        }
+        .tab-active {
+            border-bottom-color: #2563eb;
+            color: #2563eb;
+            font-weight: 600;
+        }
+        .tab-inactive {
+            border-bottom-color: transparent;
+            color: #6b7280;
+        }
+        .progress-bar-bg {
+            background-color: #e5e7eb;
+        }
+        .progress-bar-fill {
+            background-color: #3b82f6;
+        }
+        .status-green { background-color: #dcfce7; color: #166534; }
+        .status-amber { background-color: #fef3c7; color: #92400e; }
+        .status-red { background-color: #fee2e2; color: #991b1b; }
+        .kpi-card {
+            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+        }
+        .kpi-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+        }
+        .subtask-container {
+            transition: max-height 0.5s ease-in-out, opacity 0.5s ease-in-out;
+            max-height: 0;
+            opacity: 0;
+            overflow: hidden;
+        }
+        .subtask-container.expanded {
+            max-height: 500px; /* Adjust as needed */
+            opacity: 1;
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+    <div class="max-w-7xl mx-auto bg-white rounded-2xl shadow-lg p-6 md:p-8">
+        <!-- Header -->
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 border-b pb-4">
+            <div>
+                <h1 class="text-2xl md:text-3xl font-bold text-gray-800">Bảng điều khiển Tiến độ Dự án Core Banking Myanmar</h1>
+                <p class="text-gray-500 mt-1">Cập nhật đến ngày: 19/08/2025</p>
+            </div>
+            <div class="mt-4 md:mt-0 text-center md:text-right">
+                <p class="text-lg font-semibold text-gray-700">Go-Live Giai đoạn 1</p>
+                <p class="text-xl font-bold text-blue-600">21/09/2025</p>
+            </div>
+        </div>
+
+        <!-- Overall Progress -->
+        <div class="mb-8">
+            <h2 class="text-xl font-semibold text-gray-700 mb-3">Tổng quan tiến độ đến Go-Live</h2>
+            <div class="relative pt-1">
+                <div class="flex mb-2 items-center justify-between">
+                    <div>
+                        <span class="text-xs font-semibold inline-block py-1 px-2 uppercase rounded-full text-blue-600 bg-blue-200">
+                            Đang thực hiện Pilot
+                        </span>
+                    </div>
+                    <div class="text-right">
+                        <span id="overall-progress-text" class="text-xs font-semibold inline-block text-blue-600">
+                            90%
+                        </span>
+                    </div>
+                </div>
+                <div class="overflow-hidden h-4 mb-4 text-xs flex rounded-full bg-blue-100">
+                    <div id="overall-progress-bar" style="width: 90%" class="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-blue-500 transition-all duration-500"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content with Tabs -->
+        <div>
+            <div class="border-b border-gray-200">
+                <nav class="-mb-px flex space-x-6" aria-label="Tabs">
+                    <button id="tab-tong-quan" class="tab-btn whitespace-nowrap py-3 px-1 border-b-2 text-sm tab-active" onclick="changeTab('tong-quan')">Tổng Quan</button>
+                    <button id="tab-core-banking" class="tab-btn whitespace-nowrap py-3 px-1 border-b-2 text-sm tab-inactive" onclick="changeTab('core-banking')">Core Banking</button>
+                    <button id="tab-trade-finance" class="tab-btn whitespace-nowrap py-3 px-1 border-b-2 text-sm tab-inactive" onclick="changeTab('trade-finance')">Trade Finance</button>
+                    <button id="tab-quantum" class="tab-btn whitespace-nowrap py-3 px-1 border-b-2 text-sm tab-inactive" onclick="changeTab('quantum')">Quantum (Treasury)</button>
+                    <button id="tab-checklist" class="tab-btn whitespace-nowrap py-3 px-1 border-b-2 text-sm tab-inactive" onclick="changeTab('checklist')">Checklist Go-Live</button>
+                </nav>
+            </div>
+
+            <!-- Tab Content -->
+            <div id="tab-content" class="mt-6">
+                <!-- Tổng quan Content -->
+                <div id="content-tong-quan">
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                        <!-- Overall Status Card -->
+                        <div class="kpi-card bg-gray-50 p-5 rounded-xl">
+                            <h3 class="font-semibold text-gray-600">Trạng thái chung</h3>
+                            <div class="flex items-center mt-2">
+                                <span class="status-green font-semibold py-1 px-3 rounded-full text-sm">On Track</span>
+                            </div>
+                            <p class="text-xs text-gray-500 mt-2">Các hạng mục chính đang đi đúng tiến độ.</p>
+                        </div>
+                        <!-- Schedule Card -->
+                        <div class="kpi-card bg-gray-50 p-5 rounded-xl">
+                            <h3 class="font-semibold text-gray-600">Tiến độ</h3>
+                            <div class="flex items-center mt-2">
+                                <span class="status-green font-semibold py-1 px-3 rounded-full text-sm">Đúng kế hoạch</span>
+                            </div>
+                             <p class="text-xs text-gray-500 mt-2">Hoàn thành UAT1, đang thực hiện Pilot.</p>
+                        </div>
+                        <!-- Risk Card -->
+                        <div class="kpi-card bg-gray-50 p-5 rounded-xl">
+                            <h3 class="font-semibold text-gray-600">Rủi ro</h3>
+                            <div class="flex items-center mt-2">
+                                <span class="status-amber font-semibold py-1 px-3 rounded-full text-sm">Có rủi ro</span>
+                            </div>
+                            <p class="text-xs text-gray-500 mt-2">Tốc độ giao dịch trên môi trường Pilot chậm.</p>
+                        </div>
+                        <!-- Scope Card -->
+                        <div class="kpi-card bg-gray-50 p-5 rounded-xl">
+                            <h3 class="font-semibold text-gray-600">Phạm vi</h3>
+                            <div class="flex items-center mt-2">
+                                <span class="status-green font-semibold py-1 px-3 rounded-full text-sm">Đã chốt</span>
+                            </div>
+                            <p class="text-xs text-gray-500 mt-2">Phạm vi GĐ1 đã được thống nhất và ký kết.</p>
+                        </div>
+                    </div>
+                    <div class="mt-8 bg-gray-50 p-5 rounded-xl">
+                        <h3 class="text-lg font-semibold text-gray-800 mb-4">Dòng thời gian dự án (Các giai đoạn chính)</h3>
+                        <div class="relative">
+                             <!-- Timeline line -->
+                            <div class="absolute left-4 top-0 h-full w-0.5 bg-gray-300"></div>
+                            <!-- Timeline items -->
+                            <div class="space-y-8">
+                                <div class="flex items-center">
+                                    <div class="z-10 flex items-center justify-center w-8 h-8 bg-green-500 rounded-full text-white">✓</div>
+                                    <div class="ml-4">
+                                        <h4 class="font-semibold">Khởi tạo & Phân tích yêu cầu</h4>
+                                        <p class="text-sm text-gray-500">Tháng 4 - Tháng 7, 2025 (Hoàn thành)</p>
+                                    </div>
+                                </div>
+                                <div class="flex items-center">
+                                    <div class="z-10 flex items-center justify-center w-8 h-8 bg-green-500 rounded-full text-white">✓</div>
+                                    <div class="ml-4">
+                                        <h4 class="font-semibold">Xây dựng & Kiểm thử (SIT/UAT1)</h4>
+                                        <p class="text-sm text-gray-500">Tháng 4 - 08/08/2025 (Hoàn thành)</p>
+                                    </div>
+                                </div>
+                                <div class="flex items-center">
+                                    <div class="z-10 flex items-center justify-center w-8 h-8 bg-blue-500 rounded-full ring-4 ring-white">
+                                        <svg class="w-5 h-5 text-white animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                                    </div>
+                                    <div class="ml-4">
+                                        <h4 class="font-semibold">Pilot hệ thống</h4>
+                                        <p class="text-sm text-gray-500">13/08 - 19/08/2025 (Đang thực hiện)</p>
+                                    </div>
+                                </div>
+                                <div class="flex items-center">
+                                    <div class="z-10 flex items-center justify-center w-8 h-8 bg-gray-400 rounded-full text-white">→</div>
+                                    <div class="ml-4">
+                                        <h4 class="font-semibold text-gray-600">Diễn tập (Dress Rehearsal)</h4>
+                                        <p class="text-sm text-gray-500">22/08 - 06/09/2025</p>
+                                    </div>
+                                </div>
+                                <div class="flex items-center">
+                                    <div class="z-10 flex items-center justify-center w-8 h-8 bg-gray-400 rounded-full text-white">→</div>
+                                    <div class="ml-4">
+                                        <h4 class="font-semibold text-gray-600">Diễn tập DRP (Dự phòng thảm họa)</h4>
+                                        <p class="text-sm text-gray-500">12/09 - 16/09/2025</p>
+                                    </div>
+                                </div>
+                                <div class="flex items-center">
+                                    <div class="z-10 flex items-center justify-center w-8 h-8 bg-gray-400 rounded-full text-white">→</div>
+                                    <div class="ml-4">
+                                        <h4 class="font-semibold text-gray-600">Go-Live Giai đoạn 1</h4>
+                                        <p class="text-sm text-gray-500">20-21/09/2025</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Core Banking Content -->
+                <div id="content-core-banking" class="hidden">
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+                        <div class="kpi-card bg-blue-50 p-5 rounded-xl text-center">
+                            <h3 class="font-semibold text-blue-800">Test cases UAT</h3>
+                            <p class="text-3xl font-bold text-blue-600 mt-2">5,196</p>
+                            <div class="mt-3 flex justify-center space-x-4 text-sm">
+                                <span><span class="font-bold text-green-600">4,931</span> Passed</span>
+                                <span><span class="font-bold text-red-600">189</span> Failed</span>
+                            </div>
+                        </div>
+                        <div class="kpi-card bg-green-50 p-5 rounded-xl text-center">
+                            <h3 class="font-semibold text-green-800">Defects UAT (Core)</h3>
+                            <p class="text-3xl font-bold text-green-600 mt-2">70</p>
+                             <div class="mt-3 flex justify-center space-x-4 text-sm">
+                                <span><span class="font-bold">64</span> Done</span>
+                                <span><span class="font-bold text-amber-600">6</span> Open</span>
+                            </div>
+                        </div>
+                        <div class="kpi-card bg-yellow-50 p-5 rounded-xl text-center">
+                            <h3 class="font-semibold text-yellow-800">Cấu hình tham số</h3>
+                            <p class="text-3xl font-bold text-yellow-600 mt-2">99%</p>
+                            <p class="text-sm text-yellow-700 mt-3">907/917 bảng đã hoàn thành</p>
+                        </div>
+                    </div>
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4">Tiến độ các ứng dụng tích hợp</h3>
+                    <div class="overflow-x-auto bg-gray-50 rounded-xl p-4">
+                        <table class="w-full text-sm text-left text-gray-600">
+                            <thead class="text-xs text-gray-700 uppercase bg-gray-100 rounded-lg">
+                                <tr>
+                                    <th scope="col" class="px-6 py-3">Ứng dụng</th>
+                                    <th scope="col" class="px-6 py-3">Trạng thái</th>
+                                    <th scope="col" class="px-6 py-3">% UAT1</th>
+                                    <th scope="col" class="px-6 py-3">Ghi chú</th>
+                                </tr>
+                            </thead>
+                            <tbody id="integration-apps-table">
+                                <!-- JS will populate this -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Trade Finance Content -->
+                <div id="content-trade-finance" class="hidden">
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <div class="kpi-card bg-indigo-50 p-5 rounded-xl">
+                            <h3 class="font-semibold text-indigo-800">Phân tích yêu cầu</h3>
+                            <p class="text-2xl font-bold text-indigo-600 mt-2">100% Hoàn thành</p>
+                            <p class="text-sm text-indigo-700 mt-1">Đã ký 8 FSDs và toàn bộ User Stories.</p>
+                        </div>
+                        <div class="kpi-card bg-sky-50 p-5 rounded-xl">
+                            <h3 class="font-semibold text-sky-800">Build & Development</h3>
+                            <p class="text-2xl font-bold text-sky-600 mt-2">Sprint 5 In Progress</p>
+                            <p class="text-sm text-sky-700 mt-1">Sprint 4 đã hoàn thành.</p>
+                        </div>
+                        <div class="kpi-card bg-red-50 p-5 rounded-xl">
+                            <h3 class="font-semibold text-red-800">Defects UAT (TF)</h3>
+                            <p class="text-2xl font-bold text-red-600 mt-2">70 cần xử lý</p>
+                            <p class="text-sm text-red-700 mt-1">06 lỗi cần fix trước Go-live, 64 lỗi sau Go-live.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quantum Content -->
+                <div id="content-quantum" class="hidden">
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                         <div class="kpi-card bg-teal-50 p-5 rounded-xl">
+                            <h3 class="font-semibold text-teal-800">Design Book</h3>
+                            <p class="text-2xl font-bold text-teal-600 mt-2">100% Hoàn thành</p>
+                            <p class="text-sm text-teal-700 mt-1">Đã ký tài liệu Design Book.</p>
+                        </div>
+                        <div class="kpi-card bg-cyan-50 p-5 rounded-xl">
+                            <h3 class="font-semibold text-cyan-800">Build & Development</h3>
+                            <p class="text-2xl font-bold text-cyan-600 mt-2">Sprint 3 In Progress</p>
+                            <p class="text-sm text-cyan-700 mt-1">Sprint 2 đã hoàn thành.</p>
+                        </div>
+                        <div class="kpi-card bg-gray-100 p-5 rounded-xl">
+                            <h3 class="font-semibold text-gray-800">SIT / UAT</h3>
+                            <p class="text-2xl font-bold text-gray-600 mt-2">Sắp diễn ra</p>
+                            <p class="text-sm text-gray-700 mt-1">SIT: 29/09, UAT: 20/10.</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Go-Live Checklist Content -->
+                <div id="content-checklist" class="hidden">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4">Các hạng mục quan trọng trước Go-Live</h3>
+                    <div class="space-y-3" id="go-live-checklist">
+                        <!-- JS will populate this -->
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const integrationAppsData = [
+            { name: 'iBanking', status: 'On Track', uat: 100, note: 'Fixing security issues & bugs' },
+            { name: 'CCS', status: 'On Track', uat: 100, note: 'Developing training documents' },
+            { name: 'SOA MM', status: 'On Track', uat: 100, note: 'Completed' },
+            { name: 'SWIFT GPI', status: 'On Track', uat: 100, note: 'Phase 2 SIT in progress' },
+            { name: 'BSMS', status: 'On Track', uat: 100, note: 'Fixing security issues' },
+            { name: 'MIS Cognos', status: 'On Track', uat: 100, note: 'DRP document approved' },
+            { name: 'SVS', status: 'On Track', uat: 100, note: 'DRP document approved' },
+            { name: 'ERP Yangon', status: 'On Track', uat: 100, note: 'Developing user manuals' },
+            { name: 'Core-GL-Hub', status: 'On Track', uat: 100, note: 'Developing user manuals' },
+            { name: 'iTrans', status: 'On Track', uat: 100, note: 'Completed' },
+            { name: 'One Access', status: 'On Track', uat: 100, note: 'Completed' },
+            { name: 'CPMS', status: 'On Track', uat: 100, note: 'Completed' }
+        ];
+
+        const goLiveChecklistData = [
+            { 
+                task: 'Hoàn thành Pilot hệ thống', 
+                date: '13/08 - 19/08/2025', 
+                status: 'done',
+                subtasks: [
+                    { text: 'Nhập 100% giao dịch từ Intellect sang Profile', time: '13/08 - 19/08' },
+                    { text: 'Hệ thống Profile chạy EOD thành công hàng ngày', time: '13/08 - 19/08' },
+                    { text: 'Ghi nhận và bắt đầu xử lý các lỗi phát sinh', time: '13/08 - 19/08' },
+                    { text: 'Hoàn thành đào tạo End User', time: '05/08 - 12/08' }
+                ]
+            },
+            { 
+                task: 'Diễn tập DR1 & DR2 (Dress Rehearsal)', 
+                date: '22/08 - 06/09/2025', 
+                status: 'inprogress',
+                subtasks: [
+                    { text: 'Chuẩn bị môi trường và dữ liệu cho DR1', time: '19/08 - 21/08' },
+                    { text: 'Thực hiện kịch bản DR1 (Core + 07 App)', time: '22/08 - 23/08' },
+                    { text: 'Báo cáo kết quả DR1 và khắc phục lỗi', time: '24/08 - 04/09' },
+                    { text: 'Thực hiện kịch bản DR2 (Core + 11 App + CCS)', time: '05/09 - 06/09' },
+                    { text: 'Báo cáo kết quả DR2', time: '07/09 - 08/09' }
+                ]
+            },
+            { 
+                task: 'Diễn tập DRP (Dự phòng thảm họa)', 
+                date: '12/09 - 16/09/2025', 
+                status: 'todo',
+                subtasks: [
+                    { text: 'Xây dựng kế hoạch và tài liệu đào tạo DRP', time: '26/08 - 29/08' },
+                    { text: 'Tổ chức đào tạo DRP cho chi nhánh Yangon', time: '01/09 - 05/09' },
+                    { text: 'Thực hiện diễn tập DRP 1', time: '12/09 - 13/09' },
+                    { text: 'Thực hiện diễn tập DRP 2', time: '15/09 - 16/09' }
+                ]
+            },
+            { 
+                task: 'Hoàn thiện kịch bản Go-Live (Playbook)', 
+                date: '20/08 - 30/08/2025', 
+                status: 'inprogress',
+                subtasks: [
+                    { text: 'Xây dựng kịch bản chi tiết theo giờ', time: '20/08 - 25/08' },
+                    { text: 'Phân công nhân sự thực hiện', time: '26/08 - 27/08' },
+                    { text: 'Xây dựng phương án xử lý sự cố (fallback plan)', time: '26/08 - 28/08' },
+                    { text: 'Trình duyệt và ban hành kịch bản', time: '29/08 - 30/08' }
+                ]
+            },
+            { 
+                task: 'Khắc phục toàn bộ lỗi nghiêm trọng', 
+                date: '19/08 - 15/09/2025', 
+                status: 'inprogress',
+                subtasks: [
+                    { text: 'Xử lý 06 lỗi TF nghiêm trọng', time: '19/08 - 10/09' },
+                    { text: 'Xử lý 02 lỗi còn lại của các ứng dụng tích hợp', time: '19/08 - 05/09' },
+                    { text: 'Xử lý các lỗi bảo mật mức cao/trung bình', time: '19/08 - 10/09' },
+                    { text: 'Kiểm thử lại (regression test) sau khi fix lỗi', time: '11/09 - 15/09' }
+                ]
+            },
+            { 
+                task: 'Chốt và di chuyển dữ liệu (Data Migration)', 
+                date: '19/09 - 20/09/2025', 
+                status: 'todo',
+                subtasks: [
+                    { text: 'Làm sạch dữ liệu lần cuối (DM SVS)', time: '15/09 - 19/09' },
+                    { text: 'Chạy EOD trên hệ thống Intellect', time: '19/09 21:00 - 22:00' },
+                    { text: 'Thực hiện di chuyển dữ liệu sang Profile', time: '20/09 05:00 - 07:00' },
+                    { text: 'Đối chiếu và xác thực dữ liệu (Checkpoint 1)', time: '20/09 07:00 - 09:00' }
+                ]
+            },
+            { 
+                task: 'Quyết định Go/No-Go', 
+                date: '20/09/2025', 
+                status: 'todo',
+                subtasks: [
+                    { text: 'Họp Ban chỉ đạo', time: '20/09 15:00 - 16:00' },
+                    { text: 'Review tất cả các checkpoint (kỹ thuật, nghiệp vụ, dữ liệu)', time: '20/09 09:00 - 15:00' },
+                    { text: 'Đưa ra quyết định cuối cùng', time: '20/09 16:00' }
+                ]
+            },
+            { 
+                task: 'Mở cửa chi nhánh với hệ thống mới', 
+                date: '22/09/2025', 
+                status: 'todo',
+                subtasks: [
+                    { text: 'Hỗ trợ tại chỗ (on-site support)', time: '22/09 - 26/09' },
+                    { text: 'Giám sát hệ thống 24/7', time: '22/09 - 29/09' },
+                    { text: 'Báo cáo cuối ngày đầu tiên', time: '22/09 17:00' }
+                ]
+            },
+        ];
+
+        function populateIntegrationApps() {
+            const tableBody = document.getElementById('integration-apps-table');
+            let content = '';
+            integrationAppsData.forEach(app => {
+                content += `
+                    <tr class="bg-white border-b hover:bg-gray-50">
+                        <td class="px-6 py-4 font-medium text-gray-900">${app.name}</td>
+                        <td class="px-6 py-4">
+                            <span class="status-green text-xs font-medium mr-2 px-2.5 py-0.5 rounded-full">${app.status}</span>
+                        </td>
+                        <td class="px-6 py-4">
+                            <div class="w-full bg-gray-200 rounded-full h-2.5">
+                                <div class="bg-blue-600 h-2.5 rounded-full" style="width: ${app.uat}%"></div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 text-gray-500">${app.note}</td>
+                    </tr>
+                `;
+            });
+            tableBody.innerHTML = content;
+        }
+
+        function populateGoLiveChecklist() {
+            const checklistContainer = document.getElementById('go-live-checklist');
+            let content = '';
+            const statusConfig = {
+                done: { icon: '✓', color: 'green', text: 'Hoàn thành' },
+                inprogress: { icon: '...', color: 'blue', text: 'Đang làm' },
+                todo: { icon: '○', color: 'gray', text: 'Chưa làm' }
+            };
+
+            goLiveChecklistData.forEach(item => {
+                const config = statusConfig[item.status];
+                let subtasksHtml = '<ul class="space-y-2 text-sm text-gray-600">';
+                item.subtasks.forEach(subtask => {
+                    subtasksHtml += `
+                        <li class="flex items-start">
+                            <svg class="w-4 h-4 mr-2 mt-0.5 text-gray-400 flex-shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                            <div class="flex-grow">
+                                <span>${subtask.text}</span>
+                                <span class="block text-xs text-gray-500">${subtask.time}</span>
+                            </div>
+                        </li>`;
+                });
+                subtasksHtml += '</ul>';
+
+                content += `
+                    <div class="bg-white rounded-lg border border-gray-200">
+                        <button class="w-full flex items-center justify-between p-4 text-left hover:bg-gray-50 focus:outline-none" onclick="toggleChecklistSubtasks(this)">
+                            <div class="flex items-center">
+                                <div class="w-6 h-6 rounded-full bg-${config.color}-100 text-${config.color}-600 flex items-center justify-center font-bold text-sm mr-4 flex-shrink-0">${config.icon}</div>
+                                <div>
+                                    <p class="font-medium text-gray-800">${item.task}</p>
+                                    <p class="text-xs text-gray-500">Hạn: ${item.date}</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center">
+                                <span class="hidden sm:inline-block text-xs font-semibold py-1 px-3 rounded-full bg-${config.color}-100 text-${config.color}-700 mr-4">${config.text}</span>
+                                <svg class="w-5 h-5 text-gray-500 transform transition-transform duration-300" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                </svg>
+                            </div>
+                        </button>
+                        <div class="subtask-container px-4 pb-4 pt-2 border-t border-gray-100">
+                            ${subtasksHtml}
+                        </div>
+                    </div>
+                `;
+            });
+            checklistContainer.innerHTML = content;
+        }
+        
+        function toggleChecklistSubtasks(buttonElement) {
+            const subtasksDiv = buttonElement.nextElementSibling;
+            const icon = buttonElement.querySelector('svg');
+            
+            subtasksDiv.classList.toggle('expanded');
+            icon.classList.toggle('rotate-180');
+        }
+
+
+        function changeTab(tabName) {
+            // Hide all content
+            document.getElementById('content-tong-quan').classList.add('hidden');
+            document.getElementById('content-core-banking').classList.add('hidden');
+            document.getElementById('content-trade-finance').classList.add('hidden');
+            document.getElementById('content-quantum').classList.add('hidden');
+            document.getElementById('content-checklist').classList.add('hidden');
+
+            // Deactivate all tabs
+            const tabButtons = document.querySelectorAll('.tab-btn');
+            tabButtons.forEach(button => {
+                button.classList.remove('tab-active');
+                button.classList.add('tab-inactive');
+            });
+
+            // Show selected content and activate tab
+            document.getElementById(`content-${tabName}`).classList.remove('hidden');
+            document.getElementById(`tab-${tabName}`).classList.add('tab-active');
+            document.getElementById(`tab-${tabName}`).classList.remove('tab-inactive');
+        }
+
+        // Initial population of data
+        document.addEventListener('DOMContentLoaded', () => {
+            populateIntegrationApps();
+            populateGoLiveChecklist();
+        });
+    </script>
+</body>
+</html>
