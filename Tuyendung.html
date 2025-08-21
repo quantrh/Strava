@@ -15,6 +15,9 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
+        html {
+            scroll-behavior: smooth;
+        }
         body {
             font-family: 'Inter', sans-serif;
         }
@@ -366,6 +369,11 @@
     <!-- Toast Notification -->
     <div id="toast" class="toast"></div>
 
+    <!-- NEW: Scroll to Top Button -->
+    <button id="scrollTopBtn" title="Lên đầu trang" class="hidden fixed bottom-5 right-5 z-50 bg-blue-500 hover:bg-blue-600 text-white font-bold p-3 rounded-full shadow-lg transition-opacity duration-300">
+        <i class="fas fa-arrow-up"></i>
+    </button>
+
 <script>
     document.addEventListener('DOMContentLoaded', () => {
         // !!! QUAN TRỌNG: Thay thế bằng URL và Anon Key của dự án Supabase
@@ -412,6 +420,7 @@
         const exportInterviewWordBtn = document.getElementById('exportInterviewWordBtn');
         
         const toast = document.getElementById('toast');
+        const scrollTopBtn = document.getElementById('scrollTopBtn');
 
 
         // Data
@@ -509,7 +518,6 @@
             modalBackdrop.classList.toggle('active', show);
         };
         
-        // --- UPDATED: View Management Functions ---
         const showTableView = () => {
             tableView.classList.remove('hidden');
             reportView.classList.add('hidden');
@@ -522,7 +530,6 @@
             tableView.classList.add('hidden');
             currentlyViewingCandidateId = candidate.id;
 
-            // Show report view if data exists
             if (candidate.aiReport) {
                 reportView.classList.remove('hidden');
                 reportViewTitle.textContent = `Báo cáo Đánh giá: ${candidate.fullName}`;
@@ -531,7 +538,6 @@
                 reportView.classList.add('hidden');
             }
 
-            // Show interview questions view if data exists
             if (candidate.interviewQuestions) {
                 interviewQuestionsView.classList.remove('hidden');
                 interviewQuestionsTitle.textContent = `Câu hỏi Phỏng vấn Gợi ý cho ${candidate.fullName}`;
@@ -646,7 +652,6 @@
             return `<span class="text-xs font-medium mr-2 px-2.5 py-0.5 rounded-full ${colorClass}">${result}</span>`;
         };
 
-        // UPDATED: readFileContent now handles images with Tesseract.js
         const readFileContent = async (file) => {
             if (!file) return null;
             const extension = file.name.split('.').pop().toLowerCase();
@@ -966,7 +971,6 @@
             }
         });
 
-        // UPDATED: Now scrolls to the section
         generateQuestionsBtn.addEventListener('click', async () => {
             if (!currentlyViewingCandidateId) return;
             const candidateIndex = candidates.findIndex(c => c.id == currentlyViewingCandidateId);
@@ -1077,6 +1081,19 @@
         
         searchInput.addEventListener('input', renderTable);
         filterAssessment.addEventListener('change', renderTable);
+
+        // --- NEW: Scroll to Top Logic ---
+        window.onscroll = () => {
+            if (document.body.scrollTop > 100 || document.documentElement.scrollTop > 100) {
+                scrollTopBtn.classList.remove('hidden');
+            } else {
+                scrollTopBtn.classList.add('hidden');
+            }
+        };
+        scrollTopBtn.addEventListener('click', () => {
+            window.scrollTo({top: 0, behavior: 'smooth'});
+        });
+
 
         // --- Initialization ---
         renderJobCriteria();
