@@ -1,0 +1,878 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ứng dụng Báo cáo Kết quả Review Hồ sơ Tuyển dụng (AI-Powered)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    <script src="https://unpkg.com/html-docx-js/dist/html-docx.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .modal-backdrop {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 40;
+            transition: opacity 0.3s ease;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 50;
+            transition: opacity 0.3s ease, transform 0.3s ease;
+        }
+        .modal.active, .modal-backdrop.active {
+            display: block;
+        }
+        .table-container {
+            max-height: 65vh;
+            overflow: auto;
+        }
+        /* Custom scrollbar */
+        .table-container::-webkit-scrollbar, .modal::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        .table-container::-webkit-scrollbar-track, .modal::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+        .table-container::-webkit-scrollbar-thumb, .modal::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 10px;
+        }
+        .table-container::-webkit-scrollbar-thumb:hover, .modal::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        details > summary {
+            list-style: none;
+        }
+        details > summary::-webkit-details-marker {
+            display: none;
+        }
+        #reportViewContent ul, #interviewQuestionsContent ul {
+            list-style-type: none;
+            padding-left: 0;
+        }
+        #reportViewContent ul li, #interviewQuestionsContent ul li {
+            margin-bottom: 1em;
+        }
+        #reportViewContent ul ul, #interviewQuestionsContent ul ul {
+            list-style-type: none;
+            padding-left: 20px;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800">
+
+    <div class="container mx-auto p-4 md:p-8">
+        <header class="text-center mb-8">
+            <h1 class="text-3xl md:text-4xl font-bold text-gray-700">Trình Quản lý Hồ sơ Ứng viên</h1>
+            <p class="text-gray-500 mt-2">Công cụ hỗ trợ review và báo cáo kết quả tuyển dụng tích hợp AI</p>
+        </header>
+
+        <details class="bg-white rounded-lg shadow-md p-6 mb-6">
+            <summary class="font-semibold text-xl text-gray-700 cursor-pointer flex justify-between items-center">
+                <span><i class="fas fa-info-circle mr-2 text-blue-500"></i> Hướng dẫn sử dụng</span>
+                <i class="fas fa-chevron-down transform transition-transform"></i>
+            </summary>
+            <div class="mt-4 prose max-w-none text-gray-600">
+                <h4>Chào mừng bạn đến với Trình Quản lý Hồ sơ Ứng viên!</h4>
+                <p>Đây là công cụ giúp bạn tự động hóa quy trình sàng lọc và đánh giá CV. Dưới đây là các bước để bắt đầu:</p>
+                <ol>
+                    <li>
+                        <strong>Thêm Ứng viên (Khuyến khích dùng AI):</strong>
+                        <ul>
+                            <li>Nhấn nút <strong>"Thêm Ứng viên"</strong>.</li>
+                            <li>Trong cửa sổ mới, nhấn vào ô chọn file và <strong>chọn một hoặc nhiều file CV</strong> (.pdf, .doc, .docx).</li>
+                            <li>Nhấn nút <strong>"Đánh giá"</strong>. AI sẽ tự động đọc, phân tích, điền thông tin, chấm điểm và tạo báo cáo cho từng ứng viên.</li>
+                            <li>Sau khi xử lý xong, các ứng viên sẽ được tự động thêm vào danh sách.</li>
+                        </ul>
+                    </li>
+                    <li>
+                        <strong>Quản lý Danh sách:</strong>
+                        <ul>
+                            <li>Sử dụng ô <strong>"Tìm theo tên"</strong> hoặc bộ lọc <strong>"Tất cả đánh giá"</strong> để nhanh chóng tìm kiếm ứng viên.</li>
+                            <li>Danh sách hiển thị các thông tin tóm tắt như điểm trung bình và kết quả sơ bộ (Đạt, Không đạt, Cân nhắc).</li>
+                        </ul>
+                    </li>
+                    <li>
+                        <strong>Xem, Sửa và Xóa:</strong>
+                        <ul>
+                            <li><i class="fas fa-eye text-green-600"></i> <strong>Xem:</strong> Nhấn để xem báo cáo đánh giá chi tiết do AI tạo ra. Báo cáo sẽ hiện ở bên dưới danh sách.</li>
+                            <li><i class="fas fa-edit text-blue-600"></i> <strong>Sửa:</strong> Nhấn để mở lại form chi tiết, bạn có thể xem lại các tiêu chí, điểm số và chỉnh sửa nếu cần.</li>
+                            <li><i class="fas fa-trash text-red-600"></i> <strong>Xóa:</strong> Xóa hồ sơ ứng viên khỏi danh sách.</li>
+                        </ul>
+                    </li>
+                     <li>
+                        <strong>Chuẩn bị Phỏng vấn:</strong>
+                        <ul>
+                            <li>Khi đang xem báo cáo của một ứng viên, nhấn nút <strong>"✨ Tạo câu hỏi phỏng vấn"</strong>.</li>
+                            <li>AI sẽ đề xuất các câu hỏi phỏng vấn phù hợp dựa trên hồ sơ và vị trí ứng tuyển.</li>
+                        </ul>
+                    </li>
+                    <li>
+                        <strong>Xuất Báo cáo:</strong>
+                        <ul>
+                            <li><strong>Xuất ra Word:</strong> Khi đang xem báo cáo chi tiết của một ứng viên, nhấn nút "Xuất ra Word" để tải về file .docx.</li>
+                            <li><strong>Xuất Excel:</strong> Nhấn nút "Xuất Excel" trên Bảng điều khiển để tải về danh sách tóm tắt của tất cả ứng viên.</li>
+                        </ul>
+                    </li>
+                </ol>
+            </div>
+        </details>
+        
+        <details class="bg-white rounded-lg shadow-md p-6 mb-6">
+            <summary class="font-semibold text-xl text-gray-700 cursor-pointer flex justify-between items-center">
+                <span><i class="fas fa-bullseye mr-2 text-green-500"></i> Vị trí & Tiêu chí Tuyển dụng</span>
+                <i class="fas fa-chevron-down transform transition-transform"></i>
+            </summary>
+            <div id="job-criteria-section" class="mt-4 text-gray-600">
+                <!-- Job criteria will be populated by JS -->
+            </div>
+        </details>
+
+        <main>
+            <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+                <h2 class="text-2xl font-semibold mb-4 text-gray-700">Bảng điều khiển</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <!-- Thao tác -->
+                    <div class="flex flex-wrap items-center gap-2 col-span-1 md:col-span-2 lg:col-span-2">
+                        <button id="addCandidateBtn" class="flex items-center gap-2 bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg transition duration-300">
+                            <i class="fas fa-plus"></i> Thêm Ứng viên
+                        </button>
+                        <button id="importBtn" class="flex items-center gap-2 bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg transition duration-300">
+                           <i class="fas fa-file-excel"></i> Nhập
+                        </button>
+                        <input type="file" id="importFile" class="hidden" accept=".xlsx, .xls">
+                        <button id="exportBtn" class="flex items-center gap-2 bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 px-4 rounded-lg transition duration-300">
+                           <i class="fas fa-file-export"></i> Xuất Excel
+                        </button>
+                    </div>
+                    <!-- Lọc và Tìm kiếm -->
+                    <div class="col-span-1 md:col-span-2 lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                         <div>
+                            <label for="searchInput" class="sr-only">Tìm kiếm</label>
+                            <input type="text" id="searchInput" placeholder="Tìm theo tên..." class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5">
+                        </div>
+                        <div>
+                             <label for="filterAssessment" class="sr-only">Lọc theo đánh giá</label>
+                             <select id="filterAssessment" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5">
+                                <option value="all">Tất cả đánh giá</option>
+                                <option value="Đạt">Đạt</option>
+                                <option value="Không đạt">Không đạt</option>
+                                <option value="Cân nhắc">Cân nhắc</option>
+                                <option value="Chưa đánh giá">Chưa đánh giá</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="main-content">
+                <div id="table-view" class="bg-white rounded-lg shadow-md">
+                    <div class="p-6 border-b border-gray-200">
+                        <h2 class="text-2xl font-semibold text-gray-700">Danh sách Ứng viên</h2>
+                    </div>
+                    <div class="table-container">
+                        <table class="w-full text-sm text-left text-gray-500">
+                            <thead class="text-xs text-gray-700 uppercase bg-gray-50 sticky top-0 z-10">
+                                <tr>
+                                    <th scope="col" class="px-6 py-3 whitespace-nowrap">STT</th>
+                                    <th scope="col" class="px-6 py-3 whitespace-nowrap">Họ và Tên</th>
+                                    <th scope="col" class="px-6 py-3 whitespace-nowrap">Vị trí</th>
+                                    <th scope="col" class="px-6 py-3 whitespace-nowrap">Điểm TB</th>
+                                    <th scope="col" class="px-6 py-3 whitespace-nowrap">Kết quả</th>
+                                    <th scope="col" class="px-6 py-3 whitespace-nowrap text-center">Hành động</th>
+                                </tr>
+                            </thead>
+                            <tbody id="candidateTableBody">
+                                <!-- Dữ liệu ứng viên sẽ được chèn vào đây -->
+                            </tbody>
+                        </table>
+                    </div>
+                     <div id="noDataMessage" class="text-center py-12 text-gray-500">
+                        <p>Chưa có dữ liệu ứng viên. Vui lòng thêm mới hoặc nhập từ file Excel.</p>
+                    </div>
+                </div>
+
+                <div id="report-view" class="bg-white rounded-lg shadow-md mt-8 p-6 hidden">
+                    <div class="flex justify-between items-center border-b pb-4 mb-4">
+                         <h2 id="reportViewTitle" class="text-2xl font-semibold text-gray-700">Báo cáo Đánh giá</h2>
+                         <div class="flex items-center gap-4">
+                             <button id="generateQuestionsBtn" class="flex items-center gap-2 bg-purple-500 hover:bg-purple-600 text-white font-bold py-2 px-4 rounded-lg transition duration-300">
+                                <i class="fas fa-question-circle"></i> ✨ Tạo câu hỏi phỏng vấn
+                            </button>
+                            <button id="exportWordBtn" class="flex items-center gap-2 bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg transition duration-300">
+                                <i class="fas fa-file-word"></i> Xuất ra Word
+                            </button>
+                            <button id="closeReportViewBtn" class="text-gray-500 hover:text-gray-700">
+                                <i class="fas fa-times fa-lg"></i>
+                            </button>
+                         </div>
+                    </div>
+                    <div id="reportViewContent" class="prose max-w-none">
+                        <!-- Nội dung báo cáo sẽ được chèn vào đây -->
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal Backdrop -->
+    <div id="modalBackdrop" class="modal-backdrop"></div>
+
+    <!-- Modal Form Thêm/Sửa Ứng viên -->
+    <div id="candidateModal" class="modal bg-white rounded-lg shadow-xl w-11/12 md:w-5/6 lg:w-4/5 max-h-[90vh] overflow-y-auto">
+        <div class="p-6 border-b sticky top-0 bg-white z-10">
+            <h3 class="text-xl font-semibold text-gray-800" id="modalTitle">Thêm Ứng viên Mới</h3>
+        </div>
+        <div class="p-6">
+            <form id="candidateForm">
+                <input type="hidden" id="candidateId">
+                
+                <h4 class="text-lg font-semibold text-gray-700 mb-3 border-b pb-2">Thông tin cơ bản</h4>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                    <div>
+                        <label for="fullName" class="block mb-2 text-sm font-medium">Họ và Tên</label>
+                        <input type="text" id="fullName" class="bg-gray-50 border border-gray-300 text-sm rounded-lg block w-full p-2.5" required>
+                    </div>
+                    <div>
+                        <label for="position" class="block mb-2 text-sm font-medium">Vị trí ứng tuyển</label>
+                        <input type="text" id="position" class="bg-gray-50 border border-gray-300 text-sm rounded-lg block w-full p-2.5" required>
+                    </div>
+                     <div>
+                        <label for="email" class="block mb-2 text-sm font-medium">Email</label>
+                        <input type="email" id="email" class="bg-gray-50 border border-gray-300 text-sm rounded-lg block w-full p-2.5" required>
+                    </div>
+                    <div>
+                        <label for="phone" class="block mb-2 text-sm font-medium">Số điện thoại</label>
+                        <input type="tel" id="phone" class="bg-gray-50 border border-gray-300 text-sm rounded-lg block w-full p-2.5" required>
+                    </div>
+                </div>
+
+                <h4 class="text-lg font-semibold text-gray-700 mb-3 border-b pb-2">Đánh giá bằng AI</h4>
+                 <div class="flex items-center gap-4 mb-6 p-4 bg-blue-50 rounded-lg">
+                    <input type="file" id="cvFile" class="block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 focus:outline-none" accept=".pdf,.doc,.docx" multiple>
+                    <button type="button" id="aiEvaluateBtn" class="flex items-center gap-2 bg-purple-500 hover:bg-purple-600 text-white font-bold py-2 px-4 rounded-lg transition duration-300 whitespace-nowrap">
+                        <i class="fas fa-robot"></i> <span id="aiBtnText">Đánh giá</span>
+                        <div id="aiLoader" class="loader hidden"></div>
+                    </button>
+                </div>
+                <p id="aiError" class="text-red-500 text-sm mb-4 hidden"></p>
+                <p id="aiSuccess" class="text-green-600 text-sm mb-4 hidden"></p>
+
+                <h4 class="text-lg font-semibold text-gray-700 mb-3 border-b pb-2">Bảng Đánh giá Chi tiết</h4>
+                <div id="evaluation-table" class="space-y-4">
+                    <!-- Evaluation rows will be generated by JS -->
+                </div>
+                
+                <div class="my-6">
+                    <label for="notes" class="block mb-2 text-sm font-medium">Ghi chú chung</label>
+                    <textarea id="notes" rows="3" class="bg-gray-50 border border-gray-300 text-sm rounded-lg block w-full p-2.5"></textarea>
+                </div>
+                <div class="flex justify-end gap-4 pt-4 border-t sticky bottom-0 bg-white py-4">
+                    <button type="button" id="cancelBtn" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg transition duration-300">Hủy</button>
+                    <button type="submit" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg transition duration-300">Lưu</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Câu hỏi Phỏng vấn -->
+    <div id="interviewModal" class="modal bg-white rounded-lg shadow-xl w-11/12 md:w-3/4 lg:w-2/3 max-h-[90vh] overflow-y-auto">
+        <div class="p-6 border-b sticky top-0 bg-white z-10 flex justify-between items-center">
+            <h3 class="text-xl font-semibold text-gray-800" id="interviewModalTitle">Câu hỏi Phỏng vấn Gợi ý</h3>
+            <button id="closeInterviewModalBtn" class="text-gray-400 hover:text-gray-600">
+                <i class="fas fa-times fa-lg"></i>
+            </button>
+        </div>
+        <div id="interviewQuestionsContent" class="p-8 prose max-w-none">
+            <!-- Nội dung câu hỏi sẽ được chèn vào đây -->
+        </div>
+        <div class="p-4 border-t sticky bottom-0 bg-white flex justify-end">
+             <button id="copyQuestionsBtn" class="flex items-center gap-2 bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg transition duration-300">
+                <i class="fas fa-copy"></i> Sao chép
+            </button>
+        </div>
+    </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        // !!! QUAN TRỌNG: Thay thế bằng URL dự án Supabase của bạn
+        const SUPABASE_URL = 'YOUR_SUPABASE_URL'; // Ví dụ: 'https://xyz.supabase.co'
+
+        // UI Elements
+        const addCandidateBtn = document.getElementById('addCandidateBtn');
+        const candidateModal = document.getElementById('candidateModal');
+        const modalBackdrop = document.getElementById('modalBackdrop');
+        const modalTitle = document.getElementById('modalTitle');
+        const cancelBtn = document.getElementById('cancelBtn');
+        const candidateForm = document.getElementById('candidateForm');
+        const candidateTableBody = document.getElementById('candidateTableBody');
+        const noDataMessage = document.getElementById('noDataMessage');
+        const exportBtn = document.getElementById('exportBtn');
+        const importBtn = document.getElementById('importBtn');
+        const importFile = document.getElementById('importFile');
+        const searchInput = document.getElementById('searchInput');
+        const filterAssessment = document.getElementById('filterAssessment');
+        const cvFile = document.getElementById('cvFile');
+        const aiEvaluateBtn = document.getElementById('aiEvaluateBtn');
+        const aiLoader = document.getElementById('aiLoader');
+        const aiBtnText = document.getElementById('aiBtnText');
+        const aiError = document.getElementById('aiError');
+        const aiSuccess = document.getElementById('aiSuccess');
+        const evaluationTable = document.getElementById('evaluation-table');
+        const jobCriteriaSection = document.getElementById('job-criteria-section');
+        
+        const tableView = document.getElementById('table-view');
+        const reportView = document.getElementById('report-view');
+        const reportViewTitle = document.getElementById('reportViewTitle');
+        const reportViewContent = document.getElementById('reportViewContent');
+        const closeReportViewBtn = document.getElementById('closeReportViewBtn');
+        const exportWordBtn = document.getElementById('exportWordBtn');
+        const generateQuestionsBtn = document.getElementById('generateQuestionsBtn');
+        
+        const interviewModal = document.getElementById('interviewModal');
+        const interviewModalTitle = document.getElementById('interviewModalTitle');
+        const interviewQuestionsContent = document.getElementById('interviewQuestionsContent');
+        const closeInterviewModalBtn = document.getElementById('closeInterviewModalBtn');
+        const copyQuestionsBtn = document.getElementById('copyQuestionsBtn');
+
+
+        // Data
+        let candidates = [];
+        let currentlyViewingCandidateId = null;
+        pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js`;
+        
+       const jobCriteriaData = {
+            "Chuyên viên phân tích nghiệp vụ và kiểm soát chất lượng BA/QC (cấp 1 đến cấp 4) - Nội bộ kết hợp ngoài hệ thống": {
+                "Mô tả công việc": "1. Công tác Phân tích nghiệp vụ (BA): Thực hiện thu thập và phân tích yêu cầu nghiệp vụ liên quan đến hệ thống Core Banking và các hệ thống vệ tinh; tham gia xây dựng tài liệu nghiệp vụ URD (User Requirement Document), RSD (Requirement Specification Document) theo quy định của BIDV. Tư vấn các giải pháp phát triển mới, nâng cấp và tư vấn thiết kế chức năng hệ thống Core Banking, hệ thống khác có liên quan phù hợp. Hỗ trợ kết nối các vấn đề cơ bản giữa các bên nghiệp vụ, kỹ thuật và phát triển phần mềm, truyền tải yêu cầu nghiệp vụ thành các thông số kỹ thuật, chức năng và ràng buộc có thể triển khai. Phân tích yêu cầu, tham số hệ thống để đề xuất khai báo, cấu hình hoặc cập nhật. 2. Công tác kiểm soát chất lượng (QC): Quản lý danh mục yêu cầu và kế hoạch triển khai hệ thống Core Banking theo từng giai đoạn, phiên bản. Xây dựng kịch bản kiểm thử hoặc kiểm thử theo kịch bản có sẵn trên các môi trường SIT (System Integration Test), UAT (User Acceptance Test) cho các yêu cầu chức năng và tham số, phối hợp các kiểm thử hạ tầng, hiệu năng và các thành phần tích hợp. Chuẩn bị hồ sơ đánh giá an toàn thông tin đối với các tính năng mới hoặc thay đổi hệ thống, đảm bảo các sản phẩm và thay đổi được triển khai tuân thủ quy định bảo mật và tiêu chuẩn chất lượng. 3. Công tác Đào tạo, hỗ trợ và xây dựng văn bản chế độ: Xây dựng, cập nhật các văn bản, quy trình nghiệp vụ liên quan đến hệ thống Core Banking. Đào tạo, chuyển giao kiến thức hệ thống Core Banking cho các cán bộ trong toàn hệ thống khi có yêu cầu; hỗ trợ xử lý các tình huống phát sinh mới trong nghiệp vụ. 4. Tham gia các tổ, nhóm đề tài, dự án và thực hiện các nhiệm vụ khác theo phân công của Lãnh đạo Ban.",
+                "Yêu cầu độ tuổi": "dưới 35 tuổi tại thời điểm dự tuyển.",
+                "Trình độ chuyên môn": "Tốt nghiệp các trường đại học hệ chính quy, tập trung, dài hạn (bao gồm đại học văn bằng 2, không bao gồm hình thức học liên thông lên đại học) tại các trường đại học trong nước/nước ngoài/liên kết thuộc các ngành đào tạo sau: Công nghệ thông tin; Hệ thống thông tin quản lý, phân tích nghiệp vụ; Tài chính ngân hàng; Quản trị kinh doanh; Kế toán kiểm toán; Kinh tế quốc tế; Và các lĩnh vực có liên quan. Đối với các trường đại học trong nước yêu cầu thuộc danh sách dưới đây: Lĩnh vực Công nghệ Thông tin: 1. Đại học Bách khoa Hà Nội 2. Đại học Bách khoa TP.HCM 3. Đại học Công nghệ – Đại học Quốc gia Hà Nội (UET) 4. Đại học Công nghệ Thông tin – Đại học Quốc gia TP.HCM 5. Học viện Công nghệ Bưu chính Viễn thông 6. Đại học FPT 7. Đại học Khoa học Tự nhiên – Đại học Quốc gia Hà Nội 8. Đại học Khoa học Tự nhiên – Đại học Quốc gia TP.HCM 9. Đại học Bách khoa – Đại học Đà Nẵng. Lĩnh vực Kinh tế: 1. Đại học Ngoại thương (FTU) 2. Đại học Kinh tế Quốc dân (NEU) 3. Đại học Kinh tế TP.HCM (UEH) 4. Đại học Kinh tế – Đại học Quốc gia Hà Nội 5. Đại học Kinh tế – Luật TP.HCM (UEL) 6. Học viện Tài chính 7. Đại học Thương mại 8. Học viện Ngân hàng 9. Đại học Kinh tế – Đại học Đà Nẵng.",
+                "Trình độ ngoại ngữ, tin học": "Có một trong các chứng chỉ tiếng Anh với số điểm yêu cầu tối thiểu: TOEIC 600, TOEFL CBT 173, TOEFL iBT 61, IELTS 5.5 trở lên. Hoặc tốt nghiệp Đại học chuyên ngành tiếng Anh hệ chính quy; Hoặc có bằng Đại học, Thạc sỹ ở nước ngoài được giảng dạy hoàn toàn bằng tiếng Anh. Có khả năng giao tiếp/làm việc bằng tiếng Anh tốt. Sử dụng thành thạo tin học văn phòng. Chấp nhận ứng viên bổ sung chứng chỉ tiếng Anh trong thời gian 24 tháng kể từ ngày được tuyển dụng.",
+                "Kinh nghiệm công tác": "1. Đối với ứng viên ngoài hệ thống: Có kinh nghiệm làm vị trí Phân tích nghiệp vụ (Business Analysis) hoặc tương đương tối thiểu 01 năm trong các lĩnh vực Công nghệ thông tin, Tài chính ngân hàng. Có kiến thức về các sản phẩm, dịch vụ, quy trình trong lĩnh vực ngân hàng (Tiền gửi, Tiền vay, Thanh toán, Kế toán, Giao dịch khách hàng), hiểu biết về hệ thống ứng dụng của ngân hàng và các giải pháp ứng dụng phục vụ hoạt động của ngân hàng. Có kinh nghiệm làm việc với các dự án theo quy trình Agile/Scrum. 2. Đối với ứng viên nội bộ: Có kinh nghiệm làm việc tối thiểu 02 năm tại BIDV: Tại chi nhánh: đã từng công tác tại các vị trí Chuyên viên Quản lý khách hàng, Quản trị tín dụng, Giao dịch khách hàng, Quản lý rủi ro, Kế toán. Tại TSC: am hiểu các quy trình nghiệp vụ ngân hàng về Tiền gửi, Tiền vay, Thanh toán, Kế toán, Quản lý thông tin khách hàng, Giao dịch khách hàng. Ưu tiên ứng viên đã có kinh nghiệm tham gia dự án CoreBanking hoặc các dự án CNTT của BIDV.",
+                "Yêu cầu khác": "Kĩ năng: Có kĩ năng tổng hợp, tư duy phản biện; thương thảo, làm việc nhóm; khả năng phân tích tốt. Kỹ năng sử dụng AI trong công việc. Có kinh nghiệm xây dựng tài liệu yêu cầu người sử dụng, đặc tả kỹ thuật; Thành thạo các công cụ Jira, Confluence, Axure, Microsoft Visio, Draw.io. Ưu tiên các ứng viên có một trong các chứng chỉ cơ bản/chuyên nghiệp được công nhận rộng rãi trên thế giới thuộc các hệ thống (hoặc tương đương) sau: Chứng chỉ của tổ chức International Institute of Business Analysis (IIBA): IIBA Entry Certificate in Business Analysis (ECBA), IIBA Certification of Competency in Business Analysis (CCBA), IIBA Certified Business Analysis Professional (CBAP). Chứng chỉ của PMI: PMI-Professional in Business Analysis (PBA) Certification. Chứng chỉ của IREB: IREB Certified Professional for Requirements Engineering (CPRE)."
+            },
+            // ... (Các vị trí khác giữ nguyên) ...
+            "Chuyên viên Phát triển Core Banking (cấp 1) - Ngoài hệ thống": {
+                "Mô tả công việc": "Vai trò và mục tiêu: 1. Tiếp nhận các tài liệu khảo sát, tài liệu thiết kế chi tiết hệ thống. 2. Lập trình các yêu cầu phát triển phần mềm có liên quan đến core banking, thực hiện unit test các cấu phần được phân giao theo tài liệu thiết kế chi tiết. Nhiệm vụ trọng tâm: 1. Tham mưu, tư vấn: Đề xuất các ý kiến liên quan đến việc triển khai thực hiện nhiệm vụ của nhóm, tổ công tác. Tham mưu với lãnh đạo tổ, nhóm đối với các công việc trong phạm vi được phân công. 2. Trực tiếp thực hiện các công việc: Lập trình xử lý các yêu cầu phát triển phần mềm. Cụ thể như sau: Thực hiện các nhiệm vụ phát triển phần mềm trên Core Banking của BIDV, tham gia khảo sát, phân tích thiết kế, trực tiếp lập trình các chức năng trong Core Banking nhằm xây dựng, cải tiến, bảo trì các tính năng và module của hệ thống Core Banking theo yêu cầu của BIDV. Xây dựng các chức năng trong Core Banking nhằm tích hợp với các hệ thống bên ngoài core. Cộng tác với các thành viên của nhóm nghiệp vụ hoặc kỹ thuật khác nhằm tối ưu chức năng, tăng cường tính ổn định, hiệu năng, bảo mật của hệ thống. Đề xuất và phát triển các giải pháp công nghệ mới nhằm nâng cao hiệu quả vận hành của hệ thống Core Banking. Xác định phương án và lập trình xử lý sự cố core banking của BIDV đảm bảo kịp thời, hiệu quả. Tham gia các tổ công tác, dự án của BIDV gồm các dự án nâng cấp hệ thống, cập nhật phiên bản mới và đảm bảo tính tương thích của hệ thống. Thực hiện các công việc khác theo sự phân công của lãnh đạo nhóm. 3. Nghiên cứu và đào tạo: Tham gia nghiên cứu và đánh giá các công nghệ mới; Tìm hiểu và áp dụng các công nghệ mới, xu hướng phát triển phần mềm để cải thiện hệ thống.",
+                "Yêu cầu độ tuổi": "27 tuổi tại thời điểm dự tuyển.",
+                "Trình độ chuyên môn": "Tốt nghiệp Đại học trở lên, hệ chính quy (bao gồm đại học văn bằng 2, không bao gồm hình thức học liên thông lên đại học) tại các trường Đại học trong nước hoặc tốt nghiệp Đại học trở lên tại các trường Đại học nước ngoài, Đại học liên kết. Chuyên ngành: Công nghệ thông tin, Điện tử Viễn thông, Toán-Tin, Hệ thống Thông tin, Công nghệ kỹ thuật Điện tử, Khoa học máy tính, Tự động hóa, An toàn thông tin, Kỹ thuật phần mềm hoặc các chuyên nghành khác có đào tạo lập trình, kỹ thuật phần mềm. Đối với các trường đại học trong nước yêu cầu thuộc danh sách sau đây: Đại học Bách Khoa Hà Nội, ĐHQG Hà Nội, Học viện Công nghệ Bưu chính Viễn thông, Học viện Kỹ thuật Quân sự, Học viện Kỹ thuật Mật mã, Đại học Bách Khoa - ĐH Đà Nẵng, Đại học Khoa học - ĐH Huế, ĐHQG TP.HCM, Đại học Sư phạm Kỹ thuật TP.HCM, Đại học FPT.",
+                "Trình độ ngoại ngữ, tin học": "Ứng viên đạt 1 trong các chứng chỉ sau: TOEIC đạt 600/990, Toefl PBT/IPT đạt 500/677, Toefl CBT đạt 173/300, Toefl iBT đạt 61/120, Ielts đạt 5.5-9.0, Cambridge Exam đạt First (FCE), B2 Khung Châu Âu, 4/6 Khung năng lực ngoại ngữ 6 bậc. Chấp nhận ứng viên bổ sung chứng chỉ tiếng Anh trong thời gian 24 tháng kể từ ngày được tuyển dụng.",
+                "Kinh nghiệm công tác": "Có kinh nghiệm làm trên các cơ sở dữ liệu SQL (và/hoặc NoSQL), thực hiện thiết kế database, xây dựng các package, procedure, function trong các CSDL. Có kiến thức về thuật toán xử lý dữ liệu để thực hiện phát triển các module xử lý dữ liệu trong CSDL của corebanking, tối ưu tốc độ xử lý.",
+                "Yêu cầu khác": "Có tư duy logic tốt, khả năng phân tích, giải quyết vấn đề. Có khả năng làm việc độc lập cũng như làm việc theo nhóm. Có khả năng nghiên cứu, có đam mê, khám phá, học hỏi công nghệ mới. Sẵn sàng chuyển đổi công nghệ, ngôn ngữ mới. Ưu tiên các ứng viên có kỹ năng, kinh nghiệm sau: Có kinh nghiệm trong Môi trường phát triển Agile. Đã tham gia phát triển các module nghiệp vụ trong Corebanking của ngân hàng, hoặc trong lĩnh vực ngân hàng, tài chính, fintech. Có kinh nghiệm xây dựng các module online cho các bài toán với dữ liệu lớn. Có khả năng tự nghiên cứu, tìm hiểu và thực hiện các công việc một cách cẩn thận, tỉ mỉ."
+            }
+        };
+
+
+        // --- Functions ---
+        
+        const toggleModal = (modal, show) => {
+            modal.classList.toggle('active', show);
+            modalBackdrop.classList.toggle('active', show);
+        };
+
+        const showReportView = (show, candidate = null) => {
+            reportView.classList.toggle('hidden', !show);
+            tableView.classList.toggle('hidden', show);
+            currentlyViewingCandidateId = show ? candidate.id : null;
+
+            if (show) {
+                reportViewTitle.textContent = `Báo cáo Đánh giá: ${candidate.fullName}`;
+                if (candidate.aiReport) {
+                    reportViewContent.innerHTML = candidate.aiReport;
+                } else {
+                    reportViewContent.innerHTML = '<p>Ứng viên này được thêm thủ công, chưa có báo cáo tự động. Vui lòng nhấn Sửa và đánh giá bằng AI nếu muốn.</p>';
+                }
+                reportView.scrollIntoView({ behavior: 'smooth' });
+            } else {
+                tableView.scrollIntoView({ behavior: 'smooth' });
+            }
+        };
+
+        const saveToLocalStorage = () => localStorage.setItem('candidatesData_v14', JSON.stringify(candidates));
+        const loadFromLocalStorage = () => {
+            const data = localStorage.getItem('candidatesData_v14');
+            candidates = data ? JSON.parse(data) : [];
+        };
+
+        const calculateScores = (candidate) => {
+            if (!candidate.evaluation || candidate.evaluation.length === 0) {
+                return { ...candidate, totalScore: 0, averageScore: '0.00', result: 'Chưa đánh giá' };
+            }
+            let totalScore = 0;
+            let scoreCount = 0;
+            candidate.evaluation.forEach(item => {
+                const score = Number(item.score || 0);
+                totalScore += score;
+                if (score > 0) scoreCount++;
+            });
+            const averageScore = scoreCount > 0 ? (totalScore / scoreCount).toFixed(2) : '0.00';
+            
+            let result = 'Chưa đánh giá';
+            if (totalScore > 0) {
+                 if (averageScore >= 7.5) result = 'Đạt';
+                 else if (averageScore < 5) result = 'Không đạt';
+                 else result = 'Cân nhắc';
+            }
+            return { ...candidate, totalScore, averageScore, result };
+        };
+        
+        const createEvaluationUI = (evaluationData = []) => {
+            evaluationTable.innerHTML = `
+                <div class="grid grid-cols-12 gap-4 font-semibold text-sm text-gray-600 px-2 pb-2 border-b">
+                    <div class="col-span-3">Tiêu chí</div>
+                    <div class="col-span-3">Yêu cầu</div>
+                    <div class="col-span-4">Thông tin đáp ứng (từ CV)</div>
+                    <div class="col-span-2 text-center">Điểm</div>
+                </div>`;
+
+            if (evaluationData.length === 0) {
+                evaluationTable.innerHTML += '<p class="col-span-12 text-center text-gray-500 py-4">Tải CV và nhấn "Đánh giá bằng AI" để tạo bảng tiêu chí.</p>';
+                return;
+            }
+
+            evaluationData.forEach((item, index) => {
+                const row = document.createElement('div');
+                row.className = 'grid grid-cols-12 gap-4 items-center border-b py-2 dynamic-eval-row';
+                row.innerHTML = `
+                    <div class="col-span-3 text-sm font-medium text-gray-900">
+                        <input type="text" class="eval-criterion bg-transparent w-full font-semibold" value="${item.criterion || ''}" readonly>
+                    </div>
+                    <div class="col-span-3">
+                        <textarea rows="3" class="eval-requirement bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg block w-full p-2.5">${item.requirement || ''}</textarea>
+                    </div>
+                    <div class="col-span-4">
+                        <textarea rows="3" class="eval-evidence bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg block w-full p-2.5">${item.evidence || ''}</textarea>
+                    </div>
+                    <div class="col-span-2">
+                        <input type="number" min="0" max="10" class="eval-score bg-gray-50 border border-gray-300 text-sm rounded-lg block w-full p-2.5 text-center" value="${item.score || 0}">
+                    </div>
+                `;
+                evaluationTable.appendChild(row);
+            });
+        };
+
+        const renderTable = () => {
+            const searchTerm = searchInput.value.toLowerCase();
+            const filterValue = filterAssessment.value;
+
+            const processedCandidates = candidates.map(calculateScores);
+            const filteredCandidates = processedCandidates.filter(c => 
+                (c.fullName || '').toLowerCase().includes(searchTerm) && 
+                (filterValue === 'all' || c.result === filterValue)
+            );
+
+            candidateTableBody.innerHTML = '';
+            noDataMessage.classList.toggle('hidden', filteredCandidates.length > 0);
+
+            filteredCandidates.forEach((candidate, index) => {
+                const row = document.createElement('tr');
+                row.className = 'bg-white border-b hover:bg-gray-50';
+                row.innerHTML = `
+                    <td class="px-6 py-4 font-medium text-gray-900">${index + 1}</td>
+                    <td class="px-6 py-4 font-semibold">${candidate.fullName}</td>
+                    <td class="px-6 py-4">${candidate.position}</td>
+                    <td class="px-6 py-4 font-bold text-blue-600">${candidate.averageScore}</td>
+                    <td class="px-6 py-4">${getResultBadge(candidate.result)}</td>
+                    <td class="px-6 py-4 flex gap-3 justify-center">
+                        <button class="view-btn text-green-600 hover:text-green-800" data-id="${candidate.id}" title="Xem báo cáo"><i class="fas fa-eye"></i></button>
+                        <button class="edit-btn text-blue-600 hover:text-blue-800" data-id="${candidate.id}" title="Sửa"><i class="fas fa-edit"></i></button>
+                        <button class="delete-btn text-red-600 hover:text-red-800" data-id="${candidate.id}" title="Xóa"><i class="fas fa-trash"></i></button>
+                    </td>
+                `;
+                candidateTableBody.appendChild(row);
+            });
+        };
+
+        const getResultBadge = (result) => {
+            let colorClass = 'bg-gray-100 text-gray-800';
+            if (result === 'Đạt') colorClass = 'bg-green-100 text-green-800';
+            else if (result === 'Không đạt') colorClass = 'bg-red-100 text-red-800';
+            else if (result === 'Cân nhắc') colorClass = 'bg-yellow-100 text-yellow-800';
+            return `<span class="text-xs font-medium mr-2 px-2.5 py-0.5 rounded-full ${colorClass}">${result}</span>`;
+        };
+
+        const readFileContent = async (file) => {
+            if (!file) return null;
+            const extension = file.name.split('.').pop().toLowerCase();
+            const reader = new FileReader();
+            return new Promise((resolve, reject) => {
+                reader.onload = async (event) => {
+                    try {
+                        if (extension === 'pdf') {
+                            const data = new Uint8Array(event.target.result);
+                            const pdf = await pdfjsLib.getDocument({ data }).promise;
+                            let text = '';
+                            for (let i = 1; i <= pdf.numPages; i++) {
+                                const page = await pdf.getPage(i);
+                                const content = await page.getTextContent();
+                                text += content.items.map(item => item.str).join(' ');
+                            }
+                            resolve(text);
+                        } else if (extension === 'docx' || extension === 'doc') {
+                            const result = await mammoth.extractRawText({ arrayBuffer: event.target.result });
+                            resolve(result.value);
+                        } else {
+                             reader.onload = (e) => resolve(e.target.result);
+                             reader.readAsText(file);
+                        }
+                    } catch (error) { reject('Không thể đọc nội dung file.'); }
+                };
+                 reader.onerror = () => reject('Lỗi khi đọc file.');
+                 if (extension === 'pdf' || extension === 'docx' || extension === 'doc') { reader.readAsArrayBuffer(file); } 
+                 else { reader.readAsText(file); }
+            });
+        };
+        
+        // ===================================================================
+        // CÁC HÀM TƯƠNG TÁC VỚI AI ĐÃ ĐƯỢC CẬP NHẬT ĐỂ GỌI 1 FUNCTION DUY NHẤT
+        // ===================================================================
+
+        async function callApi(task, payload) {
+            if (!SUPABASE_URL || SUPABASE_URL === 'YOUR_SUPABASE_URL') {
+                throw new Error("Vui lòng cấu hình SUPABASE_URL trong mã nguồn.");
+            }
+            try {
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/recruitment-ai-handler`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ task, payload })
+                });
+                if (!response.ok) {
+                    const errorBody = await response.json();
+                    throw new Error(`Lỗi từ Supabase Function: ${errorBody.error || response.statusText}`);
+                }
+                return await response.json();
+            } catch (error) {
+                console.error(`Lỗi khi gọi Supabase Function cho tác vụ '${task}':`, error);
+                throw new Error(`Có lỗi xảy ra trong quá trình xử lý của AI. Vui lòng kiểm tra console.`);
+            }
+        }
+
+        const evaluateWithAI = async (resumeText) => {
+            const payload = { resumeText, jobCriteriaData };
+            return await callApi('evaluate', payload);
+        };
+
+        const generateAIReport = async (candidate) => {
+            const fullCandidateData = calculateScores(candidate);
+            const payload = { candidateData: fullCandidateData };
+            const result = await callApi('report', payload);
+            return result.result; // Function trả về { result: "html..." }
+        };
+
+        const generateInterviewQuestions = async (candidate) => {
+            const fullCandidateData = calculateScores(candidate);
+            const payload = { candidateData: fullCandidateData };
+            const result = await callApi('questions', payload);
+            return result.result; // Function trả về { result: "html..." }
+        };
+        
+        const renderJobCriteria = () => {
+            let html = '';
+            for (const position in jobCriteriaData) {
+                html += `<div class="mb-6">`;
+                html += `<h4 class="font-semibold text-gray-800 text-lg">${position}</h4>`;
+                html += `<div class="mt-2 text-sm space-y-2">`;
+                for (const criterion in jobCriteriaData[position]) {
+                     html += `<div><strong class="text-gray-600">${criterion}:</strong> ${jobCriteriaData[position][criterion]}</div>`;
+                }
+                html += `</div></div>`;
+            }
+            jobCriteriaSection.innerHTML = html;
+        };
+
+        // --- Event Listeners ---
+
+        addCandidateBtn.addEventListener('click', () => {
+            modalTitle.textContent = 'Thêm Ứng viên Mới';
+            candidateForm.reset();
+            createEvaluationUI([]);
+            cvFile.value = '';
+            aiError.classList.add('hidden');
+            aiSuccess.classList.add('hidden');
+            document.getElementById('candidateId').value = '';
+            toggleModal(candidateModal, true);
+        });
+
+        cancelBtn.addEventListener('click', () => toggleModal(candidateModal, false));
+        closeReportViewBtn.addEventListener('click', () => showReportView(false));
+        closeInterviewModalBtn.addEventListener('click', () => toggleModal(interviewModal, false));
+        
+        modalBackdrop.addEventListener('click', () => {
+            toggleModal(candidateModal, false);
+            toggleModal(interviewModal, false);
+        });
+
+        candidateForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const id = document.getElementById('candidateId').value;
+            let candidateData = {
+                fullName: document.getElementById('fullName').value,
+                position: document.getElementById('position').value,
+                email: document.getElementById('email').value,
+                phone: document.getElementById('phone').value,
+                notes: document.getElementById('notes').value,
+                evaluation: []
+            };
+
+            const evalRows = evaluationTable.querySelectorAll('.dynamic-eval-row');
+            evalRows.forEach(row => {
+                candidateData.evaluation.push({
+                    criterion: row.querySelector('.eval-criterion').value,
+                    requirement: row.querySelector('.eval-requirement').value,
+                    evidence: row.querySelector('.eval-evidence').value,
+                    score: row.querySelector('.eval-score').value
+                });
+            });
+
+            if (id) {
+                const index = candidates.findIndex(c => c.id == id);
+                if (index !== -1) {
+                    candidateData.aiReport = candidates[index].aiReport; // Preserve existing report
+                    candidates[index] = { ...candidates[index], ...candidateData };
+                }
+            } else {
+                candidateData.id = Date.now();
+                candidates.push(candidateData);
+            }
+
+            saveToLocalStorage();
+            renderTable();
+            toggleModal(candidateModal, false);
+        });
+
+        candidateTableBody.addEventListener('click', async (e) => {
+            const target = e.target.closest('button');
+            if (!target) return;
+            const id = target.dataset.id;
+            const candidate = candidates.find(c => c.id == id);
+            if (!candidate) return;
+
+            if (target.classList.contains('view-btn')) {
+                showReportView(true, candidate);
+            }
+
+            if (target.classList.contains('edit-btn')) {
+                modalTitle.textContent = 'Chỉnh sửa Thông tin Ứng viên';
+                document.getElementById('candidateId').value = candidate.id;
+                document.getElementById('fullName').value = candidate.fullName;
+                document.getElementById('position').value = candidate.position;
+                document.getElementById('email').value = candidate.email;
+                document.getElementById('phone').value = candidate.phone;
+                document.getElementById('notes').value = candidate.notes;
+                cvFile.value = '';
+                aiError.classList.add('hidden');
+                aiSuccess.classList.add('hidden');
+                createEvaluationUI(candidate.evaluation || []);
+                toggleModal(candidateModal, true);
+            }
+
+            if (target.classList.contains('delete-btn')) {
+                if (currentlyViewingCandidateId == candidate.id) {
+                    showReportView(false);
+                }
+                candidates = candidates.filter(c => c.id != id);
+                saveToLocalStorage();
+                renderTable();
+            }
+        });
+        
+        aiEvaluateBtn.addEventListener('click', async () => {
+            const files = cvFile.files;
+            if (files.length === 0) {
+                aiError.textContent = 'Vui lòng chọn ít nhất một file CV để đánh giá.';
+                aiError.classList.remove('hidden');
+                return;
+            }
+
+            aiError.classList.add('hidden');
+            aiSuccess.classList.add('hidden');
+            aiLoader.classList.remove('hidden');
+            aiBtnText.textContent = `Đang xử lý ${files.length} file...`;
+            aiEvaluateBtn.disabled = true;
+
+            try {
+                let processedCount = 0;
+                for (const file of files) {
+                    const resumeText = await readFileContent(file);
+                    if (!resumeText || resumeText.trim().length < 50) {
+                         console.warn(`Skipping file ${file.name}: content too short or unreadable.`);
+                         continue;
+                    }
+                    
+                    const evaluationResult = await evaluateWithAI(resumeText);
+                    const newCandidate = {
+                        id: Date.now() + Math.random(),
+                        ...evaluationResult.basicInfo,
+                        evaluation: evaluationResult.evaluation,
+                        notes: ''
+                    };
+                    
+                    newCandidate.aiReport = await generateAIReport(newCandidate);
+                    
+                    candidates.push(newCandidate);
+                    processedCount++;
+                }
+
+                if (processedCount > 0) {
+                    saveToLocalStorage();
+                    renderTable();
+                    aiSuccess.textContent = `Đã xử lý và thêm thành công ${processedCount} ứng viên.`;
+                    aiSuccess.classList.remove('hidden');
+                    setTimeout(() => toggleModal(candidateModal, false), 2000);
+                } else {
+                    throw new Error("Không thể xử lý bất kỳ file nào đã chọn.");
+                }
+
+            } catch (error) {
+                aiError.textContent = error.message;
+                aiError.classList.remove('hidden');
+            } finally {
+                aiLoader.classList.add('hidden');
+                aiBtnText.textContent = 'Đánh giá';
+                aiEvaluateBtn.disabled = false;
+                cvFile.value = '';
+            }
+        });
+
+        generateQuestionsBtn.addEventListener('click', async () => {
+            if (!currentlyViewingCandidateId) return;
+            const candidate = candidates.find(c => c.id == currentlyViewingCandidateId);
+            if (!candidate) return;
+
+            interviewModalTitle.textContent = `Câu hỏi Phỏng vấn Gợi ý cho ${candidate.fullName}`;
+            interviewQuestionsContent.innerHTML = '<div class="flex justify-center items-center p-8"><div class="loader"></div></div>';
+            toggleModal(interviewModal, true);
+
+            try {
+                const questionsHTML = await generateInterviewQuestions(candidate);
+                interviewQuestionsContent.innerHTML = questionsHTML;
+            } catch (error) {
+                interviewQuestionsContent.innerHTML = `<p class="text-red-500">${error.message}</p>`;
+            }
+        });
+
+        copyQuestionsBtn.addEventListener('click', () => {
+            const textToCopy = interviewQuestionsContent.innerText;
+            navigator.clipboard.writeText(textToCopy).then(() => {
+                copyQuestionsBtn.innerHTML = '<i class="fas fa-check"></i> Đã sao chép';
+                setTimeout(() => {
+                    copyQuestionsBtn.innerHTML = '<i class="fas fa-copy"></i> Sao chép';
+                }, 2000);
+            }).catch(err => {
+                console.error('Failed to copy text: ', err);
+            });
+        });
+
+        exportWordBtn.addEventListener('click', () => {
+            if (!currentlyViewingCandidateId) return;
+            const candidate = candidates.find(c => c.id == currentlyViewingCandidateId);
+            if (!candidate) return;
+
+            const header = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'><title>Báo cáo</title></head><body>`;
+            const footer = "</body></html>";
+            const sourceHTML = header + reportViewContent.innerHTML + footer;
+
+            const converted = htmlDocx.asBlob(sourceHTML);
+            saveAs(converted, `BaoCao_${candidate.fullName.replace(/ /g, '_')}.docx`);
+        });
+
+        exportBtn.addEventListener('click', () => {
+            const dataToExport = candidates.map((c, index) => {
+                const processed = calculateScores(c);
+                let record = {
+                    'STT': index + 1,
+                    'Họ và Tên': processed.fullName,
+                    'Vị trí ứng tuyển': processed.position,
+                    'Email': processed.email,
+                    'SĐT': processed.phone,
+                    'Điểm TB': processed.averageScore,
+                    'Kết quả': processed.result,
+                    'Ghi chú': processed.notes,
+                };
+                if (c.evaluation) {
+                    c.evaluation.forEach(item => {
+                        record[item.criterion] = item.score;
+                    });
+                }
+                return record;
+            });
+
+            const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, 'Danh sách ứng viên');
+            XLSX.writeFile(workbook, 'BaoCaoTuyenDung_ChiTiet.xlsx');
+        });
+
+        importBtn.addEventListener('click', () => importFile.click());
+        importFile.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                const data = new Uint8Array(event.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const firstSheetName = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[firstSheetName];
+                const json = XLSX.utils.sheet_to_json(worksheet);
+
+                const newCandidates = json.map(row => ({
+                    id: Date.now() + Math.random(),
+                    fullName: row['Họ và Tên'] || '',
+                    position: row['Vị trí ứng tuyển'] || '',
+                    email: row['Email'] || '',
+                    phone: row['SĐT'] || '',
+                    notes: row['Ghi chú'] || '',
+                    evaluation: [] 
+                }));
+
+                candidates = [...candidates, ...newCandidates];
+                saveToLocalStorage();
+                renderTable();
+                importFile.value = '';
+            };
+            reader.readAsArrayBuffer(file);
+        });
+        
+        searchInput.addEventListener('input', renderTable);
+        filterAssessment.addEventListener('change', renderTable);
+
+        // --- Initialization ---
+        renderJobCriteria();
+        loadFromLocalStorage();
+        renderTable();
+    });
+</script>
+</body>
+</html>
