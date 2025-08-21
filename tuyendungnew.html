@@ -326,8 +326,9 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', () => {
-        // !!! QUAN TRỌNG: Thay thế bằng URL dự án Supabase của bạn
+        // !!! QUAN TRỌNG: Thay thế bằng URL và Anon Key của dự án Supabase
         const SUPABASE_URL = 'https://rmbsxccrwrktbjlnezpu.supabase.co'; // Ví dụ: 'https://xyz.supabase.co'
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJtYnN4Y2Nyd3JrdGJqbG5lenB1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg2MjczNjQsImV4cCI6MjA2NDIwMzM2NH0.ydCqificftdtn1niRciFCifeuo8aX6SDGti-hCY5Z_Y'; // Lấy từ Project Settings -> API
 
         // UI Elements
         const addCandidateBtn = document.getElementById('addCandidateBtn');
@@ -558,13 +559,17 @@
         // ===================================================================
 
         async function callApi(task, payload) {
-            if (!SUPABASE_URL || SUPABASE_URL === 'YOUR_SUPABASE_URL') {
-                throw new Error("Vui lòng cấu hình SUPABASE_URL trong mã nguồn.");
+            if (!SUPABASE_URL || SUPABASE_URL === 'YOUR_SUPABASE_URL' || !SUPABASE_ANON_KEY || SUPABASE_ANON_KEY === 'YOUR_SUPABASE_ANON_KEY') {
+                throw new Error("Vui lòng cấu hình SUPABASE_URL và SUPABASE_ANON_KEY trong mã nguồn.");
             }
             try {
                 const response = await fetch(`${SUPABASE_URL}/functions/v1/recruitment-ai-handler`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'apiKey': SUPABASE_ANON_KEY,
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                    },
                     body: JSON.stringify({ task, payload })
                 });
                 if (!response.ok) {
@@ -876,4 +881,3 @@
 </script>
 </body>
 </html>
-
