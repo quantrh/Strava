@@ -670,13 +670,15 @@ Hãy trả về một đối tượng JSON duy nhất.`;
             const fullCandidateData = calculateScores(candidate);
             const dataString = JSON.stringify(fullCandidateData, null, 2);
             const prompt = `Bạn là một chuyên gia tuyển dụng. Dựa trên dữ liệu JSON về việc đánh giá ứng viên ${fullCandidateData.fullName} cho vị trí ${fullCandidateData.position} sau đây: ${dataString}. Hãy viết một báo cáo đánh giá chuyên nghiệp bằng tiếng Việt, **sử dụng các thẻ HTML để định dạng**.
-Báo cáo phải có các phần sau:
-1.  <h2 style="font-size: 1.25rem; font-weight: 600; border-bottom: 1px solid #e5e7eb; padding-bottom: 0.5rem; margin-bottom: 1rem;">Tổng quan</h2><p>Tóm tắt ngắn gọn về ứng viên và kết quả đánh giá chung. Ví dụ: <strong>Điểm trung bình: ${fullCandidateData.averageScore}</strong>, <strong>Kết quả: ${fullCandidateData.result}</strong>.</p>
-2.  <h2 style="font-size: 1.25rem; font-weight: 600; border-bottom: 1px solid #e5e7eb; padding-bottom: 0.5rem; margin-bottom: 1rem;">Phân tích chi tiết</h2><p>Dưới đây là phân tích chi tiết từng tiêu chí đánh giá:</p><ul style="list-style: none; padding: 0;">...</ul>
-3.  <h2 style="font-size: 1.25rem; font-weight: 600; border-bottom: 1px solid #e5e7eb; padding-bottom: 0.5rem; margin-bottom: 1rem;">Tóm tắt quá trình công tác</h2><p>Trích xuất và tóm tắt quá trình công tác của ứng viên từ CV (nếu có). Với mỗi kinh nghiệm, nêu rõ: Tên công ty, thời gian làm việc, vị trí, và các công việc/thành tích chính.</p>
-4.  <h2 style="font-size: 1.25rem; font-weight: 600; border-bottom: 1px solid #e5e7eb; padding-bottom: 0.5rem; margin-bottom: 1rem;">Điểm mạnh</h2><p>...</p>
-5.  <h2 style="font-size: 1.25rem; font-weight: 600; border-bottom: 1px solid #e5e7eb; padding-bottom: 0.5rem; margin-bottom: 1rem;">Điểm cần cải thiện</h2><p>...</p>
-6.  <h2 style="font-size: 1.25rem; font-weight: 600; border-bottom: 1px solid #e5e7eb; padding-bottom: 0.5rem; margin-bottom: 1rem;">Kết luận và Đề xuất</h2><p>...</p>
+Báo cáo phải có các phần được đánh số thứ tự như sau:
+1.  <h2 style="font-size: 1.25rem; font-weight: 600; border-bottom: 1px solid #e5e7eb; padding-bottom: 0.5rem; margin-bottom: 1rem;">1. Tổng quan</h2><p>Tóm tắt ngắn gọn về ứng viên và kết quả đánh giá chung. Ví dụ: <strong>Điểm trung bình: ${fullCandidateData.averageScore}</strong>, <strong>Kết quả: ${fullCandidateData.result}</strong>.</p>
+2.  <h2 style="font-size: 1.25rem; font-weight: 600; border-bottom: 1px solid #e5e7eb; padding-bottom: 0.5rem; margin-bottom: 1rem;">2. Phân tích chi tiết</h2><p>Dưới đây là phân tích chi tiết từng tiêu chí đánh giá:</p><ul style="list-style: none; padding: 0;">...</ul>
+3.  <h2 style="font-size: 1.25rem; font-weight: 600; border-bottom: 1px solid #e5e7eb; padding-bottom: 0.5rem; margin-bottom: 1rem;">3. Điểm mạnh</h2><p>...</p>
+4.  <h2 style="font-size: 1.25rem; font-weight: 600; border-bottom: 1px solid #e5e7eb; padding-bottom: 0.5rem; margin-bottom: 1rem;">4. Điểm cần cải thiện</h2><p>...</p>
+5.  <h2 style="font-size: 1.25rem; font-weight: 600; border-bottom: 1px solid #e5e7eb; padding-bottom: 0.5rem; margin-bottom: 1rem;">5. Kết luận và Đề xuất</h2><p>...</p>
+6.  <h2 style="font-size: 1.25rem; font-weight: 600; border-bottom: 1px solid #e5e7eb; padding-bottom: 0.5rem; margin-bottom: 1rem;">Phụ lục</h2>
+    <h3 style="font-size: 1.1rem; font-weight: 600; margin-top: 1rem; margin-bottom: 0.5rem;">1. Tóm tắt quá trình công tác</h3><p>Trích xuất và tóm tắt quá trình công tác của ứng viên từ CV (nếu có). Với mỗi kinh nghiệm, nêu rõ: Tên công ty, thời gian làm việc, vị trí, và các công việc/thành tích chính.</p>
+    <h3 style="font-size: 1.1rem; font-weight: 600; margin-top: 1rem; margin-bottom: 0.5rem;">2. Học vấn (Bằng cấp, chứng chỉ)</h3><p>Trích xuất thông tin về trường học, chuyên ngành, xếp loại tốt nghiệp, và các bằng cấp, chứng chỉ liên quan khác.</p>
 Trong phần "Phân tích chi tiết", với mỗi tiêu chí, hãy tạo một thẻ <li style="margin-bottom: 1.25rem;">. Bên trong, đầu tiên là thẻ <strong>Tiêu chí (Điểm: X/10)</strong>. Tiếp theo là một <ul style="list-style-type: none; padding-left: 1.25rem; margin-top: 0.5rem;"> lồng nhau với 3 <li> con: <li style="margin-bottom: 0.25rem;"><strong style="color: #4b5563;">Yêu cầu:</strong> [nội dung]</li>, <li style="margin-bottom: 0.25rem;"><strong style="color: #4b5563;">Thông tin ứng viên:</strong> [nội dung]</li>, và <li style="margin-bottom: 0.25rem;"><strong style="color: #4b5563;">Nhận xét:</strong> [nội dung]</li>.
 Chỉ trả về chuỗi HTML bên trong, không bao gồm thẻ <html>, <head>, hoặc <body>.`;
 
