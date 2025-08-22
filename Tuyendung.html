@@ -3,143 +3,62 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ứng dụng Báo cáo Kết quả Review Hồ sơ Tuyển dụng (AI-Powered)</title>
+    <title data-key="app_title">Ứng dụng Báo cáo Kết quả Review Hồ sơ Tuyển dụng (AI-Powered)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
     <script src="https://unpkg.com/html-docx-js/dist/html-docx.js"></script>
-    <!-- NEW: Tesseract.js for OCR on images -->
     <script src='https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js'></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        html {
-            scroll-behavior: smooth;
-        }
-        body {
-            font-family: 'Inter', sans-serif;
-        }
-        .modal-backdrop {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.5);
-            z-index: 40;
-            transition: opacity 0.3s ease;
-        }
-        .modal {
-            display: none;
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            z-index: 50;
-            transition: opacity 0.3s ease, transform 0.3s ease;
-        }
-        .modal.active, .modal-backdrop.active {
-            display: block;
-        }
-        .table-container {
-            max-height: 65vh;
-            overflow: auto;
-        }
-        /* Custom scrollbar */
-        .table-container::-webkit-scrollbar, .modal::-webkit-scrollbar {
-            width: 8px;
-            height: 8px;
-        }
-        .table-container::-webkit-scrollbar-track, .modal::-webkit-scrollbar-track {
-            background: #f1f1f1;
-            border-radius: 10px;
-        }
-        .table-container::-webkit-scrollbar-thumb, .modal::-webkit-scrollbar-thumb {
-            background: #888;
-            border-radius: 10px;
-        }
-        .table-container::-webkit-scrollbar-thumb:hover, .modal::-webkit-scrollbar-thumb:hover {
-            background: #555;
-        }
-        .loader {
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #3498db;
-            border-radius: 50%;
-            width: 24px;
-            height: 24px;
-            animation: spin 1s linear infinite;
-        }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        details > summary {
-            list-style: none;
-        }
-        details > summary::-webkit-details-marker {
-            display: none;
-        }
-        #reportViewContent ul, #interviewQuestionsContent ul {
-            list-style-type: none;
-            padding-left: 0;
-        }
-        #reportViewContent ul li, #interviewQuestionsContent ul li {
-            margin-bottom: 1em;
-        }
-        #reportViewContent ul ul, #interviewQuestionsContent ul ul {
-            list-style-type: none;
-            padding-left: 20px;
-        }
-        .toast {
-            position: fixed;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            padding: 12px 24px;
-            border-radius: 8px;
-            color: white;
-            z-index: 100;
-            opacity: 0;
-            transition: opacity 0.3s, bottom 0.3s;
-        }
-        .toast.show {
-            opacity: 1;
-            bottom: 40px;
-        }
-        .toast.success {
-            background-color: #28a745;
-        }
-        /* UPDATED: Styling for interview question headings */
-        #interviewQuestionsContent h4 {
-            font-weight: 600; /* semibold */
-            color: #1d4ed8; /* A darker, more professional blue */
-            margin-top: 1.25rem;
-            padding-bottom: 0.5rem;
-            border-bottom: 1px solid #d1d5db;
-        }
-        #interviewQuestionsContent ul {
-            margin-top: 1rem;
-        }
+        html { scroll-behavior: smooth; }
+        body { font-family: 'Inter', sans-serif; }
+        .modal-backdrop { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.5); z-index: 40; transition: opacity 0.3s ease; }
+        .modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 50; transition: opacity 0.3s ease, transform 0.3s ease; }
+        .modal.active, .modal-backdrop.active { display: block; }
+        .table-container { max-height: 65vh; overflow: auto; }
+        .table-container::-webkit-scrollbar, .modal::-webkit-scrollbar { width: 8px; height: 8px; }
+        .table-container::-webkit-scrollbar-track, .modal::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 10px; }
+        .table-container::-webkit-scrollbar-thumb, .modal::-webkit-scrollbar-thumb { background: #888; border-radius: 10px; }
+        .table-container::-webkit-scrollbar-thumb:hover, .modal::-webkit-scrollbar-thumb:hover { background: #555; }
+        .loader { border: 4px solid #f3f3f3; border-top: 4px solid #3498db; border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        details > summary { list-style: none; }
+        details > summary::-webkit-details-marker { display: none; }
+        #reportViewContent ul, #interviewQuestionsContent ul { list-style-type: none; padding-left: 0; }
+        #reportViewContent ul li, #interviewQuestionsContent ul li { margin-bottom: 1em; }
+        #reportViewContent ul ul, #interviewQuestionsContent ul ul { list-style-type: none; padding-left: 20px; }
+        .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); padding: 12px 24px; border-radius: 8px; color: white; z-index: 100; opacity: 0; transition: opacity 0.3s, bottom 0.3s; }
+        .toast.show { opacity: 1; bottom: 40px; }
+        .toast.success { background-color: #28a745; }
+        #interviewQuestionsContent h4 { font-weight: 600; color: #1d4ed8; margin-top: 1.25rem; padding-bottom: 0.5rem; border-bottom: 1px solid #d1d5db; }
+        #interviewQuestionsContent ul { margin-top: 1rem; }
     </style>
 </head>
 <body class="bg-gray-100 text-gray-800">
 
     <div class="container mx-auto p-4 md:p-8">
         <header class="text-center mb-8">
-            <h1 class="text-3xl md:text-4xl font-bold text-gray-700">Trình Quản lý Hồ sơ Ứng viên</h1>
-            <p class="text-gray-500 mt-2">Công cụ hỗ trợ review và báo cáo kết quả tuyển dụng tích hợp AI</p>
+            <h1 class="text-3xl md:text-4xl font-bold text-gray-700" data-key="main_title">Trình Quản lý Hồ sơ Ứng viên</h1>
+            <p class="text-gray-500 mt-2" data-key="main_subtitle">Công cụ hỗ trợ review và báo cáo kết quả tuyển dụng tích hợp AI</p>
+            
+            <!-- ===== START: LANGUAGE SWITCHER ===== -->
+            <div id="language-switcher" class="mt-4">
+                <button data-lang="vi" class="px-3 py-1 text-sm border-b-2 border-blue-500 text-blue-600 font-semibold">Tiếng Việt</button>
+                <button data-lang="en" class="px-3 py-1 text-sm border-b-2 border-transparent text-gray-500 font-semibold">English</button>
+            </div>
+            <!-- ===== END: LANGUAGE SWITCHER ===== -->
         </header>
 
         <details class="bg-white rounded-lg shadow-md p-6 mb-6">
             <summary class="font-semibold text-xl text-gray-700 cursor-pointer flex justify-between items-center">
-                <span><i class="fas fa-info-circle mr-2 text-blue-500"></i> Hướng dẫn sử dụng</span>
+                <span data-key="guide_title"><i class="fas fa-info-circle mr-2 text-blue-500"></i> Hướng dẫn sử dụng</span>
                 <i class="fas fa-chevron-down transform transition-transform"></i>
             </summary>
-            <!-- UPDATED: User Guide -->
-            <div class="mt-4 prose max-w-none text-gray-600">
+            <div class="mt-4 prose max-w-none text-gray-600" data-key="guide_content_html">
                 <h4>Chào mừng bạn đến với Trình Quản lý Hồ sơ Ứng viên - Trợ lý tuyển dụng AI!</h4>
                 <p>Công cụ này giúp bạn tự động hóa và tối ưu hóa quy trình tuyển dụng. Hãy làm theo các bước sau để tận dụng tối đa sức mạnh của AI.</p>
                 <ol>
@@ -183,7 +102,7 @@
         
         <details class="bg-white rounded-lg shadow-md p-6 mb-6">
             <summary class="font-semibold text-xl text-gray-700 cursor-pointer flex justify-between items-center">
-                <span><i class="fas fa-bullseye mr-2 text-green-500"></i> Vị trí & Tiêu chí Tuyển dụng</span>
+                <span data-key="criteria_title"><i class="fas fa-bullseye mr-2 text-green-500"></i> Vị trí & Tiêu chí Tuyển dụng</span>
                 <i class="fas fa-chevron-down transform transition-transform"></i>
             </summary>
             <div id="job-criteria-section" class="mt-4 text-gray-600">
@@ -191,45 +110,43 @@
             </div>
             <div class="mt-6 flex flex-col sm:flex-row gap-4">
                  <button id="updateCriteriaBtn" class="flex-1 flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition duration-300">
-                    <i class="fas fa-save"></i> Cập nhật Tiêu chí
+                    <i class="fas fa-save"></i> <span data-key="update_criteria_btn">Cập nhật Tiêu chí</span>
                 </button>
                 <button id="addPositionBtn" class="flex-1 flex items-center justify-center gap-2 bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg transition duration-300">
-                    <i class="fas fa-plus-circle"></i> Thêm Vị trí Mới
+                    <i class="fas fa-plus-circle"></i> <span data-key="add_position_btn">Thêm Vị trí Mới</span>
                 </button>
             </div>
         </details>
 
         <main>
             <div class="bg-white rounded-lg shadow-md p-6 mb-6">
-                <h2 class="text-2xl font-semibold mb-4 text-gray-700">Bảng điều khiển</h2>
+                <h2 class="text-2xl font-semibold mb-4 text-gray-700" data-key="dashboard_title">Bảng điều khiển</h2>
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <!-- Thao tác -->
                     <div class="flex flex-wrap items-center gap-2 col-span-1 md:col-span-2 lg:col-span-2">
                         <button id="addCandidateBtn" class="flex items-center gap-2 bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg transition duration-300">
-                            <i class="fas fa-plus"></i> Thêm Ứng viên
+                            <i class="fas fa-plus"></i> <span data-key="add_candidate_btn">Thêm Ứng viên</span>
                         </button>
                         <button id="importBtn" class="flex items-center gap-2 bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg transition duration-300">
-                           <i class="fas fa-file-excel"></i> Nhập
+                           <i class="fas fa-file-excel"></i> <span data-key="import_btn">Nhập</span>
                         </button>
                         <input type="file" id="importFile" class="hidden" accept=".xlsx, .xls">
                         <button id="exportBtn" class="flex items-center gap-2 bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 px-4 rounded-lg transition duration-300">
-                           <i class="fas fa-file-export"></i> Xuất Excel
+                           <i class="fas fa-file-export"></i> <span data-key="export_btn">Xuất Excel</span>
                         </button>
                     </div>
-                    <!-- Lọc và Tìm kiếm -->
                     <div class="col-span-1 md:col-span-2 lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
                          <div>
-                            <label for="searchInput" class="sr-only">Tìm kiếm</label>
-                            <input type="text" id="searchInput" placeholder="Tìm theo tên..." class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5">
+                            <label for="searchInput" class="sr-only" data-key="search_label">Tìm kiếm</label>
+                            <input type="text" id="searchInput" data-key-placeholder="search_placeholder" placeholder="Tìm theo tên..." class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5">
                         </div>
                         <div>
-                             <label for="filterAssessment" class="sr-only">Lọc theo đánh giá</label>
+                             <label for="filterAssessment" class="sr-only" data-key="filter_label">Lọc theo đánh giá</label>
                              <select id="filterAssessment" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5">
-                                <option value="all">Tất cả đánh giá</option>
-                                <option value="Đạt">Đạt</option>
-                                <option value="Không đạt">Không đạt</option>
-                                <option value="Cân nhắc">Cân nhắc</option>
-                                <option value="Chưa đánh giá">Chưa đánh giá</option>
+                                <option value="all" data-key="filter_all">Tất cả đánh giá</option>
+                                <option value="Đạt" data-key="filter_pass">Đạt</option>
+                                <option value="Không đạt" data-key="filter_fail">Không đạt</option>
+                                <option value="Cân nhắc" data-key="filter_consider">Cân nhắc</option>
+                                <option value="Chưa đánh giá" data-key="filter_not_evaluated">Chưa đánh giá</option>
                             </select>
                         </div>
                     </div>
@@ -239,41 +156,39 @@
             <div id="main-content">
                 <div id="table-view" class="bg-white rounded-lg shadow-md">
                     <div class="p-6 border-b border-gray-200">
-                        <h2 class="text-2xl font-semibold text-gray-700">Danh sách Ứng viên</h2>
+                        <h2 class="text-2xl font-semibold text-gray-700" data-key="candidate_list_title">Danh sách Ứng viên</h2>
                     </div>
                     <div class="table-container">
                         <table class="w-full text-sm text-left text-gray-500">
                             <thead class="text-xs text-gray-700 uppercase bg-gray-50 sticky top-0 z-10">
                                 <tr>
-                                    <th scope="col" class="px-6 py-3 whitespace-nowrap">STT</th>
-                                    <th scope="col" class="px-6 py-3 whitespace-nowrap">Họ và Tên</th>
-                                    <th scope="col" class="px-6 py-3 whitespace-nowrap">Vị trí</th>
-                                    <th scope="col" class="px-6 py-3 whitespace-nowrap">Điểm TB</th>
-                                    <th scope="col" class="px-6 py-3 whitespace-nowrap">Kết quả</th>
-                                    <th scope="col" class="px-6 py-3 whitespace-nowrap text-center">Hành động</th>
+                                    <th scope="col" class="px-6 py-3 whitespace-nowrap" data-key="table_stt">STT</th>
+                                    <th scope="col" class="px-6 py-3 whitespace-nowrap" data-key="table_fullName">Họ và Tên</th>
+                                    <th scope="col" class="px-6 py-3 whitespace-nowrap" data-key="table_position">Vị trí</th>
+                                    <th scope="col" class="px-6 py-3 whitespace-nowrap" data-key="table_avg_score">Điểm TB</th>
+                                    <th scope="col" class="px-6 py-3 whitespace-nowrap" data-key="table_result">Kết quả</th>
+                                    <th scope="col" class="px-6 py-3 whitespace-nowrap text-center" data-key="table_actions">Hành động</th>
                                 </tr>
                             </thead>
                             <tbody id="candidateTableBody">
-                                <!-- Dữ liệu ứng viên sẽ được chèn vào đây -->
                             </tbody>
                         </table>
                     </div>
                      <div id="noDataMessage" class="text-center py-12 text-gray-500">
-                        <p>Chưa có dữ liệu ứng viên. Vui lòng thêm mới hoặc nhập từ file Excel.</p>
+                        <p data-key="no_data_message">Chưa có dữ liệu ứng viên. Vui lòng thêm mới hoặc nhập từ file Excel.</p>
                     </div>
                 </div>
                 
-                <!-- This container will hold both report and interview questions -->
                 <div id="details-container">
                     <div id="report-view" class="bg-white rounded-lg shadow-md mt-8 p-6 hidden">
                         <div class="flex justify-between items-center border-b pb-4 mb-4">
                              <h2 id="reportViewTitle" class="text-2xl font-semibold text-gray-700">Báo cáo Đánh giá</h2>
                              <div class="flex items-center gap-4">
                                  <button id="generateQuestionsBtn" class="flex items-center gap-2 bg-purple-500 hover:bg-purple-600 text-white font-bold py-2 px-4 rounded-lg transition duration-300">
-                                    <i class="fas fa-question-circle"></i> ✨ Tạo câu hỏi phỏng vấn
+                                    <i class="fas fa-question-circle"></i> <span data-key="generate_questions_btn">✨ Tạo câu hỏi phỏng vấn</span>
                                 </button>
                                 <button id="exportWordBtn" class="flex items-center gap-2 bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg transition duration-300">
-                                    <i class="fas fa-file-word"></i> Xuất Báo cáo
+                                    <i class="fas fa-file-word"></i> <span data-key="export_report_btn">Xuất Báo cáo</span>
                                 </button>
                                 <button id="closeReportViewBtn" class="text-gray-500 hover:text-gray-700">
                                     <i class="fas fa-times fa-lg"></i>
@@ -281,7 +196,6 @@
                              </div>
                         </div>
                         <div id="reportViewContent" class="prose max-w-none">
-                            <!-- Nội dung báo cáo sẽ được chèn vào đây -->
                         </div>
                     </div>
 
@@ -290,24 +204,20 @@
                              <h2 id="interviewQuestionsTitle" class="text-2xl font-semibold text-gray-700">Câu hỏi Phỏng vấn Gợi ý</h2>
                              <div class="flex items-center gap-4">
                                 <button id="exportInterviewWordBtn" class="flex items-center gap-2 bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg transition duration-300">
-                                    <i class="fas fa-file-word"></i> Xuất Câu hỏi
+                                    <i class="fas fa-file-word"></i> <span data-key="export_questions_btn">Xuất Câu hỏi</span>
                                 </button>
                              </div>
                         </div>
                         <div id="interviewQuestionsContent" class="prose max-w-none">
-                            <!-- Nội dung câu hỏi sẽ được chèn vào đây -->
                         </div>
                     </div>
                 </div>
-
             </div>
         </main>
     </div>
 
-    <!-- Modal Backdrop -->
     <div id="modalBackdrop" class="modal-backdrop"></div>
 
-    <!-- Modal Form Thêm/Sửa Ứng viên -->
     <div id="candidateModal" class="modal bg-white rounded-lg shadow-xl w-11/12 md:w-5/6 lg:w-4/5 max-h-[90vh] overflow-y-auto">
         <div class="p-6 border-b sticky top-0 bg-white z-10">
             <h3 class="text-xl font-semibold text-gray-800" id="modalTitle">Thêm Ứng viên Mới</h3>
@@ -316,32 +226,31 @@
             <form id="candidateForm">
                 <input type="hidden" id="candidateId">
                 
-                <h4 class="text-lg font-semibold text-gray-700 mb-3 border-b pb-2">Thông tin cơ bản</h4>
+                <h4 class="text-lg font-semibold text-gray-700 mb-3 border-b pb-2" data-key="modal_basic_info">Thông tin cơ bản</h4>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                     <div>
-                        <label for="fullName" class="block mb-2 text-sm font-medium">Họ và Tên</label>
+                        <label for="fullName" class="block mb-2 text-sm font-medium" data-key="modal_fullName_label">Họ và Tên</label>
                         <input type="text" id="fullName" class="bg-gray-50 border border-gray-300 text-sm rounded-lg block w-full p-2.5" required>
                     </div>
                     <div>
-                        <label for="position" class="block mb-2 text-sm font-medium">Vị trí ứng tuyển</label>
+                        <label for="position" class="block mb-2 text-sm font-medium" data-key="modal_position_label">Vị trí ứng tuyển</label>
                         <input type="text" id="position" class="bg-gray-50 border border-gray-300 text-sm rounded-lg block w-full p-2.5" required>
                     </div>
                      <div>
-                        <label for="email" class="block mb-2 text-sm font-medium">Email</label>
+                        <label for="email" class="block mb-2 text-sm font-medium" data-key="modal_email_label">Email</label>
                         <input type="email" id="email" class="bg-gray-50 border border-gray-300 text-sm rounded-lg block w-full p-2.5" required>
                     </div>
                     <div>
-                        <label for="phone" class="block mb-2 text-sm font-medium">Số điện thoại</label>
+                        <label for="phone" class="block mb-2 text-sm font-medium" data-key="modal_phone_label">Số điện thoại</label>
                         <input type="tel" id="phone" class="bg-gray-50 border border-gray-300 text-sm rounded-lg block w-full p-2.5" required>
                     </div>
                 </div>
 
-                <h4 class="text-lg font-semibold text-gray-700 mb-3 border-b pb-2">Đánh giá bằng AI</h4>
+                <h4 class="text-lg font-semibold text-gray-700 mb-3 border-b pb-2" data-key="modal_ai_evaluation">Đánh giá bằng AI</h4>
                  <div class="flex items-center gap-4 mb-6 p-4 bg-blue-50 rounded-lg">
-                    <!-- UPDATED: Added image formats to accept attribute -->
                     <input type="file" id="cvFile" class="block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 focus:outline-none" accept=".pdf,.doc,.docx,.png,.jpg,.jpeg" multiple>
                     <button type="button" id="aiEvaluateBtn" class="flex items-center gap-2 bg-purple-500 hover:bg-purple-600 text-white font-bold py-2 px-4 rounded-lg transition duration-300 whitespace-nowrap">
-                        <i class="fas fa-robot"></i> <span id="aiBtnText">Đánh giá</span>
+                        <i class="fas fa-robot"></i> <span id="aiBtnText" data-key="modal_evaluate_btn">Đánh giá</span>
                         <div id="aiLoader" class="loader hidden"></div>
                     </button>
                 </div>
@@ -349,27 +258,24 @@
                 <p id="aiError" class="text-red-500 text-sm mb-4 hidden"></p>
                 <p id="aiSuccess" class="text-green-600 text-sm mb-4 hidden"></p>
 
-                <h4 class="text-lg font-semibold text-gray-700 mb-3 border-b pb-2">Bảng Đánh giá Chi tiết</h4>
+                <h4 class="text-lg font-semibold text-gray-700 mb-3 border-b pb-2" data-key="modal_evaluation_table">Bảng Đánh giá Chi tiết</h4>
                 <div id="evaluation-table" class="space-y-4">
-                    <!-- Evaluation rows will be generated by JS -->
                 </div>
                 
                 <div class="my-6">
-                    <label for="notes" class="block mb-2 text-sm font-medium">Ghi chú chung</label>
+                    <label for="notes" class="block mb-2 text-sm font-medium" data-key="modal_notes_label">Ghi chú chung</label>
                     <textarea id="notes" rows="3" class="bg-gray-50 border border-gray-300 text-sm rounded-lg block w-full p-2.5"></textarea>
                 </div>
                 <div class="flex justify-end gap-4 pt-4 border-t sticky bottom-0 bg-white py-4">
-                    <button type="button" id="cancelBtn" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg transition duration-300">Hủy</button>
-                    <button type="submit" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg transition duration-300">Lưu</button>
+                    <button type="button" id="cancelBtn" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg transition duration-300" data-key="modal_cancel_btn">Hủy</button>
+                    <button type="submit" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg transition duration-300" data-key="modal_save_btn">Lưu</button>
                 </div>
             </form>
         </div>
     </div>
     
-    <!-- Toast Notification -->
     <div id="toast" class="toast"></div>
 
-    <!-- NEW: Scroll to Top Button -->
     <button id="scrollTopBtn" title="Lên đầu trang" class="hidden fixed bottom-5 right-5 z-50 bg-blue-500 hover:bg-blue-600 text-white font-bold p-3 rounded-full shadow-lg transition-opacity duration-300">
         <i class="fas fa-arrow-up"></i>
     </button>
@@ -377,8 +283,205 @@
 <script>
     document.addEventListener('DOMContentLoaded', () => {
         // !!! QUAN TRỌNG: Thay thế bằng URL và Anon Key của dự án Supabase
-        const SUPABASE_URL = 'https://rmbsxccrwrktbjlnezpu.supabase.co'; // Ví dụ: 'https://xyz.supabase.co'
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJtYnN4Y2Nyd3JrdGJqbG5lenB1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg2MjczNjQsImV4cCI6MjA2NDIwMzM2NH0.ydCqificftdtn1niRciFCifeuo8aX6SDGti-hCY5Z_Y'; // Lấy từ Project Settings -> API
+        const SUPABASE_URL = 'https://rmbsxccrwrktbjlnezpu.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJtYnN4Y2Nyd3JrdGJqbG5lenB1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg2MjczNjQsImV4cCI6MjA2NDIwMzM2NH0.ydCqificftdtn1niRciFCifeuo8aX6SDGti-hCY5Z_Y';
+
+        // =================================================================
+        // ===== START: MULTI-LANGUAGE SUPPORT (BẮT ĐẦU: HỖ TRỢ ĐA NGÔN NGỮ) =====
+        // =================================================================
+        const translations = {
+            vi: {
+                app_title: "Ứng dụng Báo cáo Kết quả Review Hồ sơ Tuyển dụng (AI-Powered)",
+                main_title: "Trình Quản lý Hồ sơ Ứng viên",
+                main_subtitle: "Công cụ hỗ trợ review và báo cáo kết quả tuyển dụng tích hợp AI",
+                guide_title: "Hướng dẫn sử dụng",
+                guide_content_html: `
+                    <h4>Chào mừng bạn đến với Trình Quản lý Hồ sơ Ứng viên - Trợ lý tuyển dụng AI!</h4>
+                    <p>Công cụ này giúp bạn tự động hóa và tối ưu hóa quy trình tuyển dụng. Hãy làm theo các bước sau để tận dụng tối đa sức mạnh của AI.</p>
+                    <ol>
+                        <li><strong>Bước 1: Thiết lập Tiêu chí Tuyển dụng</strong><ul><li>Mở mục <strong>"Vị trí & Tiêu chí Tuyển dụng"</strong>. Đây là bước quan trọng nhất, vì AI sẽ dựa vào đây để đánh giá ứng viên.</li><li>Bạn có thể <strong>chỉnh sửa trực tiếp</strong> tên vị trí và nội dung các yêu cầu.</li><li>Sử dụng nút <strong>"Thêm Vị trí Mới"</strong> hoặc nút xóa <i class="fas fa-trash-alt text-red-500"></i> để tùy chỉnh danh sách vị trí.</li><li>Sau khi hoàn tất, nhấn <strong>"Cập nhật Tiêu chí"</strong> để lưu lại.</li></ul></li>
+                        <li><strong>Bước 2: Thêm Ứng viên với Sức mạnh AI <i class="fas fa-robot text-purple-500"></i></strong><ul><li>Nhấn nút <strong>"Thêm Ứng viên"</strong>.</li><li><strong><i class="fas fa-star text-yellow-500"></i> Tính năng nổi bật:</strong> Ngoài file <strong>.pdf, .doc, .docx</strong>, bạn có thể upload trực tiếp <strong>file ảnh CV</strong> (như .jpg, .png). AI sẽ tự động nhận dạng và đọc chữ từ ảnh.</li><li>Chọn một hoặc nhiều file CV (kể cả file ảnh) và nhấn <strong>"Đánh giá"</strong>.</li><li>AI sẽ thực hiện một chuỗi tác vụ thông minh: Tự động trích xuất thông tin, điền vào các trường, chấm điểm theo tiêu chí bạn đã thiết lập, và <strong>tự động viết báo cáo đánh giá chi tiết</strong>.</li></ul></li>
+                        <li><strong>Bước 3: Xem và Khai thác Kết quả</strong><ul><li>Nhấn nút <strong>"Xem"</strong> <i class="fas fa-eye text-green-600"></i> trên danh sách để xem trang tổng quan của ứng viên.</li><li>Tại đây, bạn sẽ thấy Báo cáo Đánh giá do AI tạo ra.</li><li><strong><i class="fas fa-star text-yellow-500"></i> Tính năng nổi bật:</strong> Nhấn nút <strong>"✨ Tạo câu hỏi phỏng vấn"</strong>. AI sẽ phân tích báo cáo và CV để đưa ra một bộ câu hỏi phỏng vấn sắc sảo, phù hợp riêng cho ứng viên đó.</li><li>Cả báo cáo và bộ câu hỏi đều có thể được <strong>xuất ra file Word</strong> chỉ với một cú nhấp chuột.</li></ul></li>
+                        <li><strong>Bước 4: Quản lý và Báo cáo</strong><ul><li>Sử dụng thanh tìm kiếm và bộ lọc để quản lý danh sách ứng viên hiệu quả.</li><li>Nhấn <strong>"Xuất Excel"</strong> để tải về báo cáo tổng hợp của tất cả ứng viên.</li></ul></li>
+                    </ol>`,
+                criteria_title: "Vị trí & Tiêu chí Tuyển dụng",
+                update_criteria_btn: "Cập nhật Tiêu chí",
+                add_position_btn: "Thêm Vị trí Mới",
+                dashboard_title: "Bảng điều khiển",
+                add_candidate_btn: "Thêm Ứng viên",
+                import_btn: "Nhập",
+                export_btn: "Xuất Excel",
+                search_placeholder: "Tìm theo tên...",
+                filter_all: "Tất cả đánh giá",
+                filter_pass: "Đạt",
+                filter_fail: "Không đạt",
+                filter_consider: "Cân nhắc",
+                filter_not_evaluated: "Chưa đánh giá",
+                candidate_list_title: "Danh sách Ứng viên",
+                table_stt: "STT",
+                table_fullName: "Họ và Tên",
+                table_position: "Vị trí",
+                table_avg_score: "Điểm TB",
+                table_result: "Kết quả",
+                table_actions: "Hành động",
+                no_data_message: "Chưa có dữ liệu ứng viên. Vui lòng thêm mới hoặc nhập từ file Excel.",
+                report_title_prefix: "Báo cáo Đánh giá",
+                generate_questions_btn: "✨ Tạo câu hỏi phỏng vấn",
+                export_report_btn: "Xuất Báo cáo",
+                interview_questions_title_prefix: "Câu hỏi Phỏng vấn Gợi ý cho",
+                export_questions_btn: "Xuất Câu hỏi",
+                modal_add_title: "Thêm Ứng viên Mới",
+                modal_edit_title: "Chỉnh sửa Thông tin Ứng viên",
+                modal_basic_info: "Thông tin cơ bản",
+                modal_fullName_label: "Họ và Tên",
+                modal_position_label: "Vị trí ứng tuyển",
+                modal_email_label: "Email",
+                modal_phone_label: "Số điện thoại",
+                modal_ai_evaluation: "Đánh giá bằng AI",
+                modal_evaluate_btn: "Đánh giá",
+                modal_evaluation_table: "Bảng Đánh giá Chi tiết",
+                modal_eval_criteria: "Tiêu chí",
+                modal_eval_requirement: "Yêu cầu",
+                modal_eval_evidence: "Thông tin đáp ứng (từ CV)",
+                modal_eval_score: "Điểm",
+                modal_eval_placeholder: "Tải CV và nhấn \"Đánh giá bằng AI\" để tạo bảng tiêu chí.",
+                modal_notes_label: "Ghi chú chung",
+                modal_cancel_btn: "Hủy",
+                modal_save_btn: "Lưu",
+                toast_update_criteria_success: "Đã cập nhật tiêu chí tuyển dụng thành công!",
+                toast_generate_questions_success: "Đã tạo và lưu câu hỏi phỏng vấn.",
+                ai_processing: (count) => `Đang xử lý ${count} file...`,
+                ai_processing_ocr: (name) => `Đang nhận dạng chữ từ ảnh ${name}...`,
+                ai_processing_ocr_progress: (name, progress) => `Đang nhận dạng chữ từ ảnh ${name}: ${progress}%`,
+                ai_success_message: (count) => `Đã xử lý và thêm thành công ${count} ứng viên.`,
+                ai_error_no_file: "Vui lòng chọn ít nhất một file CV để đánh giá.",
+                ai_error_process_failed: "Không thể xử lý bất kỳ file nào đã chọn.",
+                ai_error_file_format: (ext) => `Định dạng file .${ext} không được hỗ trợ.`,
+                ai_error_file_read: "Không thể đọc nội dung file.",
+                ai_error_generic: "Có lỗi xảy ra trong quá trình xử lý của AI. Vui lòng kiểm tra console.",
+                result_pass: "Đạt",
+                result_fail: "Không đạt",
+                result_consider: "Cân nhắc",
+                result_not_evaluated: "Chưa đánh giá",
+            },
+            en: {
+                app_title: "AI-Powered Recruitment Profile Review & Reporting Application",
+                main_title: "Candidate Profile Manager",
+                main_subtitle: "AI-Powered Tool for Reviewing and Reporting Recruitment Results",
+                guide_title: "User Guide",
+                guide_content_html: `
+                    <h4>Welcome to the Candidate Profile Manager - Your AI Recruitment Assistant!</h4>
+                    <p>This tool helps you automate and optimize your recruitment process. Follow these steps to harness the full power of AI.</p>
+                    <ol>
+                        <li><strong>Step 1: Set Up Recruitment Criteria</strong><ul><li>Open the <strong>"Job Positions & Recruitment Criteria"</strong> section. This is the most crucial step, as the AI will rely on this to evaluate candidates.</li><li>You can <strong>directly edit</strong> the position names and requirement details.</li><li>Use the <strong>"Add New Position"</strong> button or the delete icon <i class="fas fa-trash-alt text-red-500"></i> to customize the position list.</li><li>Once finished, click <strong>"Update Criteria"</strong> to save your changes.</li></ul></li>
+                        <li><strong>Step 2: Add Candidates with AI Power <i class="fas fa-robot text-purple-500"></i></strong><ul><li>Click the <strong>"Add Candidate"</strong> button.</li><li><strong><i class="fas fa-star text-yellow-500"></i> Key Feature:</strong> In addition to <strong>.pdf, .doc, .docx</strong> files, you can directly upload <strong>CV image files</strong> (like .jpg, .png). The AI will automatically recognize and read the text from the image.</li><li>Select one or more CV files (including image files) and click <strong>"Evaluate"</strong>.</li><li>The AI will perform a series of smart tasks: automatically extract information, fill in the fields, score based on your set criteria, and <strong>automatically write a detailed evaluation report</strong>.</li></ul></li>
+                        <li><strong>Step 3: View and Utilize the Results</strong><ul><li>Click the <strong>"View"</strong> icon <i class="fas fa-eye text-green-600"></i> in the list to see a candidate's overview page.</li><li>Here, you will find the AI-generated Evaluation Report.</li><li><strong><i class="fas fa-star text-yellow-500"></i> Key Feature:</strong> Click the <strong>"✨ Generate Interview Questions"</strong> button. The AI will analyze the report and CV to provide a sharp, tailored set of interview questions specifically for that candidate.</li><li>Both the report and the question set can be <strong>exported to a Word file</strong> with a single click.</li></ul></li>
+                        <li><strong>Step 4: Manage and Report</strong><ul><li>Use the search bar and filters to efficiently manage your candidate list.</li><li>Click <strong>"Export Excel"</strong> to download a comprehensive report of all candidates.</li></ul></li>
+                    </ol>`,
+                criteria_title: "Job Positions & Recruitment Criteria",
+                update_criteria_btn: "Update Criteria",
+                add_position_btn: "Add New Position",
+                dashboard_title: "Dashboard",
+                add_candidate_btn: "Add Candidate",
+                import_btn: "Import",
+                export_btn: "Export Excel",
+                search_placeholder: "Search by name...",
+                filter_all: "All assessments",
+                filter_pass: "Pass",
+                filter_fail: "Fail",
+                filter_consider: "Consider",
+                filter_not_evaluated: "Not evaluated",
+                candidate_list_title: "Candidate List",
+                table_stt: "No.",
+                table_fullName: "Full Name",
+                table_position: "Position",
+                table_avg_score: "Avg. Score",
+                table_result: "Result",
+                table_actions: "Actions",
+                no_data_message: "No candidate data yet. Please add a new one or import from an Excel file.",
+                report_title_prefix: "Evaluation Report",
+                generate_questions_btn: "✨ Generate Interview Questions",
+                export_report_btn: "Export Report",
+                interview_questions_title_prefix: "Suggested Interview Questions for",
+                export_questions_btn: "Export Questions",
+                modal_add_title: "Add New Candidate",
+                modal_edit_title: "Edit Candidate Information",
+                modal_basic_info: "Basic Information",
+                modal_fullName_label: "Full Name",
+                modal_position_label: "Applied Position",
+                modal_email_label: "Email",
+                modal_phone_label: "Phone Number",
+                modal_ai_evaluation: "AI-Powered Evaluation",
+                modal_evaluate_btn: "Evaluate",
+                modal_evaluation_table: "Detailed Evaluation Table",
+                modal_eval_criteria: "Criterion",
+                modal_eval_requirement: "Requirement",
+                modal_eval_evidence: "Evidence (from CV)",
+                modal_eval_score: "Score",
+                modal_eval_placeholder: "Upload a CV and click \"Evaluate with AI\" to generate the criteria table.",
+                modal_notes_label: "General Notes",
+                modal_cancel_btn: "Cancel",
+                modal_save_btn: "Save",
+                toast_update_criteria_success: "Recruitment criteria updated successfully!",
+                toast_generate_questions_success: "Interview questions generated and saved.",
+                ai_processing: (count) => `Processing ${count} file(s)...`,
+                ai_processing_ocr: (name) => `Recognizing text from image ${name}...`,
+                ai_processing_ocr_progress: (name, progress) => `Recognizing text from image ${name}: ${progress}%`,
+                ai_success_message: (count) => `Successfully processed and added ${count} candidate(s).`,
+                ai_error_no_file: "Please select at least one CV file to evaluate.",
+                ai_error_process_failed: "Could not process any of the selected files.",
+                ai_error_file_format: (ext) => `File format .${ext} is not supported.`,
+                ai_error_file_read: "Could not read file content.",
+                ai_error_generic: "An error occurred during AI processing. Please check the console.",
+                result_pass: "Pass",
+                result_fail: "Fail",
+                result_consider: "Consider",
+                result_not_evaluated: "Not evaluated",
+            }
+        };
+
+        let currentLang = localStorage.getItem('language') || 'vi';
+
+        const setLanguage = (lang) => {
+            if (!translations[lang]) return;
+            currentLang = lang;
+            localStorage.setItem('language', lang);
+            document.documentElement.lang = lang;
+
+            document.querySelectorAll('[data-key]').forEach(element => {
+                const key = element.getAttribute('data-key');
+                if (translations[lang][key]) {
+                    if (key.endsWith('_html')) {
+                        element.innerHTML = translations[lang][key];
+                    } else {
+                        element.textContent = translations[lang][key];
+                    }
+                }
+            });
+            
+            document.querySelectorAll('[data-key-placeholder]').forEach(element => {
+                const key = element.getAttribute('data-key-placeholder');
+                if (translations[lang][key]) {
+                    element.placeholder = translations[lang][key];
+                }
+            });
+
+            document.querySelectorAll('#language-switcher button').forEach(button => {
+                if (button.dataset.lang === lang) {
+                    button.classList.add('border-blue-500', 'text-blue-600');
+                    button.classList.remove('border-transparent', 'text-gray-500');
+                } else {
+                    button.classList.remove('border-blue-500', 'text-blue-600');
+                    button.classList.add('border-transparent', 'text-gray-500');
+                }
+            });
+            
+            renderTable();
+        };
+        // ===============================================================
+        // ===== END: MULTI-LANGUAGE SUPPORT (KẾT THÚC: HỖ TRỢ ĐA NGÔN NGỮ) =====
+        // ===============================================================
+
 
         // UI Elements
         const addCandidateBtn = document.getElementById('addCandidateBtn');
@@ -405,7 +508,6 @@
         const jobCriteriaSection = document.getElementById('job-criteria-section');
         const updateCriteriaBtn = document.getElementById('updateCriteriaBtn');
         const addPositionBtn = document.getElementById('addPositionBtn');
-        
         const tableView = document.getElementById('table-view');
         const reportView = document.getElementById('report-view');
         const reportViewTitle = document.getElementById('reportViewTitle');
@@ -413,104 +515,25 @@
         const closeReportViewBtn = document.getElementById('closeReportViewBtn');
         const exportWordBtn = document.getElementById('exportWordBtn');
         const generateQuestionsBtn = document.getElementById('generateQuestionsBtn');
-        
         const interviewQuestionsView = document.getElementById('interview-questions-view');
         const interviewQuestionsTitle = document.getElementById('interviewQuestionsTitle');
         const interviewQuestionsContent = document.getElementById('interviewQuestionsContent');
         const exportInterviewWordBtn = document.getElementById('exportInterviewWordBtn');
-        
         const toast = document.getElementById('toast');
         const scrollTopBtn = document.getElementById('scrollTopBtn');
-
 
         // Data
         let candidates = [];
         let currentlyViewingCandidateId = null;
         pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js`;
-        
-        let jobCriteriaData = {
-    "Chuyên viên phân tích nghiệp vụ và kiểm soát chất lượng BA/QC (cấp 1 đến cấp 4) - Nội bộ kết hợp ngoài hệ thống": {
-        "Mô tả công việc": "1. Công tác Phân tích nghiệp vụ (BA): Thực hiện thu thập và phân tích yêu cầu nghiệp vụ liên quan đến hệ thống Core Banking và các hệ thống vệ tinh; tham gia xây dựng tài liệu nghiệp vụ URD (User Requirement Document), RSD (Requirement Specification Document) theo quy định của BIDV. Tư vấn các giải pháp phát triển mới, nâng cấp và tư vấn thiết kế chức năng hệ thống Core Banking, hệ thống khác có liên quan phù hợp. Hỗ trợ kết nối các vấn đề cơ bản giữa các bên nghiệp vụ, kỹ thuật và phát triển phần mềm, truyền tải yêu cầu nghiệp vụ thành các thông số kỹ thuật, chức năng và ràng buộc có thể triển khai. Phân tích yêu cầu, tham số hệ thống để đề xuất khai báo, cấu hình hoặc cập nhật. 2. Công tác kiểm soát chất lượng (QC): Quản lý danh mục yêu cầu và kế hoạch triển khai hệ thống Core Banking theo từng giai đoạn, phiên bản. Xây dựng kịch bản kiểm thử hoặc kiểm thử theo kịch bản có sẵn trên các môi trường SIT (System Integration Test), UAT (User Acceptance Test) cho các yêu cầu chức năng và tham số, phối hợp các kiểm thử hạ tầng, hiệu năng và các thành phần tích hợp. Chuẩn bị hồ sơ đánh giá an toàn thông tin đối với các tính năng mới hoặc thay đổi hệ thống, đảm bảo các sản phẩm và thay đổi được triển khai tuân thủ quy định bảo mật và tiêu chuẩn chất lượng. 3. Công tác Đào tạo, hỗ trợ và xây dựng văn bản chế độ: Xây dựng, cập nhật các văn bản, quy trình nghiệp vụ liên quan đến hệ thống Core Banking. Đào tạo, chuyển giao kiến thức hệ thống Core Banking cho các cán bộ trong toàn hệ thống khi có yêu cầu; hỗ trợ xử lý các tình huống phát sinh mới trong nghiệp vụ. 4. Tham gia các tổ, nhóm đề tài, dự án và thực hiện các nhiệm vụ khác theo phân công của Lãnh đạo Ban.",
-        "Yêu cầu độ tuổi": "dưới 35 tuổi tại thời điểm dự tuyển.",
-        "Trình độ chuyên môn": "Tốt nghiệp các trường đại học hệ chính quy, tập trung, dài hạn (bao gồm đại học văn bằng 2, không bao gồm hình thức học liên thông lên đại học) tại các trường đại học trong nước/nước ngoài/liên kết thuộc các ngành đào tạo sau: Công nghệ thông tin; Hệ thống thông tin quản lý, phân tích nghiệp vụ; Tài chính ngân hàng; Quản trị kinh doanh; Kế toán kiểm toán; Kinh tế quốc tế; Và các lĩnh vực có liên quan. Đối với các trường đại học trong nước yêu cầu thuộc danh sách dưới đây: Lĩnh vực Công nghệ Thông tin: 1. Đại học Bách khoa Hà Nội 2. Đại học Bách khoa TP.HCM 3. Đại học Công nghệ – Đại học Quốc gia Hà Nội (UET) 4. Đại học Công nghệ Thông tin – Đại học Quốc gia TP.HCM 5. Học viện Công nghệ Bưu chính Viễn thông 6. Đại học FPT 7. Đại học Khoa học Tự nhiên – Đại học Quốc gia Hà Nội 8. Đại học Khoa học Tự nhiên – Đại học Quốc gia TP.HCM 9. Đại học Bách khoa – Đại học Đà Nẵng. Lĩnh vực Kinh tế: 1. Đại học Ngoại thương (FTU) 2. Đại học Kinh tế Quốc dân (NEU) 3. Đại học Kinh tế TP.HCM (UEH) 4. Đại học Kinh tế – Đại học Quốc gia Hà Nội 5. Đại học Kinh tế – Luật TP.HCM (UEL) 6. Học viện Tài chính 7. Đại học Thương mại 8. Học viện Ngân hàng 9. Đại học Kinh tế – Đại học Đà Nẵng.",
-        "Trình độ ngoại ngữ, tin học": "Có một trong các chứng chỉ tiếng Anh với số điểm yêu cầu tối thiểu: TOEIC 600, TOEFL CBT 173, TOEFL iBT 61, IELTS 5.5 trở lên. Hoặc tốt nghiệp Đại học chuyên ngành tiếng Anh hệ chính quy; Hoặc có bằng Đại học, Thạc sỹ ở nước ngoài được giảng dạy hoàn toàn bằng tiếng Anh. Có khả năng giao tiếp/làm việc bằng tiếng Anh tốt. Sử dụng thành thạo tin học văn phòng. Chấp nhận ứng viên bổ sung chứng chỉ tiếng Anh trong thời gian 24 tháng kể từ ngày được tuyển dụng.",
-        "Kinh nghiệm công tác": "1. Đối với ứng viên ngoài hệ thống: Có kinh nghiệm làm vị trí Phân tích nghiệp vụ (Business Analysis) hoặc tương đương tối thiểu 01 năm trong các lĩnh vực Công nghệ thông tin, Tài chính ngân hàng. Có kiến thức về các sản phẩm, dịch vụ, quy trình trong lĩnh vực ngân hàng (Tiền gửi, Tiền vay, Thanh toán, Kế toán, Giao dịch khách hàng), hiểu biết về hệ thống ứng dụng của ngân hàng và các giải pháp ứng dụng phục vụ hoạt động của ngân hàng. Có kinh nghiệm làm việc với các dự án theo quy trình Agile/Scrum. 2. Đối với ứng viên nội bộ: Có kinh nghiệm làm việc tối thiểu 02 năm tại BIDV: Tại chi nhánh: đã từng công tác tại các vị trí Chuyên viên Quản lý khách hàng, Quản trị tín dụng, Giao dịch khách hàng, Quản lý rủi ro, Kế toán. Tại TSC: am hiểu các quy trình nghiệp vụ ngân hàng về Tiền gửi, Tiền vay, Thanh toán, Kế toán, Quản lý thông tin khách hàng, Giao dịch khách hàng. Ưu tiên ứng viên đã có kinh nghiệm tham gia dự án CoreBanking hoặc các dự án CNTT của BIDV.",
-        "Yêu cầu khác": "Kĩ năng: Có kĩ năng tổng hợp, tư duy phản biện; thương thảo, làm việc nhóm; khả năng phân tích tốt. Kỹ năng sử dụng AI trong công việc. Có kinh nghiệm xây dựng tài liệu yêu cầu người sử dụng, đặc tả kỹ thuật; Thành thạo các công cụ Jira, Confluence, Axure, Microsoft Visio, Draw.io. Ưu tiên các ứng viên có một trong các chứng chỉ cơ bản/chuyên nghiệp được công nhận rộng rãi trên thế giới thuộc các hệ thống (hoặc tương đương) sau: Chứng chỉ của tổ chức International Institute of Business Analysis (IIBA): IIBA Entry Certificate in Business Analysis (ECBA), IIBA Certification of Competency in Business Analysis (CCBA), IIBA Certified Business Analysis Professional (CBAP). Chứng chỉ của PMI: PMI-Professional in Business Analysis (PBA) Certification. Chứng chỉ của IREB: IREB Certified Professional for Requirements Engineering (CPRE)."
-    },
-    "Chuyên viên cấp cao phân tích nghiệp vụ và kiểm soát chất lượng cấp 1 - Ngoài hệ thống": {
-        "Mô tả công việc": "1. Công tác Phân tích nghiệp vụ (BA): Thực hiện thu thập và phân tích yêu cầu phức tạp và liên kết nhiều nghiệp vụ, lĩnh vực, hệ thống liên quan đến hệ thống Core Banking và các hệ thống có liên quan, tham gia xây dựng tài liệu nghiệp vụ URD (User Requirement Document), RSD (Requirement Specification Document) theo quy định của BIDV. Đảm nhiệm các dự án trọng điểm, liên quan đến nhà cung cấp hoặc đối tác chiến lược. Tư vấn các giải pháp phát triển mới, nâng cấp và tư vấn thiết kế chức năng hệ thống Core Banking, hệ thống khác có liên quan phù hợp. Phối hợp và đầu mối kiến trúc, đội phát triển và đơn vị nghiệp vụ để đưa ra tư vấn, thiết kế chức năng phức tạp và có tính hệ thống phù hợp, truyền tải yêu cầu nghiệp vụ thành các thông số kỹ thuật, chức năng và ràng buộc có thể triển khai. Đề xuất, định hướng các giải pháp nghiệp vụ và kỹ thuật ở cấp độ tổng thể để phát triển mới, nâng cấp, hoàn thiện và nâng cao hiệu quả vận hành hệ thống Core Banking. Cập nhật thường xuyên các công nghệ mới, tư vấn ứng dụng vào công việc nhằm nâng cao năng suất lao động và giảm thiểu chi phí, nhân lực. 2. Công tác kiểm soát chất lượng (QC): Quản lý danh mục yêu cầu và kế hoạch triển khai hệ thống Core Banking theo từng giai đoạn, phiên bản. Xây dựng kịch bản kiểm thử và kiểm thử trên các môi trường SIT (System Integration Test), UAT (User Acceptance Test) cho các yêu cầu chức năng và tham số, phối hợp các đơn vị kỹ thuật trong kiểm thử hạ tầng, hiệu năng, bảo mật và các thành phần tích hợp. Chuẩn bị hồ sơ đánh giá an toàn thông tin đối với các tính năng mới hoặc thay đổi hệ thống, đảm bảo các sản phẩm và thay đổi được triển khai tuân thủ quy định bảo mật và tiêu chuẩn chất lượng. Giám sát kiến trúc hệ thống, tổ chức kiểm thử toàn hàng hoặc cho các phiên bản thay đổi lớn. 3. Công tác Đào tạo, hỗ trợ và xây dựng văn bản chế độ: Xây dựng hoặc phối hợp xây dựng, cập nhật và chuẩn hóa các văn bản chế độ, quy trình nghiệp vụ liên quan đến hệ thống Core Banking ở cấp độ phòng ban, toàn hàng, trình bày trước Hội đồng Lãnh đạo. Đào tạo, chuyển giao kiến thức hệ thống Core Banking cho các cán bộ trong toàn hệ thống khi có yêu cầu, chủ động hỗ trợ xử lý các tình huống phát sinh mới trong nghiệp vụ. 4. Tham gia các tổ, nhóm đề tài, dự án, dự án trọng điểm và thực hiện các nhiệm vụ khác theo phân công của Lãnh đạo Ban. Là đầu mối phối hợp đơn vị trong các dự án triển khai có độ ưu tiên cao, liên phân hệ, liên quan với vendor hoặc đối tác.",
-        "Yêu cầu độ tuổi": "dưới 42 tuổi tại thời điểm dự tuyển.",
-        "Trình độ chuyên môn": "Tốt nghiệp các trường đại học hệ chính quy, tập trung, dài hạn (bao gồm đại học văn bằng 2, không bao gồm hình thức học liên thông lên đại học) tại các trường đại học trong nước/nước ngoài/liên kết thuộc các ngành đào tạo sau: Công nghệ thông tin; Hệ thống thông tin quản lý, phân tích nghiệp vụ; Tài chính ngân hàng; Quản trị kinh doanh; Kế toán kiểm toán; Kinh tế quốc tế; Và các lĩnh vực có liên quan. Đối với các trường đại học trong nước yêu cầu thuộc danh sách dưới đây: Lĩnh vực Công nghệ Thông tin: 1. Đại học Bách khoa Hà Nội 2. Đại học Bách khoa TP.HCM 3. Đại học Công nghệ – Đại học Quốc gia Hà Nội (UET) 4. Đại học Công nghệ Thông tin – Đại học Quốc gia TP.HCM 5. Học viện Công nghệ Bưu chính Viễn thông 6. Đại học FPT 7. Đại học Khoa học Tự nhiên – Đại học Quốc gia Hà Nội 8. Đại học Khoa học Tự nhiên – Đại học Quốc gia TP.HCM 9. Đại học Bách khoa – Đại học Đà Nẵng. Lĩnh vực Kinh tế: 1. Đại học Ngoại thương (FTU) 2. Đại học Kinh tế Quốc dân (NEU) 3. Đại học Kinh tế TP.HCM (UEH) 4. Đại học Kinh tế – Đại học Quốc gia Hà Nội 5. Đại học Kinh tế – Luật TP.HCM (UEL) 6. Học viện Tài chính 7. Đại học Thương mại 8. Học viện Ngân hàng 9. Đại học Kinh tế – Đại học Đà Nẵng 10. Đại học Kinh tế Tài chính TP.HCM (UEF).",
-        "Trình độ ngoại ngữ, tin học": "Có một trong các chứng chỉ tiếng Anh với số điểm yêu cầu tối thiểu: TOEIC 600, TOEFL CBT 173, TOEFL iBT 61, IELTS 5.5 trở lên. Hoặc tốt nghiệp Đại học chuyên ngành tiếng Anh hệ chính quy; Hoặc có bằng Đại học, Thạc sỹ ở nước ngoài được giảng dạy hoàn toàn bằng tiếng Anh. Có khả năng giao tiếp/làm việc bằng tiếng Anh tốt. Sử dụng thành thạo tin học văn phòng. Chấp nhận ứng viên bổ sung chứng chỉ tiếng Anh trong thời gian 24 tháng kể từ ngày được tuyển dụng.",
-        "Kinh nghiệm công tác": "Có kinh nghiệm làm vị trí Phân tích nghiệp vụ (Business Analysis), Chủ sở hữu sản phẩm (Product Owner) hoặc các vị trí tương đương tối thiểu 03 năm trong các lĩnh vực Công nghệ thông tin, Tài chính ngân hàng. Có kiến thức về các sản phẩm, dịch vụ, quy trình trong lĩnh vực ngân hàng và các nghiệp vụ Thanh toán, Chuyển tiền, Chuyển tiền quốc tế; hiểu biết về hệ thống ứng dụng của ngân hàng và các giải pháp ứng dụng, giải pháp tích hợp phục vụ hoạt động của ngân hàng. Có kinh nghiệm làm việc với các dự án theo quy trình Agile/Scrum.",
-        "Yêu cầu khác": "Kĩ năng: Có kĩ năng tổng hợp, tư duy phản biện; thương thảo, làm việc nhóm; khả năng phân tích tốt. Kỹ năng sử dụng AI trong công việc. Có kinh nghiệm xây dựng tài liệu yêu cầu người sử dụng, đặc tả kỹ thuật; Thành thạo các công cụ Jira, Confluence, Axure, Microsoft Visio, Draw.io. Ưu tiên các ứng viên có một trong các chứng chỉ cơ bản/chuyên nghiệp được công nhận rộng rãi trên thế giới thuộc các hệ thống (hoặc tương đương) sau: Chứng chỉ của tổ chức International Institute of Business Analysis (IIBA): IIBA Entry Certificate in Business Analysis (ECBA), IIBA Certification of Competency in Business Analysis (CCBA), IIBA Certified Business Analysis Professional (CBAP). Chứng chỉ của PMI: PMI-Professional in Business Analysis (PBA) Certification. Chứng chỉ của IREB: IREB Certified Professional for Requirements Engineering (CPRE)."
-    },
-    "Chuyên viên Quản trị hệ thống ứng dụng Core Banking (từ cấp 1 đến cấp 3) - Ngoài hệ thống": {
-        "Mô tả công việc": "Vai trò và mục tiêu: Thực hiện các nhiệm vụ của Ban QLĐT Core Banking – Nhóm Quản trị hệ thống ứng dụng Core Banking và theo sự phân công, điều động của Lãnh đạo nhóm. Thực hiện Quản trị các cấu phần của hệ thống Core Banking theo phạm vi được phân công hoặc quản trị thứ cấp các ứng dụng. Nhiệm vụ trọng tâm: 1. Thực hiện công tác quản trị các cấu phần của hệ thống Core Banking theo phạm vi được phân công gồm các công việc chính sau: Đảm bảo hoạt động an toàn, ổn định cho các cấu phần của hệ thống Core Banking gồm hệ thống Web, hệ thống Application, hệ thống cơ sở dữ liệu, hệ thống Single Sign On, hệ thống xử lý tác vụ. Thực hiện công việc theo phân công liên quan tới các khâu trong các công tác định kỳ liên quan tới hệ thống như: chuyển đổi máy chủ định kỳ (HA), diễn tập phòng chống thảm họa (DR), archive/dọn dẹp dữ liệu định kỳ, vá bảo mật tài khoản định kỳ, đổi mật khẩu tài khoản định kỳ. Thực hiện công tác cập nhật hệ thống định kỳ theo yêu cầu phát triển, sửa lỗi hệ thống. 2. Xây dựng, triển khai các hệ thống Phần mềm ứng dụng/cấu phần ứng dụng phân hệ Core theo sự phân công của Lãnh đạo nhóm. 3. Định kỳ đánh giá tình trạng hoạt động của hệ thống và đề xuất các biện pháp tối ưu hiệu năng xử lý, cải tiến mô hình hoạt động của hệ thống Core Banking. 4. Tham gia phân tích, điều tra và xử lý các sự cố Phần mềm ứng dụng. 5. Hỗ trợ xử lý các yêu cầu kỹ thuật và các lỗi phát sinh trong quá trình vận hành hệ thống. 6. Tham gia công tác kiểm tra, nghiệm thu, xác nhận các nội dung liên quan đến kỹ thuật đối với các bản cập nhật hệ thống. 7. Thực hiện giám sát, phát hiện và cảnh báo sớm các lỗi phát sinh hoặc các vấn đề tiềm ẩn rủi ro đối với hoạt động của hệ thống thông qua công cụ giám sát trên môi trường được cung cấp.",
-        "Yêu cầu độ tuổi": "không quá 35 tuổi tại thời điểm dự tuyển.",
-        "Trình độ chuyên môn": "Tốt nghiệp các trường đại học hệ chính quy, tập trung, dài hạn (bao gồm đại học văn bằng 2, không bao gồm hình thức học liên thông lên đại học) tại các trường đại học trong nước/nước ngoài/liên kết thuộc các ngành đào tạo sau: Công nghệ thông tin, Điện tử Viễn thông, Toán-Tin, Hệ thống Thông tin, Công nghệ kỹ thuật Điện tử, Khoa học máy tính, Kỹ thuật phần mềm hoặc các chuyên nghành khác có đào tạo lập trình, kỹ thuật phần mềm.",
-        "Trình độ ngoại ngữ, tin học": "Có một trong các chứng chỉ tiếng Anh với số điểm yêu cầu tối thiểu: TOEIC 600, TOEFL CBT 173, TOEFL iBT 61, IELTS 5.5 trở lên. Hoặc tốt nghiệp Đại học chuyên ngành tiếng Anh hệ chính quy; Hoặc có bằng Đại học, Thạc sỹ ở nước ngoài được giảng dạy hoàn toàn bằng tiếng Anh. Có khả năng giao tiếp/làm việc bằng tiếng Anh tốt. Sử dụng thành thạo tin học văn phòng. Chấp nhận ứng viên bổ sung chứng chỉ tiếng Anh trong thời gian 24 tháng kể từ ngày được tuyển dụng.",
-        "Kinh nghiệm công tác": "Có tối thiểu 01 năm kinh nghiệm thực hiện quản trị các hệ thống ứng dụng trong doanh nghiệp. Ưu tiên: Có kinh nghiệm quản trị hệ thống ngân hàng lõi tại các Ngân hàng; Có kinh nghiệm quản trị các hệ thống ứng dụng quan trọng, ứng dụng cốt lõi của các doanh nghiệp.",
-        "Yêu cầu khác": "Có hiểu biết và khả năng cài đặt, cấu hình, quản trị, sử dụng các công nghệ nền tảng như IBM Websphere Application server, IBM Websphere MQ, Apache Tomcat, Oracle Tuxedo, ElasticSearch, Logstash, Kibana, Grafana là một lợi thế. Có hiểu biết và khả năng cài đặt về giải pháp sẵn sàng, liên tục cho hoạt động của ứng dụng: HA (High Availability), DR (Disaster Recovery), LB (Load Balancing)... Ưu tiên đối tượng có các chứng chỉ hoặc đã tham gia các khóa đào tạo về AIX Administrator, LPIC-1, LPIC-2, LPIC-3, các chứng chỉ về IBM Websphere Application server administration, IBM Websphere MQ."
-    },
-    "Chuyên viên Quản trị dữ liệu (Cấp 1) - Nội bộ kết hợp ngoài hệ thống": {
-        "Mô tả công việc": "Thực hiện các nhiệm vụ của Ban QLPT Core Banking – Nhóm Quản trị tham số và dữ liệu và theo sự phân công, điều động của Lãnh đạo nhóm. Thực hiện công tác quản trị tham số, dữ liệu các phân hệ theo phạm vi được phân công cụ thể: chịu trách nhiệm quản lý, giám sát và tối ưu hệ thống dữ liệu và tham số trên Core Banking, đảm bảo hoạt động ổn định, an toàn và hiệu quả của các hệ thống phần mềm ứng dụng trong ngân hàng. Nhiệm vụ trọng tâm: Thực hiện công tác quản trị tham số, dữ liệu các phân hệ theo phạm vi được phân công gồm các công việc sau: 1. Quản lý dữ liệu: (i) Xây dựng, phát triển các hệ thống lưu trữ và xử lý dữ liệu; (ii) Thiết kế chi tiết giải pháp cho các luồng thu thập, chuẩn hóa, làm sạch, lưu trữ dữ liệu, xử lý, phân tích và hiển thị dữ liệu; (iii) Kiểm soát đảm bảo toàn vẹn dữ liệu hệ thống; (iv) Cung cấp dữ liệu và phối hợp với các bộ phận để khai thác dữ liệu phục vụ kinh doanh và quản trị điều hành của ngân hàng. 2. Phát triển báo cáo: Xây dựng hệ thống báo cáo theo yêu cầu nghiệp vụ và báo cáo tự động hóa. 3. Quản lý tham số: thực hiện công tác khai báo, cập nhật, kiểm thử và quản lý tham số ứng dụng Core Banking trên tất cả các môi trường. 4. Thực hiện công tác quản trị các hệ thống phần mềm ứng dụng tại Core Banking (các ứng dụng về dữ liệu, báo cáo, tham số CPMS...). 5. Tham mưu đề xuất các kiến nghị nhằm nâng cấp hệ thống báo cáo quản trị hoạt động kinh doanh mảng dữ liệu ngân hàng. 6. Xây dựng, triển khai các hệ thống Phần mềm ứng dụng/cấu phần ứng dụng phân hệ Core hoặc các dự án thuộc phạm vi chuyên môn theo sự phân công của Lãnh đạo nhóm. 7. Hỗ trợ kỹ thuật và xử lý các lỗi phát sinh trong quá trình vận hành hệ thống, các yêu cầu kỹ thuật chuyển tiếp từ Chi nhánh/TT HSC. 8. Tham gia công tác kiểm tra, nghiệm thu, xác nhận các nội dung liên quan đến kỹ thuật đối với các thay đổi về tham số.",
-        "Yêu cầu độ tuổi": "không quá 30 tuổi tại thời điểm dự tuyển.",
-        "Trình độ chuyên môn": "Tốt nghiệp Đại học trở lên, hệ chính quy (bao gồm đại học văn bằng 2, không bao gồm hình thức học liên thông lên đại học) tại các trường Đại học trong nước hoặc tốt nghiệp Đại học trở lên tại các trường Đại học nước ngoài, Đại học liên kết. Chuyên nghành yêu cầu tốt nghiệp một trong các chuyên nghành sau: Công nghệ thông tin, Điện tử Viễn thông, Toán-Tin, Hệ thống Thông tin, Công nghệ kỹ thuật Điện tử, Khoa học máy tính, Tự động hóa, An toàn thông tin, Kỹ thuật phần mềm hoặc các chuyên nghành khác có đào tạo lập trình, kỹ thuật phần mềm.",
-        "Trình độ ngoại ngữ, tin học": "Có một trong các chứng chỉ tiếng Anh với số điểm yêu cầu tối thiểu: TOEIC 600, TOEFL CBT 173, TOEFL iBT 61, IELTS 5.5 trở lên. Hoặc tốt nghiệp Đại học chuyên ngành tiếng Anh hệ chính quy; Hoặc có bằng Đại học, Thạc sỹ ở nước ngoài được giảng dạy hoàn toàn bằng tiếng Anh. Có khả năng giao tiếp/làm việc bằng tiếng Anh tốt. Sử dụng thành thạo tin học văn phòng. Chấp nhận ứng viên bổ sung chứng chỉ tiếng Anh trong thời gian 24 tháng kể từ ngày được tuyển dụng.",
-        "Kinh nghiệm công tác": "Có tối thiểu 01 năm kinh nghiệm tại vị trí tương đương. Ưu tiên: Có kiến thức tốt về hệ thống thông tin Ngân Hàng; Am hiểu hoạt động kinh doanh và các sản phẩm dịch vụ của ngân hàng; am hiểu Core Banking Profile là một lợi thế. Có kiến thức về ngôn ngữ lập trình Python, R, phân tích Big Data, xây dựng mô hình thống kê... sẽ là một lợi thế.",
-        "Yêu cầu khác": "Có hiểu biết tốt và kinh nghiệm triển khai thực tế với về các hệ Quản trị CSDL (Oracle, SQL Server, DB2, Netezza...), CSDL phi quan hệ (GT.M...). Có kinh nghiệm sử dụng và triển khai thực tế với các công cụ ETL (IBM DataStage, Kafka...). Có kinh nghiệm xử lý dữ liệu lớn, kỹ thuật lập trình tốt, nhạy bén số liệu. Có kiến thức tốt về tuning performance câu lệnh SQL, luồng ETL và CSDL. Có kiến thức tốt về kiến trúc phần mềm, thiết kế phần mềm, triển khai phần mềm. Có kiến thức về các lĩnh vực xây dựng phần mềm ứng dụng, quản trị, kiểm tra nghiệm thu phần mềm."
-    },
-    "Chuyên viên Điều phối dự án (cấp 1) - Nội bộ kết hợp ngoài hệ thống": {
-        "Mô tả công việc": "Vai trò và mục tiêu: Thực hiện các nhiệm vụ của Ban QLPT Core Banking – Nhóm TH&QA và theo sự phân công, điều động của Lãnh đạo nhóm. Hỗ trợ thực hiện công tác quản trị dự án, đảm bảo chất lượng các dự án phát triển Core Banking và các cấu phần liên quan, công tác quản trị nội bộ tại Ban. Nhiệm vụ trọng tâm: Hỗ trợ quản lý dự án trong việc lập kế hoạch, theo dõi tiến độ, và cập nhật trạng thái các nhiệm vụ dự án thông qua các công cụ quản lý dự án (ví dụ: Jira). Ghi chép và tổng hợp biên bản họp, theo dõi các hành động (action items) đã được giao và nhắc nhở các bên liên quan thực hiện. Hỗ trợ đánh giá tình trạng dự án, đánh giá rủi ro và báo cáo kịp thời cho cấp trên và các bên liên quan. Hỗ trợ chuẩn bị các tài liệu dự án như kế hoạch, báo cáo tiến độ, hậu cần, rủi ro đơn giản dưới sự hướng dẫn của quản lý dự án. Tổ chức, lưu trữ và duy trì kho tài liệu dự án một cách có hệ thống, đảm bảo dễ dàng truy cập và kiểm soát phiên bản. Hỗ trợ rà soát nội dung các tài liệu kỹ thuật, tài liệu nghiệp vụ của dự án, của Ban. Hỗ trợ công tác truyền thông giữa các bên liên quan. Tổ chức, sắp xếp lịch họp và đảm bảo các cuộc họp dự án diễn ra đúng kế hoạch. Hỗ trợ các công tác nhân sự, hành chính của dự án, của Ban. Thực hiện các công việc hỗ trợ dự án, công việc hành chính khác theo yêu cầu được phân công.",
-        "Yêu cầu độ tuổi": "≤35 tuổi tại thời điểm dự tuyển.",
-        "Trình độ chuyên môn": "Tốt nghiệp các trường đại học hệ chính quy, tập trung, dài hạn (bao gồm đại học văn bằng 2, không bao gồm hình thức học liên thông lên đại học) tại các trường đại học trong nước/nước ngoài/liên kết thuộc chuyên ngành kinh tế (như Kế toán, Tài chính, Ngân hàng, kinh tế đầu tư, quản trị kinh doanh,...) hoặc Chuyên ngành về CNTT (Công nghệ thông tin, Điện tử Viễn thông, Toán-Tin, Hệ thống Thông tin, Công nghệ kỹ thuật Điện tử, Khoa học máy tính, Kỹ thuật phần mềm hoặc các chuyên nghành khác có đào tạo lập trình, kỹ thuật phần mềm).",
-        "Trình độ ngoại ngữ, tin học": "Có một trong các chứng chỉ tiếng Anh với số điểm yêu cầu tối thiểu: TOEIC 600, TOEFL CBT 173, TOEFL iBT 61, IELTS 5.5 trở lên. Hoặc tốt nghiệp Đại học chuyên ngành tiếng Anh hệ chính quy; Hoặc có bằng Đại học, Thạc sỹ ở nước ngoài được giảng dạy hoàn toàn bằng tiếng Anh. Có khả năng giao tiếp/làm việc bằng tiếng Anh tốt. Sử dụng thành thạo tin học văn phòng. Chấp nhận ứng viên bổ sung chứng chỉ tiếng Anh trong thời gian 24 tháng kể từ ngày được tuyển dụng.",
-        "Kinh nghiệm công tác": "Đã từng tham gia Quản trị/điều phối dự án CNTT với thời gian tối thiểu 01 năm.",
-        "Yêu cầu khác": "Am hiểu phương pháp Agile/Scrum. Am hiểu về quản trị, khai thác phần mềm Jira/Confluence. Ưu tiên: Cán bộ có chứng chỉ quốc tế về quản trị dự án như: PMI-PMP/Prince2 hoặc chứng chỉ tương đương. Hoặc Cán bộ đã từng làm công tác Quản trị/điều phối tại dự án Chuyển đổi cốt lõi (Core) cho các Ngân hàng/Công ty tài chính."
-    },
-    "Chuyên viên Đảm bảo chất lượng (cấp 1) - Nội bộ kết hợp ngoài hệ thống": {
-        "Mô tả công việc": "Vai trò và mục tiêu: Thực hiện các nhiệm vụ của Ban QLPT Core Banking – Nhóm TH&QA và theo sự phân công, điều động của Lãnh đạo nhóm. Hỗ trợ thực hiện công tác quản trị dự án, đảm bảo chất lượng các dự án phát triển Core Banking và các cấu phần liên quan, công tác quản trị nội bộ tại Ban; giám sát, kiểm tra đội phát triển tuân thủ theo đúng quy trình phát triển. Nhiệm vụ trọng tâm: Hỗ trợ việc xây dựng các quy trình trong quá trình phát triển, kiểm thử phần mềm. Quản lý kịch bản kiểm thử (test cases) của hệ thống Core Banking và các cấu phần liên quan. Ghi nhận, mô tả và báo cáo chi tiết các lỗi (bugs) phát hiện được vào hệ thống quản lý lỗi (ví dụ: Jira). Nắm vững các quy trình, tiêu chuẩn phát triển phần mềm và quy trình QA của đơn vị, BIDV. Kiểm tra tính tuân thủ của các tài liệu (đặc tả yêu cầu, tài liệu thiết kế) so với tiêu chuẩn đã định. Hỗ trợ chuẩn bị, cập nhật và lưu trữ các tài liệu kiểm thử như kế hoạch kiểm thử, kịch bản kiểm thử, báo cáo kiểm thử. Duy trì các checklist QA và đảm bảo chúng được áp dụng đúng đắn; Giám sát, kiểm tra đội phát triển tuân thủ theo đúng quy trình phát triển; Phát hiện các lỗi sai sót trong quy trình thực hiện, để từ đó có biện pháp xử lý kịp thời, phối hợp với các bên liên quan để tìm cách khắc phục; Đào tạo, hướng dẫn cho các cán bộ thực hiện theo đúng quy trình đã xây dựng. Thực hiện tổng hợp, báo cáo các vấn đề về tiến độ, chất lượng, các vướng mắc, rủi ro tiềm ẩn và các điểm cần cải thiện trong quy trình cho cấp trên. Tham gia các buổi đánh giá nội bộ về quy trình QA nhằm cải tiến, điều chỉnh, thay đổi quy trình, cập nhật các tiêu chuẩn mới. Tham gia triển khai các Dự án Công nghệ thông tin theo sự phân công của Lãnh đạo nhóm.",
-        "Yêu cầu độ tuổi": "≤ 35 tuổi tại thời điểm dự tuyển.",
-        "Trình độ chuyên môn": "Tốt nghiệp các trường đại học hệ chính quy, tập trung, dài hạn (bao gồm đại học văn bằng 2, không bao gồm hình thức học liên thông lên đại học) tại các trường đại học trong nước/nước ngoài/liên kết thuộc các ngành đào tạo: Công nghệ thông tin, Điện tử Viễn thông, Toán-Tin, Hệ thống Thông tin, Công nghệ kỹ thuật Điện tử, Khoa học máy tính, Kỹ thuật phần mềm hoặc các chuyên nghành khác có đào tạo lập trình, kỹ thuật phần mềm.",
-        "Trình độ ngoại ngữ, tin học": "Có một trong các chứng chỉ tiếng Anh với số điểm yêu cầu tối thiểu: TOEIC 600, TOEFL CBT 173, TOEFL iBT 61, IELTS 5.5 trở lên. Hoặc tốt nghiệp Đại học chuyên ngành tiếng Anh hệ chính quy; Hoặc có bằng Đại học, Thạc sỹ ở nước ngoài được giảng dạy hoàn toàn bằng tiếng Anh. Có khả năng giao tiếp/làm việc bằng tiếng Anh tốt. Sử dụng thành thạo tin học văn phòng. Chấp nhận ứng viên bổ sung chứng chỉ tiếng Anh trong thời gian 24 tháng kể từ ngày được tuyển dụng.",
-        "Kinh nghiệm công tác": "Có 01 năm kinh nghiệm ở vị trí tương đương, nắm vững và đã từng tham gia vào quá trình phát triển dự án phần mềm.",
-        "Yêu cầu khác": "Trung thực, cẩn thận, khả năng tương tác tốt với các cán bộ khác, tập trung cao độ trong công việc. Có kỹ năng làm việc nhóm, ham học hỏi, sẵn sàng tiếp thu công nghệ mới. Kỹ năng giao tiếp tốt, khả năng xử lý tình huống và tư duy logic tốt (truyền đạt dễ hiểu, biết cách đặt vấn đề và làm rõ yêu cầu để giải pháp). Có kiến thức về các quy trình quản lý chất lượng CMMI. Am hiểu phương pháp Agile/Scrum. Am hiểu, có kinh nghiệm áp dụng phương pháp DevSecOps. Am hiểu về quản trị, khai thác phần mềm Jira/Confluence. Có hiểu biết về việc thực hiện các công việc liên quan đến phát triển kiểm thử tự động phần mềm (automation testing) gồm: (i) Phát triển framework và đào tạo Automation team, (ii) Performance testing, data testing."
-    },
-    "Chuyên viên phát triển ứng dụng (cấp 1) - Ngoài hệ thống": {
-        "Mô tả công việc": "Vai trò và mục tiêu: 1. Tiếp nhận các tài liệu khảo sát, tài liệu thiết kế chi tiết hệ thống. 2. Lập trình các yêu cầu phát triển phần mềm có liên quan đến Core Banking, thực hiện unit test các cấu phần được phân giao theo tài liệu thiết kế chi tiết. Nhiệm vụ trọng tâm: 1. Tham mưu, tư vấn: Đề xuất các ý kiến liên quan đến việc triển khai thực hiện nhiệm vụ của nhóm, tổ công tác. Tham mưu với lãnh đạo tổ, nhóm đối với các công việc trong phạm vi được phân công gồm: Nghiên cứu, đề xuất áp dụng và triển khai các giải pháp nhằm tối ưu hoạt động đối với các ứng dụng tác nghiệp của Core Banking. 2. Trực tiếp thực hiện các công việc: Lập trình xử lý các yêu cầu phát triển phần mềm. Cụ thể như sau: Thực hiện lập trình, tham gia khảo sát, phân tích thiết kế các yêu cầu phát triển phần mềm trên các ứng dụng nền tảng web là kênh tác nghiệp của BIDV. Cộng tác với các thành viên của nhóm nghiệp vụ, kỹ thuật khác, với các BA, designers nhằm xây dựng và tối ưu chức năng, tăng cường tính ổn định, hiệu năng, bảo mật của hệ thống. Xác định, thực hiện và chia sẻ các giải pháp kỹ thuật, xây dựng các tài liệu phát triển phần mềm theo quy trình. Xác định phương án và lập trình xử lý sự cố core banking của BIDV đảm bảo kịp thời, hiệu quả. Tham gia các tổ công tác, dự án của BIDV. Thực hiện các công việc khác theo sự phân công của lãnh đạo nhóm. 3. Nghiên cứu và đào tạo: Tham gia nghiên cứu và đánh giá các công nghệ mới để áp dụng cho công tác lập trình phát triển ứng dụng, các xu thế công nghệ và nghiệp vụ liên quan đến các kênh giao dịch và tác nghiệp của các hệ thống Core Banking trên thị trường.",
-        "Yêu cầu độ tuổi": "không quá 30 tuổi tại thời điểm dự tuyển.",
-        "Trình độ chuyên môn": "Tốt nghiệp Đại học trở lên, hệ chính quy (bao gồm đại học văn bằng 2, không bao gồm hình thức học liên thông lên đại học) tại các trường Đại học trong nước hoặc tốt nghiệp Đại học trở lên tại các trường Đại học nước ngoài, Đại học liên kết. Chuyên nghành yêu cầu tốt nghiệp một trong các nghành thuộc nhóm nghành Máy tính và Công nghệ thông tin (theo thông tư 09/2022 của Bộ GDĐT): Khoa học máy tính, Mạng máy tính và truyền thông dữ liệu, Kỹ thuật phần mềm, Hệ thống thông tin, Kỹ thuật máy tính, Trí tuệ nhân tạo, Công nghệ kỹ thuật máy tính, Công nghệ thông tin, An toàn thông tin hoặc các nghành khác có đào tạo lập trình, phát triển phần mềm.",
-        "Trình độ ngoại ngữ, tin học": "Có một trong các chứng chỉ tiếng Anh với số điểm yêu cầu tối thiểu: TOEIC 600, TOEFL CBT 173, TOEFL iBT 61, IELTS 5.5 trở lên. Hoặc tốt nghiệp Đại học chuyên ngành tiếng Anh hệ chính quy; Hoặc có bằng Đại học, Thạc sỹ ở nước ngoài được giảng dạy hoàn toàn bằng tiếng Anh. Có khả năng giao tiếp/làm việc bằng tiếng Anh tốt. Sử dụng thành thạo tin học văn phòng. Chấp nhận ứng viên bổ sung chứng chỉ tiếng Anh trong thời gian 24 tháng kể từ ngày được tuyển dụng.",
-        "Kinh nghiệm công tác": "Có tối thiểu 03 năm kinh nghiệm tại vị trí tương đương. Có ít nhất 3 năm kinh nghiệm làm việc với Angular và có kiến thức vững chắc về HTML, CSS, Typescript, Javascript, hoặc có ít nhất 3 năm kinh nghiệm làm việc với Springboot và có kiến thức vững chắc về Java.",
-        "Yêu cầu khác": "Có kinh nghiệm làm việc với Restful APIs, JSON và tích hợp với các hệ thống khác. Có hiểu biết về Responsive Design và các kỹ thuật tối ưu hóa giao diện. Có kinh nghiệm với các công cụ quản lý mã nguồn như Git, SVN. Có năng lực đào tạo và tự đào tạo, nghiên cứu, có đam mê, khám phá, học hỏi công nghệ mới, sẵn sàng chuyển đổi công nghệ, ngôn ngữ mới. Có khả năng làm việc độc lập cũng như làm việc theo nhóm. Tư duy logic tốt, khả năng phân tích, giải quyết vấn đề. Liên tục nắm bắt các xu hướng và công nghệ mới. Ưu tiên các ứng viên có kỹ năng, kinh nghiệm sau: Có kinh nghiệm làm trên các cơ sở dữ liệu SQL (và/hoặc NoSQL), thực hiện thiết kế database, xây dựng các package, procedure, function. Có kinh nghiệm phát triển phần mềm trong lĩnh vực ngân hàng, tài chính, fintech. Có kinh nghiệm trong Môi trường phát triển Agile. Có kinh nghiệm xây dựng ứng dụng chịu tải lớn. Từng làm việc hoặc có hiểu biết về Microservices (MSA) là một lợi thế. Có kiến thức về UI/UX, có kinh nghiệm sử dụng Figma là một lợi thế."
-    },
-    "Chuyên viên Phát triển API và Tích hợp (Cấp 1) - Ngoài hệ thống": {
-        "Mô tả công việc": "Vai trò và mục tiêu: 1. Tiếp nhận các tài liệu khảo sát, tài liệu thiết kế chi tiết hệ thống. 2. Lập trình các yêu cầu phát triển phần mềm có liên quan đến core banking, thực hiện unit test các cấu phần được phân giao theo tài liệu thiết kế chi tiết. Nhiệm vụ trọng tâm: 1. Tham mưu, tư vấn: Đề xuất các ý kiến liên quan đến việc triển khai thực hiện nhiệm vụ của nhóm, tổ công tác. Tham mưu với lãnh đạo tổ, nhóm đối với các công việc trong phạm vi được phân công gồm: Nghiên cứu các kiến trúc công nghệ mới liên quan đến việc phát triển dịch vụ, tư vấn cho lãnh đạo về định hướng phát triển công nghệ liên quan đến các mô hình tích hợp. 2. Trực tiếp thực hiện các công việc: Lập trình xử lý các yêu cầu phát triển phần mềm. Cụ thể như sau: Phát triển các dịch vụ tích hợp, kiểm soát, chuẩn hóa và tối ưu các API phục vụ các hệ thống tích hợp. Tham gia đánh giá, khảo sát và đề xuất giải pháp cho các ứng dụng có yêu cầu tích hợp vào corebanking. Xây dựng và cung cấp các API tích hợp với các hệ thống backend của các nhóm phát triển phần mềm, các đối tác hợp tác phát triển, các dự án. Đầu mối thực hiện nâng cấp, bảo trì hệ thống tác nghiệp tại quầy đáp ứng các nghiệp vụ phát sinh trong thực tế, tối ưu hiệu năng và chủ động đề xuất thực hiện các giải pháp để mang tới trải nghiệm tốt nhất cho người dùng. Phối hợp cùng các nhóm BA, QC, các đơn vị nghiệp vụ để nghiên cứu, khảo sát các nhu cầu của khách hàng và dịch vụ kết nối mới, tích hợp qua các API để chủ động phát triển các dịch vụ mới. Cộng tác với các thành viên của nhóm nghiệp vụ hoặc kỹ thuật khác nhằm tối ưu chức năng, tăng cường tính ổn định, hiệu năng, bảo mật của hệ thống. Đề xuất và phát triển các giải pháp công nghệ mới nhằm nâng cao hiệu quả vận hành của hệ thống Core Banking. Xác định phương án và lập trình xử lý sự cố core banking của BIDV đảm bảo kịp thời, hiệu quả. Tham gia các tổ công tác, dự án của BIDV gồm các dự án nâng cấp hệ thống, cập nhật phiên bản mới và đảm bảo tính tương thích của hệ thống. Thực hiện các công việc khác theo sự phân công của lãnh đạo nhóm. 3. Nghiên cứu và đào tạo: Tham gia nghiên cứu và đánh giá các công nghệ mới; Tìm hiểu và áp dụng các công nghệ mới, xu hướng phát triển.",
-        "Yêu cầu độ tuổi": "không quá 27 tuổi tại thời điểm dự tuyển.",
-        "Trình độ chuyên môn": "Tốt nghiệp Đại học trở lên, hệ chính quy (bao gồm đại học văn bằng 2, không bao gồm hình thức học liên thông lên đại học) tại các trường Đại học trong nước hoặc tốt nghiệp Đại học trở lên tại các trường Đại học nước ngoài, Đại học liên kết. Chuyên ngành: Công nghệ thông tin, Điện tử Viễn thông, Toán-Tin, Hệ thống Thông tin, Công nghệ kỹ thuật Điện tử, Khoa học máy tính, Tự động hóa, An toàn thông tin, Kỹ thuật phần mềm hoặc các chuyên nghành khác có đào tạo lập trình, kỹ thuật phần mềm. Đối với các trường đại học trong nước yêu cầu thuộc danh sách sau: Đại học Bách Khoa Hà Nội, ĐHQG Hà Nội, Học viện Công nghệ Bưu chính Viễn thông, Học viện Kỹ thuật Quân sự, Học viện Kỹ thuật Mật mã, Đại học Bách Khoa - ĐH Đà Nẵng, Đại học Khoa học - ĐH Huế, ĐHQG TP.HCM, Đại học Sư phạm Kỹ thuật TP.HCM, Đại học FPT.",
-        "Trình độ ngoại ngữ, tin học": "Ứng viên đạt 1 trong các chứng chỉ sau: TOEIC đạt 600-990, Toefl PBT/IPT đạt 500/677, Toefl CBT đạt 173/300, Toefl iBT đạt 61/120, Ielts đạt 5.5-9.0, Cambridge Exam đạt First (FCE), B2 Khung Châu Âu, 4/6 Khung năng lực ngoại ngữ 6 bậc. Chấp nhận ứng viên bổ sung chứng chỉ tiếng Anh trong thời gian 24 tháng kể từ ngày được tuyển dụng.",
-        "Kinh nghiệm công tác": "Có kinh nghiệm về Java, Java EE. Có kinh nghiệm làm trên các cơ sở dữ liệu SQL (và/hoặc NoSQL), thực hiện thiết kế database, xây dựng các package, procedure, function. Kiến thức vững trong lập trình phần mềm. Kiến thức về Git/SVN và các phương pháp tốt nhất để hợp nhất, phân nhánh được sử dụng cho Git/Gitlab.",
-        "Yêu cầu khác": "Kiến thức về API. Có khả năng làm việc độc lập cũng như làm việc theo nhóm. Có tư duy logic tốt, khả năng phân tích, giải quyết vấn đề. Liên tục nắm bắt các xu hướng và công nghệ mới. Ưu tiên các ứng viên có kỹ năng, kinh nghiệm sau: Có kinh nghiệm trong Môi trường phát triển Agile. Có hiểu biết và kinh nghiệm làm việc với các hệ thống sử dụng ứng dụng IBM Websphere. Biết sử dụng các công cụ test tự động cho SIT. Đã tham gia phát triển các module nghiệp vụ trong Corebanking của ngân hàng, hoặc trong lĩnh vực ngân hàng, tài chính, fintech. Có kinh nghiệm tham gia xây dựng các hệ thống chịu tải lớn. Có kinh nghiệm làm việc với các database NoSQL là một lợi thế. Có khả năng tự nghiên cứu, tìm hiểu và thực hiện các công việc một cách cẩn thận, tỉ mỉ. Có kinh nghiệm làm Spring boot, Java web service."
-    },
-    "Chuyên viên Phát triển Core Banking (cấp 1) - Ngoài hệ thống": {
-        "Mô tả công việc": "Vai trò và mục tiêu: 1. Tiếp nhận các tài liệu khảo sát, tài liệu thiết kế chi tiết hệ thống. 2. Lập trình các yêu cầu phát triển phần mềm có liên quan đến core banking, thực hiện unit test các cấu phần được phân giao theo tài liệu thiết kế chi tiết. Nhiệm vụ trọng tâm: 1. Tham mưu, tư vấn: Đề xuất các ý kiến liên quan đến việc triển khai thực hiện nhiệm vụ của nhóm, tổ công tác. Tham mưu với lãnh đạo tổ, nhóm đối với các công việc trong phạm vi được phân công. 2. Trực tiếp thực hiện các công việc: Lập trình xử lý các yêu cầu phát triển phần mềm. Cụ thể như sau: Thực hiện các nhiệm vụ phát triển phần mềm trên Core Banking của BIDV, tham gia khảo sát, phân tích thiết kế, trực tiếp lập trình các chức năng trong Core Banking nhằm xây dựng, cải tiến, bảo trì các tính năng và module của hệ thống Core Banking theo yêu cầu của BIDV. Xây dựng các chức năng trong Core Banking nhằm tích hợp với các hệ thống bên ngoài core. Cộng tác với các thành viên của nhóm nghiệp vụ hoặc kỹ thuật khác nhằm tối ưu chức năng, tăng cường tính ổn định, hiệu năng, bảo mật của hệ thống. Đề xuất và phát triển các giải pháp công nghệ mới nhằm nâng cao hiệu quả vận hành của hệ thống Core Banking. Xác định phương án và lập trình xử lý sự cố core banking của BIDV đảm bảo kịp thời, hiệu quả. Tham gia các tổ công tác, dự án của BIDV gồm các dự án nâng cấp hệ thống, cập nhật phiên bản mới và đảm bảo tính tương thích của hệ thống. Thực hiện các công việc khác theo sự phân công của lãnh đạo nhóm. 3. Nghiên cứu và đào tạo: Tham gia nghiên cứu và đánh giá các công nghệ mới; Tìm hiểu và áp dụng các công nghệ mới, xu hướng phát triển phần mềm để cải thiện hệ thống.",
-        "Yêu cầu độ tuổi": "không quá 27 tuổi tại thời điểm dự tuyển.",
-        "Trình độ chuyên môn": "Tốt nghiệp Đại học trở lên, hệ chính quy (bao gồm đại học văn bằng 2, không bao gồm hình thức học liên thông lên đại học) tại các trường Đại học trong nước hoặc tốt nghiệp Đại học trở lên tại các trường Đại học nước ngoài, Đại học liên kết. Chuyên ngành: Công nghệ thông tin, Điện tử Viễn thông, Toán-Tin, Hệ thống Thông tin, Công nghệ kỹ thuật Điện tử, Khoa học máy tính, Tự động hóa, An toàn thông tin, Kỹ thuật phần mềm hoặc các chuyên nghành khác có đào tạo lập trình, kỹ thuật phần mềm. Đối với các trường đại học trong nước yêu cầu thuộc danh sách sau đây: Đại học Bách Khoa Hà Nội, ĐHQG Hà Nội, Học viện Công nghệ Bưu chính Viễn thông, Học viện Kỹ thuật Quân sự, Học viện Kỹ thuật Mật mã, Đại học Bách Khoa - ĐH Đà Nẵng, Đại học Khoa học - ĐH Huế, ĐHQG TP.HCM, Đại học Sư phạm Kỹ thuật TP.HCM, Đại học FPT.",
-        "Trình độ ngoại ngữ, tin học": "Ứng viên đạt 1 trong các chứng chỉ sau: TOEIC đạt 600/990, Toefl PBT/IPT đạt 500/677, Toefl CBT đạt 173/300, Toefl iBT đạt 61/120, Ielts đạt 5.5-9.0, Cambridge Exam đạt First (FCE), B2 Khung Châu Âu, 4/6 Khung năng lực ngoại ngữ 6 bậc. Chấp nhận ứng viên bổ sung chứng chỉ tiếng Anh trong thời gian 24 tháng kể từ ngày được tuyển dụng.",
-        "Kinh nghiệm công tác": "Có kinh nghiệm làm trên các cơ sở dữ liệu SQL (và/hoặc NoSQL), thực hiện thiết kế database, xây dựng các package, procedure, function trong các CSDL. Có kiến thức về thuật toán xử lý dữ liệu để thực hiện phát triển các module xử lý dữ liệu trong CSDL của corebanking, tối ưu tốc độ xử lý.",
-        "Yêu cầu khác": "Có tư duy logic tốt, khả năng phân tích, giải quyết vấn đề. Có khả năng làm việc độc lập cũng như làm việc theo nhóm. Có khả năng nghiên cứu, có đam mê, khám phá, học hỏi công nghệ mới. Sẵn sàng chuyển đổi công nghệ, ngôn ngữ mới. Ưu tiên các ứng viên có kỹ năng, kinh nghiệm sau: Có kinh nghiệm trong Môi trường phát triển Agile. Đã tham gia phát triển các module nghiệp vụ trong Corebanking của ngân hàng, hoặc trong lĩnh vực ngân hàng, tài chính, fintech. Có kinh nghiệm xây dựng các module online cho các bài toán với dữ liệu lớn. Có khả năng tự nghiên cứu, tìm hiểu và thực hiện các công việc một cách cẩn thận, tỉ mỉ."
-    }
-};
+        let jobCriteriaData = {};
 
         // --- Functions ---
         
-        const showToast = (message, type = 'success') => {
-            toast.textContent = message;
+        const showToast = (messageKey, type = 'success') => {
+            toast.textContent = translations[currentLang][messageKey] || messageKey;
             toast.className = `toast show ${type}`;
-            setTimeout(() => {
-                toast.classList.remove('show');
-            }, 3000);
+            setTimeout(() => toast.classList.remove('show'), 3000);
         };
 
         const toggleModal = (modal, show) => {
@@ -532,7 +555,7 @@
 
             if (candidate.aiReport) {
                 reportView.classList.remove('hidden');
-                reportViewTitle.textContent = `Báo cáo Đánh giá: ${candidate.fullName}`;
+                reportViewTitle.textContent = `${translations[currentLang].report_title_prefix}: ${candidate.fullName}`;
                 reportViewContent.innerHTML = candidate.aiReport;
             } else {
                 reportView.classList.add('hidden');
@@ -540,7 +563,7 @@
 
             if (candidate.interviewQuestions) {
                 interviewQuestionsView.classList.remove('hidden');
-                interviewQuestionsTitle.textContent = `Câu hỏi Phỏng vấn Gợi ý cho ${candidate.fullName}`;
+                interviewQuestionsTitle.textContent = `${translations[currentLang].interview_questions_title_prefix} ${candidate.fullName}`;
                 interviewQuestionsContent.innerHTML = candidate.interviewQuestions;
             } else {
                 interviewQuestionsView.classList.add('hidden');
@@ -549,10 +572,94 @@
             reportView.scrollIntoView({ behavior: 'smooth' });
         };
 
-        const saveToLocalStorage = () => localStorage.setItem('candidatesData_v17', JSON.stringify(candidates));
+        const saveToLocalStorage = () => {
+            localStorage.setItem('candidatesData_v17', JSON.stringify(candidates));
+            localStorage.setItem('jobCriteriaData_v17', JSON.stringify(jobCriteriaData));
+        };
+        
         const loadFromLocalStorage = () => {
-            const data = localStorage.getItem('candidatesData_v17');
-            candidates = data ? JSON.parse(data) : [];
+            const candidatesData = localStorage.getItem('candidatesData_v17');
+            candidates = candidatesData ? JSON.parse(candidatesData) : [];
+            const criteriaData = localStorage.getItem('jobCriteriaData_v17');
+            
+            // ===== START: RESTORED JOB CRITERIA DATA =====
+            const defaultCriteria = {
+                "Chuyên viên phân tích nghiệp vụ và kiểm soát chất lượng BA/QC (cấp 1 đến cấp 4) - Nội bộ kết hợp ngoài hệ thống": {
+                    "Mô tả công việc": "1. Công tác Phân tích nghiệp vụ (BA): Thực hiện thu thập và phân tích yêu cầu nghiệp vụ liên quan đến hệ thống Core Banking và các hệ thống vệ tinh; tham gia xây dựng tài liệu nghiệp vụ URD (User Requirement Document), RSD (Requirement Specification Document) theo quy định của BIDV. Tư vấn các giải pháp phát triển mới, nâng cấp và tư vấn thiết kế chức năng hệ thống Core Banking, hệ thống khác có liên quan phù hợp. Hỗ trợ kết nối các vấn đề cơ bản giữa các bên nghiệp vụ, kỹ thuật và phát triển phần mềm, truyền tải yêu cầu nghiệp vụ thành các thông số kỹ thuật, chức năng và ràng buộc có thể triển khai. Phân tích yêu cầu, tham số hệ thống để đề xuất khai báo, cấu hình hoặc cập nhật. 2. Công tác kiểm soát chất lượng (QC): Quản lý danh mục yêu cầu và kế hoạch triển khai hệ thống Core Banking theo từng giai đoạn, phiên bản. Xây dựng kịch bản kiểm thử hoặc kiểm thử theo kịch bản có sẵn trên các môi trường SIT (System Integration Test), UAT (User Acceptance Test) cho các yêu cầu chức năng và tham số, phối hợp các kiểm thử hạ tầng, hiệu năng và các thành phần tích hợp. Chuẩn bị hồ sơ đánh giá an toàn thông tin đối với các tính năng mới hoặc thay đổi hệ thống, đảm bảo các sản phẩm và thay đổi được triển khai tuân thủ quy định bảo mật và tiêu chuẩn chất lượng. 3. Công tác Đào tạo, hỗ trợ và xây dựng văn bản chế độ: Xây dựng, cập nhật các văn bản, quy trình nghiệp vụ liên quan đến hệ thống Core Banking. Đào tạo, chuyển giao kiến thức hệ thống Core Banking cho các cán bộ trong toàn hệ thống khi có yêu cầu; hỗ trợ xử lý các tình huống phát sinh mới trong nghiệp vụ. 4. Tham gia các tổ, nhóm đề tài, dự án và thực hiện các nhiệm vụ khác theo phân công của Lãnh đạo Ban.",
+                    "Yêu cầu độ tuổi": "dưới 35 tuổi tại thời điểm dự tuyển.",
+                    "Trình độ chuyên môn": "Tốt nghiệp các trường đại học hệ chính quy, tập trung, dài hạn (bao gồm đại học văn bằng 2, không bao gồm hình thức học liên thông lên đại học) tại các trường đại học trong nước/nước ngoài/liên kết thuộc các ngành đào tạo sau: Công nghệ thông tin; Hệ thống thông tin quản lý, phân tích nghiệp vụ; Tài chính ngân hàng; Quản trị kinh doanh; Kế toán kiểm toán; Kinh tế quốc tế; Và các lĩnh vực có liên quan. Đối với các trường đại học trong nước yêu cầu thuộc danh sách dưới đây: Lĩnh vực Công nghệ Thông tin: 1. Đại học Bách khoa Hà Nội 2. Đại học Bách khoa TP.HCM 3. Đại học Công nghệ – Đại học Quốc gia Hà Nội (UET) 4. Đại học Công nghệ Thông tin – Đại học Quốc gia TP.HCM 5. Học viện Công nghệ Bưu chính Viễn thông 6. Đại học FPT 7. Đại học Khoa học Tự nhiên – Đại học Quốc gia Hà Nội 8. Đại học Khoa học Tự nhiên – Đại học Quốc gia TP.HCM 9. Đại học Bách khoa – Đại học Đà Nẵng. Lĩnh vực Kinh tế: 1. Đại học Ngoại thương (FTU) 2. Đại học Kinh tế Quốc dân (NEU) 3. Đại học Kinh tế TP.HCM (UEH) 4. Đại học Kinh tế – Đại học Quốc gia Hà Nội 5. Đại học Kinh tế – Luật TP.HCM (UEL) 6. Học viện Tài chính 7. Đại học Thương mại 8. Học viện Ngân hàng 9. Đại học Kinh tế – Đại học Đà Nẵng.",
+                    "Trình độ ngoại ngữ, tin học": "Có một trong các chứng chỉ tiếng Anh với số điểm yêu cầu tối thiểu: TOEIC 600, TOEFL CBT 173, TOEFL iBT 61, IELTS 5.5 trở lên. Hoặc tốt nghiệp Đại học chuyên ngành tiếng Anh hệ chính quy; Hoặc có bằng Đại học, Thạc sỹ ở nước ngoài được giảng dạy hoàn toàn bằng tiếng Anh. Có khả năng giao tiếp/làm việc bằng tiếng Anh tốt. Sử dụng thành thạo tin học văn phòng. Chấp nhận ứng viên bổ sung chứng chỉ tiếng Anh trong thời gian 24 tháng kể từ ngày được tuyển dụng.",
+                    "Kinh nghiệm công tác": "1. Đối với ứng viên ngoài hệ thống: Có kinh nghiệm làm vị trí Phân tích nghiệp vụ (Business Analysis) hoặc tương đương tối thiểu 01 năm trong các lĩnh vực Công nghệ thông tin, Tài chính ngân hàng. Có kiến thức về các sản phẩm, dịch vụ, quy trình trong lĩnh vực ngân hàng (Tiền gửi, Tiền vay, Thanh toán, Kế toán, Giao dịch khách hàng), hiểu biết về hệ thống ứng dụng của ngân hàng và các giải pháp ứng dụng phục vụ hoạt động của ngân hàng. Có kinh nghiệm làm việc với các dự án theo quy trình Agile/Scrum. 2. Đối với ứng viên nội bộ: Có kinh nghiệm làm việc tối thiểu 02 năm tại BIDV: Tại chi nhánh: đã từng công tác tại các vị trí Chuyên viên Quản lý khách hàng, Quản trị tín dụng, Giao dịch khách hàng, Quản lý rủi ro, Kế toán. Tại TSC: am hiểu các quy trình nghiệp vụ ngân hàng về Tiền gửi, Tiền vay, Thanh toán, Kế toán, Quản lý thông tin khách hàng, Giao dịch khách hàng. Ưu tiên ứng viên đã có kinh nghiệm tham gia dự án CoreBanking hoặc các dự án CNTT của BIDV.",
+                    "Yêu cầu khác": "Kĩ năng: Có kĩ năng tổng hợp, tư duy phản biện; thương thảo, làm việc nhóm; khả năng phân tích tốt. Kỹ năng sử dụng AI trong công việc. Có kinh nghiệm xây dựng tài liệu yêu cầu người sử dụng, đặc tả kỹ thuật; Thành thạo các công cụ Jira, Confluence, Axure, Microsoft Visio, Draw.io. Ưu tiên các ứng viên có một trong các chứng chỉ cơ bản/chuyên nghiệp được công nhận rộng rãi trên thế giới thuộc các hệ thống (hoặc tương đương) sau: Chứng chỉ của tổ chức International Institute of Business Analysis (IIBA): IIBA Entry Certificate in Business Analysis (ECBA), IIBA Certification of Competency in Business Analysis (CCBA), IIBA Certified Business Analysis Professional (CBAP). Chứng chỉ của PMI: PMI-Professional in Business Analysis (PBA) Certification. Chứng chỉ của IREB: IREB Certified Professional for Requirements Engineering (CPRE)."
+                },
+                "Chuyên viên cấp cao phân tích nghiệp vụ và kiểm soát chất lượng cấp 1 - Ngoài hệ thống": {
+                    "Mô tả công việc": "1. Công tác Phân tích nghiệp vụ (BA): Thực hiện thu thập và phân tích yêu cầu phức tạp và liên kết nhiều nghiệp vụ, lĩnh vực, hệ thống liên quan đến hệ thống Core Banking và các hệ thống có liên quan, tham gia xây dựng tài liệu nghiệp vụ URD (User Requirement Document), RSD (Requirement Specification Document) theo quy định của BIDV. Đảm nhiệm các dự án trọng điểm, liên quan đến nhà cung cấp hoặc đối tác chiến lược. Tư vấn các giải pháp phát triển mới, nâng cấp và tư vấn thiết kế chức năng hệ thống Core Banking, hệ thống khác có liên quan phù hợp. Phối hợp và đầu mối kiến trúc, đội phát triển và đơn vị nghiệp vụ để đưa ra tư vấn, thiết kế chức năng phức tạp và có tính hệ thống phù hợp, truyền tải yêu cầu nghiệp vụ thành các thông số kỹ thuật, chức năng và ràng buộc có thể triển khai. Đề xuất, định hướng các giải pháp nghiệp vụ và kỹ thuật ở cấp độ tổng thể để phát triển mới, nâng cấp, hoàn thiện và nâng cao hiệu quả vận hành hệ thống Core Banking. Cập nhật thường xuyên các công nghệ mới, tư vấn ứng dụng vào công việc nhằm nâng cao năng suất lao động và giảm thiểu chi phí, nhân lực. 2. Công tác kiểm soát chất lượng (QC): Quản lý danh mục yêu cầu và kế hoạch triển khai hệ thống Core Banking theo từng giai đoạn, phiên bản. Xây dựng kịch bản kiểm thử và kiểm thử trên các môi trường SIT (System Integration Test), UAT (User Acceptance Test) cho các yêu cầu chức năng và tham số, phối hợp các đơn vị kỹ thuật trong kiểm thử hạ tầng, hiệu năng, bảo mật và các thành phần tích hợp. Chuẩn bị hồ sơ đánh giá an toàn thông tin đối với các tính năng mới hoặc thay đổi hệ thống, đảm bảo các sản phẩm và thay đổi được triển khai tuân thủ quy định bảo mật và tiêu chuẩn chất lượng. Giám sát kiến trúc hệ thống, tổ chức kiểm thử toàn hàng hoặc cho các phiên bản thay đổi lớn. 3. Công tác Đào tạo, hỗ trợ và xây dựng văn bản chế độ: Xây dựng hoặc phối hợp xây dựng, cập nhật và chuẩn hóa các văn bản chế độ, quy trình nghiệp vụ liên quan đến hệ thống Core Banking ở cấp độ phòng ban, toàn hàng, trình bày trước Hội đồng Lãnh đạo. Đào tạo, chuyển giao kiến thức hệ thống Core Banking cho các cán bộ trong toàn hệ thống khi có yêu cầu, chủ động hỗ trợ xử lý các tình huống phát sinh mới trong nghiệp vụ. 4. Tham gia các tổ, nhóm đề tài, dự án, dự án trọng điểm và thực hiện các nhiệm vụ khác theo phân công của Lãnh đạo Ban. Là đầu mối phối hợp đơn vị trong các dự án triển khai có độ ưu tiên cao, liên phân hệ, liên quan với vendor hoặc đối tác.",
+                    "Yêu cầu độ tuổi": "dưới 42 tuổi tại thời điểm dự tuyển.",
+                    "Trình độ chuyên môn": "Tốt nghiệp các trường đại học hệ chính quy, tập trung, dài hạn (bao gồm đại học văn bằng 2, không bao gồm hình thức học liên thông lên đại học) tại các trường đại học trong nước/nước ngoài/liên kết thuộc các ngành đào tạo sau: Công nghệ thông tin; Hệ thống thông tin quản lý, phân tích nghiệp vụ; Tài chính ngân hàng; Quản trị kinh doanh; Kế toán kiểm toán; Kinh tế quốc tế; Và các lĩnh vực có liên quan. Đối với các trường đại học trong nước yêu cầu thuộc danh sách dưới đây: Lĩnh vực Công nghệ Thông tin: 1. Đại học Bách khoa Hà Nội 2. Đại học Bách khoa TP.HCM 3. Đại học Công nghệ – Đại học Quốc gia Hà Nội (UET) 4. Đại học Công nghệ Thông tin – Đại học Quốc gia TP.HCM 5. Học viện Công nghệ Bưu chính Viễn thông 6. Đại học FPT 7. Đại học Khoa học Tự nhiên – Đại học Quốc gia Hà Nội 8. Đại học Khoa học Tự nhiên – Đại học Quốc gia TP.HCM 9. Đại học Bách khoa – Đại học Đà Nẵng. Lĩnh vực Kinh tế: 1. Đại học Ngoại thương (FTU) 2. Đại học Kinh tế Quốc dân (NEU) 3. Đại học Kinh tế TP.HCM (UEH) 4. Đại học Kinh tế – Đại học Quốc gia Hà Nội 5. Đại học Kinh tế – Luật TP.HCM (UEL) 6. Học viện Tài chính 7. Đại học Thương mại 8. Học viện Ngân hàng 9. Đại học Kinh tế – Đại học Đà Nẵng 10. Đại học Kinh tế Tài chính TP.HCM (UEF).",
+                    "Trình độ ngoại ngữ, tin học": "Có một trong các chứng chỉ tiếng Anh với số điểm yêu cầu tối thiểu: TOEIC 600, TOEFL CBT 173, TOEFL iBT 61, IELTS 5.5 trở lên. Hoặc tốt nghiệp Đại học chuyên ngành tiếng Anh hệ chính quy; Hoặc có bằng Đại học, Thạc sỹ ở nước ngoài được giảng dạy hoàn toàn bằng tiếng Anh. Có khả năng giao tiếp/làm việc bằng tiếng Anh tốt. Sử dụng thành thạo tin học văn phòng. Chấp nhận ứng viên bổ sung chứng chỉ tiếng Anh trong thời gian 24 tháng kể từ ngày được tuyển dụng.",
+                    "Kinh nghiệm công tác": "Có kinh nghiệm làm vị trí Phân tích nghiệp vụ (Business Analysis), Chủ sở hữu sản phẩm (Product Owner) hoặc các vị trí tương đương tối thiểu 03 năm trong các lĩnh vực Công nghệ thông tin, Tài chính ngân hàng. Có kiến thức về các sản phẩm, dịch vụ, quy trình trong lĩnh vực ngân hàng và các nghiệp vụ Thanh toán, Chuyển tiền, Chuyển tiền quốc tế; hiểu biết về hệ thống ứng dụng của ngân hàng và các giải pháp ứng dụng, giải pháp tích hợp phục vụ hoạt động của ngân hàng. Có kinh nghiệm làm việc với các dự án theo quy trình Agile/Scrum.",
+                    "Yêu cầu khác": "Kĩ năng: Có kĩ năng tổng hợp, tư duy phản biện; thương thảo, làm việc nhóm; khả năng phân tích tốt. Kỹ năng sử dụng AI trong công việc. Có kinh nghiệm xây dựng tài liệu yêu cầu người sử dụng, đặc tả kỹ thuật; Thành thạo các công cụ Jira, Confluence, Axure, Microsoft Visio, Draw.io. Ưu tiên các ứng viên có một trong các chứng chỉ cơ bản/chuyên nghiệp được công nhận rộng rãi trên thế giới thuộc các hệ thống (hoặc tương đương) sau: Chứng chỉ của tổ chức International Institute of Business Analysis (IIBA): IIBA Entry Certificate in Business Analysis (ECBA), IIBA Certification of Competency in Business Analysis (CCBA), IIBA Certified Business Analysis Professional (CBAP). Chứng chỉ của PMI: PMI-Professional in Business Analysis (PBA) Certification. Chứng chỉ của IREB: IREB Certified Professional for Requirements Engineering (CPRE)."
+                },
+                "Chuyên viên Quản trị hệ thống ứng dụng Core Banking (từ cấp 1 đến cấp 3) - Ngoài hệ thống": {
+                    "Mô tả công việc": "Vai trò và mục tiêu: Thực hiện các nhiệm vụ của Ban QLĐT Core Banking – Nhóm Quản trị hệ thống ứng dụng Core Banking và theo sự phân công, điều động của Lãnh đạo nhóm. Thực hiện Quản trị các cấu phần của hệ thống Core Banking theo phạm vi được phân công hoặc quản trị thứ cấp các ứng dụng. Nhiệm vụ trọng tâm: 1. Thực hiện công tác quản trị các cấu phần của hệ thống Core Banking theo phạm vi được phân công gồm các công việc chính sau: Đảm bảo hoạt động an toàn, ổn định cho các cấu phần của hệ thống Core Banking gồm hệ thống Web, hệ thống Application, hệ thống cơ sở dữ liệu, hệ thống Single Sign On, hệ thống xử lý tác vụ. Thực hiện công việc theo phân công liên quan tới các khâu trong các công tác định kỳ liên quan tới hệ thống như: chuyển đổi máy chủ định kỳ (HA), diễn tập phòng chống thảm họa (DR), archive/dọn dẹp dữ liệu định kỳ, vá bảo mật tài khoản định kỳ, đổi mật khẩu tài khoản định kỳ. Thực hiện công tác cập nhật hệ thống định kỳ theo yêu cầu phát triển, sửa lỗi hệ thống. 2. Xây dựng, triển khai các hệ thống Phần mềm ứng dụng/cấu phần ứng dụng phân hệ Core theo sự phân công của Lãnh đạo nhóm. 3. Định kỳ đánh giá tình trạng hoạt động của hệ thống và đề xuất các biện pháp tối ưu hiệu năng xử lý, cải tiến mô hình hoạt động của hệ thống Core Banking. 4. Tham gia phân tích, điều tra và xử lý các sự cố Phần mềm ứng dụng. 5. Hỗ trợ xử lý các yêu cầu kỹ thuật và các lỗi phát sinh trong quá trình vận hành hệ thống. 6. Tham gia công tác kiểm tra, nghiệm thu, xác nhận các nội dung liên quan đến kỹ thuật đối với các bản cập nhật hệ thống. 7. Thực hiện giám sát, phát hiện và cảnh báo sớm các lỗi phát sinh hoặc các vấn đề tiềm ẩn rủi ro đối với hoạt động của hệ thống thông qua công cụ giám sát trên môi trường được cung cấp.",
+                    "Yêu cầu độ tuổi": "không quá 35 tuổi tại thời điểm dự tuyển.",
+                    "Trình độ chuyên môn": "Tốt nghiệp các trường đại học hệ chính quy, tập trung, dài hạn (bao gồm đại học văn bằng 2, không bao gồm hình thức học liên thông lên đại học) tại các trường đại học trong nước/nước ngoài/liên kết thuộc các ngành đào tạo sau: Công nghệ thông tin, Điện tử Viễn thông, Toán-Tin, Hệ thống Thông tin, Công nghệ kỹ thuật Điện tử, Khoa học máy tính, Kỹ thuật phần mềm hoặc các chuyên nghành khác có đào tạo lập trình, kỹ thuật phần mềm.",
+                    "Trình độ ngoại ngữ, tin học": "Có một trong các chứng chỉ tiếng Anh với số điểm yêu cầu tối thiểu: TOEIC 600, TOEFL CBT 173, TOEFL iBT 61, IELTS 5.5 trở lên. Hoặc tốt nghiệp Đại học chuyên ngành tiếng Anh hệ chính quy; Hoặc có bằng Đại học, Thạc sỹ ở nước ngoài được giảng dạy hoàn toàn bằng tiếng Anh. Có khả năng giao tiếp/làm việc bằng tiếng Anh tốt. Sử dụng thành thạo tin học văn phòng. Chấp nhận ứng viên bổ sung chứng chỉ tiếng Anh trong thời gian 24 tháng kể từ ngày được tuyển dụng.",
+                    "Kinh nghiệm công tác": "Có tối thiểu 01 năm kinh nghiệm thực hiện quản trị các hệ thống ứng dụng trong doanh nghiệp. Ưu tiên: Có kinh nghiệm quản trị hệ thống ngân hàng lõi tại các Ngân hàng; Có kinh nghiệm quản trị các hệ thống ứng dụng quan trọng, ứng dụng cốt lõi của các doanh nghiệp.",
+                    "Yêu cầu khác": "Có hiểu biết và khả năng cài đặt, cấu hình, quản trị, sử dụng các công nghệ nền tảng như IBM Websphere Application server, IBM Websphere MQ, Apache Tomcat, Oracle Tuxedo, ElasticSearch, Logstash, Kibana, Grafana là một lợi thế. Có hiểu biết và khả năng cài đặt về giải pháp sẵn sàng, liên tục cho hoạt động của ứng dụng: HA (High Availability), DR (Disaster Recovery), LB (Load Balancing)... Ưu tiên đối tượng có các chứng chỉ hoặc đã tham gia các khóa đào tạo về AIX Administrator, LPIC-1, LPIC-2, LPIC-3, các chứng chỉ về IBM Websphere Application server administration, IBM Websphere MQ."
+                },
+                "Chuyên viên Quản trị dữ liệu (Cấp 1) - Nội bộ kết hợp ngoài hệ thống": {
+                    "Mô tả công việc": "Thực hiện các nhiệm vụ của Ban QLPT Core Banking – Nhóm Quản trị tham số và dữ liệu và theo sự phân công, điều động của Lãnh đạo nhóm. Thực hiện công tác quản trị tham số, dữ liệu các phân hệ theo phạm vi được phân công cụ thể: chịu trách nhiệm quản lý, giám sát và tối ưu hệ thống dữ liệu và tham số trên Core Banking, đảm bảo hoạt động ổn định, an toàn và hiệu quả của các hệ thống phần mềm ứng dụng trong ngân hàng. Nhiệm vụ trọng tâm: Thực hiện công tác quản trị tham số, dữ liệu các phân hệ theo phạm vi được phân công gồm các công việc sau: 1. Quản lý dữ liệu: (i) Xây dựng, phát triển các hệ thống lưu trữ và xử lý dữ liệu; (ii) Thiết kế chi tiết giải pháp cho các luồng thu thập, chuẩn hóa, làm sạch, lưu trữ dữ liệu, xử lý, phân tích và hiển thị dữ liệu; (iii) Kiểm soát đảm bảo toàn vẹn dữ liệu hệ thống; (iv) Cung cấp dữ liệu và phối hợp với các bộ phận để khai thác dữ liệu phục vụ kinh doanh và quản trị điều hành của ngân hàng. 2. Phát triển báo cáo: Xây dựng hệ thống báo cáo theo yêu cầu nghiệp vụ và báo cáo tự động hóa. 3. Quản lý tham số: thực hiện công tác khai báo, cập nhật, kiểm thử và quản lý tham số ứng dụng Core Banking trên tất cả các môi trường. 4. Thực hiện công tác quản trị các hệ thống phần mềm ứng dụng tại Core Banking (các ứng dụng về dữ liệu, báo cáo, tham số CPMS...). 5. Tham mưu đề xuất các kiến nghị nhằm nâng cấp hệ thống báo cáo quản trị hoạt động kinh doanh mảng dữ liệu ngân hàng. 6. Xây dựng, triển khai các hệ thống Phần mềm ứng dụng/cấu phần ứng dụng phân hệ Core hoặc các dự án thuộc phạm vi chuyên môn theo sự phân công của Lãnh đạo nhóm. 7. Hỗ trợ kỹ thuật và xử lý các lỗi phát sinh trong quá trình vận hành hệ thống, các yêu cầu kỹ thuật chuyển tiếp từ Chi nhánh/TT HSC. 8. Tham gia công tác kiểm tra, nghiệm thu, xác nhận các nội dung liên quan đến kỹ thuật đối với các thay đổi về tham số.",
+                    "Yêu cầu độ tuổi": "không quá 30 tuổi tại thời điểm dự tuyển.",
+                    "Trình độ chuyên môn": "Tốt nghiệp Đại học trở lên, hệ chính quy (bao gồm đại học văn bằng 2, không bao gồm hình thức học liên thông lên đại học) tại các trường Đại học trong nước hoặc tốt nghiệp Đại học trở lên tại các trường Đại học nước ngoài, Đại học liên kết. Chuyên nghành yêu cầu tốt nghiệp một trong các chuyên nghành sau: Công nghệ thông tin, Điện tử Viễn thông, Toán-Tin, Hệ thống Thông tin, Công nghệ kỹ thuật Điện tử, Khoa học máy tính, Tự động hóa, An toàn thông tin, Kỹ thuật phần mềm hoặc các chuyên nghành khác có đào tạo lập trình, kỹ thuật phần mềm.",
+                    "Trình độ ngoại ngữ, tin học": "Có một trong các chứng chỉ tiếng Anh với số điểm yêu cầu tối thiểu: TOEIC 600, TOEFL CBT 173, TOEFL iBT 61, IELTS 5.5 trở lên. Hoặc tốt nghiệp Đại học chuyên ngành tiếng Anh hệ chính quy; Hoặc có bằng Đại học, Thạc sỹ ở nước ngoài được giảng dạy hoàn toàn bằng tiếng Anh. Có khả năng giao tiếp/làm việc bằng tiếng Anh tốt. Sử dụng thành thạo tin học văn phòng. Chấp nhận ứng viên bổ sung chứng chỉ tiếng Anh trong thời gian 24 tháng kể từ ngày được tuyển dụng.",
+                    "Kinh nghiệm công tác": "Có tối thiểu 01 năm kinh nghiệm tại vị trí tương đương. Ưu tiên: Có kiến thức tốt về hệ thống thông tin Ngân Hàng; Am hiểu hoạt động kinh doanh và các sản phẩm dịch vụ của ngân hàng; am hiểu Core Banking Profile là một lợi thế. Có kiến thức về ngôn ngữ lập trình Python, R, phân tích Big Data, xây dựng mô hình thống kê... sẽ là một lợi thế.",
+                    "Yêu cầu khác": "Có hiểu biết tốt và kinh nghiệm triển khai thực tế với về các hệ Quản trị CSDL (Oracle, SQL Server, DB2, Netezza...), CSDL phi quan hệ (GT.M...). Có kinh nghiệm sử dụng và triển khai thực tế với các công cụ ETL (IBM DataStage, Kafka...). Có kinh nghiệm xử lý dữ liệu lớn, kỹ thuật lập trình tốt, nhạy bén số liệu. Có kiến thức tốt về tuning performance câu lệnh SQL, luồng ETL và CSDL. Có kiến thức tốt về kiến trúc phần mềm, thiết kế phần mềm, triển khai phần mềm. Có kiến thức về các lĩnh vực xây dựng phần mềm ứng dụng, quản trị, kiểm tra nghiệm thu phần mềm."
+                },
+                "Chuyên viên Điều phối dự án (cấp 1) - Nội bộ kết hợp ngoài hệ thống": {
+                    "Mô tả công việc": "Vai trò và mục tiêu: Thực hiện các nhiệm vụ của Ban QLPT Core Banking – Nhóm TH&QA và theo sự phân công, điều động của Lãnh đạo nhóm. Hỗ trợ thực hiện công tác quản trị dự án, đảm bảo chất lượng các dự án phát triển Core Banking và các cấu phần liên quan, công tác quản trị nội bộ tại Ban. Nhiệm vụ trọng tâm: Hỗ trợ quản lý dự án trong việc lập kế hoạch, theo dõi tiến độ, và cập nhật trạng thái các nhiệm vụ dự án thông qua các công cụ quản lý dự án (ví dụ: Jira). Ghi chép và tổng hợp biên bản họp, theo dõi các hành động (action items) đã được giao và nhắc nhở các bên liên quan thực hiện. Hỗ trợ đánh giá tình trạng dự án, đánh giá rủi ro và báo cáo kịp thời cho cấp trên và các bên liên quan. Hỗ trợ chuẩn bị các tài liệu dự án như kế hoạch, báo cáo tiến độ, hậu cần, rủi ro đơn giản dưới sự hướng dẫn của quản lý dự án. Tổ chức, lưu trữ và duy trì kho tài liệu dự án một cách có hệ thống, đảm bảo dễ dàng truy cập và kiểm soát phiên bản. Hỗ trợ rà soát nội dung các tài liệu kỹ thuật, tài liệu nghiệp vụ của dự án, của Ban. Hỗ trợ công tác truyền thông giữa các bên liên quan. Tổ chức, sắp xếp lịch họp và đảm bảo các cuộc họp dự án diễn ra đúng kế hoạch. Hỗ trợ các công tác nhân sự, hành chính của dự án, của Ban. Thực hiện các công việc hỗ trợ dự án, công việc hành chính khác theo yêu cầu được phân công.",
+                    "Yêu cầu độ tuổi": "≤35 tuổi tại thời điểm dự tuyển.",
+                    "Trình độ chuyên môn": "Tốt nghiệp các trường đại học hệ chính quy, tập trung, dài hạn (bao gồm đại học văn bằng 2, không bao gồm hình thức học liên thông lên đại học) tại các trường đại học trong nước/nước ngoài/liên kết thuộc chuyên ngành kinh tế (như Kế toán, Tài chính, Ngân hàng, kinh tế đầu tư, quản trị kinh doanh,...) hoặc Chuyên ngành về CNTT (Công nghệ thông tin, Điện tử Viễn thông, Toán-Tin, Hệ thống Thông tin, Công nghệ kỹ thuật Điện tử, Khoa học máy tính, Kỹ thuật phần mềm hoặc các chuyên nghành khác có đào tạo lập trình, kỹ thuật phần mềm).",
+                    "Trình độ ngoại ngữ, tin học": "Có một trong các chứng chỉ tiếng Anh với số điểm yêu cầu tối thiểu: TOEIC 600, TOEFL CBT 173, TOEFL iBT 61, IELTS 5.5 trở lên. Hoặc tốt nghiệp Đại học chuyên ngành tiếng Anh hệ chính quy; Hoặc có bằng Đại học, Thạc sỹ ở nước ngoài được giảng dạy hoàn toàn bằng tiếng Anh. Có khả năng giao tiếp/làm việc bằng tiếng Anh tốt. Sử dụng thành thạo tin học văn phòng. Chấp nhận ứng viên bổ sung chứng chỉ tiếng Anh trong thời gian 24 tháng kể từ ngày được tuyển dụng.",
+                    "Kinh nghiệm công tác": "Đã từng tham gia Quản trị/điều phối dự án CNTT với thời gian tối thiểu 01 năm.",
+                    "Yêu cầu khác": "Am hiểu phương pháp Agile/Scrum. Am hiểu về quản trị, khai thác phần mềm Jira/Confluence. Ưu tiên: Cán bộ có chứng chỉ quốc tế về quản trị dự án như: PMI-PMP/Prince2 hoặc chứng chỉ tương đương. Hoặc Cán bộ đã từng làm công tác Quản trị/điều phối tại dự án Chuyển đổi cốt lõi (Core) cho các Ngân hàng/Công ty tài chính."
+                },
+                "Chuyên viên Đảm bảo chất lượng (cấp 1) - Nội bộ kết hợp ngoài hệ thống": {
+                    "Mô tả công việc": "Vai trò và mục tiêu: Thực hiện các nhiệm vụ của Ban QLPT Core Banking – Nhóm TH&QA và theo sự phân công, điều động của Lãnh đạo nhóm. Hỗ trợ thực hiện công tác quản trị dự án, đảm bảo chất lượng các dự án phát triển Core Banking và các cấu phần liên quan, công tác quản trị nội bộ tại Ban; giám sát, kiểm tra đội phát triển tuân thủ theo đúng quy trình phát triển. Nhiệm vụ trọng tâm: Hỗ trợ việc xây dựng các quy trình trong quá trình phát triển, kiểm thử phần mềm. Quản lý kịch bản kiểm thử (test cases) của hệ thống Core Banking và các cấu phần liên quan. Ghi nhận, mô tả và báo cáo chi tiết các lỗi (bugs) phát hiện được vào hệ thống quản lý lỗi (ví dụ: Jira). Nắm vững các quy trình, tiêu chuẩn phát triển phần mềm và quy trình QA của đơn vị, BIDV. Kiểm tra tính tuân thủ của các tài liệu (đặc tả yêu cầu, tài liệu thiết kế) so với tiêu chuẩn đã định. Hỗ trợ chuẩn bị, cập nhật và lưu trữ các tài liệu kiểm thử như kế hoạch kiểm thử, kịch bản kiểm thử, báo cáo kiểm thử. Duy trì các checklist QA và đảm bảo chúng được áp dụng đúng đắn; Giám sát, kiểm tra đội phát triển tuân thủ theo đúng quy trình phát triển; Phát hiện các lỗi sai sót trong quy trình thực hiện, để từ đó có biện pháp xử lý kịp thời, phối hợp với các bên liên quan để tìm cách khắc phục; Đào tạo, hướng dẫn cho các cán bộ thực hiện theo đúng quy trình đã xây dựng. Thực hiện tổng hợp, báo cáo các vấn đề về tiến độ, chất lượng, các vướng mắc, rủi ro tiềm ẩn và các điểm cần cải thiện trong quy trình cho cấp trên. Tham gia các buổi đánh giá nội bộ về quy trình QA nhằm cải tiến, điều chỉnh, thay đổi quy trình, cập nhật các tiêu chuẩn mới. Tham gia triển khai các Dự án Công nghệ thông tin theo sự phân công của Lãnh đạo nhóm.",
+                    "Yêu cầu độ tuổi": "≤ 35 tuổi tại thời điểm dự tuyển.",
+                    "Trình độ chuyên môn": "Tốt nghiệp các trường đại học hệ chính quy, tập trung, dài hạn (bao gồm đại học văn bằng 2, không bao gồm hình thức học liên thông lên đại học) tại các trường đại học trong nước/nước ngoài/liên kết thuộc các ngành đào tạo: Công nghệ thông tin, Điện tử Viễn thông, Toán-Tin, Hệ thống Thông tin, Công nghệ kỹ thuật Điện tử, Khoa học máy tính, Kỹ thuật phần mềm hoặc các chuyên nghành khác có đào tạo lập trình, kỹ thuật phần mềm.",
+                    "Trình độ ngoại ngữ, tin học": "Có một trong các chứng chỉ tiếng Anh với số điểm yêu cầu tối thiểu: TOEIC 600, TOEFL CBT 173, TOEFL iBT 61, IELTS 5.5 trở lên. Hoặc tốt nghiệp Đại học chuyên ngành tiếng Anh hệ chính quy; Hoặc có bằng Đại học, Thạc sỹ ở nước ngoài được giảng dạy hoàn toàn bằng tiếng Anh. Có khả năng giao tiếp/làm việc bằng tiếng Anh tốt. Sử dụng thành thạo tin học văn phòng. Chấp nhận ứng viên bổ sung chứng chỉ tiếng Anh trong thời gian 24 tháng kể từ ngày được tuyển dụng.",
+                    "Kinh nghiệm công tác": "Có 01 năm kinh nghiệm ở vị trí tương đương, nắm vững và đã từng tham gia vào quá trình phát triển dự án phần mềm.",
+                    "Yêu cầu khác": "Trung thực, cẩn thận, khả năng tương tác tốt với các cán bộ khác, tập trung cao độ trong công việc. Có kỹ năng làm việc nhóm, ham học hỏi, sẵn sàng tiếp thu công nghệ mới. Kỹ năng giao tiếp tốt, khả năng xử lý tình huống và tư duy logic tốt (truyền đạt dễ hiểu, biết cách đặt vấn đề và làm rõ yêu cầu để giải pháp). Có kiến thức về các quy trình quản lý chất lượng CMMI. Am hiểu phương pháp Agile/Scrum. Am hiểu, có kinh nghiệm áp dụng phương pháp DevSecOps. Am hiểu về quản trị, khai thác phần mềm Jira/Confluence. Có hiểu biết về việc thực hiện các công việc liên quan đến phát triển kiểm thử tự động phần mềm (automation testing) gồm: (i) Phát triển framework và đào tạo Automation team, (ii) Performance testing, data testing."
+                },
+                "Chuyên viên phát triển ứng dụng (cấp 1) - Ngoài hệ thống": {
+                    "Mô tả công việc": "Vai trò và mục tiêu: 1. Tiếp nhận các tài liệu khảo sát, tài liệu thiết kế chi tiết hệ thống. 2. Lập trình các yêu cầu phát triển phần mềm có liên quan đến Core Banking, thực hiện unit test các cấu phần được phân giao theo tài liệu thiết kế chi tiết. Nhiệm vụ trọng tâm: 1. Tham mưu, tư vấn: Đề xuất các ý kiến liên quan đến việc triển khai thực hiện nhiệm vụ của nhóm, tổ công tác. Tham mưu với lãnh đạo tổ, nhóm đối với các công việc trong phạm vi được phân công gồm: Nghiên cứu, đề xuất áp dụng và triển khai các giải pháp nhằm tối ưu hoạt động đối với các ứng dụng tác nghiệp của Core Banking. 2. Trực tiếp thực hiện các công việc: Lập trình xử lý các yêu cầu phát triển phần mềm. Cụ thể như sau: Thực hiện lập trình, tham gia khảo sát, phân tích thiết kế các yêu cầu phát triển phần mềm trên các ứng dụng nền tảng web là kênh tác nghiệp của BIDV. Cộng tác với các thành viên của nhóm nghiệp vụ, kỹ thuật khác, với các BA, designers nhằm xây dựng và tối ưu chức năng, tăng cường tính ổn định, hiệu năng, bảo mật của hệ thống. Xác định, thực hiện và chia sẻ các giải pháp kỹ thuật, xây dựng các tài liệu phát triển phần mềm theo quy trình. Xác định phương án và lập trình xử lý sự cố core banking của BIDV đảm bảo kịp thời, hiệu quả. Tham gia các tổ công tác, dự án của BIDV. Thực hiện các công việc khác theo sự phân công của lãnh đạo nhóm. 3. Nghiên cứu và đào tạo: Tham gia nghiên cứu và đánh giá các công nghệ mới để áp dụng cho công tác lập trình phát triển ứng dụng, các xu thế công nghệ và nghiệp vụ liên quan đến các kênh giao dịch và tác nghiệp của các hệ thống Core Banking trên thị trường.",
+                    "Yêu cầu độ tuổi": "không quá 30 tuổi tại thời điểm dự tuyển.",
+                    "Trình độ chuyên môn": "Tốt nghiệp Đại học trở lên, hệ chính quy (bao gồm đại học văn bằng 2, không bao gồm hình thức học liên thông lên đại học) tại các trường Đại học trong nước hoặc tốt nghiệp Đại học trở lên tại các trường Đại học nước ngoài, Đại học liên kết. Chuyên nghành yêu cầu tốt nghiệp một trong các nghành thuộc nhóm nghành Máy tính và Công nghệ thông tin (theo thông tư 09/2022 của Bộ GDĐT): Khoa học máy tính, Mạng máy tính và truyền thông dữ liệu, Kỹ thuật phần mềm, Hệ thống thông tin, Kỹ thuật máy tính, Trí tuệ nhân tạo, Công nghệ kỹ thuật máy tính, Công nghệ thông tin, An toàn thông tin hoặc các nghành khác có đào tạo lập trình, phát triển phần mềm.",
+                    "Trình độ ngoại ngữ, tin học": "Có một trong các chứng chỉ tiếng Anh với số điểm yêu cầu tối thiểu: TOEIC 600, TOEFL CBT 173, TOEFL iBT 61, IELTS 5.5 trở lên. Hoặc tốt nghiệp Đại học chuyên ngành tiếng Anh hệ chính quy; Hoặc có bằng Đại học, Thạc sỹ ở nước ngoài được giảng dạy hoàn toàn bằng tiếng Anh. Có khả năng giao tiếp/làm việc bằng tiếng Anh tốt. Sử dụng thành thạo tin học văn phòng. Chấp nhận ứng viên bổ sung chứng chỉ tiếng Anh trong thời gian 24 tháng kể từ ngày được tuyển dụng.",
+                    "Kinh nghiệm công tác": "Có tối thiểu 03 năm kinh nghiệm tại vị trí tương đương. Có ít nhất 3 năm kinh nghiệm làm việc với Angular và có kiến thức vững chắc về HTML, CSS, Typescript, Javascript, hoặc có ít nhất 3 năm kinh nghiệm làm việc với Springboot và có kiến thức vững chắc về Java.",
+                    "Yêu cầu khác": "Có kinh nghiệm làm việc với Restful APIs, JSON và tích hợp với các hệ thống khác. Có hiểu biết về Responsive Design và các kỹ thuật tối ưu hóa giao diện. Có kinh nghiệm với các công cụ quản lý mã nguồn như Git, SVN. Có năng lực đào tạo và tự đào tạo, nghiên cứu, có đam mê, khám phá, học hỏi công nghệ mới, sẵn sàng chuyển đổi công nghệ, ngôn ngữ mới. Có khả năng làm việc độc lập cũng như làm việc theo nhóm. Tư duy logic tốt, khả năng phân tích, giải quyết vấn đề. Liên tục nắm bắt các xu hướng và công nghệ mới. Ưu tiên các ứng viên có kỹ năng, kinh nghiệm sau: Có kinh nghiệm làm trên các cơ sở dữ liệu SQL (và/hoặc NoSQL), thực hiện thiết kế database, xây dựng các package, procedure, function. Có kinh nghiệm phát triển phần mềm trong lĩnh vực ngân hàng, tài chính, fintech. Có kinh nghiệm trong Môi trường phát triển Agile. Có kinh nghiệm xây dựng ứng dụng chịu tải lớn. Từng làm việc hoặc có hiểu biết về Microservices (MSA) là một lợi thế. Có kiến thức về UI/UX, có kinh nghiệm sử dụng Figma là một lợi thế."
+                },
+                "Chuyên viên Phát triển API và Tích hợp (Cấp 1) - Ngoài hệ thống": {
+                    "Mô tả công việc": "Vai trò và mục tiêu: 1. Tiếp nhận các tài liệu khảo sát, tài liệu thiết kế chi tiết hệ thống. 2. Lập trình các yêu cầu phát triển phần mềm có liên quan đến core banking, thực hiện unit test các cấu phần được phân giao theo tài liệu thiết kế chi tiết. Nhiệm vụ trọng tâm: 1. Tham mưu, tư vấn: Đề xuất các ý kiến liên quan đến việc triển khai thực hiện nhiệm vụ của nhóm, tổ công tác. Tham mưu với lãnh đạo tổ, nhóm đối với các công việc trong phạm vi được phân công gồm: Nghiên cứu các kiến trúc công nghệ mới liên quan đến việc phát triển dịch vụ, tư vấn cho lãnh đạo về định hướng phát triển công nghệ liên quan đến các mô hình tích hợp. 2. Trực tiếp thực hiện các công việc: Lập trình xử lý các yêu cầu phát triển phần mềm. Cụ thể như sau: Phát triển các dịch vụ tích hợp, kiểm soát, chuẩn hóa và tối ưu các API phục vụ các hệ thống tích hợp. Tham gia đánh giá, khảo sát và đề xuất giải pháp cho các ứng dụng có yêu cầu tích hợp vào corebanking. Xây dựng và cung cấp các API tích hợp với các hệ thống backend của các nhóm phát triển phần mềm, các đối tác hợp tác phát triển, các dự án. Đầu mối thực hiện nâng cấp, bảo trì hệ thống tác nghiệp tại quầy đáp ứng các nghiệp vụ phát sinh trong thực tế, tối ưu hiệu năng và chủ động đề xuất thực hiện các giải pháp để mang tới trải nghiệm tốt nhất cho người dùng. Phối hợp cùng các nhóm BA, QC, các đơn vị nghiệp vụ để nghiên cứu, khảo sát các nhu cầu của khách hàng và dịch vụ kết nối mới, tích hợp qua các API để chủ động phát triển các dịch vụ mới. Cộng tác với các thành viên của nhóm nghiệp vụ hoặc kỹ thuật khác nhằm tối ưu chức năng, tăng cường tính ổn định, hiệu năng, bảo mật của hệ thống. Đề xuất và phát triển các giải pháp công nghệ mới nhằm nâng cao hiệu quả vận hành của hệ thống Core Banking. Xác định phương án và lập trình xử lý sự cố core banking của BIDV đảm bảo kịp thời, hiệu quả. Tham gia các tổ công tác, dự án của BIDV gồm các dự án nâng cấp hệ thống, cập nhật phiên bản mới và đảm bảo tính tương thích của hệ thống. Thực hiện các công việc khác theo sự phân công của lãnh đạo nhóm. 3. Nghiên cứu và đào tạo: Tham gia nghiên cứu và đánh giá các công nghệ mới; Tìm hiểu và áp dụng các công nghệ mới, xu hướng phát triển.",
+                    "Yêu cầu độ tuổi": "không quá 27 tuổi tại thời điểm dự tuyển.",
+                    "Trình độ chuyên môn": "Tốt nghiệp Đại học trở lên, hệ chính quy (bao gồm đại học văn bằng 2, không bao gồm hình thức học liên thông lên đại học) tại các trường Đại học trong nước hoặc tốt nghiệp Đại học trở lên tại các trường Đại học nước ngoài, Đại học liên kết. Chuyên ngành: Công nghệ thông tin, Điện tử Viễn thông, Toán-Tin, Hệ thống Thông tin, Công nghệ kỹ thuật Điện tử, Khoa học máy tính, Tự động hóa, An toàn thông tin, Kỹ thuật phần mềm hoặc các chuyên nghành khác có đào tạo lập trình, kỹ thuật phần mềm. Đối với các trường đại học trong nước yêu cầu thuộc danh sách sau: Đại học Bách Khoa Hà Nội, ĐHQG Hà Nội, Học viện Công nghệ Bưu chính Viễn thông, Học viện Kỹ thuật Quân sự, Học viện Kỹ thuật Mật mã, Đại học Bách Khoa - ĐH Đà Nẵng, Đại học Khoa học - ĐH Huế, ĐHQG TP.HCM, Đại học Sư phạm Kỹ thuật TP.HCM, Đại học FPT.",
+                    "Trình độ ngoại ngữ, tin học": "Ứng viên đạt 1 trong các chứng chỉ sau: TOEIC đạt 600-990, Toefl PBT/IPT đạt 500/677, Toefl CBT đạt 173/300, Toefl iBT đạt 61/120, Ielts đạt 5.5-9.0, Cambridge Exam đạt First (FCE), B2 Khung Châu Âu, 4/6 Khung năng lực ngoại ngữ 6 bậc. Chấp nhận ứng viên bổ sung chứng chỉ tiếng Anh trong thời gian 24 tháng kể từ ngày được tuyển dụng.",
+                    "Kinh nghiệm công tác": "Có kinh nghiệm về Java, Java EE. Có kinh nghiệm làm trên các cơ sở dữ liệu SQL (và/hoặc NoSQL), thực hiện thiết kế database, xây dựng các package, procedure, function. Kiến thức vững trong lập trình phần mềm. Kiến thức về Git/SVN và các phương pháp tốt nhất để hợp nhất, phân nhánh được sử dụng cho Git/Gitlab.",
+                    "Yêu cầu khác": "Kiến thức về API. Có khả năng làm việc độc lập cũng như làm việc theo nhóm. Có tư duy logic tốt, khả năng phân tích, giải quyết vấn đề. Liên tục nắm bắt các xu hướng và công nghệ mới. Ưu tiên các ứng viên có kỹ năng, kinh nghiệm sau: Có kinh nghiệm trong Môi trường phát triển Agile. Có hiểu biết và kinh nghiệm làm việc với các hệ thống sử dụng ứng dụng IBM Websphere. Biết sử dụng các công cụ test tự động cho SIT. Đã tham gia phát triển các module nghiệp vụ trong Corebanking của ngân hàng, hoặc trong lĩnh vực ngân hàng, tài chính, fintech. Có kinh nghiệm tham gia xây dựng các hệ thống chịu tải lớn. Có kinh nghiệm làm việc với các database NoSQL là một lợi thế. Có khả năng tự nghiên cứu, tìm hiểu và thực hiện các công việc một cách cẩn thận, tỉ mỉ. Có kinh nghiệm làm Spring boot, Java web service."
+                },
+                "Chuyên viên Phát triển Core Banking (cấp 1) - Ngoài hệ thống": {
+                    "Mô tả công việc": "Vai trò và mục tiêu: 1. Tiếp nhận các tài liệu khảo sát, tài liệu thiết kế chi tiết hệ thống. 2. Lập trình các yêu cầu phát triển phần mềm có liên quan đến core banking, thực hiện unit test các cấu phần được phân giao theo tài liệu thiết kế chi tiết. Nhiệm vụ trọng tâm: 1. Tham mưu, tư vấn: Đề xuất các ý kiến liên quan đến việc triển khai thực hiện nhiệm vụ của nhóm, tổ công tác. Tham mưu với lãnh đạo tổ, nhóm đối với các công việc trong phạm vi được phân công. 2. Trực tiếp thực hiện các công việc: Lập trình xử lý các yêu cầu phát triển phần mềm. Cụ thể như sau: Thực hiện các nhiệm vụ phát triển phần mềm trên Core Banking của BIDV, tham gia khảo sát, phân tích thiết kế, trực tiếp lập trình các chức năng trong Core Banking nhằm xây dựng, cải tiến, bảo trì các tính năng và module của hệ thống Core Banking theo yêu cầu của BIDV. Xây dựng các chức năng trong Core Banking nhằm tích hợp với các hệ thống bên ngoài core. Cộng tác với các thành viên của nhóm nghiệp vụ hoặc kỹ thuật khác nhằm tối ưu chức năng, tăng cường tính ổn định, hiệu năng, bảo mật của hệ thống. Đề xuất và phát triển các giải pháp công nghệ mới nhằm nâng cao hiệu quả vận hành của hệ thống Core Banking. Xác định phương án và lập trình xử lý sự cố core banking của BIDV đảm bảo kịp thời, hiệu quả. Tham gia các tổ công tác, dự án của BIDV gồm các dự án nâng cấp hệ thống, cập nhật phiên bản mới và đảm bảo tính tương thích của hệ thống. Thực hiện các công việc khác theo sự phân công của lãnh đạo nhóm. 3. Nghiên cứu và đào tạo: Tham gia nghiên cứu và đánh giá các công nghệ mới; Tìm hiểu và áp dụng các công nghệ mới, xu hướng phát triển phần mềm để cải thiện hệ thống.",
+                    "Yêu cầu độ tuổi": "không quá 27 tuổi tại thời điểm dự tuyển.",
+                    "Trình độ chuyên môn": "Tốt nghiệp Đại học trở lên, hệ chính quy (bao gồm đại học văn bằng 2, không bao gồm hình thức học liên thông lên đại học) tại các trường Đại học trong nước hoặc tốt nghiệp Đại học trở lên tại các trường Đại học nước ngoài, Đại học liên kết. Chuyên ngành: Công nghệ thông tin, Điện tử Viễn thông, Toán-Tin, Hệ thống Thông tin, Công nghệ kỹ thuật Điện tử, Khoa học máy tính, Tự động hóa, An toàn thông tin, Kỹ thuật phần mềm hoặc các chuyên nghành khác có đào tạo lập trình, kỹ thuật phần mềm. Đối với các trường đại học trong nước yêu cầu thuộc danh sách sau đây: Đại học Bách Khoa Hà Nội, ĐHQG Hà Nội, Học viện Công nghệ Bưu chính Viễn thông, Học viện Kỹ thuật Quân sự, Học viện Kỹ thuật Mật mã, Đại học Bách Khoa - ĐH Đà Nẵng, Đại học Khoa học - ĐH Huế, ĐHQG TP.HCM, Đại học Sư phạm Kỹ thuật TP.HCM, Đại học FPT.",
+                    "Trình độ ngoại ngữ, tin học": "Ứng viên đạt 1 trong các chứng chỉ sau: TOEIC đạt 600/990, Toefl PBT/IPT đạt 500/677, Toefl CBT đạt 173/300, Toefl iBT đạt 61/120, Ielts đạt 5.5-9.0, Cambridge Exam đạt First (FCE), B2 Khung Châu Âu, 4/6 Khung năng lực ngoại ngữ 6 bậc. Chấp nhận ứng viên bổ sung chứng chỉ tiếng Anh trong thời gian 24 tháng kể từ ngày được tuyển dụng.",
+                    "Kinh nghiệm công tác": "Có kinh nghiệm làm trên các cơ sở dữ liệu SQL (và/hoặc NoSQL), thực hiện thiết kế database, xây dựng các package, procedure, function trong các CSDL. Có kiến thức về thuật toán xử lý dữ liệu để thực hiện phát triển các module xử lý dữ liệu trong CSDL của corebanking, tối ưu tốc độ xử lý.",
+                    "Yêu cầu khác": "Có tư duy logic tốt, khả năng phân tích, giải quyết vấn đề. Có khả năng làm việc độc lập cũng như làm việc theo nhóm. Có khả năng nghiên cứu, có đam mê, khám phá, học hỏi công nghệ mới. Sẵn sàng chuyển đổi công nghệ, ngôn ngữ mới. Ưu tiên các ứng viên có kỹ năng, kinh nghiệm sau: Có kinh nghiệm trong Môi trường phát triển Agile. Đã tham gia phát triển các module nghiệp vụ trong Corebanking của ngân hàng, hoặc trong lĩnh vực ngân hàng, tài chính, fintech. Có kinh nghiệm xây dựng các module online cho các bài toán với dữ liệu lớn. Có khả năng tự nghiên cứu, tìm hiểu và thực hiện các công việc một cách cẩn thận, tỉ mỉ."
+                }
+            };
+            // ===== END: RESTORED JOB CRITERIA DATA =====
+            
+            jobCriteriaData = criteriaData ? JSON.parse(criteriaData) : defaultCriteria;
         };
 
         const calculateScores = (candidate) => {
@@ -580,14 +687,14 @@
         const createEvaluationUI = (evaluationData = []) => {
             evaluationTable.innerHTML = `
                 <div class="grid grid-cols-12 gap-4 font-semibold text-sm text-gray-600 px-2 pb-2 border-b">
-                    <div class="col-span-3">Tiêu chí</div>
-                    <div class="col-span-3">Yêu cầu</div>
-                    <div class="col-span-4">Thông tin đáp ứng (từ CV)</div>
-                    <div class="col-span-2 text-center">Điểm</div>
+                    <div class="col-span-3">${translations[currentLang].modal_eval_criteria}</div>
+                    <div class="col-span-3">${translations[currentLang].modal_eval_requirement}</div>
+                    <div class="col-span-4">${translations[currentLang].modal_eval_evidence}</div>
+                    <div class="col-span-2 text-center">${translations[currentLang].modal_eval_score}</div>
                 </div>`;
 
             if (evaluationData.length === 0) {
-                evaluationTable.innerHTML += '<p class="col-span-12 text-center text-gray-500 py-4">Tải CV và nhấn "Đánh giá bằng AI" để tạo bảng tiêu chí.</p>';
+                evaluationTable.innerHTML += `<p class="col-span-12 text-center text-gray-500 py-4">${translations[currentLang].modal_eval_placeholder}</p>`;
                 return;
             }
 
@@ -595,18 +702,10 @@
                 const row = document.createElement('div');
                 row.className = 'grid grid-cols-12 gap-4 items-center border-b py-2 dynamic-eval-row';
                 row.innerHTML = `
-                    <div class="col-span-3 text-sm font-medium text-gray-900">
-                        <input type="text" class="eval-criterion bg-transparent w-full font-semibold" value="${item.criterion || ''}" readonly>
-                    </div>
-                    <div class="col-span-3">
-                        <textarea rows="3" class="eval-requirement bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg block w-full p-2.5">${item.requirement || ''}</textarea>
-                    </div>
-                    <div class="col-span-4">
-                        <textarea rows="3" class="eval-evidence bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg block w-full p-2.5">${item.evidence || ''}</textarea>
-                    </div>
-                    <div class="col-span-2">
-                        <input type="number" min="0" max="10" class="eval-score bg-gray-50 border border-gray-300 text-sm rounded-lg block w-full p-2.5 text-center" value="${item.score || 0}">
-                    </div>
+                    <div class="col-span-3 text-sm font-medium text-gray-900"><input type="text" class="eval-criterion bg-transparent w-full font-semibold" value="${item.criterion || ''}" readonly></div>
+                    <div class="col-span-3"><textarea rows="3" class="eval-requirement bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg block w-full p-2.5">${item.requirement || ''}</textarea></div>
+                    <div class="col-span-4"><textarea rows="3" class="eval-evidence bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg block w-full p-2.5">${item.evidence || ''}</textarea></div>
+                    <div class="col-span-2"><input type="number" min="0" max="10" class="eval-score bg-gray-50 border border-gray-300 text-sm rounded-lg block w-full p-2.5 text-center" value="${item.score || 0}"></div>
                 `;
                 evaluationTable.appendChild(row);
             });
@@ -635,9 +734,9 @@
                     <td class="px-6 py-4 font-bold text-blue-600">${candidate.averageScore}</td>
                     <td class="px-6 py-4">${getResultBadge(candidate.result)}</td>
                     <td class="px-6 py-4 flex gap-3 justify-center">
-                        <button class="view-btn text-green-600 hover:text-green-800" data-id="${candidate.id}" title="Xem báo cáo"><i class="fas fa-eye"></i></button>
-                        <button class="edit-btn text-blue-600 hover:text-blue-800" data-id="${candidate.id}" title="Sửa"><i class="fas fa-edit"></i></button>
-                        <button class="delete-btn text-red-600 hover:text-red-800" data-id="${candidate.id}" title="Xóa"><i class="fas fa-trash"></i></button>
+                        <button class="view-btn text-green-600 hover:text-green-800" data-id="${candidate.id}" title="View report"><i class="fas fa-eye"></i></button>
+                        <button class="edit-btn text-blue-600 hover:text-blue-800" data-id="${candidate.id}" title="Edit"><i class="fas fa-edit"></i></button>
+                        <button class="delete-btn text-red-600 hover:text-red-800" data-id="${candidate.id}" title="Delete"><i class="fas fa-trash"></i></button>
                     </td>
                 `;
                 candidateTableBody.appendChild(row);
@@ -646,10 +745,18 @@
 
         const getResultBadge = (result) => {
             let colorClass = 'bg-gray-100 text-gray-800';
-            if (result === 'Đạt') colorClass = 'bg-green-100 text-green-800';
-            else if (result === 'Không đạt') colorClass = 'bg-red-100 text-red-800';
-            else if (result === 'Cân nhắc') colorClass = 'bg-yellow-100 text-yellow-800';
-            return `<span class="text-xs font-medium mr-2 px-2.5 py-0.5 rounded-full ${colorClass}">${result}</span>`;
+            let text = translations[currentLang].result_not_evaluated;
+            if (result === 'Đạt') {
+                colorClass = 'bg-green-100 text-green-800';
+                text = translations[currentLang].result_pass;
+            } else if (result === 'Không đạt') {
+                colorClass = 'bg-red-100 text-red-800';
+                text = translations[currentLang].result_fail;
+            } else if (result === 'Cân nhắc') {
+                colorClass = 'bg-yellow-100 text-yellow-800';
+                text = translations[currentLang].result_consider;
+            }
+            return `<span class="text-xs font-medium mr-2 px-2.5 py-0.5 rounded-full ${colorClass}">${text}</span>`;
         };
 
         const readFileContent = async (file) => {
@@ -673,7 +780,7 @@
                             resolve(text);
                         };
                         reader.readAsArrayBuffer(file);
-                    } else if (extension === 'docx' || extension === 'doc') {
+                    } else if (['docx', 'doc'].includes(extension)) {
                         const reader = new FileReader();
                         reader.onload = async (event) => {
                             const result = await mammoth.extractRawText({ arrayBuffer: event.target.result });
@@ -681,30 +788,30 @@
                         };
                         reader.readAsArrayBuffer(file);
                     } else if (fileType.startsWith('image/')) {
-                        aiStatus.textContent = `Đang nhận dạng chữ từ ảnh ${file.name}...`;
+                        aiStatus.textContent = translations[currentLang].ai_processing_ocr(file.name);
                         aiStatus.classList.remove('hidden');
                         const { data: { text } } = await Tesseract.recognize(file, 'vie+eng', {
                             logger: m => {
                                 if (m.status === 'recognizing text') {
-                                    aiStatus.textContent = `Đang nhận dạng chữ từ ảnh ${file.name}: ${Math.round(m.progress * 100)}%`;
+                                    aiStatus.textContent = translations[currentLang].ai_processing_ocr_progress(file.name, Math.round(m.progress * 100));
                                 }
                             }
                         });
                         aiStatus.classList.add('hidden');
                         resolve(text);
                     } else {
-                        reject(`Định dạng file .${extension} không được hỗ trợ.`);
+                        reject(translations[currentLang].ai_error_file_format(extension));
                     }
                 } catch (error) {
                     console.error("File reading error:", error);
-                    reject('Không thể đọc nội dung file.');
+                    reject(translations[currentLang].ai_error_file_read);
                 }
             });
         };
         
         async function callApi(task, payload) {
             if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
-                throw new Error("Vui lòng cấu hình SUPABASE_URL và SUPABASE_ANON_KEY trong mã nguồn.");
+                throw new Error("Supabase URL and Key are not configured.");
             }
             try {
                 const response = await fetch(`${SUPABASE_URL}/functions/v1/recruitment-ai-handler`, {
@@ -718,12 +825,12 @@
                 });
                 if (!response.ok) {
                     const errorBody = await response.json();
-                    throw new Error(`Lỗi từ Supabase Function: ${errorBody.error || response.statusText}`);
+                    throw new Error(`Supabase Function Error: ${errorBody.error || response.statusText}`);
                 }
                 return await response.json();
             } catch (error) {
-                console.error(`Lỗi khi gọi Supabase Function cho tác vụ '${task}':`, error);
-                throw new Error(`Có lỗi xảy ra trong quá trình xử lý của AI. Vui lòng kiểm tra console.`);
+                console.error(`Error calling Supabase for task '${task}':`, error);
+                throw new Error(translations[currentLang].ai_error_generic);
             }
         }
 
@@ -756,20 +863,18 @@
                 let contentHTML = `
                     <div class="flex justify-between items-center mb-4">
                         <input type="text" value="${position}" class="job-position-title font-semibold text-gray-800 text-lg border-b-2 border-gray-300 focus:border-blue-500 outline-none w-full bg-transparent">
-                        <button class="delete-position-btn text-red-500 hover:text-red-700 ml-4" title="Xóa vị trí này">
+                        <button class="delete-position-btn text-red-500 hover:text-red-700 ml-4" title="Delete this position">
                             <i class="fas fa-trash-alt"></i>
                         </button>
                     </div>
-                    <div class="mt-2 text-sm space-y-3">
-                `;
+                    <div class="mt-2 text-sm space-y-3">`;
 
                 for (const criterion in jobCriteriaData[position]) {
                     contentHTML += `
                         <div class="grid grid-cols-1 sm:grid-cols-4 gap-2 items-start">
                             <label class="font-medium text-gray-600 sm:col-span-1">${criterion}</label>
                             <textarea data-criterion="${criterion}" rows="3" class="job-criterion-value bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg block w-full p-2.5 sm:col-span-3">${jobCriteriaData[position][criterion]}</textarea>
-                        </div>
-                    `;
+                        </div>`;
                 }
                 
                 contentHTML += `</div>`;
@@ -778,40 +883,38 @@
             }
             
             document.querySelectorAll('.delete-position-btn').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    e.currentTarget.closest('.job-position-container').remove();
-                });
+                btn.addEventListener('click', (e) => e.currentTarget.closest('.job-position-container').remove());
             });
         };
         
         const updateJobCriteriaFromUI = () => {
             const newJobCriteria = {};
-            const positionContainers = document.querySelectorAll('.job-position-container');
-            
-            positionContainers.forEach(container => {
-                const positionTitleInput = container.querySelector('.job-position-title');
-                const positionTitle = positionTitleInput.value.trim();
-
+            document.querySelectorAll('.job-position-container').forEach(container => {
+                const positionTitle = container.querySelector('.job-position-title').value.trim();
                 if (positionTitle) {
                     newJobCriteria[positionTitle] = {};
-                    const criteriaInputs = container.querySelectorAll('.job-criterion-value');
-                    criteriaInputs.forEach(input => {
-                        const criterion = input.dataset.criterion;
-                        newJobCriteria[positionTitle][criterion] = input.value.trim();
+                    container.querySelectorAll('.job-criterion-value').forEach(input => {
+                        newJobCriteria[positionTitle][input.dataset.criterion] = input.value.trim();
                     });
                 }
             });
-            
             jobCriteriaData = newJobCriteria;
-            showToast('Đã cập nhật tiêu chí tuyển dụng thành công!');
+            saveToLocalStorage();
+            showToast('toast_update_criteria_success');
         };
 
         // --- Event Listeners ---
+        
+        document.querySelectorAll('#language-switcher button').forEach(button => {
+            button.addEventListener('click', () => {
+                setLanguage(button.dataset.lang);
+            });
+        });
 
         updateCriteriaBtn.addEventListener('click', updateJobCriteriaFromUI);
 
         addPositionBtn.addEventListener('click', () => {
-             const newPositionName = `Vị trí Mới ${Object.keys(jobCriteriaData).length + 1}`;
+             const newPositionName = `New Position ${Object.keys(jobCriteriaData).length + 1}`;
              jobCriteriaData[newPositionName] = {
                 "Mô tả công việc": "", "Yêu cầu độ tuổi": "", "Trình độ chuyên môn": "",
                 "Trình độ ngoại ngữ, tin học": "", "Kinh nghiệm công tác": "", "Yêu cầu khác": ""
@@ -820,7 +923,7 @@
         });
 
         addCandidateBtn.addEventListener('click', () => {
-            modalTitle.textContent = 'Thêm Ứng viên Mới';
+            modalTitle.textContent = translations[currentLang].modal_add_title;
             candidateForm.reset();
             createEvaluationUI([]);
             cvFile.value = '';
@@ -833,10 +936,7 @@
 
         cancelBtn.addEventListener('click', () => toggleModal(candidateModal, false));
         closeReportViewBtn.addEventListener('click', showTableView);
-        
-        modalBackdrop.addEventListener('click', () => {
-            toggleModal(candidateModal, false);
-        });
+        modalBackdrop.addEventListener('click', () => toggleModal(candidateModal, false));
 
         candidateForm.addEventListener('submit', (e) => {
             e.preventDefault();
@@ -850,8 +950,7 @@
                 evaluation: []
             };
 
-            const evalRows = evaluationTable.querySelectorAll('.dynamic-eval-row');
-            evalRows.forEach(row => {
+            evaluationTable.querySelectorAll('.dynamic-eval-row').forEach(row => {
                 candidateData.evaluation.push({
                     criterion: row.querySelector('.eval-criterion').value,
                     requirement: row.querySelector('.eval-requirement').value,
@@ -886,10 +985,8 @@
 
             if (target.classList.contains('view-btn')) {
                 showCandidateDetailsView(candidate);
-            }
-
-            if (target.classList.contains('edit-btn')) {
-                modalTitle.textContent = 'Chỉnh sửa Thông tin Ứng viên';
+            } else if (target.classList.contains('edit-btn')) {
+                modalTitle.textContent = translations[currentLang].modal_edit_title;
                 document.getElementById('candidateId').value = candidate.id;
                 document.getElementById('fullName').value = candidate.fullName;
                 document.getElementById('position').value = candidate.position;
@@ -901,9 +998,7 @@
                 aiSuccess.classList.add('hidden');
                 createEvaluationUI(candidate.evaluation || []);
                 toggleModal(candidateModal, true);
-            }
-
-            if (target.classList.contains('delete-btn')) {
+            } else if (target.classList.contains('delete-btn')) {
                 showTableView();
                 candidates = candidates.filter(c => c.id != id);
                 saveToLocalStorage();
@@ -914,7 +1009,7 @@
         aiEvaluateBtn.addEventListener('click', async () => {
             const files = cvFile.files;
             if (files.length === 0) {
-                aiError.textContent = 'Vui lòng chọn ít nhất một file CV để đánh giá.';
+                aiError.textContent = translations[currentLang].ai_error_no_file;
                 aiError.classList.remove('hidden');
                 return;
             }
@@ -923,7 +1018,7 @@
             aiSuccess.classList.add('hidden');
             aiStatus.classList.add('hidden');
             aiLoader.classList.remove('hidden');
-            aiBtnText.textContent = `Đang xử lý ${files.length} file...`;
+            aiBtnText.textContent = translations[currentLang].ai_processing(files.length);
             aiEvaluateBtn.disabled = true;
 
             try {
@@ -936,15 +1031,8 @@
                     }
                     
                     const evaluationResult = await evaluateWithAI(resumeText);
-                    const newCandidate = {
-                        id: Date.now() + Math.random(),
-                        ...evaluationResult.basicInfo,
-                        evaluation: evaluationResult.evaluation,
-                        notes: ''
-                    };
-                    
+                    const newCandidate = { id: Date.now() + Math.random(), ...evaluationResult.basicInfo, evaluation: evaluationResult.evaluation, notes: '' };
                     newCandidate.aiReport = await generateAIReport(newCandidate);
-                    
                     candidates.push(newCandidate);
                     processedCount++;
                 }
@@ -952,11 +1040,11 @@
                 if (processedCount > 0) {
                     saveToLocalStorage();
                     renderTable();
-                    aiSuccess.textContent = `Đã xử lý và thêm thành công ${processedCount} ứng viên.`;
+                    aiSuccess.textContent = translations[currentLang].ai_success_message(processedCount);
                     aiSuccess.classList.remove('hidden');
                     setTimeout(() => toggleModal(candidateModal, false), 2000);
                 } else {
-                    throw new Error("Không thể xử lý bất kỳ file nào đã chọn.");
+                    throw new Error(translations[currentLang].ai_error_process_failed);
                 }
 
             } catch (error) {
@@ -965,7 +1053,7 @@
             } finally {
                 aiLoader.classList.add('hidden');
                 aiStatus.classList.add('hidden');
-                aiBtnText.textContent = 'Đánh giá';
+                aiBtnText.textContent = translations[currentLang].modal_evaluate_btn;
                 aiEvaluateBtn.disabled = false;
                 cvFile.value = '';
             }
@@ -978,47 +1066,39 @@
             const candidate = candidates[candidateIndex];
 
             interviewQuestionsView.classList.remove('hidden');
-            interviewQuestionsTitle.textContent = `Câu hỏi Phỏng vấn Gợi ý cho ${candidate.fullName}`;
+            interviewQuestionsTitle.textContent = `${translations[currentLang].interview_questions_title_prefix} ${candidate.fullName}`;
             interviewQuestionsContent.innerHTML = '<div class="flex justify-center items-center p-8"><div class="loader"></div></div>';
             interviewQuestionsView.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
             try {
                 const questionsHTML = await generateInterviewQuestions(candidate);
                 interviewQuestionsContent.innerHTML = questionsHTML;
-                
                 candidates[candidateIndex].interviewQuestions = questionsHTML;
                 saveToLocalStorage();
-                showToast('Đã tạo và lưu câu hỏi phỏng vấn.');
-
+                showToast('toast_generate_questions_success');
             } catch (error) {
                 interviewQuestionsContent.innerHTML = `<p class="text-red-500">${error.message}</p>`;
             }
         });
 
+        const exportContentAsWord = (contentElement, fileNamePrefix, candidateName) => {
+            const header = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'><title>Export</title></head><body>`;
+            const footer = "</body></html>";
+            const sourceHTML = header + contentElement.innerHTML + footer;
+            const converted = htmlDocx.asBlob(sourceHTML);
+            saveAs(converted, `${fileNamePrefix}_${candidateName.replace(/ /g, '_')}.docx`);
+        };
+
         exportInterviewWordBtn.addEventListener('click', () => {
             if (!currentlyViewingCandidateId) return;
             const candidate = candidates.find(c => c.id == currentlyViewingCandidateId);
-            if (!candidate) return;
-
-            const header = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'><title>Câu hỏi phỏng vấn</title></head><body>`;
-            const footer = "</body></html>";
-            const sourceHTML = header + interviewQuestionsContent.innerHTML + footer;
-
-            const converted = htmlDocx.asBlob(sourceHTML);
-            saveAs(converted, `CauHoiPhongVan_${candidate.fullName.replace(/ /g, '_')}.docx`);
+            if (candidate) exportContentAsWord(interviewQuestionsContent, 'InterviewQuestions', candidate.fullName);
         });
 
         exportWordBtn.addEventListener('click', () => {
             if (!currentlyViewingCandidateId) return;
             const candidate = candidates.find(c => c.id == currentlyViewingCandidateId);
-            if (!candidate) return;
-
-            const header = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'><title>Báo cáo</title></head><body>`;
-            const footer = "</body></html>";
-            const sourceHTML = header + reportViewContent.innerHTML + footer;
-
-            const converted = htmlDocx.asBlob(sourceHTML);
-            saveAs(converted, `BaoCao_${candidate.fullName.replace(/ /g, '_')}.docx`);
+            if (candidate) exportContentAsWord(reportViewContent, 'Report', candidate.fullName);
         });
 
         exportBtn.addEventListener('click', () => {
@@ -1044,15 +1124,14 @@
 
             const worksheet = XLSX.utils.json_to_sheet(dataToExport);
             const workbook = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(workbook, worksheet, 'Danh sách ứng viên');
-            XLSX.writeFile(workbook, 'BaoCaoTuyenDung_ChiTiet.xlsx');
+            XLSX.utils.book_append_sheet(workbook, worksheet, 'Candidates List');
+            XLSX.writeFile(workbook, 'RecruitmentReport_Detailed.xlsx');
         });
 
         importBtn.addEventListener('click', () => importFile.click());
         importFile.addEventListener('change', (e) => {
             const file = e.target.files[0];
             if (!file) return;
-
             const reader = new FileReader();
             reader.onload = (event) => {
                 const data = new Uint8Array(event.target.result);
@@ -1060,7 +1139,6 @@
                 const firstSheetName = workbook.SheetNames[0];
                 const worksheet = workbook.Sheets[firstSheetName];
                 const json = XLSX.utils.sheet_to_json(worksheet);
-
                 const newCandidates = json.map(row => ({
                     id: Date.now() + Math.random(),
                     fullName: row['Họ và Tên'] || '',
@@ -1070,7 +1148,6 @@
                     notes: row['Ghi chú'] || '',
                     evaluation: [] 
                 }));
-
                 candidates = [...candidates, ...newCandidates];
                 saveToLocalStorage();
                 renderTable();
@@ -1082,25 +1159,18 @@
         searchInput.addEventListener('input', renderTable);
         filterAssessment.addEventListener('change', renderTable);
 
-        // --- NEW: Scroll to Top Logic ---
         window.onscroll = () => {
-            if (document.body.scrollTop > 100 || document.documentElement.scrollTop > 100) {
-                scrollTopBtn.classList.remove('hidden');
-            } else {
-                scrollTopBtn.classList.add('hidden');
-            }
+            scrollTopBtn.classList.toggle('hidden', document.body.scrollTop < 100 && document.documentElement.scrollTop < 100);
         };
         scrollTopBtn.addEventListener('click', () => {
             window.scrollTo({top: 0, behavior: 'smooth'});
         });
 
-
         // --- Initialization ---
-        renderJobCriteria();
         loadFromLocalStorage();
-        renderTable();
+        renderJobCriteria();
+        setLanguage(currentLang); // Áp dụng ngôn ngữ đã lưu khi tải trang
     });
 </script>
 </body>
 </html>
-
