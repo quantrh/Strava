@@ -71,6 +71,14 @@
         
         <section class="bg-white rounded-lg shadow-md p-6 mb-12 text-center">
             <h2 class="text-2xl md:text-3xl font-bold text-[#004AAD] text-center mb-4">Lựa chọn hành trình của bạn</h2>
+            
+            <div class="w-full text-center mb-6">
+                <div class="inline-flex rounded-lg shadow-md">
+                    <button id="bagan-btn" onclick="switchInfographic('bagan')" class="tab-btn active px-4 py-2 md:px-6 md:py-3 font-semibold rounded-l-lg transition-colors duration-300 bg-white text-[#004AAD] text-sm md:text-base">CỐ ĐÔ BAGAN</button>
+                    <button id="inle-btn" onclick="switchInfographic('inle')" class="tab-btn px-4 py-2 md:px-6 md:py-3 font-semibold rounded-r-lg transition-colors duration-300 bg-white text-[#004AAD] text-sm md:text-base">HỒ INLE</button>
+                </div>
+            </div>
+
             <p class="text-gray-600 mb-6 max-w-2xl mx-auto">So sánh hai phương án du lịch để chọn ra trải nghiệm phù hợp nhất với bạn. Mỗi hành trình đều kết hợp lịch làm việc tại Yangon với một điểm nhấn văn hóa độc đáo.</p>
             
             <div class="text-left max-w-4xl mx-auto text-sm md:text-base mb-6 space-y-4">
@@ -85,15 +93,8 @@
                 </div>
                  <div>
                     <h3 class="font-bold text-lg text-gray-800">Thời gian công tác:</h3>
-                     <p class="mt-1 text-gray-600"><span class="font-semibold text-yellow-600">Phương án Cố đô Bagan:</span> Bắt đầu từ Thứ 6 (03/10) và kết thúc vào Thứ 3 (07/10).</p>
-                    <p class="mt-1 text-gray-600"><span class="font-semibold text-blue-500">Phương án Hồ Inle:</span> Bắt đầu từ Thứ 5 (02/10) và kết thúc vào Thứ 2 (06/10).</p>
-                </div>
-            </div>
-
-            <div class="w-full text-center mb-6">
-                <div class="inline-flex rounded-lg shadow-md">
-                    <button id="bagan-btn" onclick="switchInfographic('bagan')" class="tab-btn active px-4 py-2 md:px-6 md:py-3 font-semibold rounded-l-lg transition-colors duration-300 bg-white text-[#004AAD] text-sm md:text-base">CỐ ĐÔ BAGAN</button>
-                    <button id="inle-btn" onclick="switchInfographic('inle')" class="tab-btn px-4 py-2 md:px-6 md:py-3 font-semibold rounded-r-lg transition-colors duration-300 bg-white text-[#004AAD] text-sm md:text-base">HỒ INLE</button>
+                     <p class="mt-1 text-gray-600"><span class="font-semibold text-yellow-600">Phương án Cố đô Bagan:</span> Thời gian công tác từ 03/10 đến 07/10.</p>
+                    <p class="mt-1 text-gray-600"><span class="font-semibold text-blue-500">Phương án Hồ Inle:</span> Thời gian công tác từ 02/10 đến 06/10.</p>
                 </div>
             </div>
 
@@ -207,7 +208,7 @@
                 </div>
             </section>
 
-            <section class="bg-white rounded-lg shadow-md p-6 md:p-8 mb-12">
+            <section id="bagan-schedule" class="bg-white rounded-lg shadow-md p-6 md:p-8 mb-12">
                 <h2 class="text-3xl font-bold text-[#004AAD] text-center mb-8">Lịch Trình Chi Tiết</h2>
                 <div class="relative pl-8 border-l-2 border-dashed border-[#0094D1]">
                     
@@ -355,7 +356,7 @@
                 </div>
             </section>
 
-            <section class="bg-white rounded-lg shadow-md p-6 md:p-8 mb-12">
+            <section id="inle-schedule" class="bg-white rounded-lg shadow-md p-6 md:p-8 mb-12">
                 <h2 class="text-3xl font-bold text-[#004AAD] text-center mb-8">Lịch Trình Chi Tiết</h2>
                 <div class="relative pl-8 border-l-2 border-dashed border-[#0094D1]">
                     
@@ -618,6 +619,8 @@
             const notesBagan = document.getElementById('important-notes-bagan');
             const notesInle = document.getElementById('important-notes-inle');
 
+            let targetScheduleId;
+
             if (type === 'bagan') {
                 baganInfographic.classList.remove('hidden');
                 inleInfographic.classList.add('hidden');
@@ -628,6 +631,7 @@
                 attractionsInle.classList.add('hidden');
                 notesBagan.classList.remove('hidden');
                 notesInle.classList.add('hidden');
+                targetScheduleId = 'bagan-schedule';
             } else {
                 baganInfographic.classList.add('hidden');
                 inleInfographic.classList.remove('hidden');
@@ -638,6 +642,15 @@
                 attractionsInle.classList.remove('hidden');
                 notesBagan.classList.add('hidden');
                 notesInle.classList.remove('hidden');
+                targetScheduleId = 'inle-schedule';
+            }
+            
+            const targetElement = document.getElementById(targetScheduleId);
+            if (targetElement) {
+                // A short delay ensures the element is rendered and visible before scrolling
+                setTimeout(() => {
+                    targetElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }, 100);
             }
         }
 
@@ -671,7 +684,7 @@
             
             let chatHistory = [{ role: "user", parts: [{ text: prompt }] }];
             const payload = { contents: chatHistory };
-            const apiKey = "AIzaSyC-BYUh_rmNRc3TaYOszqe4VGupDk82KVM"; 
+            const apiKey = ""; 
             const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
 
             try {
