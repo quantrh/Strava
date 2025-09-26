@@ -318,6 +318,12 @@
             max-height: 0;
             overflow: hidden;
         }
+
+        /* Add this rule to properly hide table bodies */
+        tbody.collapsible-content.collapsed {
+            display: none;
+        }
+
     </style>
 </head>
 <body>
@@ -1584,7 +1590,7 @@
                 totalRow.innerHTML = `
                     <td colspan="4" class="font-bold text-lg text-bidv-green">
                         ${runnerName} <span class="text-gray-500 text-base">(${runnerClub})</span>
-                        <i class="fas fa-chevron-down text-gray-600 ml-2 cursor-pointer penalty-toggle-icon" data-target-id="penalty-details-for-${athleteId}"></i>
+                        <i class="fas fa-chevron-right text-gray-600 ml-2 cursor-pointer penalty-toggle-icon" data-target-id="penalty-details-for-${athleteId}"></i>
                     </td>
                     <td colspan="3" class="text-right font-bold text-lg">${totalRunnerKm.toFixed(2)} KM</td>
                 `;
@@ -1631,8 +1637,14 @@
                     const targetId = icon.dataset.targetId;
                     const contentElement = document.getElementById(targetId);
                     if (contentElement) {
-                        const isCurrentlyCollapsed = contentElement.classList.contains('collapsed');
-                        toggleCollapsible(contentElement, icon, !isCurrentlyCollapsed);
+                        contentElement.classList.toggle('collapsed');
+                        if (contentElement.classList.contains('collapsed')) {
+                            icon.classList.remove('fa-chevron-down');
+                            icon.classList.add('fa-chevron-right');
+                        } else {
+                            icon.classList.remove('fa-chevron-right');
+                            icon.classList.add('fa-chevron-down');
+                        }
                     }
                 });
             });
