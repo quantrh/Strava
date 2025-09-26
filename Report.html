@@ -554,12 +554,12 @@
                         <thead>
                             <tr>
                                 <th>Tên Runner</th>
-                                <th>Ngày chạy</th>
+                                <th>Ngày chạy / Tuần</th>
                                 <th>Tên Hoạt Động</th>
                                 <th>Loại</th>
                                 <th>Quãng đường (KM)</th>
-                                <th>Pace</th>
-                                <th>Thời gian</th>
+                                <th>Pace / Chênh lệch (KM)</th>
+                                <th>Thời gian / Thưởng-Phạt</th>
                             </tr>
                         </thead>
                         <tbody></tbody>
@@ -1531,13 +1531,13 @@
             }
         }
 
-
         /**
-         * Renders the penalty/bonus table with collapsible runner sections, showing individual activities.
+         * Renders the penalty/bonus table with collapsible runner sections and nested collapsible weekly summaries.
          * @param {Array} activities - Array of activity objects.
          */
         function renderPenaltyBonusTable(activities) {
             const table = document.getElementById('penalty-bonus-table');
+            // Clear everything except the header
             table.querySelectorAll('tbody').forEach(tbody => tbody.remove());
 
             const penaltyBonusStatus = document.getElementById('penalty-bonus-status');
@@ -1545,7 +1545,6 @@
 
             if (activities.length === 0) {
                 penaltyBonusStatus.textContent = 'Chưa có dữ liệu để hiển thị.';
-                table.appendChild(document.createElement('tbody'));
                 return;
             }
 
@@ -1565,16 +1564,17 @@
             const sortedAthleteIds = Object.keys(activitiesByAthlete).sort((a, b) => {
                 const runnerA = allRunnerCredentials.find(rc => String(rc.athlete_id) === a);
                 const runnerB = allRunnerCredentials.find(rc => String(rc.athlete_id) === b);
-                const nameA = runnerA ? runnerA.runner_name : `Runner ID: ${a}`;
-                const nameB = runnerB ? runnerB.runner_name : `Runner ID: ${b}`;
-                return nameA.localeCompare(nameB);
+                return (runnerA?.runner_name || '').localeCompare(runnerB?.runner_name || '');
             });
 
             if (sortedAthleteIds.length === 0) {
                 penaltyBonusStatus.textContent = 'Không có dữ liệu để hiển thị.';
-                table.appendChild(document.createElement('tbody'));
                 return;
             }
+            
+            // A single event listener for the entire table for better performance and to handle dynamic content
+            table.removeEventListener('click', handlePenaltyTableClick); // Remove old listener to avoid duplicates
+            table.addEventListener('click', handlePenaltyTableClick);
 
             sortedAthleteIds.forEach(athleteId => {
                 const runnerInfo = allRunnerCredentials.find(rc => String(rc.athlete_id) === athleteId);
@@ -1582,95 +1582,108 @@
                 const runnerClub = runnerInfo?.running_team || 'N/A';
                 const runnerActivities = activitiesByAthlete[athleteId];
 
-                let totalRunnerKm = 0;
-                let totalRunnerAmount = 0;
                 const weeklyStats = {};
-
                 runnerActivities.forEach(activity => {
                     const isoWeek = getISOWeekString(activity.start_date);
-                    totalRunnerKm += (activity.distance / 1000);
-                    if (isoWeek) {
-                        if (!weeklyStats[isoWeek]) {
-                            weeklyStats[isoWeek] = 0;
-                        }
-                        weeklyStats[isoWeek] += (activity.distance / 1000);
+                    if (!weeklyStats[isoWeek]) {
+                        weeklyStats[isoWeek] = { activities: [], totalKm: 0 };
                     }
+                    weeklyStats[isoWeek].activities.push(activity);
+                    weeklyStats[isoWeek].totalKm += (activity.distance / 1000);
                 });
 
-                Object.values(weeklyStats).forEach(weekKm => {
-                    const kmDifference = weekKm - targetKmPerWeek;
+                let totalRunnerKm = 0;
+                let totalRunnerAmount = 0;
+                
+                Object.values(weeklyStats).forEach(week => {
+                    totalRunnerKm += week.totalKm;
+                    const kmDifference = week.totalKm - targetKmPerWeek;
+                    week.kmDifference = kmDifference;
                     if (kmDifference < 0) {
                         const deficitKm = Math.abs(kmDifference);
                         let rate = (deficitKm <= 10) ? penaltyPerKmLte10 : penaltyPerKmGt10;
-                        totalRunnerAmount -= (deficitKm * rate);
+                        week.penaltyBonus = -(deficitKm * rate);
+                        totalRunnerAmount += week.penaltyBonus;
+                    } else {
+                        week.penaltyBonus = 0; // No bonus calculation is defined
                     }
                 });
                 
+                // Runner Summary Body
                 const summaryTbody = document.createElement('tbody');
                 summaryTbody.className = 'runner-summary-group';
-
-                const totalRow = summaryTbody.insertRow();
-                totalRow.className = 'total-row';
-                totalRow.innerHTML = `
-                    <td colspan="4" class="font-bold text-lg text-bidv-green">
-                        ${runnerName} <span class="text-gray-500 text-base">(${runnerClub})</span>
-                        <i class="fas fa-chevron-right text-gray-600 ml-2 cursor-pointer penalty-toggle-icon" data-target-id="penalty-details-for-${athleteId}"></i>
-                    </td>
-                    <td colspan="3" class="text-right font-bold text-lg">${totalRunnerKm.toFixed(2)} KM</td>
-                `;
-
-                const summaryRow = summaryTbody.insertRow();
-                summaryRow.className = totalRunnerAmount < 0 ? 'missing-row' : 'summary-row';
-                summaryRow.innerHTML = `
-                    <td colspan="7" class="text-right font-bold text-lg">
-                        Tổng cộng Phạt/Thưởng: 
-                        <span class="${totalRunnerAmount < 0 ? 'text-red-600' : 'text-green-600'}">
-                            ${totalRunnerAmount.toLocaleString('vi-VN')} nghìn VNĐ
-                        </span>
-                    </td>
+                summaryTbody.innerHTML = `
+                    <tr class="total-row">
+                        <td colspan="4" class="font-bold text-lg text-bidv-green">
+                            ${runnerName} <span class="text-gray-500 text-base">(${runnerClub})</span>
+                            <i class="fas fa-chevron-right text-gray-600 ml-2 cursor-pointer penalty-toggle-icon" data-target-tbody-id="penalty-details-for-${athleteId}"></i>
+                        </td>
+                        <td colspan="3" class="text-right font-bold text-lg">${totalRunnerKm.toFixed(2)} KM</td>
+                    </tr>
+                    <tr class="${totalRunnerAmount < 0 ? 'missing-row' : 'summary-row'}">
+                        <td colspan="7" class="text-right font-bold text-lg">
+                            Tổng cộng Phạt/Thưởng: 
+                            <span class="${totalRunnerAmount < 0 ? 'text-red-600' : 'text-green-600'}">
+                                ${totalRunnerAmount.toLocaleString('vi-VN')} nghìn VNĐ
+                            </span>
+                        </td>
+                    </tr>
                 `;
                 table.appendChild(summaryTbody);
 
+                // Runner Details Body (contains weeks and activities) - Appended as a separate tbody
                 const detailedTbody = document.createElement('tbody');
                 detailedTbody.id = `penalty-details-for-${athleteId}`;
-                detailedTbody.className = 'collapsible-content collapsed';
-
-                runnerActivities.sort((a, b) => new Date(b.start_date) - new Date(a.start_date));
-
-                runnerActivities.forEach(activity => {
-                    const row = detailedTbody.insertRow();
-                    row.innerHTML = `
-                        <td></td>
-                        <td>${new Date(activity.start_date).toLocaleDateString('vi-VN')}</td>
-                        <td>${activity.name}</td>
-                        <td>${activity.type}</td>
-                        <td>${(activity.distance / 1000).toFixed(2)}</td>
-                        <td>${formatPaceForTable(activity.average_speed)}</td>
-                        <td>${formatTime(activity.moving_time)}</td>
+                // Using 'hidden' instead of 'collapsed' for direct display control
+                detailedTbody.className = 'hidden'; 
+                
+                const sortedWeeks = Object.keys(weeklyStats).sort().reverse();
+                sortedWeeks.forEach(isoWeek => {
+                    const weekData = weeklyStats[isoWeek];
+                    const weekTargetClass = `week-details-for-${athleteId}-${isoWeek.replace(/\W/g, '')}`;
+                    
+                    // Weekly Summary Row
+                    const weekSummaryRow = document.createElement('tr');
+                    weekSummaryRow.className = 'weekly-summary-row bg-gray-100 hover:bg-gray-200 cursor-pointer';
+                    weekSummaryRow.innerHTML = `
+                        <td></td> <!-- Empty for Runner Name -->
+                        <td class="font-bold">
+                            ${isoWeek.replace('-W', ' Tuần ')}
+                            <i class="fas fa-chevron-right text-gray-600 ml-2 cursor-pointer week-toggle-icon" data-week-target-class="${weekTargetClass}"></i>
+                        </td>
+                        <td colspan="2" class="font-bold text-center">TỔNG KẾT TUẦN</td>
+                        <td class="font-bold text-center">${weekData.totalKm.toFixed(2)}</td>
+                        <td class="font-bold text-center ${weekData.kmDifference < 0 ? 'text-red-500' : 'text-green-500'}">
+                            ${weekData.kmDifference >= 0 ? '+' : ''}${weekData.kmDifference.toFixed(2)}
+                        </td>
+                        <td class="font-bold text-center ${weekData.penaltyBonus < 0 ? 'text-red-600' : 'text-green-600'}">
+                            ${weekData.penaltyBonus.toLocaleString('vi-VN')}
+                        </td>
                     `;
+                    detailedTbody.appendChild(weekSummaryRow);
+
+                    // Individual Activity Rows for the week
+                    weekData.activities.sort((a, b) => new Date(b.start_date) - new Date(a.start_date));
+                    weekData.activities.forEach(activity => {
+                        const activityRow = document.createElement('tr');
+                        activityRow.className = `weekly-activity-row ${weekTargetClass} hidden bg-white`; // Initially hidden
+                        activityRow.innerHTML = `
+                            <td></td>
+                            <td>${new Date(activity.start_date).toLocaleDateString('vi-VN')}</td>
+                            <td>${activity.name}</td>
+                            <td>${activity.type}</td>
+                            <td>${(activity.distance / 1000).toFixed(2)}</td>
+                            <td>${formatPaceForTable(activity.average_speed)}</td>
+                            <td>${formatTime(activity.moving_time)}</td>
+                        `;
+                        detailedTbody.appendChild(activityRow);
+                    });
                 });
                 table.appendChild(detailedTbody);
                 
                 const spacerTbody = document.createElement('tbody');
                 spacerTbody.innerHTML = `<tr class="h-4 bg-gray-100"><td colspan="7"></td></tr>`;
                 table.appendChild(spacerTbody);
-            });
-
-            document.querySelectorAll('.penalty-toggle-icon').forEach(icon => {
-                icon.addEventListener('click', () => {
-                    const targetId = icon.dataset.targetId;
-                    const contentElement = document.getElementById(targetId);
-                    if (contentElement) {
-                        contentElement.classList.toggle('collapsed');
-                        if (contentElement.classList.contains('collapsed')) {
-                            icon.classList.remove('fa-chevron-down');
-                            icon.classList.add('fa-chevron-right');
-                        } else {
-                            icon.classList.remove('fa-chevron-right');
-                            icon.classList.add('fa-chevron-down');
-                        }
-                    }
-                });
             });
         }
 
@@ -2296,8 +2309,52 @@
         }
 
         /**
+         * Handles all click events within the penalty/bonus table for collapsing/expanding sections.
+         * @param {Event} event - The click event.
+         */
+        function handlePenaltyTableClick(event) {
+            const icon = event.target.closest('i.cursor-pointer');
+            if (!icon) return;
+
+            // Handle main runner toggle
+            if (icon.classList.contains('penalty-toggle-icon')) {
+                const targetId = icon.dataset.targetTbodyId;
+                const contentTbody = document.getElementById(targetId);
+                if (contentTbody) {
+                    contentTbody.classList.toggle('hidden');
+                    if (contentTbody.classList.contains('hidden')) {
+                        icon.classList.remove('fa-chevron-down');
+                        icon.classList.add('fa-chevron-right');
+                    } else {
+                        icon.classList.remove('fa-chevron-right');
+                        icon.classList.add('fa-chevron-down');
+                    }
+                }
+            }
+
+            // Handle weekly activities toggle
+            if (icon.classList.contains('week-toggle-icon')) {
+                const targetClass = icon.dataset.weekTargetClass;
+                const activityRows = document.querySelectorAll(`.${targetClass}`);
+                const isHidden = Array.from(activityRows).some(row => row.classList.contains('hidden'));
+                
+                activityRows.forEach(row => {
+                    row.classList.toggle('hidden', !isHidden);
+                });
+
+                if (isHidden) {
+                    icon.classList.remove('fa-chevron-right');
+                    icon.classList.add('fa-chevron-down');
+                } else {
+                    icon.classList.remove('fa-chevron-down');
+                    icon.classList.add('fa-chevron-right');
+                }
+            }
+        }
+
+        /**
          * Fetches training suggestions from the Gemini API based on current activity data.
-         * Now calls the Supabase Edge Function to handle the Gemini API call securely.
+         * This version sends a more detailed payload to the Supabase Edge Function to avoid ambiguity.
          */
         async function getTrainingSuggestions() {
             if (allActivitiesData.length === 0) {
@@ -2305,45 +2362,53 @@
                 return;
             }
 
-            trainingSuggestionsLoader.classList.remove('hidden'); // Show loader
-            getTrainingSuggestionsBtn.disabled = true; // Disable button
-            trainingSuggestionsContent.innerHTML = ''; // Clear previous content
+            trainingSuggestionsLoader.classList.remove('hidden');
+            getTrainingSuggestionsBtn.disabled = true;
+            trainingSuggestionsContent.innerHTML = '';
             trainingSuggestionsStatus.textContent = 'Đang tạo gợi ý luyện tập thông minh...';
 
             try {
-                // Get the current session to extract the access token
                 const { data: { session }, error: sessionError } = await supabaseClientInstance.auth.getSession();
                 if (sessionError || !session?.access_token) {
                     throw new Error('Không tìm thấy phiên đăng nhập Supabase. Vui lòng đăng nhập lại.');
                 }
 
-                // Prepare data to send to the Edge Function
+                const isSingleRunner = selectedRunnerIdReport !== 'all';
+                
+                // Construct a more detailed and context-rich payload for the AI
                 const payload = {
-                    activities: allActivitiesData.map(activity => ({
-                        // Simplify activities data for the LLM prompt to only include necessary fields
-                        name: activity.name,
-                        type: activity.type,
-                        distance_km: parseFloat(activity.distance_km),
-                        moving_time: activity.moving_time, // in seconds
-                        average_speed: activity.average_speed, // in m/s
-                        average_heartrate: activity.average_heartrate,
-                        start_date: activity.start_date.toISOString(), // Send ISO string
-                        total_elevation_gain: activity.total_elevation_gain
-                    })),
-                    // If you want to include runnerCredentialId for the Edge Function's security check, you can get it from local storage or context.
-                    // For this generic summary, it might not be strictly necessary for the LLM prompt itself,
-                    // but the Edge Function might require it for its internal security checks.
-                    // Let's assume the first activity's user_id can be mapped to a runner credential ID
-                    runnerCredentialId: allRunnerCredentials.find(rc => String(rc.athlete_id) === String(allActivitiesData[0]?.user_id))?.id,
-                    clientTimezone: Intl.DateTimeFormat().resolvedOptions().timeZone // Get client's current timezone
+                    activities: allActivitiesData.map(activity => {
+                        const runner = allRunnerCredentials.find(rc => String(rc.athlete_id) === String(activity.user_id));
+                        const runnerName = runner ? runner.runner_name : 'Không rõ';
+
+                        // Create a clean object with descriptive keys for each activity
+                        return {
+                            runner_name: runnerName, // Add runner name for context
+                            type: activity.type,
+                            distance_km: parseFloat(activity.distance_km),
+                            moving_time_seconds: activity.moving_time,
+                            average_speed_mps: activity.average_speed,
+                            average_heartrate: activity.average_heartrate,
+                            start_date: activity.start_date.toISOString(),
+                            total_elevation_gain_meters: activity.total_elevation_gain
+                        };
+                    }),
+                    // Add an explicit context object to guide the AI's analysis
+                    analysis_context: {
+                        is_single_runner: isSingleRunner,
+                        // Provide the name of the single runner or indicate it's a group
+                        runner_name: isSingleRunner 
+                            ? (allRunnerCredentials.find(rc => String(rc.athlete_id) === selectedRunnerIdReport)?.runner_name || 'Runner đã chọn') 
+                            : 'Nhiều runners',
+                        client_timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
+                    }
                 };
 
-                // Call the Supabase Edge Function
                 const response = await fetch(ANALYZE_ACTIVITIES_EDGE_FUNCTION_URL, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${session.access_token}` // Send user's access token
+                        'Authorization': `Bearer ${session.access_token}`
                     },
                     body: JSON.stringify(payload)
                 });
@@ -2351,7 +2416,7 @@
                 const result = await response.json();
                 
                 if (response.ok && result.success) {
-                    trainingSuggestionsContent.innerHTML = marked.parse(result.analysis); // Render Markdown
+                    trainingSuggestionsContent.innerHTML = marked.parse(result.analysis);
                     trainingSuggestionsStatus.textContent = 'Gợi ý đã sẵn sàng!';
                 } else {
                     const errorMessage = result.error || 'Không thể nhận được gợi ý luyện tập từ Edge Function.';
@@ -2366,10 +2431,10 @@
                 trainingSuggestionsStatus.textContent = 'Lỗi khi gọi gợi ý.';
                 showAlert(`Lỗi khi tạo gợi ý luyện tập: ${error.message}`);
             } finally {
-                trainingSuggestionsLoader.classList.add('hidden'); // Hide loader
-                getTrainingSuggestionsBtn.disabled = false; // Enable button
-                trainingSuggestionsModal.classList.remove('hidden'); // Show modal
-                trainingSuggestionsModal.style.display = 'flex'; // Ensure it's visible
+                trainingSuggestionsLoader.classList.add('hidden');
+                getTrainingSuggestionsBtn.disabled = false;
+                trainingSuggestionsModal.classList.remove('hidden');
+                trainingSuggestionsModal.style.display = 'flex';
             }
         }
 
@@ -2636,3 +2701,4 @@
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 </body>
 </html>
+
