@@ -1503,15 +1503,20 @@
 
 
         /**
-         * Renders the penalty/bonus table (from original report.html).
+         * Renders the penalty/bonus table with collapsible runner sections.
          * @param {Array} activities - Array of activity objects.
          */
         function renderPenaltyBonusTable(activities) {
-            penaltyBonusTableBody.innerHTML = '';
+            const table = document.getElementById('penalty-bonus-table');
+            // Clear all existing tbodies first to handle re-renders correctly
+            table.querySelectorAll('tbody').forEach(tbody => tbody.remove());
+            
+            const penaltyBonusStatus = document.getElementById('penalty-bonus-status');
             penaltyBonusStatus.textContent = '';
 
             if (activities.length === 0) {
                 penaltyBonusStatus.textContent = 'Chưa có dữ liệu để hiển thị.';
+                table.appendChild(document.createElement('tbody'));
                 return;
             }
 
@@ -1519,20 +1524,21 @@
             const penaltyPerKmLte10 = parseFloat(penaltyPerKmLte10Input.value) || 0;
             const targetKmPerWeek = parseFloat(targetKmPerWeekInput.value) || 0;
 
-            const weeklyStatsByRunner = {}; // { athlete_id: { isoWeek: { totalDistance: ..., activities: [...] } } }
+            const weeklyStatsByRunner = {}; // { athlete_id: { isoWeek: { totalDistance: ... } } }
 
             activities.forEach(activity => {
                 const athleteId = String(activity.user_id);
-                const isoWeek = getISOWeekString(activity.start_date); // Sử dụng hàm lấy tuần theo múi giờ VN
+                const isoWeek = getISOWeekString(activity.start_date); 
 
-                if (!weeklyStatsByRunner[athleteId]) {
-                    weeklyStatsByRunner[athleteId] = {};
+                if (isoWeek) { // Only process if the week string is valid
+                    if (!weeklyStatsByRunner[athleteId]) {
+                        weeklyStatsByRunner[athleteId] = {};
+                    }
+                    if (!weeklyStatsByRunner[athleteId][isoWeek]) {
+                        weeklyStatsByRunner[athleteId][isoWeek] = { totalDistance: 0 };
+                    }
+                    weeklyStatsByRunner[athleteId][isoWeek].totalDistance += (activity.distance / 1000); // Convert to KM
                 }
-                if (!weeklyStatsByRunner[athleteId][isoWeek]) {
-                    weeklyStatsByRunner[athleteId][isoWeek] = { totalDistance: 0, activities: [] };
-                }
-                weeklyStatsByRunner[athleteId][isoWeek].totalDistance += (activity.distance / 1000); // Convert to KM
-                weeklyStatsByRunner[athleteId][isoWeek].activities.push(activity);
             });
 
             const sortedAthleteIds = Object.keys(weeklyStatsByRunner).sort((a, b) => {
@@ -1542,57 +1548,116 @@
                 const nameB = runnerB ? runnerB.runner_name : `Runner ID: ${b}`;
                 return nameA.localeCompare(nameB);
             });
+            
+            if (sortedAthleteIds.length === 0) {
+                penaltyBonusStatus.textContent = 'Không có dữ liệu để hiển thị.';
+                table.appendChild(document.createElement('tbody'));
+                return;
+            }
 
             sortedAthleteIds.forEach(athleteId => {
-                const runnerName = allRunnerCredentials.find(rc => String(rc.athlete_id) === athleteId)?.runner_name || `Runner ID: ${athleteId}`;
-                const runnerClub = allRunnerCredentials.find(rc => String(rc.athlete_id) === athleteId)?.running_team || 'N/A';
+                const runnerInfo = allRunnerCredentials.find(rc => String(rc.athlete_id) === athleteId);
+                const runnerName = runnerInfo?.runner_name || `Runner ID: ${athleteId}`;
+                const runnerClub = runnerInfo?.running_team || 'N/A';
 
                 const weeklyData = weeklyStatsByRunner[athleteId];
                 const sortedWeeks = Object.keys(weeklyData).sort();
+                
+                let totalRunnerKm = 0;
+                let totalRunnerAmount = 0;
+
+                // Pre-calculate totals for the runner's summary row
+                sortedWeeks.forEach(isoWeek => {
+                    const weekKm = weeklyData[isoWeek].totalDistance;
+                    totalRunnerKm += weekKm;
+                    const kmDifference = weekKm - targetKmPerWeek;
+                    
+                    if (kmDifference < 0) {
+                        const deficitKm = Math.abs(kmDifference);
+                        let rate = (deficitKm <= 10) ? penaltyPerKmLte10 : penaltyPerKmGt10;
+                        totalRunnerAmount -= (deficitKm * rate); // Penalty is a negative value
+                    } else {
+                        // Optional: Add bonus logic if desired in the future
+                    }
+                });
+
+                // Create summary tbody
+                const summaryTbody = document.createElement('tbody');
+                summaryTbody.className = 'runner-summary-group';
+
+                const totalRow = summaryTbody.insertRow();
+                totalRow.className = 'total-row';
+                totalRow.innerHTML = `
+                    <td colspan="4" class="font-bold text-lg text-bidv-green">
+                        ${runnerName} <span class="text-gray-500 text-base">(${runnerClub})</span>
+                        <i class="fas fa-chevron-right text-gray-600 ml-2 cursor-pointer penalty-toggle-icon" data-target-id="penalty-details-for-${athleteId}"></i>
+                    </td>
+                    <td colspan="3" class="text-right font-bold text-lg">${totalRunnerKm.toFixed(2)} KM</td>
+                `;
+
+                const summaryRow = summaryTbody.insertRow();
+                summaryRow.className = totalRunnerAmount < 0 ? 'missing-row' : 'summary-row';
+                summaryRow.innerHTML = `
+                    <td colspan="7" class="text-right font-bold text-lg">
+                        Tổng cộng Phạt/Thưởng: 
+                        <span class="${totalRunnerAmount < 0 ? 'text-red-600' : 'text-green-600'}">
+                            ${totalRunnerAmount.toLocaleString('vi-VN')} nghìn VNĐ
+                        </span>
+                    </td>
+                `;
+                table.appendChild(summaryTbody);
+
+                // Create detailed activities tbody (collapsible)
+                const detailedTbody = document.createElement('tbody');
+                detailedTbody.id = `penalty-details-for-${athleteId}`;
+                detailedTbody.className = 'collapsible-content collapsed';
 
                 sortedWeeks.forEach(isoWeek => {
                     const weekData = weeklyData[isoWeek];
                     const totalKm = weekData.totalDistance;
                     const kmDifference = totalKm - targetKmPerWeek;
-
                     let amount = 0;
-                    let amountType = ''; // 'penalty' or 'bonus'
 
                     if (kmDifference < 0) {
                         const deficitKm = Math.abs(kmDifference);
-                        let rate = 0;
-                        if (deficitKm <= 10) {
-                            rate = penaltyPerKmLte10;
-                        } else {
-                            rate = penaltyPerKmGt10;
-                        }
+                        let rate = (deficitKm <= 10) ? penaltyPerKmLte10 : penaltyPerKmGt10;
                         amount = deficitKm * rate;
-                        amountType = 'penalty';
-                    } else {
-                        // Bonus for exceeding target (using penaltyPerKmGt10 for bonus rate)
-                        amount = kmDifference * penaltyPerKmGt10;
-                        amountType = 'bonus';
                     }
 
-                    const row = penaltyBonusTableBody.insertRow();
-                    row.className = amountType === 'penalty' ? 'missing-row' : ''; // Apply red style for penalty
-
+                    const row = detailedTbody.insertRow();
+                    // Leave the first cell empty to align with the name column, which is now in the summary
                     row.innerHTML = `
-                        <td>${runnerName}</td>
+                        <td></td> 
                         <td>${runnerClub}</td>
                         <td>${isoWeek.replace(/-W/, 'W')}</td>
                         <td>${totalKm.toFixed(2)}</td>
                         <td>${targetKmPerWeek.toFixed(0)}</td>
-                        <td class="${kmDifference < 0 ? 'text-red-600' : 'text-green-600'} font-bold">
-                            ${kmDifference.toFixed(2)}
-                        </td>
-                        <td class="${amountType === 'penalty' ? 'text-red-600' : 'text-green-600'} font-bold">
-                            ${amount.toLocaleString('vi-VN')}
-                        </td>
+                        <td class="${kmDifference < 0 ? 'text-red-600' : 'text-green-600'} font-bold">${kmDifference.toFixed(2)}</td>
+                        <td class="${kmDifference < 0 ? 'text-red-600 font-bold' : ''}">${amount > 0 ? amount.toLocaleString('vi-VN') : '0'}</td>
                     `;
+                });
+                table.appendChild(detailedTbody);
+                
+                // Add spacer
+                const spacerTbody = document.createElement('tbody');
+                spacerTbody.innerHTML = `<tr class="h-4 bg-gray-100"><td colspan="7"></td></tr>`;
+                table.appendChild(spacerTbody);
+            });
+
+            // Add event listeners to all new toggle icons
+            document.querySelectorAll('.penalty-toggle-icon').forEach(icon => {
+                icon.addEventListener('click', () => {
+                    const targetId = icon.dataset.targetId;
+                    const contentElement = document.getElementById(targetId);
+                    if (contentElement) {
+                        // Re-use the existing generic toggle function
+                        const isCurrentlyCollapsed = contentElement.classList.contains('collapsed');
+                        toggleCollapsible(contentElement, icon, !isCurrentlyCollapsed);
+                    }
                 });
             });
         }
+
 
         /**
          * Renders bubble charts for distance by runner and distance by club (D3.js - from original report.html).
@@ -1601,30 +1666,44 @@
         function renderDistanceCharts(activities) {
             distanceByRunnerChart.innerHTML = '<p class="text-gray-500 text-sm">Biểu đồ quãng đường theo Runner sẽ hiển thị ở đây.</p>';
             distanceByClubChart.innerHTML = '<p class="text-gray-500 text-sm">Biểu đồ quãng đường theo CLB sẽ hiển thị ở đây.</p>';
+            const clubLegendContainer = document.getElementById('distance-by-club-legend');
 
-            if (activities.length === 0) return;
+            if (activities.length === 0) {
+                if (clubLegendContainer) clubLegendContainer.innerHTML = '';
+                return;
+            }
 
             const distanceByRunner = new Map();
-            const distanceByClub = new Map();
+            const statsByClub = new Map();
 
             activities.forEach(activity => {
                 const distanceKm = activity.distance / 1000;
                 const runner = allRunnerCredentials.find(rc => String(rc.athlete_id) === String(activity.user_id));
                 const runnerName = runner ? runner.runner_name : `Runner ID: ${activity.user_id || 'Unknown'}`;
                 const clubName = runner ? runner.running_team : 'Không rõ CLB';
+                const runnerId = String(activity.user_id);
 
                 distanceByRunner.set(runnerName, (distanceByRunner.get(runnerName) || 0) + distanceKm);
-                distanceByClub.set(clubName, (distanceByClub.get(clubName) || 0) + distanceKm);
+                
+                if (!statsByClub.has(clubName)) {
+                    statsByClub.set(clubName, { distance: 0, runners: new Set() });
+                }
+                const clubStats = statsByClub.get(clubName);
+                clubStats.distance += distanceKm;
+                clubStats.runners.add(runnerId);
             });
 
             const runnerData = Array.from(distanceByRunner.entries()).map(([name, distance]) => ({ name, distance }));
-            const clubData = Array.from(distanceByClub.entries()).map(([name, distance]) => ({ name, distance }));
+            const clubData = Array.from(statsByClub.entries()).map(([name, stats]) => ({
+                name,
+                distance: stats.distance,
+                runnerCount: stats.runners.size
+            }));
 
             // Render Runner Chart
             drawBubbleChart(distanceByRunnerChart, runnerData, "Quãng đường (KM) theo Runner", "name", "distance");
 
             // Prepare and render Club Chart with legend
-            const clubLegendContainer = document.getElementById('distance-by-club-legend');
             if (clubLegendContainer) clubLegendContainer.innerHTML = ''; // Clear previous legend on re-render
 
             const startDate = reportStartDateInput.value;
@@ -1789,8 +1868,9 @@
                         <thead>
                             <tr>
                                 <th class="w-1/12 text-center">STT</th>
-                                <th class="w-7/12">Tên câu lạc bộ</th>
-                                <th class="w-4/12 text-right">Số KM đạt được</th>
+                                <th class="w-5/12">Tên câu lạc bộ</th>
+                                <th class="w-3/12 text-center">Số lượng runner</th>
+                                <th class="w-3/12 text-right">Số KM đạt được</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -1801,6 +1881,7 @@
                         <tr>
                             <td class="text-center">${index + 1}</td>
                             <td>${item[nameKey]}</td>
+                            <td class="text-center">${item.runnerCount || 0}</td>
                             <td class="text-right">${item[valueKey].toFixed(2)}</td>
                         </tr>
                     `;
@@ -1808,9 +1889,11 @@
                 
                 // Add total row
                 const totalKm = data.reduce((sum, item) => sum + item[valueKey], 0);
+                const totalRunners = data.reduce((sum, item) => sum + (item.runnerCount || 0), 0);
                 tableHtml += `
                     <tr class="total-row">
                         <td colspan="2" class="text-right font-bold">Tổng cộng</td>
+                        <td class="text-center font-bold">${totalRunners}</td>
                         <td class="text-right font-bold">${totalKm.toFixed(2)}</td>
                     </tr>
                 `;
@@ -2533,3 +2616,5 @@
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 </body>
 </html>
+
+
