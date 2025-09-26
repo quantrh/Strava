@@ -361,14 +361,18 @@
                     </div>
 
                     <div class="mb-4">
-                        <label for="report-club-filter" class="block text-gray-700 text-sm font-bold mb-2">Chọn Câu lạc bộ:</label>
-                        <select id="report-club-filter" class="form-input">
-                            <option value="all">Tất cả Câu lạc bộ</option>
-                        </select>
+                        <label class="block text-gray-700 text-sm font-bold mb-2">Chọn Câu lạc bộ:</label>
+                        <div class="multi-select-container">
+                            <div id="multi-select-display-club" class="multi-select-selected-items">
+                                <span class="text-gray-500">Chọn câu lạc bộ</span>
+                            </div>
+                            <div id="multi-select-options-club" class="multi-select-options hidden">
+                            </div>
+                        </div>
                     </div>
 
                     <div class="mb-4">
-                        <label for="report-activity-type-filter" class="block text-gray-700 text-sm font-bold mb-2">Loại hoạt động:</label>
+                        <label class="block text-gray-700 text-sm font-bold mb-2">Loại hoạt động:</label>
                         <div class="multi-select-container">
                             <div id="multi-select-display-report" class="multi-select-selected-items">
                                 <span class="text-gray-500">Chọn loại hoạt động</span>
@@ -642,7 +646,7 @@
 
         // Filter states (from original report.html)
         let selectedRunnerIdReport = 'all'; 
-        let selectedClubNameReport = 'all'; 
+        let selectedClubNamesReport = []; 
         let selectedActivityTypesReport = []; 
         let minPaceFilter = null; // New filter for minimum pace (seconds/km)
         let minDistanceFilter = null; // New filter for minimum distance (km)
@@ -658,7 +662,8 @@
 
         // Filter elements (from original report.html's filter section)
         const reportRunnerFilter = document.getElementById('report-runner-filter');
-        const reportClubFilter = document.getElementById('report-club-filter');
+        const multiSelectDisplayClub = document.getElementById('multi-select-display-club');
+        const multiSelectOptionsClub = document.getElementById('multi-select-options-club');
         const multiSelectDisplayReport = document.getElementById('multi-select-display-report');
         const multiSelectOptionsReport = document.getElementById('multi-select-options-report');
         const reportMinPaceInput = document.getElementById('report-min-pace'); // New pace filter input
@@ -860,11 +865,11 @@
             if (meters === null || isNaN(meters)) return 'N/A';
             return `${Math.round(meters)} m`;
         }
-
+        
         /**
-         * Populates the multi-select filter dropdowns (from original report.html).
+         * Populates the multi-select filter for activity types.
          */
-        function populateActivityTypeFilters() {
+        function populateActivityTypeFilter() {
             multiSelectOptionsReport.innerHTML = ''; 
             ALL_ACTIVITY_TYPES.forEach(type => {
                 const optionDiv = document.createElement('div');
@@ -874,28 +879,43 @@
                 multiSelectOptionsReport.appendChild(optionDiv);
             });
         }
+        
+        /**
+         * Populates the multi-select filter for clubs.
+         */
+        function populateClubFilter() {
+            multiSelectOptionsClub.innerHTML = '';
+            allClubs.forEach(club => {
+                const optionDiv = document.createElement('div');
+                optionDiv.className = 'multi-select-option';
+                optionDiv.textContent = club.name;
+                optionDiv.dataset.value = club.name;
+                multiSelectOptionsClub.appendChild(optionDiv);
+            });
+        }
 
         /**
-         * Updates the display of selected items in the multi-select (from original report.html).
+         * Updates the display of selected items in a multi-select component.
          * @param {HTMLElement} displayElement - The element to show selected tags.
-         * @param {string[]} selectedTypes - Array of selected activity types.
+         * @param {string[]} selectedItems - Array of selected item values.
          * @param {HTMLElement} optionsContainer - The container for options to update their 'selected' class.
+         * @param {string} placeholder - The text to display when no items are selected.
          */
-        function updateMultiSelectDisplay(displayElement, selectedTypes, optionsContainer) {
+        function updateMultiSelectDisplay(displayElement, selectedItems, optionsContainer, placeholder) {
             displayElement.innerHTML = '';
-            if (selectedTypes.length === 0) {
-                displayElement.innerHTML = '<span class="text-gray-500">Chọn loại hoạt động</span>';
+            if (selectedItems.length === 0) {
+                displayElement.innerHTML = `<span class="text-gray-500">${placeholder}</span>`;
             } else {
-                selectedTypes.forEach(type => {
+                selectedItems.forEach(item => {
                     const itemSpan = document.createElement('span');
                     itemSpan.className = 'multi-select-selected-item';
-                    itemSpan.innerHTML = `${type} <span data-value="${type}" class="remove-item-btn">&times;</span>`;
+                    itemSpan.innerHTML = `${item} <span data-value="${item}" class="remove-item-btn">&times;</span>`;
                     displayElement.appendChild(itemSpan);
                 });
             }
 
             Array.from(optionsContainer.children).forEach(optionDiv => {
-                if (selectedTypes.includes(optionDiv.dataset.value)) {
+                if (selectedItems.includes(optionDiv.dataset.value)) {
                     optionDiv.classList.add('selected');
                 } else {
                     optionDiv.classList.remove('selected');
@@ -904,45 +924,54 @@
         }
 
         /**
-         * Toggles an activity type in the selected list (from original report.html).
-         * @param {string} type - The activity type to toggle.
-         * @param {string[]} selectedTypesArray - The array to modify.
+         * Toggles an item in a selected list for a multi-select component.
+         * @param {string} item - The item value to toggle.
+         * @param {string[]} selectedItemsArray - The array of selected items to modify.
          * @param {HTMLElement} displayElement - The display element for this filter.
          * @param {HTMLElement} optionsContainer - The options container for this filter.
+         * @param {string} placeholder - The placeholder text for the display element.
          */
-        function toggleActivityType(type, selectedTypesArray, displayElement, optionsContainer) {
-            const index = selectedTypesArray.indexOf(type);
+        function toggleItemInList(item, selectedItemsArray, displayElement, optionsContainer, placeholder) {
+            const index = selectedItemsArray.indexOf(item);
             if (index > -1) {
-                selectedTypesArray.splice(index, 1); // Remove if already exists
+                selectedItemsArray.splice(index, 1); // Remove if already exists
             } else {
-                selectedTypesArray.push(type); // Add if not exists
-                selectedTypesArray.sort(); // Keep sorted alphabetically
+                selectedItemsArray.push(item); // Add if not exists
+                selectedItemsArray.sort(); // Keep sorted alphabetically
             }
-            updateMultiSelectDisplay(displayElement, selectedTypesArray, optionsContainer);
+            updateMultiSelectDisplay(displayElement, selectedItemsArray, optionsContainer, placeholder);
         }
 
-        // Event delegation for multi-select options (Report Page specific)
+        // Event delegation for all multi-select components
         document.addEventListener('click', (event) => {
-            // Toggle options visibility
+            // --- Activity Type Filter Logic ---
             if (event.target.closest('#multi-select-display-report')) {
-                document.getElementById('multi-select-options-report').classList.toggle('hidden');
-            } else {
-                // Click outside to close options
-                if (!event.target.closest('#multi-select-options-report')) {
-                    document.getElementById('multi-select-options-report').classList.add('hidden');
-                }
+                multiSelectOptionsReport.classList.toggle('hidden');
+            } else if (!event.target.closest('#multi-select-options-report')) {
+                multiSelectOptionsReport.classList.add('hidden');
             }
 
-            // Handle option selection/deselection
+            // --- Club Filter Logic ---
+            if (event.target.closest('#multi-select-display-club')) {
+                multiSelectOptionsClub.classList.toggle('hidden');
+            } else if (!event.target.closest('#multi-select-options-club')) {
+                multiSelectOptionsClub.classList.add('hidden');
+            }
+
+            // --- Option Selection/Deselection Logic ---
             if (event.target.classList.contains('multi-select-option')) {
-                const type = event.target.dataset.value;
+                const value = event.target.dataset.value;
                 if (event.target.closest('#multi-select-options-report')) {
-                    toggleActivityType(type, selectedActivityTypesReport, multiSelectDisplayReport, multiSelectOptionsReport);
+                    toggleItemInList(value, selectedActivityTypesReport, multiSelectDisplayReport, multiSelectOptionsReport, 'Chọn loại hoạt động');
+                } else if (event.target.closest('#multi-select-options-club')) {
+                    toggleItemInList(value, selectedClubNamesReport, multiSelectDisplayClub, multiSelectOptionsClub, 'Chọn câu lạc bộ');
                 }
             } else if (event.target.classList.contains('remove-item-btn')) {
-                const type = event.target.dataset.value;
+                const value = event.target.dataset.value;
                 if (event.target.closest('#multi-select-display-report')) {
-                    toggleActivityType(type, selectedActivityTypesReport, multiSelectDisplayReport, multiSelectOptionsReport);
+                    toggleItemInList(value, selectedActivityTypesReport, multiSelectDisplayReport, multiSelectOptionsReport, 'Chọn loại hoạt động');
+                } else if (event.target.closest('#multi-select-display-club')) {
+                    toggleItemInList(value, selectedClubNamesReport, multiSelectDisplayClub, multiSelectOptionsClub, 'Chọn câu lạc bộ');
                 }
             }
         });
@@ -1001,18 +1030,12 @@
             reportRunnerFilter.value = selectedRunnerIdReport; // Restore previous selection
 
             // Populate Club filter
-            reportClubFilter.innerHTML = '<option value="all">Tất cả Câu lạc bộ</option>';
-            allClubs.forEach(club => {
-                const option = document.createElement('option');
-                option.value = club.name;
-                option.textContent = club.name;
-                reportClubFilter.appendChild(option);
-            });
-            reportClubFilter.value = selectedClubNameReport; // Restore previous selection
+            populateClubFilter();
+            updateMultiSelectDisplay(multiSelectDisplayClub, selectedClubNamesReport, multiSelectOptionsClub, 'Chọn câu lạc bộ');
 
             // Initialize activity type filter
-            populateActivityTypeFilters();
-            updateMultiSelectDisplay(multiSelectDisplayReport, selectedActivityTypesReport, multiSelectOptionsReport);
+            populateActivityTypeFilter();
+            updateMultiSelectDisplay(multiSelectDisplayReport, selectedActivityTypesReport, multiSelectOptionsReport, 'Chọn loại hoạt động');
 
             // Restore pace and distance filter values
             reportMinPaceInput.value = minPaceFilter !== null ? minPaceFilter : '';
@@ -1042,12 +1065,13 @@
                     queryRunnerIds = [selectedRunnerIdReport];
                 }
 
-                // If a specific club is selected, narrow down runner IDs further
-                if (selectedClubNameReport !== 'all') {
-                    const runnersInSelectedClub = allRunnerCredentials.filter(
-                        c => c.running_team === selectedClubNameReport && c.athlete_id
+                // If specific clubs are selected, narrow down runner IDs further
+                if (selectedClubNamesReport.length > 0) {
+                    const runnersInSelectedClubs = allRunnerCredentials.filter(
+                        c => selectedClubNamesReport.includes(c.running_team) && c.athlete_id
                     ).map(c => String(c.athlete_id));
-                    queryRunnerIds = queryRunnerIds.filter(id => runnersInSelectedClub.includes(id));
+                    // Filter the existing queryRunnerIds to only include runners from the selected clubs
+                    queryRunnerIds = queryRunnerIds.filter(id => runnersInSelectedClubs.includes(id));
                 }
 
                 if (queryRunnerIds.length === 0) {
@@ -2416,7 +2440,13 @@
                 
                 // Load filter states from local storage
                 selectedRunnerIdReport = localStorage.getItem('report_runner_filter') || 'all';
-                selectedClubNameReport = localStorage.getItem('report_club_filter') || 'all';
+                try {
+                    const savedClubs = localStorage.getItem('report_club_filter');
+                    selectedClubNamesReport = savedClubs ? JSON.parse(savedClubs) : [];
+                } catch (e) {
+                    console.error('Error parsing saved clubs from local storage:', e);
+                    selectedClubNamesReport = [];
+                }
                 try {
                     const savedActivityTypes = localStorage.getItem('report_activity_types');
                     selectedActivityTypesReport = savedActivityTypes ? JSON.parse(savedActivityTypes) : [];
@@ -2501,7 +2531,7 @@
             applyReportFiltersBtn.addEventListener('click', () => {
                 // Save current filter states to local storage before applying
                 localStorage.setItem('report_runner_filter', selectedRunnerIdReport);
-                localStorage.setItem('report_club_filter', selectedClubNameReport);
+                localStorage.setItem('report_club_filter', JSON.stringify(selectedClubNamesReport));
                 localStorage.setItem('report_activity_types', JSON.stringify(selectedActivityTypesReport));
                 localStorage.setItem('report_min_pace', minPaceFilter !== null ? minPaceFilter.toString() : '');
                 localStorage.setItem('report_min_distance', minDistanceFilter !== null ? minDistanceFilter.toString() : '');
@@ -2513,10 +2543,8 @@
             reportRunnerFilter.addEventListener('change', (e) => {
                 selectedRunnerIdReport = e.target.value;
             });
-            reportClubFilter.addEventListener('change', (e) => {
-                selectedClubNameReport = e.target.value;
-            });
-            // Multi-select activity type changes are handled by global click listener
+
+            // Multi-select changes are handled by global click listener
             reportStartDateInput.addEventListener('change', () => { /* value changed */ });
             reportEndDateInput.addEventListener('change', () => { /* value changed */ });
 
@@ -2608,6 +2636,3 @@
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 </body>
 </html>
-
-
-
