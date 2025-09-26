@@ -544,12 +544,12 @@
                         <thead>
                             <tr>
                                 <th>Tên Runner</th>
-                                <th>CLB</th>
-                                <th>Tuần</th>
-                                <th>Tổng KM thực hiện</th>
-                                <th>Mục tiêu KM</th>
-                                <th>KM chênh lệch</th>
-                                <th>Số tiền (nghìn VNĐ)</th>
+                                <th>Ngày chạy</th>
+                                <th>Tên Hoạt Động</th>
+                                <th>Loại</th>
+                                <th>Quãng đường (KM)</th>
+                                <th>Pace</th>
+                                <th>Thời gian</th>
                             </tr>
                         </thead>
                         <tbody></tbody>
@@ -1503,14 +1503,13 @@
 
 
         /**
-         * Renders the penalty/bonus table with collapsible runner sections.
+         * Renders the penalty/bonus table with collapsible runner sections, showing individual activities.
          * @param {Array} activities - Array of activity objects.
          */
         function renderPenaltyBonusTable(activities) {
             const table = document.getElementById('penalty-bonus-table');
-            // Clear all existing tbodies first to handle re-renders correctly
             table.querySelectorAll('tbody').forEach(tbody => tbody.remove());
-            
+
             const penaltyBonusStatus = document.getElementById('penalty-bonus-status');
             penaltyBonusStatus.textContent = '';
 
@@ -1524,31 +1523,23 @@
             const penaltyPerKmLte10 = parseFloat(penaltyPerKmLte10Input.value) || 0;
             const targetKmPerWeek = parseFloat(targetKmPerWeekInput.value) || 0;
 
-            const weeklyStatsByRunner = {}; // { athlete_id: { isoWeek: { totalDistance: ... } } }
-
-            activities.forEach(activity => {
+            const activitiesByAthlete = activities.reduce((acc, activity) => {
                 const athleteId = String(activity.user_id);
-                const isoWeek = getISOWeekString(activity.start_date); 
-
-                if (isoWeek) { // Only process if the week string is valid
-                    if (!weeklyStatsByRunner[athleteId]) {
-                        weeklyStatsByRunner[athleteId] = {};
-                    }
-                    if (!weeklyStatsByRunner[athleteId][isoWeek]) {
-                        weeklyStatsByRunner[athleteId][isoWeek] = { totalDistance: 0 };
-                    }
-                    weeklyStatsByRunner[athleteId][isoWeek].totalDistance += (activity.distance / 1000); // Convert to KM
+                if (!acc[athleteId]) {
+                    acc[athleteId] = [];
                 }
-            });
+                acc[athleteId].push(activity);
+                return acc;
+            }, {});
 
-            const sortedAthleteIds = Object.keys(weeklyStatsByRunner).sort((a, b) => {
+            const sortedAthleteIds = Object.keys(activitiesByAthlete).sort((a, b) => {
                 const runnerA = allRunnerCredentials.find(rc => String(rc.athlete_id) === a);
                 const runnerB = allRunnerCredentials.find(rc => String(rc.athlete_id) === b);
                 const nameA = runnerA ? runnerA.runner_name : `Runner ID: ${a}`;
                 const nameB = runnerB ? runnerB.runner_name : `Runner ID: ${b}`;
                 return nameA.localeCompare(nameB);
             });
-            
+
             if (sortedAthleteIds.length === 0) {
                 penaltyBonusStatus.textContent = 'Không có dữ liệu để hiển thị.';
                 table.appendChild(document.createElement('tbody'));
@@ -1559,29 +1550,32 @@
                 const runnerInfo = allRunnerCredentials.find(rc => String(rc.athlete_id) === athleteId);
                 const runnerName = runnerInfo?.runner_name || `Runner ID: ${athleteId}`;
                 const runnerClub = runnerInfo?.running_team || 'N/A';
+                const runnerActivities = activitiesByAthlete[athleteId];
 
-                const weeklyData = weeklyStatsByRunner[athleteId];
-                const sortedWeeks = Object.keys(weeklyData).sort();
-                
                 let totalRunnerKm = 0;
                 let totalRunnerAmount = 0;
+                const weeklyStats = {};
 
-                // Pre-calculate totals for the runner's summary row
-                sortedWeeks.forEach(isoWeek => {
-                    const weekKm = weeklyData[isoWeek].totalDistance;
-                    totalRunnerKm += weekKm;
-                    const kmDifference = weekKm - targetKmPerWeek;
-                    
-                    if (kmDifference < 0) {
-                        const deficitKm = Math.abs(kmDifference);
-                        let rate = (deficitKm <= 10) ? penaltyPerKmLte10 : penaltyPerKmGt10;
-                        totalRunnerAmount -= (deficitKm * rate); // Penalty is a negative value
-                    } else {
-                        // Optional: Add bonus logic if desired in the future
+                runnerActivities.forEach(activity => {
+                    const isoWeek = getISOWeekString(activity.start_date);
+                    totalRunnerKm += (activity.distance / 1000);
+                    if (isoWeek) {
+                        if (!weeklyStats[isoWeek]) {
+                            weeklyStats[isoWeek] = 0;
+                        }
+                        weeklyStats[isoWeek] += (activity.distance / 1000);
                     }
                 });
 
-                // Create summary tbody
+                Object.values(weeklyStats).forEach(weekKm => {
+                    const kmDifference = weekKm - targetKmPerWeek;
+                    if (kmDifference < 0) {
+                        const deficitKm = Math.abs(kmDifference);
+                        let rate = (deficitKm <= 10) ? penaltyPerKmLte10 : penaltyPerKmGt10;
+                        totalRunnerAmount -= (deficitKm * rate);
+                    }
+                });
+                
                 const summaryTbody = document.createElement('tbody');
                 summaryTbody.className = 'runner-summary-group';
 
@@ -1590,7 +1584,7 @@
                 totalRow.innerHTML = `
                     <td colspan="4" class="font-bold text-lg text-bidv-green">
                         ${runnerName} <span class="text-gray-500 text-base">(${runnerClub})</span>
-                        <i class="fas fa-chevron-right text-gray-600 ml-2 cursor-pointer penalty-toggle-icon" data-target-id="penalty-details-for-${athleteId}"></i>
+                        <i class="fas fa-chevron-down text-gray-600 ml-2 cursor-pointer penalty-toggle-icon" data-target-id="penalty-details-for-${athleteId}"></i>
                     </td>
                     <td colspan="3" class="text-right font-bold text-lg">${totalRunnerKm.toFixed(2)} KM</td>
                 `;
@@ -1607,50 +1601,36 @@
                 `;
                 table.appendChild(summaryTbody);
 
-                // Create detailed activities tbody (collapsible)
                 const detailedTbody = document.createElement('tbody');
                 detailedTbody.id = `penalty-details-for-${athleteId}`;
                 detailedTbody.className = 'collapsible-content collapsed';
 
-                sortedWeeks.forEach(isoWeek => {
-                    const weekData = weeklyData[isoWeek];
-                    const totalKm = weekData.totalDistance;
-                    const kmDifference = totalKm - targetKmPerWeek;
-                    let amount = 0;
+                runnerActivities.sort((a, b) => new Date(b.start_date) - new Date(a.start_date));
 
-                    if (kmDifference < 0) {
-                        const deficitKm = Math.abs(kmDifference);
-                        let rate = (deficitKm <= 10) ? penaltyPerKmLte10 : penaltyPerKmGt10;
-                        amount = deficitKm * rate;
-                    }
-
+                runnerActivities.forEach(activity => {
                     const row = detailedTbody.insertRow();
-                    // Leave the first cell empty to align with the name column, which is now in the summary
                     row.innerHTML = `
-                        <td></td> 
-                        <td>${runnerClub}</td>
-                        <td>${isoWeek.replace(/-W/, 'W')}</td>
-                        <td>${totalKm.toFixed(2)}</td>
-                        <td>${targetKmPerWeek.toFixed(0)}</td>
-                        <td class="${kmDifference < 0 ? 'text-red-600' : 'text-green-600'} font-bold">${kmDifference.toFixed(2)}</td>
-                        <td class="${kmDifference < 0 ? 'text-red-600 font-bold' : ''}">${amount > 0 ? amount.toLocaleString('vi-VN') : '0'}</td>
+                        <td></td>
+                        <td>${new Date(activity.start_date).toLocaleDateString('vi-VN')}</td>
+                        <td>${activity.name}</td>
+                        <td>${activity.type}</td>
+                        <td>${(activity.distance / 1000).toFixed(2)}</td>
+                        <td>${formatPaceForTable(activity.average_speed)}</td>
+                        <td>${formatTime(activity.moving_time)}</td>
                     `;
                 });
                 table.appendChild(detailedTbody);
                 
-                // Add spacer
                 const spacerTbody = document.createElement('tbody');
                 spacerTbody.innerHTML = `<tr class="h-4 bg-gray-100"><td colspan="7"></td></tr>`;
                 table.appendChild(spacerTbody);
             });
 
-            // Add event listeners to all new toggle icons
             document.querySelectorAll('.penalty-toggle-icon').forEach(icon => {
                 icon.addEventListener('click', () => {
                     const targetId = icon.dataset.targetId;
                     const contentElement = document.getElementById(targetId);
                     if (contentElement) {
-                        // Re-use the existing generic toggle function
                         const isCurrentlyCollapsed = contentElement.classList.contains('collapsed');
                         toggleCollapsible(contentElement, icon, !isCurrentlyCollapsed);
                     }
@@ -2616,5 +2596,6 @@
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 </body>
 </html>
+
 
 
