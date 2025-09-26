@@ -304,7 +304,7 @@
             background-color: rgba(0, 0, 0, 0.5);
             /* display: flex; <-- REMOVED this line as 'hidden' class handles it */
             align-items: center;
-            justify-content-center;
+            justify-content: center;
         }
 
         /* Collapsible content styles */
@@ -467,6 +467,7 @@
                     <div id="distance-by-club-chart" class="mt-4 border rounded-md p-2 min-h-[150px] flex items-center justify-content-center">
                         <p class="text-gray-500 text-sm">Biểu đồ quãng đường theo CLB sẽ hiển thị ở đây.</p>
                     </div>
+                    <div id="distance-by-club-legend" class="mt-4 overflow-x-auto"></div>
                 </div>
             </div>
 
@@ -1622,8 +1623,25 @@
             // Render Runner Chart
             drawBubbleChart(distanceByRunnerChart, runnerData, "Quãng đường (KM) theo Runner", "name", "distance");
 
-            // Render Club Chart
-            drawBubbleChart(distanceByClubChart, clubData, "Quãng đường (KM) theo CLB", "name", "distance");
+            // Prepare and render Club Chart with legend
+            const clubLegendContainer = document.getElementById('distance-by-club-legend');
+            if (clubLegendContainer) clubLegendContainer.innerHTML = ''; // Clear previous legend on re-render
+
+            const startDate = reportStartDateInput.value;
+            const endDate = reportEndDateInput.value;
+
+            drawBubbleChart(
+                distanceByClubChart,
+                clubData,
+                "Quãng đường (KM) theo CLB",
+                "name",
+                "distance",
+                { // New legendOptions object
+                    container: clubLegendContainer,
+                    startDate: startDate,
+                    endDate: endDate
+                }
+            );
         }
 
         /**
@@ -1633,11 +1651,16 @@
          * @param {string} title - Chart title.
          * @param {string} nameKey - Key for the name/category (e.g., 'runner_name', 'club_name').
          * @param {string} valueKey - Key for the numerical value (e.g., 'totalDistance', 'distance').
+         * @param {object|null} legendOptions - Optional parameters for creating a legend table.
          */
-        function drawBubbleChart(container, data, title, nameKey, valueKey) {
+        function drawBubbleChart(container, data, title, nameKey, valueKey, legendOptions = null) {
             container.innerHTML = '';
             if (data.length === 0) {
                 container.innerHTML = `<p class="text-gray-500 text-sm">${title} - Không có dữ liệu.</p>`;
+                // Also clear the legend if there's no data
+                if (legendOptions && legendOptions.container) {
+                    legendOptions.container.innerHTML = '';
+                }
                 return;
             }
 
@@ -1739,6 +1762,67 @@
                 .attr("font-weight", "bold")
                 .attr("fill", "#333")
                 .text(title);
+
+            // --- START: New Legend Generation Logic ---
+            if (legendOptions && legendOptions.container && data.length > 0) {
+                const { container: legendContainer, startDate, endDate } = legendOptions;
+                legendContainer.innerHTML = ''; // Clear previous legend
+
+                // Helper function to format date string from 'YYYY-MM-DD' to 'DD/MM/YYYY'
+                const formatDate = (dateString) => {
+                    if (!dateString) return '...';
+                    const parts = dateString.split('-');
+                    if (parts.length !== 3) return dateString; // Fallback for unexpected formats
+                    return `${parts[2]}/${parts[1]}/${parts[0]}`;
+                };
+
+                const startDateFormatted = formatDate(startDate);
+                const endDateFormatted = formatDate(endDate);
+
+                // Sort data by distance (valueKey) descending for the table
+                const sortedData = [...data].sort((a, b) => b[valueKey] - a[valueKey]);
+
+                // Create the table HTML
+                let tableHtml = `
+                    <h4 class="text-md font-semibold mb-2 text-center">Kết quả chạy từ ngày ${startDateFormatted} đến ngày ${endDateFormatted}</h4>
+                    <table class="data-table w-full text-sm">
+                        <thead>
+                            <tr>
+                                <th class="w-1/12 text-center">STT</th>
+                                <th class="w-7/12">Tên câu lạc bộ</th>
+                                <th class="w-4/12 text-right">Số KM đạt được</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                `;
+
+                sortedData.forEach((item, index) => {
+                    tableHtml += `
+                        <tr>
+                            <td class="text-center">${index + 1}</td>
+                            <td>${item[nameKey]}</td>
+                            <td class="text-right">${item[valueKey].toFixed(2)}</td>
+                        </tr>
+                    `;
+                });
+                
+                // Add total row
+                const totalKm = data.reduce((sum, item) => sum + item[valueKey], 0);
+                tableHtml += `
+                    <tr class="total-row">
+                        <td colspan="2" class="text-right font-bold">Tổng cộng</td>
+                        <td class="text-right font-bold">${totalKm.toFixed(2)}</td>
+                    </tr>
+                `;
+
+                tableHtml += `
+                        </tbody>
+                    </table>
+                `;
+
+                legendContainer.innerHTML = tableHtml;
+            }
+            // --- END: New Legend Generation Logic ---
         }
 
         // --- Chart.js Specific Rendering Functions (from report origin.html) ---
