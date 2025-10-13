@@ -1,0 +1,908 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Queue - Hệ Thống Lấy Số Xếp Hàng</title>
+    <!-- Tải Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Tải Chart.js cho đồ thị -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        /* Custom styles for aesthetic */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f7f9fb;
+        }
+        .card {
+            background-color: white;
+            border-radius: 1rem;
+            box-shadow: 0 10px 15px rgba(0, 0, 0, 0.05);
+            transition: transform 0.3s ease;
+        }
+        /* Cập nhật màu chính theo yêu cầu: #006B68 */
+        .btn-primary {
+            background-color: #006B68; 
+            color: white;
+            transition: background-color 0.3s;
+        }
+        .btn-primary:hover {
+            background-color: #00504E; /* Màu đậm hơn cho hover */
+        }
+        /* Cập nhật màu nhấn cho trạng thái được chọn */
+        .selected-transaction {
+             background-color: #fefce8; /* Màu vàng nhạt, kết hợp với FFC62F */
+             border-color: #FFC62F !important;
+        }
+        .scroll-y-div {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        /* Thiết lập màu cho các phần tử khác */
+        .text-brand-primary { color: #006B68; }
+        .bg-brand-secondary { background-color: #FFC62F; }
+        
+        /* Màu mới cho nút Gọi Số Kế Tiếp */
+        .btn-call-next {
+            background-color: #FFC62F;
+            color: #1F2937; /* Màu chữ đen xám để tương phản */
+            transition: background-color 0.3s;
+        }
+        .btn-call-next:hover {
+            background-color: #E5B42A; /* Màu đậm hơn cho hover */
+        }
+        .chart-container {
+            width: 100%;
+            height: 300px;
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+    <div id="app" class="max-w-6xl mx-auto">
+        
+        <!-- BRAND BANNER START -->
+        <div class="bg-brand-secondary text-gray-800 p-6 md:p-8 rounded-xl shadow-lg mb-8 flex flex-col md:flex-row items-center justify-between">
+            <div class="md:w-3/5">
+                <h1 class="text-3xl font-extrabold text-brand-primary mb-2">Smart Queue Hub</h1>
+                <p class="text-xl font-semibold mb-4">Hệ Thống Lấy Số Xếp Hàng Tập Trung</p>
+                <p class="text-gray-700">Trải nghiệm giao dịch nhanh chóng và tiện lợi tại quầy.</p>
+            </div>
+            <div class="md:w-2/5 w-full mt-4 md:mt-0 flex justify-center">
+                <!-- Banner: Modern Bank Counter (SVG) -->
+                <svg width="150" height="100" viewBox="0 0 150 100" fill="none" xmlns="http://www.w3.org/2000/svg" class="w-full max-w-[200px] md:max-w-full h-auto">
+                    <!-- Floor/Base -->
+                    <rect x="0" y="70" width="150" height="30" fill="#E5E7EB"/>
+                    <!-- Counter Desk -->
+                    <rect x="15" y="45" width="120" height="30" rx="5" fill="white" stroke="#006B68" stroke-width="2"/>
+                    <!-- Counter Screen (Tablet/Display) -->
+                    <rect x="25" y="30" width="20" height="15" rx="3" fill="#006B68"/>
+                    <!-- Customer (Abstract Head) -->
+                    <circle cx="25" cy="40" r="10" fill="#FFC62F" stroke="#006B68" stroke-width="1.5"/>
+                    <!-- Teller (Abstract Head) -->
+                    <circle cx="125" cy="40" r="10" fill="#E5E7EB" stroke="#006B68" stroke-width="1.5"/>
+                    <!-- Teller Screen (Monitor) -->
+                    <rect x="95" y="20" width="35" height="25" rx="3" fill="#6B7280"/>
+                    <!-- Queue Ticket (Printer) -->
+                    <rect x="40" y="55" width="10" height="10" rx="2" fill="#D1D5DB"/>
+                    <rect x="42" y="50" width="6" height="5" fill="white" stroke="#374151" stroke-width="0.5"/>
+                </svg>
+            </div>
+        </div>
+        <!-- BRAND BANNER END -->
+
+        <!-- Navigation/Mode Selection -->
+        <div class="flex justify-center mb-8 space-x-4 flex-wrap">
+            <button onclick="showView('customer')" id="btn-customer-mode" class="p-3 font-semibold rounded-lg btn-primary shadow-md mb-2">
+                <i class="fas fa-user mr-2"></i> Chế độ Khách hàng (Lấy số)
+            </button>
+            <button onclick="showView('manager')" id="btn-manager-mode" class="p-3 font-semibold rounded-lg bg-gray-600 text-white hover:bg-gray-700 shadow-md mb-2">
+                <i class="fas fa-tv mr-2"></i> Chế độ Quản lý/Hàng đợi
+            </button>
+            <button onclick="showView('report')" id="btn-report-mode" class="p-3 font-semibold rounded-lg bg-gray-600 text-white hover:bg-gray-700 shadow-md mb-2">
+                <i class="fas fa-chart-bar mr-2"></i> Báo cáo & Thống kê
+            </button>
+        </div>
+
+        <!-- Customer View (Lấy số) -->
+        <div id="customer-view" class="card p-6 md:p-8">
+            <h2 class="text-2xl font-semibold text-gray-700 mb-6 text-brand-primary">Lấy Số Thứ Tự Giao Dịch</h2>
+            
+            <div class="space-y-6">
+                <!-- Step 1: Chọn Chi nhánh -->
+                <div>
+                    <label for="select-branch" class="block text-sm font-medium text-gray-700 mb-2">1. Chọn Chi nhánh/Phòng giao dịch:</label>
+                    <select id="select-branch" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-brand-primary focus:border-brand-primary"></select>
+                </div>
+
+                <!-- Step 2: Chọn Loại Giao dịch -->
+                <div>
+                    <label for="select-transaction-type" class="block text-sm font-medium text-gray-700 mb-2">2. Chọn Loại Giao dịch:</label>
+                    <div id="transaction-type-selection" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <!-- Transaction types dynamically loaded here -->
+                    </div>
+                </div>
+
+                <!-- Step 3: Lấy số -->
+                <button id="btn-get-number" class="w-full p-4 btn-primary rounded-lg text-lg font-bold shadow-lg disabled:opacity-50" disabled>
+                    3. Lấy Số Thứ Tự
+                </button>
+            </div>
+
+            <!-- Kết quả lấy số -->
+            <div id="ticket-result" class="mt-8 hidden p-6 bg-brand-secondary bg-opacity-10 border-l-4 border-brand-primary rounded-lg text-center">
+                <p class="text-xl font-medium text-brand-primary">Phiếu số thứ tự của bạn:</p>
+                <p id="current-ticket-number" class="text-7xl font-extrabold text-brand-primary my-4">--</p>
+                <p id="current-ticket-info" class="text-lg text-gray-600">--</p>
+            </div>
+            
+            <div id="error-message" class="mt-4 text-red-500 font-medium hidden"></div>
+        </div>
+
+        <!-- Manager/Display View (Quản lý) -->
+        <div id="manager-view" class="card p-6 md:p-8 hidden">
+            <h2 class="text-2xl font-semibold text-gray-700 mb-6 text-brand-primary">Quản Lý Hàng Đợi Giao Dịch</h2>
+            
+            <div class="mb-6 flex flex-col md:flex-row gap-4">
+                <div class="flex-1">
+                    <label for="manager-select-branch" class="block text-sm font-medium text-gray-700 mb-2">Chọn Chi nhánh:</label>
+                    <select id="manager-select-branch" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-brand-primary focus:border-brand-primary"></select>
+                </div>
+                <div class="flex-1">
+                    <label for="manager-select-type" class="block text-sm font-medium text-gray-700 mb-2">Chọn Loại Giao dịch:</label>
+                    <select id="manager-select-type" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-brand-primary focus:border-brand-primary"></select>
+                </div>
+                <div class="md:self-end">
+                    <!-- Cập nhật màu nút Làm mới -->
+                    <button onclick="refreshQueue()" class="p-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 font-medium w-full md:w-auto">Làm mới <i class="fas fa-sync-alt ml-1"></i></button>
+                </div>
+            </div>
+
+            <!-- Current Serving Number Display -->
+            <div class="bg-blue-50 p-6 rounded-lg mb-6 border-l-4 border-brand-primary">
+                <p class="text-xl font-medium text-brand-primary">Số đang phục vụ (Quầy: <span id="current-teller-id">--</span>):</p>
+                <p id="current-serving-number" class="text-6xl font-extrabold text-brand-primary my-2">--</p>
+                <p id="current-serving-info" class="text-lg text-gray-600">--</p>
+                <div class="flex space-x-4 mt-4">
+                    <!-- Đã cập nhật lớp CSS cho nút Gọi số kế tiếp -->
+                    <button onclick="callNextNumber()" class="p-3 btn-call-next rounded-lg hover:bg-opacity-90 font-bold flex-1">
+                        <i class="fas fa-bullhorn mr-2"></i> Gọi Số Kế Tiếp
+                    </button>
+                    <!-- Cập nhật màu nút Hoàn thành giao dịch -->
+                    <button onclick="completeServing(document.getElementById('current-serving-number').textContent.replace(/[^\d\w]/g, ''))" class="p-3 bg-green-500 text-white rounded-lg hover:bg-green-600 font-medium flex-1">
+                        <i class="fas fa-check-circle mr-2"></i> Hoàn Thành Giao Dịch
+                    </button>
+                </div>
+            </div>
+
+            <!-- Waiting Queue List -->
+            <h3 class="text-xl font-semibold text-gray-700 mb-4">Danh sách Khách hàng chờ:</h3>
+            <div id="queue-list" class="scroll-y-div space-y-3">
+                <!-- Queue list items dynamically loaded here -->
+            </div>
+        </div>
+        
+        <!-- Report View (Báo cáo) -->
+        <div id="report-view" class="card p-6 md:p-8 hidden">
+            <h2 class="text-2xl font-semibold text-gray-700 mb-6 text-brand-primary">Báo Cáo Thống Kê Hiệu Suất Hệ Thống</h2>
+            
+            <div class="mb-6 flex flex-col md:flex-row gap-4">
+                 <div class="flex-1">
+                    <label for="report-select-branch" class="block text-sm font-medium text-gray-700 mb-2">Chọn Chi nhánh:</label>
+                    <select id="report-select-branch" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-brand-primary focus:border-brand-primary"></select>
+                </div>
+                 <div class="md:self-end">
+                    <button onclick="generateReport()" class="p-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 font-medium w-full md:w-auto">Tạo Báo Cáo <i class="fas fa-chart-line ml-1"></i></button>
+                </div>
+            </div>
+            
+            <div id="report-summary" class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+                <!-- Summary cards generated here -->
+            </div>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="card p-4">
+                    <h3 class="text-lg font-semibold mb-3">Tỷ lệ Giao dịch Hoàn thành theo Loại</h3>
+                    <div class="chart-container">
+                        <canvas id="transactionVolumeChart"></canvas>
+                    </div>
+                </div>
+                <div class="card p-4">
+                    <h3 class="text-lg font-semibold mb-3">Thời gian Chờ & Xử lý Trung bình (giây)</h3>
+                    <div class="chart-container">
+                        <canvas id="averageTimeChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+    </div>
+    
+    <!-- Font Awesome for icons -->
+    <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
+
+    <script>
+        // --- Cấu hình và Giả lập dữ liệu ---
+        const LOCAL_STORAGE_KEY = 'smartQueueData';
+        
+        const initialBranches = [
+            { id: 'HN', name: 'Chi Nhánh Hà Nội', address: '123 Phố Huế, Hà Nội' },
+            { id: 'HCM', name: 'Chi Nhánh TP.HCM', address: '456 Lê Lợi, TP.HCM' },
+            { id: 'DN', name: 'Chi Nhánh Đà Nẵng', address: '789 Trần Phú, Đà Nẵng' },
+        ];
+
+        const initialTransactionTypes = [
+            { id: 'TM', name: 'Giao dịch Tiền mặt (A)', prefix: 'A', counter: 'Quầy 1, 2' },
+            { id: 'PKM', name: 'Giao dịch Phi tiền mặt (B)', prefix: 'B', counter: 'Quầy 3' },
+            { id: 'TC', name: 'Tư vấn Tài chính (C)', prefix: 'C', counter: 'Phòng Tư vấn' },
+        ];
+        
+        // Màu sắc cho biểu đồ (dùng màu thương hiệu và màu bổ sung)
+        const brandColorPrimary = '#006B68';
+        const brandColorSecondary = '#FFC62F';
+        const supplementalColor = '#2563EB'; // Blue
+        
+        let transactionVolumeChartInstance = null;
+        let averageTimeChartInstance = null;
+
+        let state = {
+            currentBranchId: initialBranches[0].id,
+            currentTransactionTypeId: null,
+            managerBranchId: initialBranches[0].id,
+            managerTransactionTypeId: initialTransactionTypes[0].id,
+            reportBranchId: initialBranches[0].id, // New state for report
+            lastServedId: null, // ID of the ticket currently being served
+        };
+
+        // --- Hàm Quản lý Local Storage ---
+
+        /**
+         * Tải dữ liệu từ Local Storage hoặc khởi tạo dữ liệu mặc định
+         * @returns {object} Dữ liệu toàn bộ hệ thống
+         */
+        function loadData() {
+            try {
+                const data = localStorage.getItem(LOCAL_STORAGE_KEY);
+                return data ? JSON.parse(data) : { queue: [], nextNumber: {} };
+            } catch (e) {
+                console.error('Lỗi khi tải dữ liệu từ Local Storage:', e);
+                return { queue: [], nextNumber: {} };
+            }
+        }
+
+        /**
+         * Lưu dữ liệu vào Local Storage
+         * @param {object} data Dữ liệu để lưu
+         */
+        function saveData(data) {
+            try {
+                localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(data));
+            } catch (e) {
+                console.error('Lỗi khi lưu dữ liệu vào Local Storage:', e);
+            }
+        }
+        
+        /**
+         * Tạo dữ liệu demo hoàn thành để có báo cáo thống kê
+         */
+        function createDemoCompletedTickets(data, count) {
+            const types = initialTransactionTypes;
+            const branches = initialBranches;
+
+            for (let i = 0; i < count; i++) {
+                const randomBranch = branches[Math.floor(Math.random() * branches.length)];
+                const randomType = types[Math.floor(Math.random() * types.length)];
+                const key = `${randomBranch.id}_${randomType.id}`;
+                
+                const ticketNumber = `${randomType.prefix}${String(i + 1).padStart(3, '0')}`;
+                
+                // Giả lập thời gian
+                const timestamp = Date.now() - (Math.random() * 3600000 * 24); // Trong vòng 24h
+                const servedAt = timestamp + Math.floor(Math.random() * 600000) + 30000; // Chờ 0.5 - 10 phút
+                const completedAt = servedAt + Math.floor(Math.random() * 300000) + 60000; // Xử lý 1 - 5 phút
+                
+                const demoTicket = {
+                    id: crypto.randomUUID(),
+                    branchId: randomBranch.id,
+                    transactionTypeId: randomType.id,
+                    number: ticketNumber,
+                    status: 'COMPLETED',
+                    timestamp: timestamp,
+                    servedAt: servedAt,
+                    completedAt: completedAt,
+                    branchName: randomBranch.name,
+                    transactionTypeName: randomType.name
+                };
+                
+                data.queue.push(demoTicket);
+            }
+            // Tăng số tiếp theo để tránh trùng lặp với demo
+            data.nextNumber[`${branches[0].id}_${types[0].id}`] = count + 1;
+            saveData(data);
+        }
+
+        /**
+         * Khởi tạo dữ liệu ban đầu
+         */
+        function initializeData() {
+            const data = loadData();
+            if (!data.queue || !data.nextNumber) {
+                data.queue = [];
+                data.nextNumber = {};
+            }
+            
+            // Xóa hết trạng thái SERVING và WAITING cũ để tránh lỗi (trong môi trường demo)
+            data.queue = data.queue.filter(t => t.status === 'COMPLETED');
+
+            // Ensure nextNumber has an entry for all transaction types and branches
+            initialBranches.forEach(branch => {
+                initialTransactionTypes.forEach(type => {
+                    const key = `${branch.id}_${type.id}`;
+                    if (!data.nextNumber[key] || data.nextNumber[key] < 10) { // Đảm bảo số tiếp theo lớn hơn 10
+                        data.nextNumber[key] = 10;
+                    }
+                });
+            });
+            
+            // Tạo dữ liệu demo hoàn thành nếu chưa có nhiều dữ liệu
+            const completedCount = data.queue.filter(t => t.status === 'COMPLETED').length;
+            if (completedCount < 20) {
+                 createDemoCompletedTickets(data, 30);
+            }
+            
+            saveData(data);
+        }
+
+        // --- Hàm Lấy số (Customer View) ---
+
+        /**
+         * Render danh sách Chi nhánh
+         */
+        function renderBranchSelection() {
+            const selectBranch = document.getElementById('select-branch');
+            const managerSelectBranch = document.getElementById('manager-select-branch');
+            const reportSelectBranch = document.getElementById('report-select-branch');
+            
+            [selectBranch, managerSelectBranch, reportSelectBranch].forEach(selectEl => {
+                if (!selectEl) return;
+                
+                // Clear previous options
+                selectEl.innerHTML = ''; 
+                
+                // Thêm tùy chọn "Tất cả Chi nhánh" cho Báo cáo
+                if (selectEl.id === 'report-select-branch') {
+                    selectEl.innerHTML += `<option value="ALL">Toàn Hệ Thống</option>`;
+                }
+                
+                // Thêm các Chi nhánh cụ thể
+                selectEl.innerHTML += initialBranches.map(b => 
+                    `<option value="${b.id}">${b.name}</option>`
+                ).join('');
+            });
+
+            // Set initial state handlers
+            selectBranch.value = state.currentBranchId;
+            selectBranch.onchange = (e) => {
+                state.currentBranchId = e.target.value;
+                document.getElementById('btn-get-number').disabled = state.currentTransactionTypeId === null;
+            };
+
+            managerSelectBranch.value = state.managerBranchId;
+            managerSelectBranch.onchange = (e) => {
+                state.managerBranchId = e.target.value;
+                renderQueueList(); 
+            };
+            
+            reportSelectBranch.value = state.reportBranchId;
+            reportSelectBranch.onchange = (e) => {
+                state.reportBranchId = e.target.value;
+                // Báo cáo sẽ được tạo khi người dùng bấm nút
+            };
+        }
+
+        /**
+         * Render danh sách Loại giao dịch
+         */
+        function renderTransactionSelection() {
+            const container = document.getElementById('transaction-type-selection');
+            container.innerHTML = initialTransactionTypes.map(type => `
+                <button type="button" 
+                    data-id="${type.id}" 
+                    class="btn-transaction p-4 text-center border-2 border-gray-300 rounded-lg hover:border-brand-primary transition duration-150"
+                >
+                    <span class="block text-xl font-bold text-gray-800">${type.prefix} - ${type.name}</span>
+                    <span class="block text-sm text-gray-500">Phục vụ tại: ${type.counter}</span>
+                </button>
+            `).join('');
+
+            // Add click listener
+            document.querySelectorAll('.btn-transaction').forEach(button => {
+                button.onclick = (e) => {
+                    // Reset selected style
+                    document.querySelectorAll('.btn-transaction').forEach(btn => {
+                        btn.classList.remove('selected-transaction');
+                    });
+                    
+                    // Apply selected style
+                    const selectedBtn = e.currentTarget;
+                    // Sử dụng class 'selected-transaction' đã định nghĩa với màu FFC62F
+                    selectedBtn.classList.add('selected-transaction');
+                    
+                    state.currentTransactionTypeId = selectedBtn.getAttribute('data-id');
+                    document.getElementById('btn-get-number').disabled = false;
+                };
+            });
+        }
+
+        /**
+         * Tạo số thứ tự mới
+         */
+        document.getElementById('btn-get-number').onclick = function() {
+            if (!state.currentBranchId || !state.currentTransactionTypeId) {
+                const errorEl = document.getElementById('error-message');
+                errorEl.textContent = 'Vui lòng chọn Chi nhánh và Loại Giao dịch.';
+                errorEl.classList.remove('hidden');
+                return;
+            }
+
+            const data = loadData();
+            const key = `${state.currentBranchId}_${state.currentTransactionTypeId}`;
+            let nextNum = data.nextNumber[key] || 1;
+            
+            const selectedType = initialTransactionTypes.find(t => t.id === state.currentTransactionTypeId);
+            const selectedBranch = initialBranches.find(b => b.id === state.currentBranchId);
+            
+            const ticketNumber = `${selectedType.prefix}${String(nextNum).padStart(3, '0')}`;
+            
+            const newTicket = {
+                id: crypto.randomUUID(), // Unique ID
+                branchId: state.currentBranchId,
+                transactionTypeId: state.currentTransactionTypeId,
+                number: ticketNumber,
+                status: 'WAITING', // WAITING, SERVING, COMPLETED, CANCELLED
+                timestamp: Date.now(),
+                servedAt: null,
+                completedAt: null,
+                branchName: selectedBranch.name,
+                transactionTypeName: selectedType.name
+            };
+
+            // Update data
+            data.queue.push(newTicket);
+            data.nextNumber[key] = nextNum + 1;
+            saveData(data);
+
+            // Display result
+            document.getElementById('ticket-result').classList.remove('hidden');
+            document.getElementById('current-ticket-number').textContent = ticketNumber;
+            document.getElementById('current-ticket-info').innerHTML = `
+                <p>Chi nhánh: <strong>${selectedBranch.name}</strong></p>
+                <p>Loại giao dịch: <strong>${selectedType.name}</strong></p>
+                <p>Thời gian: ${new Date(newTicket.timestamp).toLocaleTimeString()}</p>
+            `;
+
+            // Reset selection for next customer
+            state.currentTransactionTypeId = null;
+            document.getElementById('btn-get-number').disabled = true;
+            document.querySelectorAll('.btn-transaction').forEach(btn => {
+                btn.classList.remove('selected-transaction');
+            });
+            document.getElementById('error-message').classList.add('hidden');
+        };
+
+        // --- Hàm Quản lý Hàng đợi (Manager View) ---
+
+        /**
+         * Render danh sách Loại giao dịch cho Manager View
+         */
+        function renderManagerTypeSelection() {
+            const managerSelectType = document.getElementById('manager-select-type');
+            managerSelectType.innerHTML = initialTransactionTypes.map(t => 
+                `<option value="${t.id}">${t.name} (${t.counter})</option>`
+            ).join('');
+
+            managerSelectType.value = state.managerTransactionTypeId;
+            managerSelectType.onchange = (e) => {
+                state.managerTransactionTypeId = e.target.value;
+                renderQueueList(); // Refresh queue when type changes
+            };
+        }
+
+        /**
+         * Lọc và hiển thị hàng đợi
+         */
+        function renderQueueList() {
+            const listContainer = document.getElementById('queue-list');
+            const data = loadData();
+            
+            const waitingQueue = data.queue
+                .filter(t => 
+                    t.branchId === state.managerBranchId && 
+                    t.transactionTypeId === state.managerTransactionTypeId && 
+                    t.status === 'WAITING'
+                )
+                .sort((a, b) => a.timestamp - b.timestamp); // Sort by time (FIFO)
+
+            const servingTicket = data.queue.find(t => t.status === 'SERVING');
+
+            // Cập nhật Số đang phục vụ
+            const currentNumberEl = document.getElementById('current-serving-number');
+            const currentInfoEl = document.getElementById('current-serving-info');
+            const currentTellerEl = document.getElementById('current-teller-id');
+            const btnComplete = document.querySelector('#manager-view .bg-green-500');
+
+            if (servingTicket) {
+                currentNumberEl.textContent = servingTicket.number;
+                currentInfoEl.innerHTML = `Loại: <strong>${servingTicket.transactionTypeName}</strong> | Chi nhánh: <strong>${servingTicket.branchName}</strong>`;
+                currentTellerEl.textContent = 'GDV A'; // Giả lập ID quầy/GDV
+                btnComplete.disabled = false;
+            } else {
+                currentNumberEl.textContent = '--';
+                currentInfoEl.textContent = 'Không có khách hàng đang giao dịch.';
+                currentTellerEl.textContent = '--';
+                btnComplete.disabled = true;
+            }
+
+            // Hiển thị danh sách chờ
+            if (waitingQueue.length === 0) {
+                listContainer.innerHTML = '<p class="text-center text-gray-500 p-4 bg-gray-100 rounded-lg">Không có khách hàng đang chờ.</p>';
+                return;
+            }
+
+            listContainer.innerHTML = waitingQueue.map(ticket => `
+                <div class="flex justify-between items-center p-4 bg-white border border-gray-200 rounded-lg shadow-sm">
+                    <div>
+                        <p class="text-2xl font-bold text-gray-800">${ticket.number}</p>
+                        <p class="text-sm text-gray-500">${ticket.transactionTypeName} | Đến lúc: ${new Date(ticket.timestamp).toLocaleTimeString()}</p>
+                    </div>
+                    <div class="space-x-2">
+                        <!-- Cập nhật màu nút Gọi (Gọi lại) trong danh sách chờ -->
+                        <button onclick="callTicket('${ticket.id}')" class="p-2 btn-call-next text-sm rounded-md hover:bg-opacity-80">
+                            <i class="fas fa-bullhorn"></i> Gọi
+                        </button>
+                        <button onclick="cancelTicket('${ticket.id}')" class="p-2 bg-red-500 text-white text-sm rounded-md hover:bg-red-600">
+                            <i class="fas fa-times-circle"></i> Hủy
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        /**
+         * Gọi số kế tiếp (first in line)
+         */
+        function callNextNumber() {
+            const data = loadData();
+            
+            // 1. Check if another number is already SERVING
+            if (data.queue.some(t => t.status === 'SERVING')) {
+                alertUser('Vui lòng hoàn thành giao dịch hiện tại trước khi gọi số mới.');
+                return;
+            }
+
+            // 2. Find the next WAITING number for the selected branch/type
+            const nextTicket = data.queue
+                .filter(t => 
+                    t.branchId === state.managerBranchId && 
+                    t.transactionTypeId === state.managerTransactionTypeId && 
+                    t.status === 'WAITING'
+                )
+                .sort((a, b) => a.timestamp - b.timestamp)[0];
+            
+            if (!nextTicket) {
+                alertUser('Không còn khách hàng chờ trong hàng đợi này.');
+                return;
+            }
+
+            // 3. Update status to SERVING and set servedAt timestamp
+            const index = data.queue.findIndex(t => t.id === nextTicket.id);
+            if (index !== -1) {
+                data.queue[index].status = 'SERVING';
+                data.queue[index].servedAt = Date.now(); // Ghi lại thời điểm GDV gọi số
+                state.lastServedId = nextTicket.id;
+                saveData(data);
+                alertUser(`Đã gọi số: ${nextTicket.number} đến quầy GDV A. (Simulated TTS: Mời Khách hàng ${nextTicket.number} đến Quầy GDV A)`);
+                renderQueueList();
+            }
+        }
+        
+        /**
+         * Gọi lại một số cụ thể
+         * @param {string} ticketId ID của vé cần gọi
+         */
+        function callTicket(ticketId) {
+             const data = loadData();
+             const ticket = data.queue.find(t => t.id === ticketId);
+             
+             // 1. Check if another number is already SERVING
+            if (data.queue.some(t => t.status === 'SERVING' && t.id !== ticketId)) {
+                alertUser('Vui lòng hoàn thành giao dịch hiện tại trước khi gọi số mới.');
+                return;
+            }
+            
+            // 2. If ticket is WAITING, mark as SERVING
+            if (ticket && ticket.status === 'WAITING') {
+                // Find and set any previous SERVING ticket back to WAITING (if any, though should be handled by completeServing)
+                const currentServingIndex = data.queue.findIndex(t => t.status === 'SERVING');
+                 if (currentServingIndex !== -1) {
+                    data.queue[currentServingIndex].status = 'WAITING';
+                }
+                
+                const index = data.queue.findIndex(t => t.id === ticketId);
+                data.queue[index].status = 'SERVING';
+                data.queue[index].servedAt = Date.now(); // Ghi lại thời điểm GDV gọi số
+                state.lastServedId = ticketId;
+                saveData(data);
+                alertUser(`Đã gọi lại số: ${ticket.number} đến quầy GDV A. (Simulated TTS: Mời Khách hàng ${ticket.number} đến Quầy GDV A)`);
+            } else if (ticket && ticket.status === 'SERVING') {
+                alertUser(`Số ${ticket.number} đang được phục vụ. Đã gọi lại.`);
+            }
+
+            renderQueueList();
+        }
+
+        /**
+         * Đánh dấu số đang phục vụ là Hoàn thành
+         * @param {string} ticketNumber Số vé đang phục vụ (ví dụ: 'A001')
+         */
+        function completeServing(ticketNumber) {
+            if (!ticketNumber || ticketNumber === '--') return;
+            
+            const data = loadData();
+            const index = data.queue.findIndex(t => t.number === ticketNumber && t.status === 'SERVING');
+            
+            if (index !== -1) {
+                data.queue[index].status = 'COMPLETED';
+                data.queue[index].completedAt = Date.now(); // Ghi lại thời điểm hoàn thành
+                saveData(data);
+                alertUser(`Giao dịch số ${ticketNumber} đã hoàn thành.`);
+                renderQueueList();
+            } else {
+                alertUser('Không tìm thấy số đang phục vụ.');
+            }
+        }
+        
+        /**
+         * Hủy một số cụ thể
+         * @param {string} ticketId ID của vé cần hủy
+         */
+        function cancelTicket(ticketId) {
+             const data = loadData();
+             const index = data.queue.findIndex(t => t.id === ticketId);
+             
+             if (index !== -1) {
+                 data.queue[index].status = 'CANCELLED';
+                 saveData(data);
+                 alertUser(`Đã hủy số ${data.queue[index].number}.`);
+                 renderQueueList();
+             }
+        }
+
+        /**
+         * Hàm làm mới hàng đợi
+         */
+        function refreshQueue() {
+            renderQueueList();
+            alertUser('Đã làm mới danh sách hàng đợi.');
+        }
+        
+        // --- Hàm Báo cáo Thống kê (Report View) ---
+
+        function generateReport() {
+            const selectedBranchId = state.reportBranchId;
+            const data = loadData();
+            
+            // 1. Lọc dữ liệu theo Chi nhánh và trạng thái COMPLETED
+            const completedTickets = data.queue.filter(t => 
+                t.status === 'COMPLETED' && 
+                (selectedBranchId === 'ALL' || t.branchId === selectedBranchId)
+            );
+
+            // 2. Tính toán thống kê
+            const stats = {
+                totalTransactions: completedTickets.length,
+                totalWaitTime: 0,
+                totalServiceTime: 0,
+                byType: {},
+            };
+            
+            const branchName = selectedBranchId === 'ALL' ? 'Toàn Hệ Thống' : initialBranches.find(b => b.id === selectedBranchId)?.name;
+            
+            initialTransactionTypes.forEach(type => {
+                stats.byType[type.id] = {
+                    name: type.name,
+                    count: 0,
+                    totalWait: 0,
+                    totalService: 0,
+                };
+            });
+            
+            completedTickets.forEach(ticket => {
+                const waitTime = (ticket.servedAt - ticket.timestamp) / 1000; // seconds
+                const serviceTime = (ticket.completedAt - ticket.servedAt) / 1000; // seconds
+
+                // Chỉ tính các giao dịch có thời gian hợp lệ
+                if (waitTime > 0 && serviceTime > 0) {
+                    stats.totalWaitTime += waitTime;
+                    stats.totalServiceTime += serviceTime;
+                    
+                    const typeStat = stats.byType[ticket.transactionTypeId];
+                    if (typeStat) {
+                        typeStat.count++;
+                        typeStat.totalWait += waitTime;
+                        typeStat.totalService += serviceTime;
+                    }
+                }
+            });
+            
+            // 3. Tính trung bình
+            const validCount = completedTickets.filter(t => t.servedAt && t.completedAt && (t.servedAt > t.timestamp)).length;
+
+            stats.avgWaitTime = validCount > 0 ? (stats.totalWaitTime / validCount) : 0;
+            stats.avgServiceTime = validCount > 0 ? (stats.totalServiceTime / validCount) : 0;
+
+            // 4. Hiển thị tóm tắt
+            const summaryHtml = `
+                <div class="card p-4 text-center bg-brand-secondary bg-opacity-20 border-l-4 border-brand-primary">
+                    <p class="text-xs font-medium text-gray-600">Tổng Giao dịch (${branchName})</p>
+                    <p class="text-3xl font-bold text-brand-primary mt-1">${stats.totalTransactions}</p>
+                </div>
+                <div class="card p-4 text-center bg-blue-100 border-l-4 border-blue-500">
+                    <p class="text-xs font-medium text-gray-600">Thời gian chờ TB</p>
+                    <p class="text-3xl font-bold text-blue-700 mt-1">${stats.avgWaitTime.toFixed(1)} giây</p>
+                </div>
+                <div class="card p-4 text-center bg-green-100 border-l-4 border-green-500">
+                    <p class="text-xs font-medium text-gray-600">Thời gian xử lý TB</p>
+                    <p class="text-3xl font-bold text-green-700 mt-1">${stats.avgServiceTime.toFixed(1)} giây</p>
+                </div>
+            `;
+            document.getElementById('report-summary').innerHTML = summaryHtml;
+            
+            // 5. Vẽ Biểu đồ 1: Tỷ lệ Giao dịch Hoàn thành
+            renderTransactionVolumeChart(stats.byType);
+
+            // 6. Vẽ Biểu đồ 2: Thời gian Chờ & Xử lý Trung bình theo loại
+            renderAverageTimeChart(stats.byType);
+            
+            alertUser(`Đã tạo báo cáo cho ${branchName}.`);
+        }
+        
+        function renderTransactionVolumeChart(data) {
+            const ctx = document.getElementById('transactionVolumeChart').getContext('2d');
+            if (transactionVolumeChartInstance) {
+                transactionVolumeChartInstance.destroy();
+            }
+            
+            const labels = Object.values(data).map(t => t.name);
+            const counts = Object.values(data).map(t => t.count);
+
+            transactionVolumeChartInstance = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Số lượng Giao dịch Hoàn thành',
+                        data: counts,
+                        backgroundColor: [brandColorPrimary, brandColorSecondary, supplementalColor],
+                        hoverOffset: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'top' },
+                        title: { display: false }
+                    }
+                }
+            });
+        }
+        
+        function renderAverageTimeChart(data) {
+            const ctx = document.getElementById('averageTimeChart').getContext('2d');
+            if (averageTimeChartInstance) {
+                averageTimeChartInstance.destroy();
+            }
+            
+            const labels = Object.values(data).map(t => t.name);
+            const avgWaitTimes = Object.values(data).map(t => t.count > 0 ? (t.totalWait / t.count).toFixed(1) : 0);
+            const avgServiceTimes = Object.values(data).map(t => t.count > 0 ? (t.totalService / t.count).toFixed(1) : 0);
+
+            averageTimeChartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Thời gian Chờ TB (giây)',
+                            data: avgWaitTimes,
+                            backgroundColor: brandColorSecondary,
+                        },
+                         {
+                            label: 'Thời gian Xử lý TB (giây)',
+                            data: avgServiceTimes,
+                            backgroundColor: brandColorPrimary,
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: { display: true, text: 'Thời gian (giây)' }
+                        }
+                    },
+                    plugins: {
+                        legend: { position: 'top' },
+                        title: { display: false }
+                    }
+                }
+            });
+        }
+
+
+        // --- Hàm Tiện ích và Khởi chạy ---
+
+        /**
+         * Hiển thị thông báo (thay thế cho alert())
+         * @param {string} message Nội dung thông báo
+         */
+        function alertUser(message) {
+            console.log("Thông báo: " + message);
+            const logArea = document.getElementById('error-message');
+            if (logArea) {
+                logArea.textContent = 'Thông báo: ' + message;
+                logArea.classList.remove('hidden');
+                setTimeout(() => logArea.classList.add('hidden'), 5000);
+            }
+        }
+
+        /**
+         * Chuyển đổi giữa các view (Khách hàng vs Quản lý)
+         * @param {string} viewId 'customer' hoặc 'manager' hoặc 'report'
+         */
+        function showView(viewId) {
+            document.getElementById('customer-view').classList.add('hidden');
+            document.getElementById('manager-view').classList.add('hidden');
+            document.getElementById('report-view').classList.add('hidden');
+            
+            // Reset button styles
+            document.querySelectorAll('div.flex.justify-center.mb-8.space-x-4 button').forEach(btn => {
+                btn.classList.remove('btn-primary');
+                btn.classList.add('bg-gray-600', 'text-white', 'hover:bg-gray-700');
+            });
+
+            const currentBtn = document.getElementById(`btn-${viewId}-mode`);
+            if (currentBtn) {
+                currentBtn.classList.add('btn-primary');
+                currentBtn.classList.remove('bg-gray-600', 'text-white', 'hover:bg-gray-700');
+            }
+
+
+            if (viewId === 'customer') {
+                document.getElementById('customer-view').classList.remove('hidden');
+            } else if (viewId === 'manager') {
+                document.getElementById('manager-view').classList.remove('hidden');
+                renderQueueList(); // Refresh queue when switching to Manager view
+            } else if (viewId === 'report') {
+                 document.getElementById('report-view').classList.remove('hidden');
+                 generateReport(); // Generate report automatically on switch
+            }
+        }
+
+        /**
+         * Khởi tạo ứng dụng
+         */
+        window.onload = function() {
+            initializeData();
+            renderBranchSelection();
+            renderTransactionSelection();
+            renderManagerTypeSelection();
+            showView('customer'); // Default view
+        };
+    </script>
+</body>
+</html>
