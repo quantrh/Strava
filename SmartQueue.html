@@ -148,9 +148,12 @@
                     <label for="manager-select-branch" class="block text-sm font-medium text-gray-700 mb-2">Chọn Chi nhánh:</label>
                     <select id="manager-select-branch" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-brand-primary focus:border-brand-primary"></select>
                 </div>
+                <!-- Thêm dropdown chọn Quầy làm việc -->
                 <div class="flex-1">
-                    <label for="manager-select-type" class="block text-sm font-medium text-gray-700 mb-2">Chọn Loại Giao dịch:</label>
-                    <select id="manager-select-type" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-brand-primary focus:border-brand-primary"></select>
+                    <label for="manager-select-counter" class="block text-sm font-medium text-gray-700 mb-2">Chọn Quầy làm việc:</label>
+                    <select id="manager-select-counter" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-brand-primary focus:border-brand-primary">
+                        <!-- Options populated dynamically -->
+                    </select>
                 </div>
                 <div class="md:self-end">
                     <!-- Cập nhật màu nút Làm mới -->
@@ -200,6 +203,29 @@
                 <!-- Summary cards generated here -->
             </div>
             
+            <!-- Waiting Queue Report -->
+            <div id="waiting-queue-report" class="card p-4 mb-6">
+                <h3 class="text-lg font-semibold mb-3 flex justify-between items-center">
+                    Số lượng Khách hàng Đang chờ <span id="total-waiting-count" class="text-3xl font-bold text-red-500">0</span>
+                </h3>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <!-- Thay đổi tiêu đề cột theo yêu cầu -->
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quầy Giao Dịch (Loại nghiệp vụ)</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Số lượng Chờ</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Thời gian Chờ Lâu nhất</th>
+                            </tr>
+                        </thead>
+                        <tbody id="waiting-queue-detail" class="bg-white divide-y divide-gray-200">
+                            <!-- Waiting queue details populated here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Charts -->
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div class="card p-4">
                     <h3 class="text-lg font-semibold mb-3">Tỷ lệ Giao dịch Hoàn thành theo Loại</h3>
@@ -232,10 +258,20 @@
             { id: 'DN', name: 'Chi Nhánh Đà Nẵng', address: '789 Trần Phú, Đà Nẵng' },
         ];
 
+        // Cấu trúc mới: Transaction Type là nghiệp vụ, Counter ID là quầy cụ thể
         const initialTransactionTypes = [
-            { id: 'TM', name: 'Giao dịch Tiền mặt (A)', prefix: 'A', counter: 'Quầy 1, 2' },
-            { id: 'PKM', name: 'Giao dịch Phi tiền mặt (B)', prefix: 'B', counter: 'Quầy 3' },
-            { id: 'TC', name: 'Tư vấn Tài chính (C)', prefix: 'C', counter: 'Phòng Tư vấn' },
+            // Loại giao dịch được Khách hàng chọn
+            { id: 'TM_GENERAL', name: 'Giao dịch Tiền mặt', prefix: 'A', counters: ['Counter_1', 'Counter_2'] },
+            { id: 'PKM_GENERAL', name: 'Giao dịch Phi tiền mặt', prefix: 'B', counters: ['Counter_3'] },
+            { id: 'TC_GENERAL', name: 'Tư vấn Tài chính', prefix: 'C', counters: ['Counter_4'] },
+        ];
+
+        // Danh sách tất cả các Quầy (Counter) khả dụng để GDV chọn
+        const allCounters = [
+             { id: 'Counter_1', name: 'Quầy Giao dịch 1', transactionTypeId: 'TM_GENERAL' },
+             { id: 'Counter_2', name: 'Quầy Giao dịch 2', transactionTypeId: 'TM_GENERAL' },
+             { id: 'Counter_3', name: 'Quầy Giao dịch 3', transactionTypeId: 'PKM_GENERAL' },
+             { id: 'Counter_4', name: 'Phòng Tư vấn 4', transactionTypeId: 'TC_GENERAL' },
         ];
         
         // Màu sắc cho biểu đồ (dùng màu thương hiệu và màu bổ sung)
@@ -250,9 +286,9 @@
             currentBranchId: initialBranches[0].id,
             currentTransactionTypeId: null,
             managerBranchId: initialBranches[0].id,
-            managerTransactionTypeId: initialTransactionTypes[0].id,
-            reportBranchId: initialBranches[0].id, // New state for report
-            lastServedId: null, // ID of the ticket currently being served
+            managerCounterId: allCounters[0].id, // GDV chọn Quầy làm việc
+            reportBranchId: initialBranches[0].id,
+            lastServedId: null,
         };
 
         // --- Hàm Quản lý Local Storage ---
@@ -293,6 +329,11 @@
             for (let i = 0; i < count; i++) {
                 const randomBranch = branches[Math.floor(Math.random() * branches.length)];
                 const randomType = types[Math.floor(Math.random() * types.length)];
+                
+                // Chọn một quầy ngẫu nhiên trong danh sách quầy của loại giao dịch này
+                const randomCounterId = randomType.counters[Math.floor(Math.random() * randomType.counters.length)];
+                const randomCounter = allCounters.find(c => c.id === randomCounterId);
+
                 const key = `${randomBranch.id}_${randomType.id}`;
                 
                 const ticketNumber = `${randomType.prefix}${String(i + 1).padStart(3, '0')}`;
@@ -306,6 +347,8 @@
                     id: crypto.randomUUID(),
                     branchId: randomBranch.id,
                     transactionTypeId: randomType.id,
+                    counterId: randomCounterId, // Ghi lại quầy cụ thể
+                    counterName: randomCounter.name, // Tên quầy
                     number: ticketNumber,
                     status: 'COMPLETED',
                     timestamp: timestamp,
@@ -412,7 +455,7 @@
                     class="btn-transaction p-4 text-center border-2 border-gray-300 rounded-lg hover:border-brand-primary transition duration-150"
                 >
                     <span class="block text-xl font-bold text-gray-800">${type.prefix} - ${type.name}</span>
-                    <span class="block text-sm text-gray-500">Phục vụ tại: ${type.counter}</span>
+                    <span class="block text-sm text-gray-500">Phục vụ tại: ${type.counters.map(cId => allCounters.find(c => c.id === cId).name).join(', ')}</span>
                 </button>
             `).join('');
 
@@ -447,18 +490,25 @@
             }
 
             const data = loadData();
-            const key = `${state.currentBranchId}_${state.currentTransactionTypeId}`;
-            let nextNum = data.nextNumber[key] || 1;
             
             const selectedType = initialTransactionTypes.find(t => t.id === state.currentTransactionTypeId);
             const selectedBranch = initialBranches.find(b => b.id === state.currentBranchId);
             
+            // 1. Định tuyến: Chọn ngẫu nhiên một Quầy khả dụng cho loại giao dịch này
+            const targetCounterId = selectedType.counters[Math.floor(Math.random() * selectedType.counters.length)];
+            const targetCounter = allCounters.find(c => c.id === targetCounterId);
+            
+            // 2. Lấy số tiếp theo
+            const key = `${state.currentBranchId}_${selectedType.id}`;
+            let nextNum = data.nextNumber[key] || 1;
             const ticketNumber = `${selectedType.prefix}${String(nextNum).padStart(3, '0')}`;
             
             const newTicket = {
                 id: crypto.randomUUID(), // Unique ID
                 branchId: state.currentBranchId,
-                transactionTypeId: state.currentTransactionTypeId,
+                transactionTypeId: selectedType.id,
+                counterId: targetCounterId, // Ghi lại Quầy cụ thể được định tuyến
+                counterName: targetCounter.name, // Tên Quầy
                 number: ticketNumber,
                 status: 'WAITING', // WAITING, SERVING, COMPLETED, CANCELLED
                 timestamp: Date.now(),
@@ -479,6 +529,7 @@
             document.getElementById('current-ticket-info').innerHTML = `
                 <p>Chi nhánh: <strong>${selectedBranch.name}</strong></p>
                 <p>Loại giao dịch: <strong>${selectedType.name}</strong></p>
+                <p>Quầy dự kiến: <strong>${targetCounter.name}</strong></p>
                 <p>Thời gian: ${new Date(newTicket.timestamp).toLocaleTimeString()}</p>
             `;
 
@@ -494,37 +545,38 @@
         // --- Hàm Quản lý Hàng đợi (Manager View) ---
 
         /**
-         * Render danh sách Loại giao dịch cho Manager View
+         * Render danh sách Quầy làm việc cho Manager View
          */
-        function renderManagerTypeSelection() {
-            const managerSelectType = document.getElementById('manager-select-type');
-            managerSelectType.innerHTML = initialTransactionTypes.map(t => 
-                `<option value="${t.id}">${t.name} (${t.counter})</option>`
+        function renderManagerCounterSelection() {
+            const managerSelectCounter = document.getElementById('manager-select-counter');
+            managerSelectCounter.innerHTML = allCounters.map(c => 
+                `<option value="${c.id}">${c.name}</option>`
             ).join('');
 
-            managerSelectType.value = state.managerTransactionTypeId;
-            managerSelectType.onchange = (e) => {
-                state.managerTransactionTypeId = e.target.value;
-                renderQueueList(); // Refresh queue when type changes
+            managerSelectCounter.value = state.managerCounterId;
+            managerSelectCounter.onchange = (e) => {
+                state.managerCounterId = e.target.value;
+                renderQueueList(); // Refresh queue when counter changes
             };
         }
 
         /**
-         * Lọc và hiển thị hàng đợi
+         * Lọc và hiển thị hàng đợi theo Quầy đang làm việc
          */
         function renderQueueList() {
             const listContainer = document.getElementById('queue-list');
             const data = loadData();
             
+            // Lọc ra các vé WAITING được định tuyến đến Quầy đang làm việc của GDV
             const waitingQueue = data.queue
                 .filter(t => 
                     t.branchId === state.managerBranchId && 
-                    t.transactionTypeId === state.managerTransactionTypeId && 
+                    t.counterId === state.managerCounterId && 
                     t.status === 'WAITING'
                 )
                 .sort((a, b) => a.timestamp - b.timestamp); // Sort by time (FIFO)
 
-            const servingTicket = data.queue.find(t => t.status === 'SERVING');
+            const servingTicket = data.queue.find(t => t.status === 'SERVING' && t.counterId === state.managerCounterId);
 
             // Cập nhật Số đang phục vụ
             const currentNumberEl = document.getElementById('current-serving-number');
@@ -535,18 +587,18 @@
             if (servingTicket) {
                 currentNumberEl.textContent = servingTicket.number;
                 currentInfoEl.innerHTML = `Loại: <strong>${servingTicket.transactionTypeName}</strong> | Chi nhánh: <strong>${servingTicket.branchName}</strong>`;
-                currentTellerEl.textContent = 'GDV A'; // Giả lập ID quầy/GDV
+                currentTellerEl.textContent = allCounters.find(c => c.id === state.managerCounterId).name;
                 btnComplete.disabled = false;
             } else {
                 currentNumberEl.textContent = '--';
                 currentInfoEl.textContent = 'Không có khách hàng đang giao dịch.';
-                currentTellerEl.textContent = '--';
+                currentTellerEl.textContent = allCounters.find(c => c.id === state.managerCounterId).name;
                 btnComplete.disabled = true;
             }
 
             // Hiển thị danh sách chờ
             if (waitingQueue.length === 0) {
-                listContainer.innerHTML = '<p class="text-center text-gray-500 p-4 bg-gray-100 rounded-lg">Không có khách hàng đang chờ.</p>';
+                listContainer.innerHTML = '<p class="text-center text-gray-500 p-4 bg-gray-100 rounded-lg">Không có khách hàng đang chờ tại quầy này.</p>';
                 return;
             }
 
@@ -570,28 +622,30 @@
         }
 
         /**
-         * Gọi số kế tiếp (first in line)
+         * Gọi số kế tiếp (first in line) cho Quầy đang làm việc
          */
         function callNextNumber() {
             const data = loadData();
             
-            // 1. Check if another number is already SERVING
-            if (data.queue.some(t => t.status === 'SERVING')) {
+            // 1. Check if another number is already SERVING at THIS counter
+            if (data.queue.some(t => t.status === 'SERVING' && t.counterId === state.managerCounterId)) {
                 alertUser('Vui lòng hoàn thành giao dịch hiện tại trước khi gọi số mới.');
                 return;
             }
 
-            // 2. Find the next WAITING number for the selected branch/type
+            // 2. Find the next WAITING number for the selected branch/counter
             const nextTicket = data.queue
                 .filter(t => 
                     t.branchId === state.managerBranchId && 
-                    t.transactionTypeId === state.managerTransactionTypeId && 
+                    t.counterId === state.managerCounterId && // Lọc theo counterId
                     t.status === 'WAITING'
                 )
                 .sort((a, b) => a.timestamp - b.timestamp)[0];
             
+            const currentCounterName = allCounters.find(c => c.id === state.managerCounterId).name;
+
             if (!nextTicket) {
-                alertUser('Không còn khách hàng chờ trong hàng đợi này.');
+                alertUser(`Không còn khách hàng chờ tại ${currentCounterName}.`);
                 return;
             }
 
@@ -602,7 +656,7 @@
                 data.queue[index].servedAt = Date.now(); // Ghi lại thời điểm GDV gọi số
                 state.lastServedId = nextTicket.id;
                 saveData(data);
-                alertUser(`Đã gọi số: ${nextTicket.number} đến quầy GDV A. (Simulated TTS: Mời Khách hàng ${nextTicket.number} đến Quầy GDV A)`);
+                alertUser(`Đã gọi số: ${nextTicket.number} đến ${currentCounterName}. (Simulated TTS: Mời Khách hàng ${nextTicket.number} đến ${currentCounterName})`);
                 renderQueueList();
             }
         }
@@ -615,16 +669,19 @@
              const data = loadData();
              const ticket = data.queue.find(t => t.id === ticketId);
              
-             // 1. Check if another number is already SERVING
-            if (data.queue.some(t => t.status === 'SERVING' && t.id !== ticketId)) {
+             if (!ticket) return;
+             const currentCounterName = allCounters.find(c => c.id === ticket.counterId).name;
+             
+             // 1. Check if another number is already SERVING at THIS counter
+            if (data.queue.some(t => t.status === 'SERVING' && t.counterId === ticket.counterId && t.id !== ticketId)) {
                 alertUser('Vui lòng hoàn thành giao dịch hiện tại trước khi gọi số mới.');
                 return;
             }
             
             // 2. If ticket is WAITING, mark as SERVING
-            if (ticket && ticket.status === 'WAITING') {
-                // Find and set any previous SERVING ticket back to WAITING (if any, though should be handled by completeServing)
-                const currentServingIndex = data.queue.findIndex(t => t.status === 'SERVING');
+            if (ticket.status === 'WAITING') {
+                // Đẩy số đang phục vụ (nếu có) về trạng thái chờ, mặc dù logic thường không cho phép
+                const currentServingIndex = data.queue.findIndex(t => t.status === 'SERVING' && t.counterId === ticket.counterId);
                  if (currentServingIndex !== -1) {
                     data.queue[currentServingIndex].status = 'WAITING';
                 }
@@ -634,8 +691,8 @@
                 data.queue[index].servedAt = Date.now(); // Ghi lại thời điểm GDV gọi số
                 state.lastServedId = ticketId;
                 saveData(data);
-                alertUser(`Đã gọi lại số: ${ticket.number} đến quầy GDV A. (Simulated TTS: Mời Khách hàng ${ticket.number} đến Quầy GDV A)`);
-            } else if (ticket && ticket.status === 'SERVING') {
+                alertUser(`Đã gọi lại số: ${ticket.number} đến ${currentCounterName}. (Simulated TTS: Mời Khách hàng ${ticket.number} đến ${currentCounterName})`);
+            } else if (ticket.status === 'SERVING') {
                 alertUser(`Số ${ticket.number} đang được phục vụ. Đã gọi lại.`);
             }
 
@@ -650,7 +707,8 @@
             if (!ticketNumber || ticketNumber === '--') return;
             
             const data = loadData();
-            const index = data.queue.findIndex(t => t.number === ticketNumber && t.status === 'SERVING');
+            // Lọc theo cả số vé VÀ quầy đang làm việc
+            const index = data.queue.findIndex(t => t.number === ticketNumber && t.status === 'SERVING' && t.counterId === state.managerCounterId);
             
             if (index !== -1) {
                 data.queue[index].status = 'COMPLETED';
@@ -659,7 +717,7 @@
                 alertUser(`Giao dịch số ${ticketNumber} đã hoàn thành.`);
                 renderQueueList();
             } else {
-                alertUser('Không tìm thấy số đang phục vụ.');
+                alertUser('Không tìm thấy số đang phục vụ tại quầy này.');
             }
         }
         
@@ -688,82 +746,171 @@
         }
         
         // --- Hàm Báo cáo Thống kê (Report View) ---
-
+        
+        /**
+         * Hàm tính thời gian chờ dưới dạng phút và giây
+         * @param {number} seconds Thời gian tính bằng giây
+         * @returns {string} Chuỗi định dạng
+         */
+        function formatTime(seconds) {
+            if (seconds <= 0) return '0 giây';
+            const minutes = Math.floor(seconds / 60);
+            const remainingSeconds = Math.round(seconds % 60);
+            
+            let parts = [];
+            if (minutes > 0) parts.push(`${minutes} phút`);
+            if (remainingSeconds > 0 || minutes === 0) parts.push(`${remainingSeconds} giây`);
+            return parts.join(' ');
+        }
+        
         function generateReport() {
             const selectedBranchId = state.reportBranchId;
             const data = loadData();
             
-            // 1. Lọc dữ liệu theo Chi nhánh và trạng thái COMPLETED
-            const completedTickets = data.queue.filter(t => 
-                t.status === 'COMPLETED' && 
+            // 1. Lọc dữ liệu cho COMPLETED và WAITING
+            const allFilteredTickets = data.queue.filter(t => 
                 (selectedBranchId === 'ALL' || t.branchId === selectedBranchId)
             );
+            
+            const completedTickets = allFilteredTickets.filter(t => t.status === 'COMPLETED');
+            const waitingTickets = allFilteredTickets.filter(t => t.status === 'WAITING');
 
-            // 2. Tính toán thống kê
-            const stats = {
-                totalTransactions: completedTickets.length,
-                totalWaitTime: 0,
-                totalServiceTime: 0,
-                byType: {},
-            };
+            // 2. Tính toán thống kê theo từng Counter (Quầy)
+            const statsByCounter = {};
             
-            const branchName = selectedBranchId === 'ALL' ? 'Toàn Hệ Thống' : initialBranches.find(b => b.id === selectedBranchId)?.name;
-            
-            initialTransactionTypes.forEach(type => {
-                stats.byType[type.id] = {
-                    name: type.name,
+            // Khởi tạo statsByCounter dựa trên allCounters
+            allCounters.forEach(counter => {
+                const transactionType = initialTransactionTypes.find(t => t.id === counter.transactionTypeId);
+                statsByCounter[counter.id] = {
+                    counterId: counter.id,
+                    counterName: counter.name,
+                    transactionTypePrefix: transactionType.prefix,
+                    transactionTypeName: transactionType.name,
+                    
                     count: 0,
                     totalWait: 0,
                     totalService: 0,
+                    waitingCount: 0,
+                    longestWait: 0,
                 };
             });
             
+            const branchName = selectedBranchId === 'ALL' ? 'Toàn Hệ Thống' : initialBranches.find(b => b.id === selectedBranchId)?.name;
+            
+            // Tính toán cho Completed Tickets
             completedTickets.forEach(ticket => {
+                const counterStat = statsByCounter[ticket.counterId];
+                if (!counterStat) return; // Bỏ qua nếu không tìm thấy quầy
+                
                 const waitTime = (ticket.servedAt - ticket.timestamp) / 1000; // seconds
                 const serviceTime = (ticket.completedAt - ticket.servedAt) / 1000; // seconds
 
-                // Chỉ tính các giao dịch có thời gian hợp lệ
                 if (waitTime > 0 && serviceTime > 0) {
-                    stats.totalWaitTime += waitTime;
-                    stats.totalServiceTime += serviceTime;
-                    
-                    const typeStat = stats.byType[ticket.transactionTypeId];
-                    if (typeStat) {
-                        typeStat.count++;
-                        typeStat.totalWait += waitTime;
-                        typeStat.totalService += serviceTime;
-                    }
+                    counterStat.count++;
+                    counterStat.totalWait += waitTime;
+                    counterStat.totalService += serviceTime;
                 }
             });
             
-            // 3. Tính trung bình
+            // Tính toán cho Waiting Tickets
+            let totalWaiting = 0;
+            waitingTickets.forEach(ticket => {
+                const counterStat = statsByCounter[ticket.counterId];
+                if (!counterStat) return; // Bỏ qua nếu không tìm thấy quầy
+
+                counterStat.waitingCount++;
+                totalWaiting++;
+                
+                const currentWait = (Date.now() - ticket.timestamp) / 1000;
+                if (currentWait > counterStat.longestWait) {
+                    counterStat.longestWait = currentWait;
+                }
+            });
+
+
+            // 4. Tính trung bình (Cho COMPLETED - Overall)
             const validCount = completedTickets.filter(t => t.servedAt && t.completedAt && (t.servedAt > t.timestamp)).length;
 
-            stats.avgWaitTime = validCount > 0 ? (stats.totalWaitTime / validCount) : 0;
-            stats.avgServiceTime = validCount > 0 ? (stats.totalServiceTime / validCount) : 0;
+            const totalWaitTime = completedTickets.reduce((sum, t) => sum + ((t.servedAt - t.timestamp) / 1000 || 0), 0);
+            const totalServiceTime = completedTickets.reduce((sum, t) => sum + ((t.completedAt - t.servedAt) / 1000 || 0), 0);
+            
+            const avgWaitTime = validCount > 0 ? (totalWaitTime / validCount) : 0;
+            const avgServiceTime = validCount > 0 ? (totalServiceTime / validCount) : 0;
 
-            // 4. Hiển thị tóm tắt
+            // 5. Hiển thị tóm tắt COMPLETED
             const summaryHtml = `
                 <div class="card p-4 text-center bg-brand-secondary bg-opacity-20 border-l-4 border-brand-primary">
-                    <p class="text-xs font-medium text-gray-600">Tổng Giao dịch (${branchName})</p>
-                    <p class="text-3xl font-bold text-brand-primary mt-1">${stats.totalTransactions}</p>
+                    <p class="text-xs font-medium text-gray-600">Tổng Giao dịch HOÀN THÀNH (${branchName})</p>
+                    <p class="text-3xl font-bold text-brand-primary mt-1">${completedTickets.length}</p> <!-- Đã sửa lỗi: Dùng completedTickets.length thay vì stats.totalTransactions -->
                 </div>
                 <div class="card p-4 text-center bg-blue-100 border-l-4 border-blue-500">
                     <p class="text-xs font-medium text-gray-600">Thời gian chờ TB</p>
-                    <p class="text-3xl font-bold text-blue-700 mt-1">${stats.avgWaitTime.toFixed(1)} giây</p>
+                    <p class="text-3xl font-bold text-blue-700 mt-1">${avgWaitTime.toFixed(1)} giây</p>
                 </div>
                 <div class="card p-4 text-center bg-green-100 border-l-4 border-green-500">
                     <p class="text-xs font-medium text-gray-600">Thời gian xử lý TB</p>
-                    <p class="text-3xl font-bold text-green-700 mt-1">${stats.avgServiceTime.toFixed(1)} giây</p>
+                    <p class="text-3xl font-bold text-green-700 mt-1">${avgServiceTime.toFixed(1)} giây</p>
                 </div>
             `;
             document.getElementById('report-summary').innerHTML = summaryHtml;
             
-            // 5. Vẽ Biểu đồ 1: Tỷ lệ Giao dịch Hoàn thành
-            renderTransactionVolumeChart(stats.byType);
+            // 6. Hiển thị chi tiết WAITING (Theo Quầy)
+            document.getElementById('total-waiting-count').textContent = totalWaiting;
+            const detailBody = document.getElementById('waiting-queue-detail');
+            let waitingDetailHtml = '';
 
-            // 6. Vẽ Biểu đồ 2: Thời gian Chờ & Xử lý Trung bình theo loại
-            renderAverageTimeChart(stats.byType);
+            // Sắp xếp dữ liệu theo Counter Name
+            const sortedCounterStats = Object.values(statsByCounter)
+                .filter(c => c.waitingCount > 0)
+                .sort((a, b) => a.counterName.localeCompare(b.counterName));
+            
+            sortedCounterStats.forEach(counterStat => {
+                waitingDetailHtml += `
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                            <strong>${counterStat.counterName}</strong> <span class="text-xs text-gray-500">(${counterStat.transactionTypeName} - ${counterStat.transactionTypePrefix})</span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-center font-bold text-red-600">
+                            ${counterStat.waitingCount}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                            ${formatTime(counterStat.longestWait)}
+                        </td>
+                    </tr>
+                `;
+            });
+            
+            if (waitingDetailHtml === '') {
+                 waitingDetailHtml = `
+                    <tr>
+                        <td colspan="3" class="px-6 py-4 text-center text-sm text-gray-500">
+                            Không có khách hàng đang chờ tại ${branchName}.
+                        </td>
+                    </tr>
+                 `;
+            }
+            
+            detailBody.innerHTML = waitingDetailHtml;
+
+
+            // 7. Vẽ Biểu đồ 1: Tỷ lệ Giao dịch Hoàn thành (Vẫn theo loại giao dịch tổng quát)
+            const chartDataByType = {};
+            completedTickets.forEach(t => {
+                chartDataByType[t.transactionTypeId] = (chartDataByType[t.transactionTypeId] || 0) + 1;
+            });
+            
+            const chartData = initialTransactionTypes.map(type => ({
+                name: type.name,
+                count: chartDataByType[type.id] || 0,
+                totalWait: completedTickets.filter(t => t.transactionTypeId === type.id).reduce((sum, t) => sum + ((t.servedAt - t.timestamp) / 1000 || 0), 0),
+                totalService: completedTickets.filter(t => t.transactionTypeId === type.id).reduce((sum, t) => sum + ((t.completedAt - t.servedAt) / 1000 || 0), 0),
+                validCount: completedTickets.filter(t => t.transactionTypeId === type.id && t.servedAt && t.completedAt && (t.servedAt > t.timestamp)).length
+            }));
+            
+            renderTransactionVolumeChart(chartData);
+
+            // 8. Vẽ Biểu đồ 2: Thời gian Chờ & Xử lý Trung bình theo loại
+            renderAverageTimeChart(chartData);
             
             alertUser(`Đã tạo báo cáo cho ${branchName}.`);
         }
@@ -774,8 +921,8 @@
                 transactionVolumeChartInstance.destroy();
             }
             
-            const labels = Object.values(data).map(t => t.name);
-            const counts = Object.values(data).map(t => t.count);
+            const labels = data.map(t => t.name);
+            const counts = data.map(t => t.count);
 
             transactionVolumeChartInstance = new Chart(ctx, {
                 type: 'doughnut',
@@ -784,7 +931,7 @@
                     datasets: [{
                         label: 'Số lượng Giao dịch Hoàn thành',
                         data: counts,
-                        backgroundColor: [brandColorPrimary, brandColorSecondary, supplementalColor],
+                        backgroundColor: [brandColorPrimary, brandColorSecondary, supplementalColor, '#6EE7B7'],
                         hoverOffset: 4
                     }]
                 },
@@ -805,9 +952,9 @@
                 averageTimeChartInstance.destroy();
             }
             
-            const labels = Object.values(data).map(t => t.name);
-            const avgWaitTimes = Object.values(data).map(t => t.count > 0 ? (t.totalWait / t.count).toFixed(1) : 0);
-            const avgServiceTimes = Object.values(data).map(t => t.count > 0 ? (t.totalService / t.count).toFixed(1) : 0);
+            const labels = data.map(t => t.name);
+            const avgWaitTimes = data.map(t => t.validCount > 0 ? (t.totalWait / t.validCount).toFixed(1) : 0);
+            const avgServiceTimes = data.map(t => t.validCount > 0 ? (t.totalService / t.validCount).toFixed(1) : 0);
 
             averageTimeChartInstance = new Chart(ctx, {
                 type: 'bar',
@@ -900,7 +1047,7 @@
             initializeData();
             renderBranchSelection();
             renderTransactionSelection();
-            renderManagerTypeSelection();
+            renderManagerCounterSelection(); // Gọi hàm render Quầy mới
             showView('customer'); // Default view
         };
     </script>
