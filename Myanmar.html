@@ -11,6 +11,8 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+    <!-- Tải html2pdf.js cho chức năng xuất PDF trực tiếp -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
         /* Định nghĩa màu thương hiệu */
         .brand-primary { color: #006b68; }
@@ -65,26 +67,34 @@
         }
         .timeline-time {
             position: absolute;
-            left: -90px; /* Adjust as needed */
+            left: -90px; /* Vị trí mặc định trên desktop */
             top: 0;
             width: 80px;
             font-weight: 700;
             color: #004d4a; /* Darker Primary cho thời gian */
             text-align: right;
         }
+        
+        /* FIX LỖI CĂN LỀ TRÊN MOBILE & TIMELINE */
         @media (max-width: 767px) {
-            .timeline-time {
-                left: -115px;
-                width: 100px;
-            }
+            /* Đẩy timeline content vào 1.5rem */
             .timeline-item {
                  padding-left: 1.5rem;
-                 margin-left: 115px;
+                 margin-left: 100px; /* Đẩy nội dung chính sang phải */
             }
+            /* Cố định vị trí chấm tròn trên mobile */
              .timeline-item::before {
-                left: 115px;
+                left: 92px; 
+            }
+            /* Đưa mốc thời gian vào lề trái trên mobile */
+             .timeline-time {
+                left: 0;
+                width: 90px;
+                text-align: left;
             }
         }
+        /* End Fix Timeline */
+
         /* Style cho Link trong Lộ trình */
         .route-link {
             transition: color 0.3s;
@@ -120,40 +130,7 @@
             margin-top: 1rem;
         }
         
-        /* CSS cho chế độ In/PDF */
-        @media print {
-            body {
-                background-color: white;
-            }
-            /* Ẩn Header, Footer, Nút và Biểu đồ */
-            .sticky, .no-print, .chart-container, #suggestion-modal {
-                display: none !important;
-            }
-            /* Đảm bảo nội dung chính được hiển thị đầy đủ */
-            main {
-                margin-top: 0 !important;
-                padding-top: 0 !important;
-                max-width: none !important;
-            }
-            /* Đảm bảo màu sắc timeline và chữ rõ ràng */
-            .timeline-item::before {
-                background-color: #006b68 !important;
-                border: 1px solid #006b68 !important;
-            }
-            .timeline-item {
-                border-left-color: #006b68 !important;
-            }
-            /* Bỏ màu sắc in của các link để chuyển về màu đen in rõ */
-            .timeline-time, .text-brand-primary, .detail-heading, a {
-                color: #000 !important; 
-                text-decoration-color: #000 !important; /* Đảm bảo gạch chân in rõ */
-            }
-            .bg-white, .bg-gray-100 {
-                background-color: white !important;
-                box-shadow: none !important;
-                border: none !important;
-            }
-        }
+        /* Bỏ CSS @media print cũ vì giờ dùng html2pdf.js */
     </style>
 </head>
 <body>
@@ -167,7 +144,7 @@
         </div>
     </header>
 
-    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+    <main id="export-target" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
 
         <!-- THÔNG TIN CHUNG VÀ GỢI Ý -->
         <section class="mb-12 p-6 bg-white rounded-xl shadow-lg">
@@ -188,7 +165,7 @@
             </div>
 
             <h3 class="text-xl font-bold text-gray-800 mt-8 mb-4 border-b pb-2"><i class="fas fa-magic mr-2 text-brand-accent"></i> Gợi Ý & Công Cụ</h3>
-            <div class="flex flex-wrap gap-4 items-center">
+            <div class="flex flex-wrap gap-4 items-center no-print">
                 <!-- Nút 1: Gợi ý trang phục -->
                 <button class="outfit-suggester-btn bg-brand-primary hover:bg-brand-primary-dark text-white font-semibold py-2 px-4 rounded-lg shadow transition duration-300" 
                         data-type="cong-tac">
@@ -200,8 +177,8 @@
                     Trang Phục Lễ Bái
                 </button>
                 <!-- Nút 3: Xuất PDF/In (Mới) -->
-                <button onclick="window.print()" class="bg-brand-accent hover:bg-brand-accent-dark text-gray-800 font-semibold py-2 px-4 rounded-lg shadow transition duration-300">
-                    <i class="fas fa-file-pdf mr-2"></i> Xuất File PDF / In
+                <button onclick="exportToPdf()" class="bg-brand-accent hover:bg-brand-accent-dark text-gray-800 font-semibold py-2 px-4 rounded-lg shadow transition duration-300">
+                    <i class="fas fa-file-pdf mr-2"></i> Xuất File PDF
                 </button>
             </div>
         </section>
@@ -1038,6 +1015,47 @@
         modalCloseBtn.addEventListener('click', hideModal);
         modalBackdrop.addEventListener('click', hideModal);
 
+        // --- HÀM XUẤT PDF/IN ĐƯỢC CẬP NHẬT (SỬ DỤNG html2pdf.js) ---
+        function exportToPdf() {
+            const element = document.querySelector('main'); 
+            
+            // 1. Tạm thời ẩn các thành phần không muốn in/export
+            const noExportElements = document.querySelectorAll('.no-print');
+            const originalDisplays = [];
+
+            noExportElements.forEach(el => {
+                originalDisplays.push(el.style.display); // Lưu lại trạng thái display gốc
+                el.style.display = 'none';
+            });
+
+            const opt = {
+                margin: 10, // Lề 10mm cho tất cả các phía
+                filename: 'Lich_Trinh_Myanmar.pdf',
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { 
+                    scale: 2, // Tăng scale cho chất lượng chữ tốt hơn
+                    letterRendering: true,
+                    useCORS: true 
+                },
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+
+            // 2. Thực hiện tạo và lưu PDF
+            html2pdf().set(opt).from(element).save().then(() => {
+                // 3. Khôi phục lại hiển thị ban đầu sau khi hoàn tất
+                noExportElements.forEach((el, index) => {
+                    el.style.display = originalDisplays[index];
+                });
+                // Thêm thông báo nếu cần (tùy chọn, vì save() đã tự động kích hoạt download)
+            }).catch(error => {
+                // Đảm bảo các phần bị ẩn được khôi phục ngay cả khi có lỗi
+                noExportElements.forEach((el, index) => {
+                    el.style.display = originalDisplays[index];
+                });
+                console.error("Lỗi khi tạo PDF:", error);
+                alert('Lỗi: Không thể tạo file PDF. Vui lòng kiểm tra console log để biết chi tiết.');
+            });
+        }
 
         window.onload = createCharts;
     </script>
