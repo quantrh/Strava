@@ -6,15 +6,31 @@
     <title>Infographic: Hành Trình Công Tác & Trải Nghiệm Văn Hóa Tại Myanmar</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Thêm Font Awesome để có icon cho lịch trình -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700;900&display=swap" rel="stylesheet">
     <style>
+        /* Định nghĩa màu thương hiệu */
+        .brand-primary { color: #006b68; }
+        .bg-brand-primary { background-color: #006b68; }
+        .text-brand-primary { color: #006b68; }
+        .border-brand-primary { border-color: #006b68; }
+        .brand-accent { color: #FFC62F; }
+        .bg-brand-accent { background-color: #FFC62F; }
+        .text-brand-accent { color: #FFC62F; }
+        
+        /* Hiệu ứng hover cho nút */
+        .hover\:bg-brand-primary-dark:hover { background-color: #005a57; } /* Dùng màu tối hơn một chút cho hiệu ứng hover */
+        .hover\:bg-brand-accent-dark:hover { background-color: #e5b32a; } /* Dùng màu tối hơn một chút cho hiệu ứng hover */
+
         html {
             scroll-behavior: smooth;
         }
         body {
             font-family: 'Roboto', sans-serif;
+            background-color: #f8f9fa;
         }
         .chart-container {
             position: relative;
@@ -30,736 +46,1000 @@
                 height: 350px;
             }
         }
+        .timeline-item {
+            position: relative;
+            padding-left: 3rem;
+            margin-bottom: 2rem;
+            border-left: 2px solid #006b68; /* Brand Primary cho đường kẻ timeline */
+        }
         .timeline-item::before {
             content: '';
             position: absolute;
-            left: -31px;
-            top: 5px;
-            width: 20px;
-            height: 20px;
+            top: 0;
+            left: -8px;
+            width: 16px;
+            height: 16px;
+            background-color: #006b68; /* Brand Primary cho chấm tròn */
             border-radius: 50%;
-            background-color: #0094D1;
-            border: 3px solid #F1F1F1;
+            z-index: 10;
         }
-        .tab-btn.active {
-            background-color: #004AAD;
-            color: white;
+        .timeline-time {
+            position: absolute;
+            left: -90px; /* Adjust as needed */
+            top: 0;
+            width: 80px;
+            font-weight: 700;
+            color: #004d4a; /* Darker Primary cho thời gian */
+            text-align: right;
         }
-        .gemini-modal-backdrop {
-            background-color: rgba(0, 0, 0, 0.5);
+        @media (max-width: 767px) {
+            .timeline-time {
+                left: -115px;
+                width: 100px;
+            }
+            .timeline-item {
+                 padding-left: 1.5rem;
+                 margin-left: 115px;
+            }
+             .timeline-item::before {
+                left: 115px;
+            }
         }
-        .gemini-modal-content {
-            max-height: 80vh;
+        /* Style cho Link trong Lộ trình */
+        .route-link {
+            transition: color 0.3s;
         }
-        .loader {
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #004AAD;
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            animation: spin 1s linear infinite;
+        .route-link:hover {
+            color: #006b68; /* Brand Primary cho hover */
         }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+
+        /* Style cho phần giới thiệu chi tiết */
+        .detail-heading {
+            color: #006b68;
+            font-weight: 700;
+            margin-top: 1rem;
+            margin-bottom: 0.5rem;
+            font-size: 1.125rem; /* text-lg */
+        }
+        .detail-list li {
+            margin-left: 1.25rem;
+            list-style-type: disc;
+            font-size: 0.95rem;
+            color: #4b5563; /* gray-600 */
+        }
+        .detail-text {
+            color: #4b5563; /* gray-600 */
+            margin-bottom: 1rem;
+            line-height: 1.6;
+        }
+        .info-box {
+            padding: 1rem;
+            background-color: #ffc62f1a; /* Rất nhạt của Brand Accent */
+            border-left: 3px solid #FFC62F;
+            border-radius: 0.375rem;
+            margin-top: 1rem;
+        }
+        
+        /* CSS cho chế độ In/PDF */
+        @media print {
+            body {
+                background-color: white;
+            }
+            /* Ẩn Header, Footer, Nút và Biểu đồ */
+            .sticky, .no-print, .chart-container, #suggestion-modal {
+                display: none !important;
+            }
+            /* Đảm bảo nội dung chính được hiển thị đầy đủ */
+            main {
+                margin-top: 0 !important;
+                padding-top: 0 !important;
+                max-width: none !important;
+            }
+            /* Đảm bảo màu sắc timeline và chữ rõ ràng */
+            .timeline-item::before {
+                background-color: #006b68 !important;
+                border: 1px solid #006b68 !important;
+            }
+            .timeline-item {
+                border-left-color: #006b68 !important;
+            }
+            /* Bỏ màu sắc in của các link để chuyển về màu đen in rõ */
+            .timeline-time, .text-brand-primary, .detail-heading, a {
+                color: #000 !important; 
+                text-decoration-color: #000 !important; /* Đảm bảo gạch chân in rõ */
+            }
+            .bg-white, .bg-gray-100 {
+                background-color: white !important;
+                box-shadow: none !important;
+                border: none !important;
+            }
         }
     </style>
 </head>
-<body class="bg-[#F1F1F1]">
+<body>
 
-    <div class="container mx-auto p-4 md:p-8">
-        
-        <section class="bg-white rounded-lg shadow-md p-6 mb-12 text-center">
-            <h2 class="text-2xl md:text-3xl font-bold text-[#004AAD] text-center mb-4">Lựa chọn hành trình của bạn</h2>
-            
-            <div class="w-full text-center mb-6">
-                <div class="inline-flex rounded-lg shadow-md">
-                    <button id="bagan-btn" onclick="switchInfographic('bagan')" class="tab-btn active px-4 py-2 md:px-6 md:py-3 font-semibold rounded-l-lg transition-colors duration-300 bg-white text-[#004AAD] text-sm md:text-base">CỐ ĐÔ BAGAN</button>
-                    <button id="inle-btn" onclick="switchInfographic('inle')" class="tab-btn px-4 py-2 md:px-6 md:py-3 font-semibold rounded-r-lg transition-colors duration-300 bg-white text-[#004AAD] text-sm md:text-base">HỒ INLE</button>
-                </div>
-            </div>
-
-            <p class="text-gray-600 mb-6 max-w-2xl mx-auto">So sánh hai phương án du lịch để chọn ra trải nghiệm phù hợp nhất với bạn. Mỗi hành trình đều kết hợp lịch làm việc tại Yangon với một điểm nhấn văn hóa độc đáo.</p>
-            
-            <div class="text-left max-w-4xl mx-auto text-sm md:text-base mb-6 space-y-4">
-                <div>
-                    <h3 class="font-bold text-lg text-gray-800">So sánh chung:</h3>
-                    <p class="mt-1 text-gray-600"><span class="font-semibold text-yellow-600">Lựa chọn Cố đô Bagan</span> là hành trình dành cho những ai yêu thích lịch sử, kiến trúc và muốn chiêm ngưỡng sự hùng vĩ của một di sản thế giới với hàng ngàn ngôi đền tháp cổ kính.</p>
-                    <p class="mt-1 text-gray-600"><span class="font-semibold text-blue-500">Lựa chọn Hồ Inle</span> mang đến một trải nghiệm hòa mình vào thiên nhiên, khám phá văn hóa sông nước độc đáo và tận hưởng không khí thanh bình, yên ả của một trong những hồ nước đẹp nhất châu Á.</p>
-                </div>
-                 <div>
-                    <h3 class="font-bold text-lg text-gray-800">Lời khuyên:</h3>
-                    <p class="mt-1 text-gray-600">Nếu bạn muốn một chuyến đi mang đậm dấu ấn lịch sử và có những bức ảnh kỳ vĩ, hãy chọn Bagan. Nếu bạn tìm kiếm sự thư thái, gần gũi với thiên nhiên và văn hóa bản địa, Hồ Inle sẽ là lựa chọn lý tưởng.</p>
-                </div>
-                 <div>
-                    <h3 class="font-bold text-lg text-gray-800">Thời gian công tác:</h3>
-                     <p class="mt-1 text-gray-600"><span class="font-semibold text-yellow-600">Phương án Cố đô Bagan:</span> Thời gian công tác từ 03/10 đến 07/10.</p>
-                    <p class="mt-1 text-gray-600"><span class="font-semibold text-blue-500">Phương án Hồ Inle:</span> Thời gian công tác từ 02/10 đến 06/10.</p>
-                </div>
-            </div>
-
-            <div class="text-left max-w-4xl mx-auto text-sm md:text-base overflow-x-auto">
-                <table class="w-full border-collapse">
-                    <thead>
-                        <tr class="bg-gray-100">
-                            <th class="border p-2 font-semibold text-gray-700">Điểm chung</th>
-                            <th class="border p-2 font-semibold text-yellow-600">Khám phá Bagan</th>
-                            <th class="border p-2 font-semibold text-blue-500">Khám phá Hồ Inle</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td class="border p-2 align-top">
-                                <ul class="list-disc list-inside space-y-1">
-                                    <li>Chợ Bogyoke</li>
-                                    <li>Chùa Kyauk Htat Gyi</li>
-                                    <li>Chùa Botahtaung</li>
-                                    <li>Chùa Vàng Shwedagon</li>
-                                    <li>Lễ hội Ánh sáng Thadingyut</li>
-                                </ul>
-                            </td>
-                            <td class="border p-2 align-top">
-                                <ul class="list-disc list-inside space-y-1">
-                                    <li>Cố đô Bagan</li>
-                                    <li>Chùa Shwezigon</li>
-                                    <li>Đền Htilominlo</li>
-                                    <li>Đền Ananda</li>
-                                </ul>
-                            </td>
-                            <td class="border p-2 align-top">
-                                <ul class="list-disc list-inside space-y-1">
-                                    <li>Hồ Inle</li>
-                                    <li>Người Intha & Chèo thuyền một chân</li>
-                                    <li>Làng nổi & Vườn nổi</li>
-                                </ul>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </section>
-
-        <!-- Bagan Infographic -->
-        <div id="bagan-infographic">
-            <header class="text-center mb-12">
-                <h1 class="text-3xl md:text-5xl font-bold text-[#004AAD] mb-2">Hành Trình Công Tác & Khám Phá Cố Đô Bagan</h1>
-                <p class="text-base md:text-lg text-[#333333]">Tổng quan chuyến đi 5 ngày 4 đêm kết hợp giữa công việc tại Yangon và trải nghiệm văn hóa.</p>
-            </header>
-
-            <section class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12 text-center">
-                <div class="bg-white rounded-lg shadow-md p-6">
-                    <p class="text-5xl md:text-6xl font-bold text-[#0094D1]">5</p>
-                    <p class="text-lg md:text-xl text-[#333333] mt-2">Ngày</p>
-                </div>
-                <div class="bg-white rounded-lg shadow-md p-6">
-                    <p class="text-5xl md:text-6xl font-bold text-[#0094D1]">4</p>
-                    <p class="text-lg md:text-xl text-[#333333] mt-2">Đêm</p>
-                </div>
-                <div class="bg-white rounded-lg shadow-md p-6">
-                    <p class="text-5xl md:text-6xl font-bold text-[#0094D1]">2</p>
-                    <p class="text-lg md:text-xl text-[#333333] mt-2">Thành Phố</p>
-                </div>
-            </section>
-
-            <section class="bg-white rounded-lg shadow-md p-6 mb-12">
-                <h2 class="text-2xl font-bold text-[#004AAD] text-center mb-6">Lộ Trình Chuyến Đi</h2>
-                <div class="flex flex-wrap items-start justify-center gap-y-4 sm:flex-nowrap sm:space-x-2 md:space-x-4">
-                    <div class="text-center w-1/3 sm:w-auto">
-                        <div class="bg-[#0094D1] text-white rounded-full w-20 h-20 mx-auto flex items-center justify-center text-base font-semibold">Hà Nội</div>
-                        <div class="text-xs text-gray-600 mt-1">03/10 | 20:05</div>
-                    </div>
-                    <div class="text-3xl font-light text-[#0094D1] pt-8 hidden sm:block">&#8594;</div>
-                    <div class="text-center w-1/3 sm:w-auto">
-                        <div class="bg-[#004AAD] text-white rounded-full w-20 h-20 mx-auto flex items-center justify-center text-base font-semibold">Yangon</div>
-                        <div class="text-xs text-gray-600 mt-1">03/10|21:35 - 05/10|10:00</div>
-                    </div>
-                    <div class="text-3xl font-light text-[#0094D1] pt-8 hidden sm:block">&#8594;</div>
-                    <div class="text-center w-1/3 sm:w-auto">
-                        <div class="bg-[#FFC107] text-[#333333] rounded-full w-20 h-20 mx-auto flex items-center justify-center text-base font-semibold">Bagan</div>
-                         <div class="text-xs text-gray-600 mt-1">05/10|12:00 - 06/10|11:20</div>
-                    </div>
-                    <div class="text-3xl font-light text-[#0094D1] pt-8 hidden sm:block">&#8594;</div>
-                    <div class="text-center w-1/3 sm:w-auto">
-                        <div class="bg-[#004AAD] text-white rounded-full w-20 h-20 mx-auto flex items-center justify-center text-base font-semibold">Yangon</div>
-                         <div class="text-xs text-gray-600 mt-1">06/10|13:30 - 07/10|16:35</div>
-                    </div>
-                     <div class="text-3xl font-light text-[#0094D1] pt-8 hidden sm:block">&#8594;</div>
-                    <div class="text-center w-1/3 sm:w-auto">
-                        <div class="bg-[#0094D1] text-white rounded-full w-20 h-20 mx-auto flex items-center justify-center text-base font-semibold">Hà Nội</div>
-                         <div class="text-xs text-gray-600 mt-1">07/10 | 19:05</div>
-                    </div>
-                </div>
-            </section>
-
-            <section class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
-                <div class="bg-white rounded-lg shadow-md p-6">
-                    <h2 class="text-2xl font-bold text-[#004AAD] text-center mb-4">Phân Bổ Hoạt Động Toàn Chuyến Đi</h2>
-                    <p class="text-center text-[#333333] mb-6">Biểu đồ thể hiện sự phân bổ thời gian ước tính cho các hoạt động chính trong suốt hành trình 5 ngày.</p>
-                    <div class="chart-container">
-                        <canvas id="activityDistributionChartBagan"></canvas>
-                    </div>
-                </div>
-                <div class="bg-white rounded-lg shadow-md p-6">
-                    <h2 class="text-2xl font-bold text-[#004AAD] text-center mb-4">Điểm Nhấn Văn Hóa Tại Bagan</h2>
-                     <p class="text-center text-[#333333] mb-6">So sánh tầm quan trọng và mức độ hấp dẫn của các ngôi đền tiêu biểu mà đoàn sẽ tham quan tại cố đô Bagan.</p>
-                    <div class="chart-container">
-                        <canvas id="baganHighlightsChart"></canvas>
-                    </div>
-                </div>
-            </section>
-
-            <section id="bagan-schedule" class="bg-white rounded-lg shadow-md p-6 md:p-8 mb-12">
-                <h2 class="text-3xl font-bold text-[#004AAD] text-center mb-8">Lịch Trình Chi Tiết</h2>
-                <div class="relative pl-8 border-l-2 border-dashed border-[#0094D1]">
-                    
-                    <div class="mb-10 relative timeline-item">
-                        <div class="flex justify-between items-center mb-2">
-                            <h3 class="text-xl font-bold text-[#004AAD]">Ngày 1 (Thứ 6, 03/10): Hà Nội - Yangon</h3>
-                            <button class="outfit-suggester-btn text-sm bg-blue-100 text-blue-800 rounded-full px-3 py-1 hover:bg-blue-200 transition" data-location="Yangon" data-activities="Bay đến Yangon, nhận phòng khách sạn, ăn nhẹ và nghỉ ngơi buổi tối.">✨ Gợi ý trang phục</button>
-                        </div>
-                        <ul class="list-disc list-inside text-[#333333] space-y-1">
-                            <li><span class="font-semibold">Chiều:</span> Ra sân bay Nội Bài.</li>
-                            <li><span class="font-semibold">20:05 - 21:35:</span> ✈️ Bay đến Yangon trên chuyến bay <a href="https://www.google.com/search?q=8M451" target="_blank" class="text-blue-600 hover:underline font-semibold">MAI 8M451</a>.</li>
-                            <li><span class="font-semibold">Tối:</span> Nhận phòng khách sạn, ăn nhẹ và nghỉ ngơi.</li>
-                        </ul>
-                    </div>
-
-                    <div class="mb-10 relative timeline-item">
-                        <div class="flex justify-between items-center mb-2">
-                            <h3 class="text-xl font-bold text-[#004AAD]">Ngày 2 (Thứ 7, 04/10): Làm việc & Tham quan Yangon</h3>
-                            <button class="outfit-suggester-btn text-sm bg-blue-100 text-blue-800 rounded-full px-3 py-1 hover:bg-blue-200 transition" data-location="Yangon" data-activities="Làm việc tại văn phòng, tham quan chợ Bogyoke, viếng chùa Kyauk Htat Gyi và Botahtaung, ăn tối giao lưu.">✨ Gợi ý trang phục</button>
-                        </div>
-                         <ul class="list-disc list-inside text-[#333333] space-y-1">
-                            <li><span class="font-semibold">07:00 - 08:00:</span> Dùng bữa sáng tại khách sạn.</li>
-                            <li><span class="font-semibold">08:00 - 09:30:</span> 💼 Làm việc tại Trụ sở Chi nhánh.</li>
-                            <li><span class="font-semibold">09:30 - 12:00:</span> Tham quan <a href="#bogyoke-market" class="text-blue-600 hover:underline font-semibold">chợ Bogyoke</a>.</li>
-                            <li><span class="font-semibold">12:00 - 14:00:</span> Ăn trưa và nghỉ ngơi.</li>
-                            <li><span class="font-semibold">16:00 - 18:30:</span> Viếng <a href="#kyauk-htat-gyi-pagoda" class="text-blue-600 hover:underline font-semibold">chùa Kyauk Htat Gyi</a> & <a href="#botahtaung-pagoda" class="text-blue-600 hover:underline font-semibold">Botahtaung</a>.</li>
-                            <li><span class="font-semibold">19:00 - 21:00:</span> Giao lưu ăn tối.</li>
-                            <li><span class="font-semibold">22:00:</span> Nghỉ ngơi tại khách sạn.</li>
-                        </ul>
-                    </div>
-
-                    <div class="mb-10 relative timeline-item">
-                        <div class="flex justify-between items-center mb-2">
-                            <h3 class="text-xl font-bold text-[#004AAD]">Ngày 3 (Chủ Nhật, 05/10): Khám Phá Bagan</h3>
-                            <button class="outfit-suggester-btn text-sm bg-blue-100 text-blue-800 rounded-full px-3 py-1 hover:bg-blue-200 transition" data-location="Bagan" data-activities="Di chuyển bằng máy bay, khám phá các ngôi đền chùa cổ kính, ngắm hoàng hôn.">✨ Gợi ý trang phục</button>
-                        </div>
-                        <ul class="list-disc list-inside text-[#333333] space-y-1">
-                            <li><span class="font-semibold">07:30 - 08:30:</span> Ăn sáng và di chuyển ra sân bay.</li>
-                            <li><span class="font-semibold">10:00 - 12:00:</span> ✈️ Bay đến <a href="#bagan-city" class="text-blue-600 hover:underline font-semibold">Bagan</a> trên chuyến bay nội địa <span class="font-semibold">(Máy bay ATR-72)</span>.</li>
-                            <li><span class="font-semibold">12:00 - 14:00:</span> Ăn trưa, check-in khách sạn và nghỉ ngơi.</li>
-                            <li><span class="font-semibold">15:30 - 17:00:</span> 🌅 Khám phá các kỳ quan: <a href="#shwezigon-pagoda" class="text-blue-600 hover:underline font-semibold">Chùa Shwezigon</a>, <a href="#htilominlo-temple" class="text-blue-600 hover:underline font-semibold">Htilominlo</a>, <a href="#ananda-temple" class="text-blue-600 hover:underline font-semibold">Đền Ananda</a>.</li>
-                            <li><span class="font-semibold">17:30 - 18:30:</span> Chiêm ngưỡng hoàng hôn huyền ảo.</li>
-                            <li><span class="font-semibold">19:00 - 21:00:</span> Ăn tối và nghỉ ngơi tại Bagan.</li>
-                        </ul>
-                    </div>
-
-                    <div class="mb-10 relative timeline-item">
-                        <div class="flex justify-between items-center mb-2">
-                            <h3 class="text-xl font-bold text-[#004AAD]">Ngày 4 (Thứ 2, 06/10): Yangon & Lễ Hội Ánh Sáng</h3>
-                            <button class="outfit-suggester-btn text-sm bg-blue-100 text-blue-800 rounded-full px-3 py-1 hover:bg-blue-200 transition" data-location="Yangon" data-activities="Di chuyển bằng máy bay, tham quan Chùa Vàng Shwedagon và tham dự Lễ hội Ánh sáng, ăn tối giao lưu.">✨ Gợi ý trang phục</button>
-                        </div>
-                        <ul class="list-disc list-inside text-[#333333] space-y-1">
-                            <li><span class="font-semibold">08:30 - 09:30:</span> Ăn sáng và check-out khách sạn.</li>
-                            <li><span class="font-semibold">09:30 - 09:50:</span> Di chuyển ra sân bay.</li>
-                            <li><span class="font-semibold">11:20 - 13:30:</span> ✈️ Bay về Yangon trên chuyến bay nội địa <span class="font-semibold">(Máy bay ATR-72)</span>.</li>
-                            <li><span class="font-semibold">13:30 - 16:00:</span> Ăn trưa và check-in khách sạn.</li>
-                            <li><span class="font-semibold">18:30 - 19:30:</span> ✨ Tham quan <a href="#shwedagon-pagoda" class="text-blue-600 hover:underline font-semibold">Chùa Vàng Shwedagon</a> trong không khí <a href="#thadingyut-festival" class="text-blue-600 hover:underline font-semibold">Lễ hội Thadingyut</a>.</li>
-                            <li><span class="font-semibold">19:45 - 21:00:</span> Giao lưu ăn tối cùng cán bộ Chi nhánh.</li>
-                            <li><span class="font-semibold">21:00:</span> Nghỉ ngơi.</li>
-                        </ul>
-                    </div>
-
-                    <div class="relative timeline-item">
-                        <div class="flex justify-between items-center mb-2">
-                            <h3 class="text-xl font-bold text-[#004AAD]">Ngày 5 (Thứ 3, 07/10): Yangon - Hà Nội</h3>
-                            <button class="outfit-suggester-btn text-sm bg-blue-100 text-blue-800 rounded-full px-3 py-1 hover:bg-blue-200 transition" data-location="Yangon" data-activities="Giao lưu golf buổi sáng, ăn trưa thân mật, di chuyển ra sân bay về Hà Nội.">✨ Gợi ý trang phục</button>
-                        </div>
-                        <ul class="list-disc list-inside text-[#333333] space-y-1">
-                            <li><span class="font-semibold">06:00 - 11:30:</span> ⛳ Tham gia chương trình giao lưu golf.</li>
-                            <li><span class="font-semibold">Buổi chiều:</span> Dùng bữa trưa thân mật.</li>
-                            <li><span class="font-semibold">14:30:</span> Di chuyển ra sân bay.</li>
-                            <li><span class="font-semibold">16:35 - 19:05:</span> ✈️ Bay về Hà Nội trên chuyến bay <a href="https://www.google.com/search?q=8M450" target="_blank" class="text-blue-600 hover:underline font-semibold">MAI 8M450</a>.</li>
-                        </ul>
-                    </div>
-                </div>
-            </section>
+    <header class="bg-white shadow-lg sticky top-0 z-50 no-print">
+        <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+            <h1 class="text-3xl font-extrabold text-gray-900 text-center flex items-center justify-center">
+                <i class="fas fa-map-signs text-brand-primary mr-3"></i> Infographic: Hành Trình Công Tác & Trải Nghiệm Văn Hóa Tại Myanmar
+            </h1>
+            <p class="text-center text-sm text-gray-500 mt-2">Lịch trình đầy đủ: 23/10/2025 - 26/10/2025</p>
         </div>
+    </header>
 
-        <!-- Inle Infographic -->
-        <div id="inle-infographic" class="hidden">
-            <header class="text-center mb-12">
-                <h1 class="text-3xl md:text-5xl font-bold text-[#004AAD] mb-2">Hành Trình Công Tác & Khám Phá Hồ Inle</h1>
-                <p class="text-base md:text-lg text-[#333333]">Tổng quan chuyến đi 5 ngày 4 đêm kết hợp giữa công việc tại Yangon và vẻ đẹp thanh bình của Hồ Inle.</p>
-            </header>
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
 
-            <section class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12 text-center">
-                 <div class="bg-white rounded-lg shadow-md p-6">
-                    <p class="text-5xl md:text-6xl font-bold text-[#0094D1]">5</p>
-                    <p class="text-lg md:text-xl text-[#333333] mt-2">Ngày</p>
+        <!-- THÔNG TIN CHUNG VÀ GỢI Ý -->
+        <section class="mb-12 p-6 bg-white rounded-xl shadow-lg">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4 border-b pb-2"><i class="fas fa-info-circle mr-2 text-brand-primary"></i> Tổng Quan Chuyến Đi</h2>
+            <div class="grid md:grid-cols-3 gap-6">
+                <div class="text-center p-4 bg-gray-50 rounded-lg">
+                    <p class="text-4xl font-extrabold text-brand-primary">4</p>
+                    <p class="text-sm text-gray-600">Ngày công tác & tham quan</p>
                 </div>
-                <div class="bg-white rounded-lg shadow-md p-6">
-                    <p class="text-5xl md:text-6xl font-bold text-[#0094D1]">4</p>
-                    <p class="text-lg md:text-xl text-[#333333] mt-2">Đêm</p>
+                <div class="text-center p-4 bg-gray-50 rounded-lg">
+                    <p class="text-4xl font-extrabold text-brand-primary">5+</p>
+                    <p class="text-sm text-gray-600">Địa điểm tham quan chính</p>
                 </div>
-                <div class="bg-white rounded-lg shadow-md p-6">
-                    <p class="text-5xl md:text-6xl font-bold text-[#0094D1]">2</p>
-                    <p class="text-lg md:text-xl text-[#333333] mt-2">Địa Điểm</p>
+                <div class="text-center p-4 bg-gray-50 rounded-lg">
+                    <p class="text-4xl font-extrabold text-brand-primary">22.30°C</p>
+                    <p class="text-sm text-gray-600">Nhiệt độ trung bình tại Yangon</p>
                 </div>
-            </section>
+            </div>
 
-            <section class="bg-white rounded-lg shadow-md p-6 mb-12">
-                <h2 class="text-2xl font-bold text-[#004AAD] text-center mb-6">Lộ Trình Chuyến Đi</h2>
-                <div class="flex flex-wrap items-start justify-center gap-y-4 sm:flex-nowrap sm:space-x-2 md:space-x-4">
-                    <div class="text-center w-1/3 sm:w-auto">
-                        <div class="bg-[#0094D1] text-white rounded-full w-20 h-20 mx-auto flex items-center justify-center text-base font-semibold">Hà Nội</div>
-                        <div class="text-xs text-gray-600 mt-1">02/10 | 20:25</div>
-                    </div>
-                    <div class="text-3xl font-light text-[#0094D1] pt-8 hidden sm:block">&#8594;</div>
-                    <div class="text-center w-1/3 sm:w-auto">
-                        <div class="bg-[#004AAD] text-white rounded-full w-20 h-20 mx-auto flex items-center justify-center text-base font-semibold">Yangon</div>
-                        <div class="text-xs text-gray-600 mt-1">02/10|21:55 - 04/10|14:30</div>
-                    </div>
-                    <div class="text-3xl font-light text-[#0094D1] pt-8 hidden sm:block">&#8594;</div>
-                    <div class="text-center w-1/3 sm:w-auto">
-                        <div class="bg-[#64B5F6] text-white rounded-full w-20 h-20 mx-auto flex items-center justify-center text-base font-semibold">Hồ Inle</div>
-                         <div class="text-xs text-gray-600 mt-1">04/10|15:35 - 05/10|11:30</div>
-                    </div>
-                    <div class="text-3xl font-light text-[#0094D1] pt-8 hidden sm:block">&#8594;</div>
-                    <div class="text-center w-1/3 sm:w-auto">
-                        <div class="bg-[#004AAD] text-white rounded-full w-20 h-20 mx-auto flex items-center justify-center text-base font-semibold">Yangon</div>
-                         <div class="text-xs text-gray-600 mt-1">05/10|13:50 - 06/10|16:55</div>
-                    </div>
-                     <div class="text-3xl font-light text-[#0094D1] pt-8 hidden sm:block">&#8594;</div>
-                    <div class="text-center w-1/3 sm:w-auto">
-                        <div class="bg-[#0094D1] text-white rounded-full w-20 h-20 mx-auto flex items-center justify-center text-base font-semibold">Hà Nội</div>
-                         <div class="text-xs text-gray-600 mt-1">06/10 | 19:25</div>
-                    </div>
-                </div>
-            </section>
-
-            <section class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
-                <div class="bg-white rounded-lg shadow-md p-6">
-                    <h2 class="text-2xl font-bold text-[#004AAD] text-center mb-4">Phân Bổ Hoạt Động Toàn Chuyến Đi</h2>
-                    <p class="text-center text-[#333333] mb-6">Biểu đồ thể hiện sự phân bổ thời gian ước tính cho các hoạt động chính trong suốt hành trình 5 ngày.</p>
-                    <div class="chart-container">
-                        <canvas id="activityDistributionChartInle"></canvas>
-                    </div>
-                </div>
-                <div class="bg-white rounded-lg shadow-md p-6">
-                    <h2 class="text-2xl font-bold text-[#004AAD] text-center mb-4">Điểm Nhấn Trải Nghiệm Tại Hồ Inle</h2>
-                     <p class="text-center text-[#333333] mb-6">So sánh mức độ độc đáo và hấp dẫn của các hoạt động và địa danh tiêu biểu tại Hồ Inle.</p>
-                    <div class="chart-container">
-                        <canvas id="inleHighlightsChart"></canvas>
-                    </div>
-                </div>
-            </section>
-
-            <section id="inle-schedule" class="bg-white rounded-lg shadow-md p-6 md:p-8 mb-12">
-                <h2 class="text-3xl font-bold text-[#004AAD] text-center mb-8">Lịch Trình Chi Tiết</h2>
-                <div class="relative pl-8 border-l-2 border-dashed border-[#0094D1]">
-                    
-                    <div class="mb-10 relative timeline-item">
-                        <div class="flex justify-between items-center mb-2">
-                            <h3 class="text-xl font-bold text-[#004AAD]">Ngày 1 (Thứ 5, 02/10): Hà Nội - Yangon</h3>
-                             <button class="outfit-suggester-btn text-sm bg-blue-100 text-blue-800 rounded-full px-3 py-1 hover:bg-blue-200 transition" data-location="Yangon" data-activities="Bay đến Yangon, nhận phòng khách sạn, ăn nhẹ và nghỉ ngơi buổi tối.">✨ Gợi ý trang phục</button>
-                        </div>
-                        <ul class="list-disc list-inside text-[#333333] space-y-1">
-                            <li><span class="font-semibold">Chiều:</span> Ra sân bay Nội Bài.</li>
-                            <li><span class="font-semibold">20:25 - 21:55:</span> ✈️ Bay đến Yangon trên chuyến bay <a href="https://www.google.com/search?q=8M451" target="_blank" class="text-blue-600 hover:underline font-semibold">MAI 8M451</a>.</li>
-                            <li><span class="font-semibold">Tối:</span> Nhận phòng khách sạn, ăn nhẹ và nghỉ ngơi.</li>
-                        </ul>
-                    </div>
-
-                    <div class="mb-10 relative timeline-item">
-                        <div class="flex justify-between items-center mb-2">
-                            <h3 class="text-xl font-bold text-[#004AAD]">Ngày 2 (Thứ 6, 03/10): Làm việc & Tham quan Yangon</h3>
-                            <button class="outfit-suggester-btn text-sm bg-blue-100 text-blue-800 rounded-full px-3 py-1 hover:bg-blue-200 transition" data-location="Yangon" data-activities="Làm việc tại văn phòng, tham quan chợ Bogyoke, viếng chùa Kyauk Htat Gyi và Botahtaung, ăn tối giao lưu.">✨ Gợi ý trang phục</button>
-                        </div>
-                         <ul class="list-disc list-inside text-[#333333] space-y-1">
-                            <li><span class="font-semibold">07:00 - 08:00:</span> Dùng bữa sáng tại khách sạn.</li>
-                            <li><span class="font-semibold">08:00 - 09:30:</span> 💼 Làm việc tại Trụ sở Chi nhánh.</li>
-                            <li><span class="font-semibold">09:30 - 12:00:</span> Tham quan <a href="#bogyoke-market" class="text-blue-600 hover:underline font-semibold">chợ Bogyoke</a>.</li>
-                            <li><span class="font-semibold">12:00 - 14:00:</span> Ăn trưa và nghỉ ngơi.</li>
-                            <li><span class="font-semibold">16:00 - 18:30:</span> Viếng <a href="#kyauk-htat-gyi-pagoda" class="text-blue-600 hover:underline font-semibold">chùa Kyauk Htat Gyi</a> & <a href="#botahtaung-pagoda" class="text-blue-600 hover:underline font-semibold">Botahtaung</a>.</li>
-                            <li><span class="font-semibold">19:00 - 21:00:</span> Giao lưu ăn tối.</li>
-                            <li><span class="font-semibold">22:00:</span> Nghỉ ngơi tại khách sạn.</li>
-                        </ul>
-                    </div>
-
-                    <div class="mb-10 relative timeline-item">
-                        <div class="flex justify-between items-center mb-2">
-                            <h3 class="text-xl font-bold text-[#004AAD]">Ngày 3 (Thứ 7, 04/10): Khám Phá Hồ Inle</h3>
-                            <button class="outfit-suggester-btn text-sm bg-blue-100 text-blue-800 rounded-full px-3 py-1 hover:bg-blue-200 transition" data-location="Hồ Inle" data-activities="Tham quan Yangon buổi sáng, bay đến Hồ Inle, di chuyển bằng thuyền và tham quan các địa danh văn hóa trên hồ.">✨ Gợi ý trang phục</button>
-                        </div>
-                        <ul class="list-disc list-inside text-[#333333] space-y-1">
-                            <li><span class="font-semibold">07:30 - 08:30:</span> Đoàn dùng bữa sáng tại khách sạn hoặc căng tin.</li>
-                            <li><span class="font-semibold">09:00 - 11:30:</span> Đoàn tham quan các địa điểm chung nếu hôm trước chưa đi hết.</li>
-                            <li><span class="font-semibold">11:30 - 13:30:</span> Di chuyển ra quán ăn gần sân bay dùng bữa trưa.</li>
-                            <li><span class="font-semibold">14:30 - 15:35:</span> ✈️ Bay đến <a href="#inle-lake" class="text-blue-600 hover:underline font-semibold">Hồ Inle</a> (sân bay Heho) trên chuyến bay nội địa <span class="font-semibold">(Máy bay ATR-72)</span>.</li>
-                            <li><span class="font-semibold">15:30 - 18:00:</span> 🛶 Di chuyển từ sân bay về bến thuyền và đi thuyền tham quan các địa danh văn hóa trên hồ.</li>
-                            <li><span class="font-semibold">18:30 - 21:00:</span> Check-in khách sạn, ăn tối và ngắm cảnh quan giữa hồ.</li>
-                             <li><span class="font-semibold">21:00:</span> Nghỉ ngơi.</li>
-                        </ul>
-                    </div>
-
-                    <div class="mb-10 relative timeline-item">
-                        <div class="flex justify-between items-center mb-2">
-                            <h3 class="text-xl font-bold text-[#004AAD]">Ngày 4 (Chủ Nhật, 05/10): Yangon & Lễ Hội Ánh Sáng</h3>
-                            <button class="outfit-suggester-btn text-sm bg-blue-100 text-blue-800 rounded-full px-3 py-1 hover:bg-blue-200 transition" data-location="Hồ Inle và Yangon" data-activities="Tham quan Hồ Inle buổi sáng, bay về Yangon, tham dự Lễ hội Ánh sáng tại Chùa Vàng Shwedagon, ăn tối giao lưu.">✨ Gợi ý trang phục</button>
-                        </div>
-                        <ul class="list-disc list-inside text-[#333333] space-y-1">
-                            <li><span class="font-semibold">06:00 - 07:00:</span> Đoàn dùng bữa sáng tại khách sạn.</li>
-                            <li><span class="font-semibold">07:00 - 09:00:</span> Check-out và di chuyển bằng thuyền tham quan các địa danh tâm linh tại hồ Inle.</li>
-                            <li><span class="font-semibold">09:00 - 10:30:</span> Di chuyển ra sân bay.</li>
-                            <li><span class="font-semibold">11:30 - 13:50:</span> ✈️ Bay về Yangon trên chuyến bay nội địa <span class="font-semibold">(Máy bay ATR-72)</span>.</li>
-                            <li><span class="font-semibold">14:00 - 15:30:</span> Ăn trưa tại nhà hàng gần sân bay, sau đó về check-in khách sạn.</li>
-                            <li><span class="font-semibold">17:00 - 18:30:</span> Tham quan một số địa điểm tâm linh còn lại.</li>
-                            <li><span class="font-semibold">18:30 - 19:30:</span> ✨ Tham quan <a href="#shwedagon-pagoda" class="text-blue-600 hover:underline font-semibold">Chùa Vàng Shwedagon</a> và cảm nhận không khí <a href="#thadingyut-festival" class="text-blue-600 hover:underline font-semibold">Lễ hội Ánh sáng Thadingyut</a>.</li>
-                            <li><span class="font-semibold">19:45 - 21:00:</span> Giao lưu ăn tối tại căng tin cùng cán bộ Chi nhánh.</li>
-                            <li><span class="font-semibold">21:00:</span> Nghỉ ngơi.</li>
-                        </ul>
-                    </div>
-
-                    <div class="relative timeline-item">
-                        <div class="flex justify-between items-center mb-2">
-                            <h3 class="text-xl font-bold text-[#004AAD]">Ngày 5 (Thứ 2, 06/10): Yangon - Hà Nội</h3>
-                            <button class="outfit-suggester-btn text-sm bg-blue-100 text-blue-800 rounded-full px-3 py-1 hover:bg-blue-200 transition" data-location="Yangon" data-activities="Giao lưu golf buổi sáng, ăn trưa thân mật, di chuyển ra sân bay về Hà Nội.">✨ Gợi ý trang phục</button>
-                        </div>
-                        <ul class="list-disc list-inside text-[#333333] space-y-1">
-                            <li><span class="font-semibold">06:00 - 11:30:</span> ⛳ Tham gia chương trình giao lưu golf.</li>
-                            <li><span class="font-semibold">12:00 - 14:30:</span> Dùng bữa trưa thân mật với CB, NV Chi nhánh Yangon tại nhà hàng gần sân bay.</li>
-                            <li><span class="font-semibold">14:30:</span> Di chuyển ra sân bay quốc tế Yangon.</li>
-                            <li><span class="font-semibold">16:55 - 19:25:</span> ✈️ Bay về Hà Nội trên chuyến bay <a href="https://www.google.com/search?q=8M450" target="_blank" class="text-blue-600 hover:underline font-semibold">MAI 8M450</a>.</li>
-                        </ul>
-                    </div>
-                </div>
-            </section>
-        </div>
-
-        <!-- Shared Sections -->
-        <section id="attractions" class="bg-white rounded-lg shadow-md p-6 md:p-8 mb-12">
-            <h2 class="text-3xl font-bold text-[#004AAD] text-center mb-8">Điểm Tham Quan Nổi Bật</h2>
-            <div class="space-y-8">
-                <!-- Bagan Specific -->
-                <div id="attractions-bagan" class="space-y-8">
-                    <div id="bagan-city" class="border-b pb-8">
-                        <h3 class="text-xl font-bold text-[#004AAD]">Cố đô Bagan</h3>
-                        <p class="text-[#333333] mt-2">Bagan là thành phố cổ nổi tiếng nằm ở vùng trung tâm Myanmar, từng là thủ đô của vương quốc Pagan từ thế kỷ 9 đến thế kỷ 13. Trải rộng trên diện tích khoảng 65 km2 bên bờ sông Ayeyarwady, Bagan được mệnh danh là "biển đền chùa" với hàng ngàn công trình đền, chùa, tháp cổ kính được xây dựng chủ yếu trong thời kỳ hoàng kim của vương triều Pagan. Đây từng là trung tâm tôn giáo và văn hóa Phật giáo lớn, thu hút nhiều nhà sư, sinh viên từ các vùng lân cận sang nghiên cứu và tu học, góp phần hình thành truyền thống Phật giáo đặc trưng Myanmar. Hệ thống đền chùa Bagan rất đa dạng về kiến trúc và hình thức, gồm chùa có cấu trúc đặc (bảo tháp stupa) và chùa có cấu trúc rỗng, mở với các không gian nội thất để thờ phụng và hành lễ. Khoảng 2.200 ngôi đền, chùa còn tồn tại đến nay trong tổng số hơn 10.000 di tích từng có, thể hiện sự tài hoa của các nghệ nhân qua các kỹ thuật xây dựng bằng gạch, vữa đất sét, cùng các điêu khắc tinh xảo. Các bảo tháp có dạng hình chuông hay hình lọng, phát triển từ kiến trúc miền Đông Nam Ấn Độ. Bagan cũng là nơi lưu giữ nhiều bản thảo, sách cổ về Phật giáo viết trên lá cây, vải hay giấy. Về quy hoạch, Bagan không có tường thành bao kín toàn bộ khu vực nhưng có các bức tường bao quanh cung điện hoàng gia và một số công trình quan trọng. Các cung điện gỗ theo thời gian không còn tồn tại nhưng các đền chùa đá và gạch vẫn là minh chứng nổi bật của nền văn hóa Phật giáo Myanmar. Vào năm 2019, Bagan được UNESCO công nhận là di sản thế giới nhờ giá trị văn hóa và kiến trúc độc đáo này.</p>
-                        <a href="https://www.google.com/maps/search/?api=1&query=Bagan+Archaeological+Zone" target="_blank" class="inline-block mt-3 text-sm text-blue-600 hover:text-blue-800 font-semibold">📍 Xem trên Google Maps</a>
-                    </div>
-                     <div id="shwezigon-pagoda" class="border-b pb-8">
-                        <h3 class="text-xl font-bold text-[#004AAD]">Chùa Shwezigon</h3>
-                        <p class="text-[#333333] mt-2">Chùa Shwezigon là một trong những ngôi chùa linh thiêng và biểu tượng văn hóa quan trọng nhất của Myanmar, nằm ở Bagan. Ngôi chùa được bắt đầu xây dựng vào khoảng năm 1059 dưới triều vua Anawrahta và được mệnh danh là ngôi chùa dát vàng đầu tiên của Myanmar. Theo truyền thuyết, chùa được xây trên nền đất mà một con voi trắng mang theo xá lợi của Đức Phật dừng chân, khiến nơi đây trở thành điểm hành hương linh thiêng cho tín đồ Phật giáo. Kiến trúc của chùa Shwezigon nổi bật với bảo tháp hình chuông cao khoảng 40 mét (sau các lần trùng tu), phủ vàng rực rỡ và trang trí bằng nhiều viên đá quý, kim cương và hồng ngọc ở đỉnh tháp. Bảo tháp trung tâm được bao quanh bởi bốn tháp nhỏ và nhiều tòa tháp khác rải rác trong khuôn viên chùa. Bên trong chùa có các tượng Phật dát vàng lớn, sảnh trưng bày nhiều hiện vật Phật giáo giá trị cùng với chiếc chuông khổng lồ mang ý nghĩa tâm linh sâu sắc. Đây là nơi lưu giữ 8 sợi tóc của Đức Phật cùng nhiều báu vật thiêng liêng, khiến chùa là điểm đến quan trọng với các Phật tử và du khách hành hương khắp nơi. Chùa Shwezigon không chỉ là kiệt tác kiến trúc với vẻ đẹp rực rỡ mà còn chứng kiến nhiều biến cố lịch sử, từ động đất, hỏa hoạn đến các cuộc chiếm đóng, nhưng luôn được phục hồi và giữ gìn như biểu tượng văn hóa tôn giáo của Myanmar.</p>
-                         <a href="https://www.google.com/maps/search/?api=1&query=Shwezigon+Pagoda" target="_blank" class="inline-block mt-3 text-sm text-blue-600 hover:text-blue-800 font-semibold">📍 Xem trên Google Maps</a>
-                    </div>
-                    <div id="htilominlo-temple" class="border-b pb-8">
-                        <h3 class="text-xl font-bold text-[#004AAD]">Đền Htilominlo</h3>
-                        <p class="text-[#333333] mt-2">Đền Htilominlo là một trong những ngôi đền lớn và nổi bật nhất tại Bagan, Myanmar, được xây dựng vào thế kỷ 13 dưới triều vua Htilominlo (hay còn gọi là Nantaungmya), người trị vì từ năm 1211 đến 1235. Ngôi đền mang kiến trúc đặc trưng của Bagan với chiều cao lên tới khoảng 46 mét, xây bằng gạch đỏ và được trát vữa trắng, tạo nên vẻ hùng vĩ tráng lệ. Kiến trúc của đền Htilominlo gồm hai tầng với các bậc thềm dật cấp, ở mỗi góc và giữa bậc thềm có các tháp nhỏ. Mặt bằng tầng 1 là hình vuông với bốn lối vào, trong đó cửa hướng Đông được mở rộng lớn hơn, bên trong có hành lang hình vòng cung bao quanh tượng Phật ở trung tâm mỗi mặt. Tầng 2 thu nhỏ hơn, cũng có tượng Phật ở bốn mặt. Các bức tường trong đền được trang trí nhiều phù điêu chạm khắc và tranh vẽ mô tả các câu chuyện về cuộc đời Đức Phật (Jataka). Đây là công trình kiến trúc cuối cùng theo phong cách Myanmar cổ điển được xây dựng ở Bagan. Đền Htilominlo không chỉ nổi bật về kiến trúc mà còn mang nhiều giá trị lịch sử, được xây dựng tại vị trí nơi vua Htilominlo được chọn làm người kế nhiệm ngai vàng trong một nghi lễ đặc biệt. Đây là địa điểm thu hút nhiều du khách và tín đồ Phật giáo đến thăm quan, chiêm bái.</p>
-                         <a href="https://www.google.com/maps/search/?api=1&query=Htilominlo+Temple" target="_blank" class="inline-block mt-3 text-sm text-blue-600 hover:text-blue-800 font-semibold">📍 Xem trên Google Maps</a>
-                    </div>
-                    <div id="ananda-temple" class="border-b pb-8">
-                        <h3 class="text-xl font-bold text-[#004AAD]">Đền Ananda</h3>
-                        <p class="text-[#333333] mt-2">Đền Ananda là một trong những ngôi đền nổi tiếng và đẹp nhất tại Bagan, Myanmar, được xây dựng vào năm 1105 dưới triều vua Kyanzittha. Ngôi đền được xem là kiệt tác kiến trúc với thiết kế kiểu stupa hình thập tự (Greek cross), có cấu trúc cân xứng hoàn hảo và được xây chủ yếu bằng đá, tạo nên vẻ ngoài hoành tráng và bền vững qua thời gian. Điểm nhấn nổi bật của đền Ananda là ngọn tháp chính cao khoảng 54 mét được mạ vàng lấp lánh, khiến ngôi đền trở thành biểu tượng sáng chói giữa vùng đồng bằng Bagan, đặc biệt trong ánh sáng bình minh và hoàng hôn. Bên trong đền có bốn tượng Phật lớn dát vàng hướng về bốn phương, mỗi tượng cao gần 10 mét, đại diện cho bốn vị Phật đã đạt tới niết bàn. Trên tường và bậc thang trong đền có nhiều bức phù điêu mô tả các câu chuyện về cuộc đời Đức Phật, tạo nên một không gian tâm linh phong phú và sống động. Truyền thuyết kể rằng đền Ananda được xây dựng dựa theo cảm hứng từ ngôi đền huyền thoại trên dãy Himalaya do tám nhà sư Ấn Độ giới thiệu với vua Kyanzittha. Ngoài ra, đền cũng được bảo vệ bởi các tượng Chinthes - sinh vật huyền thoại giống sư tử, thể hiện giá trị tôn giáo và kiến trúc độc đáo. Đây là một trong những địa điểm linh thiêng và thu hút đông đảo khách hành hương lẫn du khách quốc tế khi đến với Bagan.</p>
-                         <a href="https://www.google.com/maps/search/?api=1&query=Ananda+Temple" target="_blank" class="inline-block mt-3 text-sm text-blue-600 hover:text-blue-800 font-semibold">📍 Xem trên Google Maps</a>
-                    </div>
-                </div>
-                <!-- Inle Specific -->
-                <div id="attractions-inle" class="hidden space-y-8">
-                    <div id="inle-lake" class="border-b pb-8">
-                        <h3 class="text-xl font-bold text-[#004AAD]">Hồ Inle</h3>
-                        <p class="text-[#333333] mt-2">Hồ Inle Myanmar là một trong những điểm đến du lịch nổi tiếng và hấp dẫn nhất tại Myanmar với cảnh quan thiên nhiên tuyệt đẹp và văn hóa đặc sắc. Hồ Inle là hồ nước ngọt lớn thứ hai tại Myanmar, nằm ở độ cao khoảng 875 - 800 mét so với mực nước biển, có diện tích khoảng 116 - 250 km2 tùy nguồn. Hồ dài khoảng 11 km, tạo thành dãy đồng bằng tuyệt đẹp với khí hậu mát mẻ quanh năm, rất thích hợp cho du lịch và nghỉ dưỡng. Hồ được biết đến với cộng đồng người Intha sinh sống trên các ngôi nhà nổi trên mặt hồ, những người chèo thuyền độc đáo bằng cách dùng một chân làm mái chèo, và các hoạt động canh tác, nuôi trồng độc đáo như trồng rau, đánh cá chân độc nhất thế giới, dệt lụa từ tơ sen. Hồ còn có nhiều ngôi làng cổ, chợ nổi đặc trưng, đền chùa và các địa điểm tâm linh hấp dẫn. Du khách khi tới hồ Inle thường trải nghiệm đi thuyền dạo quanh hồ để ngắm cảnh, tham quan các làng nghề truyền thống như dệt vải, cuốn thuốc lá Cheroot, hay thăm các ngôi đền và chùa nổi tiếng như chùa Phaung Daw Oo. Hồ Inle cũng nổi tiếng với lễ hội mùa thu nhộn nhịp vào tháng 9-10. Tổng thể, hồ Inle là thiên đường du lịch trên đất nước Myanmar, đem lại trải nghiệm vừa hòa mình vào thiên nhiên tươi đẹp vừa khám phá nét văn hóa độc đáo đặc trưng của các dân tộc thiểu số sống trên hồ.</p>
-                        <a href="https://www.google.com/maps/search/?api=1&query=Inle+Lake" target="_blank" class="inline-block mt-3 text-sm text-blue-600 hover:text-blue-800 font-semibold">📍 Xem trên Google Maps</a>
-                    </div>
-                    <div id="intha-people" class="border-b pb-8">
-                        <h3 class="text-xl font-bold text-[#004AAD]">Người Intha & Kỹ thuật chèo thuyền một chân</h3>
-                        <p class="text-[#333333] mt-2">Trải nghiệm độc đáo nhất tại Hồ Inle là được chứng kiến kỹ thuật chèo thuyền bằng một chân của những người đàn ông Intha. Đứng trên một chân ở đuôi thuyền, họ dùng chân còn lại quấn quanh mái chèo để lèo lái. Kỹ thuật này không chỉ giúp họ giữ thăng bằng và có tầm nhìn xa hơn qua lớp lau sậy dày đặc, mà còn tạo nên một hình ảnh biểu tượng đẹp như một vũ điệu trên mặt hồ.</p>
-                    </div>
-                     <div id="floating-villages" class="border-b pb-8">
-                        <h3 class="text-xl font-bold text-[#004AAD]">Làng nổi & Vườn nổi</h3>
-                        <p class="text-[#333333] mt-2">Toàn bộ cuộc sống của người Intha diễn ra trên mặt nước. Đoàn sẽ được tham quan những ngôi làng với nhà cửa, trường học, chùa chiền đều được dựng trên các cọc gỗ. Đặc biệt ấn tượng là những khu vườn nổi được tạo nên từ xác thực vật và bùn hồ, nơi người dân trồng cà chua và các loại rau củ khác, tạo thành những mảng xanh trôi bồng bềnh trên mặt nước.</p>
-                    </div>
-                </div>
-                <!-- Shared -->
-                <div id="attractions-shared" class="space-y-8">
-                    <div id="bogyoke-market" class="border-b pb-8">
-                        <h3 class="text-xl font-bold text-[#004AAD]">Chợ Bogyoke (Bogyoke Aung San Market)</h3>
-                        <p class="text-[#333333] mt-2">Chợ Bogyoke, hay còn gọi là chợ Bogyoke Aung San, là một trong những khu chợ nổi tiếng và lâu đời nhất tại thành phố Yangon, Myanmar. Chợ được xây dựng vào năm 1926, ban đầu mang tên chợ Scott và sau đó đổi tên thành Bogyoke Aung San để tưởng nhớ vị lãnh tụ vĩ đại có công giải phóng Myanmar. Nằm ở trung tâm thành phố Yangon, chợ Bogyoke có hơn 1.500 gian hàng với rất nhiều loại mặt hàng đa dạng từ đá quý, trang sức, đồ thủ công mỹ nghệ, quà lưu niệm đến ẩm thực địa phương. Chợ Bogyoke đặc biệt nổi tiếng với các sản phẩm đá quý như ngọc bích, sapphire, ruby được khai thác từ các mỏ đá quý nổi tiếng của Myanmar như Mogok. Các trang sức tại đây được chế tác tinh xảo với giá cả đa dạng phù hợp nhiều đối tượng khách hàng. Bên cạnh đó, chợ còn có khu vực bán hàng cổ vật như tem, tiền cổ và huy hiệu. Do quy trình kiểm định nghiêm ngặt và an ninh tốt, du khách có thể yên tâm mua sắm tại đây. Về vị trí và thời gian, chợ tọa lạc ngay trung tâm dễ di chuyển, mở cửa chủ yếu từ 10 giờ sáng, thời gian lý tưởng để tham quan từ tháng 10 đến tháng 2 hàng năm. Ngoài mua sắm, du khách còn có thể trải nghiệm ẩm thực đặc trưng Myanmar và thuê trang phục truyền thống Longyi tại chợ Bogyoke.</p>
-                        <a href="https://www.google.com/maps/search/?api=1&query=Bogyoke+Aung+San+Market" target="_blank" class="inline-block mt-3 text-sm text-blue-600 hover:text-blue-800 font-semibold">📍 Xem trên Google Maps</a>
-                    </div>
-                    <div id="kyauk-htat-gyi-pagoda" class="border-b pb-8">
-                        <h3 class="text-xl font-bold text-[#004AAD]">Chùa Kyauk Htat Gyi</h3>
-                        <p class="text-[#333333] mt-2">Ngôi chùa gây ấn tượng mạnh mẽ với pho tượng Phật Nằm khổng lồ dài 66 mét, một trong những tượng Phật lớn nhất Myanmar. Tượng khắc họa Đức Phật trong trạng thái an nhiên, với đôi mắt biếc và nụ cười thanh thoát. Dưới lòng bàn chân của tượng có khắc 108 hảo tướng của Đức Phật, thể hiện sự giác ngộ viên mãn.</p>
-                         <a href="https://www.google.com/maps/search/?api=1&query=Kyauk+Htat+Gyi+Buddha+Temple" target="_blank" class="inline-block mt-3 text-sm text-blue-600 hover:text-blue-800 font-semibold">📍 Xem trên Google Maps</a>
-                    </div>
-                    <div id="botahtaung-pagoda" class="border-b pb-8">
-                        <h3 class="text-xl font-bold text-[#004AAD]">Chùa Botahtaung</h3>
-                        <p class="text-[#333333] mt-2">Với lịch sử hơn 2500 năm, chùa Botahtaung là một trong những ngôi chùa cổ nhất Yangon. Điểm độc đáo nhất là cấu trúc stupa rỗng, cho phép du khách đi vào bên trong một con đường ziczac được dát vàng để chiêm bái xá lợi tóc của Đức Phật. Ngôi chùa nằm bên bờ sông Yangon thơ mộng, mang lại cảm giác bình yên, tĩnh tại.</p>
-                         <a href="https://www.google.com/maps/search/?api=1&query=Botahtaung+Pagoda" target="_blank" class="inline-block mt-3 text-sm text-blue-600 hover:text-blue-800 font-semibold">📍 Xem trên Google Maps</a>
-                    </div>
-                    <div id="shwedagon-pagoda" class="border-b pb-8">
-                        <h3 class="text-xl font-bold text-[#004AAD]">Chùa Vàng Shwedagon</h3>
-                        <p class="text-[#333333] mt-2">Chùa Vàng Shwedagon, còn gọi là Chùa Shwedagon, là ngôi chùa Phật giáo linh thiêng và biểu tượng văn hóa nổi bật nhất của Myanmar, tọa lạc trên đồi Singuttara, thành phố Yangon. Đây là ngôi chùa được cho là có niên đại hơn 2.500 năm, là nơi lưu giữ bốn báu vật thiêng liêng của Phật giáo gồm 8 sợi tóc của Đức Phật Thích Ca và các báu vật như cây gậy của Phật Câu Lưu Tôn, cái lọc nước của Phật Câu Na Hàm, và một mảnh áo cà sa của Phật Ca Diếp. Chùa Shwedagon có bảo tháp trung tâm cao khoảng 99 mét, được dát tới 90 tấn vàng nguyên chất và trang trí bằng hàng nghìn viên kim cương, hồng ngọc quý giá, trong đó có viên kim cương nặng 76 carat ở đỉnh tháp. Bao quanh bảo tháp trung tâm là gần 1.000 tòa tháp nhỏ và nhiều khu đền, chùa nhỏ khác. Khi đêm đến, cả ngôi chùa như một vương quốc ánh sáng lung linh, huyền ảo thu hút khách thập phương và các Phật tử hành hương. Kiến trúc chùa gây ấn tượng bởi sự hài hòa, cao lớn và tinh xảo, được xem như trái tim và linh hồn văn hóa Myanmar. Từ đỉnh đồi Singuttara, du khách có thể phóng tầm mắt bao quát toàn thành phố Yangon.</p>
-                         <a href="https://www.google.com/maps/search/?api=1&query=Shwedagon+Pagoda" target="_blank" class="inline-block mt-3 text-sm text-blue-600 hover:text-blue-800 font-semibold">📍 Xem trên Google Maps</a>
-                    </div>
-                     <div id="thadingyut-festival">
-                        <h3 class="text-xl font-bold text-[#004AAD]">Lễ hội Ánh sáng Thadingyut</h3>
-                        <p class="text-[#333333] mt-2">Lễ hội Ánh sáng Thadingyut là một trong những lễ hội lớn và quan trọng nhất của Myanmar, diễn ra vào khoảng giữa tháng 10 theo lịch Thadingyut và kéo dài khoảng 3 ngày. Lễ hội được tổ chức để kỷ niệm sự kiện Đức Phật trở lại nhân gian sau 3 tháng đi giảng đạo. Đây cũng là dịp để người dân Myanmar cầu mong sự khai sáng trí tuệ, xua đuổi sự ngu dốt, và bày tỏ lòng thành kính với ông bà, cha mẹ, thầy cô, cũng như những người lớn tuổi trong gia đình. Trong suốt lễ hội, trên khắp các con đường, nhà cửa và đền chùa được trang trí bằng hàng ngàn ngọn nến và đèn lồng lung linh, tạo nên một không gian ánh sáng rực rỡ và tuyệt đẹp. Người dân tham gia lễ hội thường trao tặng quà cho người lớn tuổi, tham gia các hoạt động từ thiện, cùng các biểu diễn văn nghệ và ban nhạc đường phố sôi động. Các ngôi chùa và tu viện cũng luôn đông kín Phật tử đến thắp nến, cầu nguyện trong dịp này. Lễ hội cũng có các hoạt động truyền thống đặc sắc như thả khinh khí cầu giấy truyền thống, tạo nên cảnh tượng đầy màu sắc trên bầu trời đêm. Đây là dịp lễ gắn kết cộng đồng, gia đình và tôn giáo, đồng thời thu hút đông đảo du khách muốn trải nghiệm văn hóa đặc trưng của Myanmar.</p>
-                    </div>
-                </div>
+            <h3 class="text-xl font-bold text-gray-800 mt-8 mb-4 border-b pb-2"><i class="fas fa-magic mr-2 text-brand-accent"></i> Gợi Ý & Công Cụ</h3>
+            <div class="flex flex-wrap gap-4 items-center">
+                <!-- Nút 1: Gợi ý trang phục -->
+                <button class="outfit-suggester-btn bg-brand-primary hover:bg-brand-primary-dark text-white font-semibold py-2 px-4 rounded-lg shadow transition duration-300" 
+                        data-type="cong-tac">
+                    Trang Phục Công Tác
+                </button>
+                <!-- Nút 2: Gợi ý lễ bái -->
+                <button class="outfit-suggester-btn bg-brand-primary hover:bg-brand-primary-dark text-white font-semibold py-2 px-4 rounded-lg shadow transition duration-300" 
+                        data-type="le-bai">
+                    Trang Phục Lễ Bái
+                </button>
+                <!-- Nút 3: Xuất PDF/In (Mới) -->
+                <button onclick="window.print()" class="bg-brand-accent hover:bg-brand-accent-dark text-gray-800 font-semibold py-2 px-4 rounded-lg shadow transition duration-300">
+                    <i class="fas fa-file-pdf mr-2"></i> Xuất File PDF / In
+                </button>
             </div>
         </section>
         
-        <section id="important-notes-bagan" class="bg-white rounded-lg shadow-md p-6 md:p-8">
-            <h2 class="text-3xl font-bold text-[#004AAD] text-center mb-8">LƯU Ý QUAN TRỌNG</h2>
-            <div>
-                <h3 class="text-xl font-bold text-[#004AAD]">Dịch vụ Khinh khí cầu tại Bagan</h3>
-                <p class="text-[#333333] mt-2">Hiện nay, các công ty khai thác dịch vụ Khinh khí cầu cho du khách tại Bagan tạm thời dừng hoạt động do điều kiện thời tiết (mùa mưa). Đến khoảng giữa tháng 9, họ sẽ thông báo về việc tháng 10 có khai thác dịch vụ hay không. Nếu có, Chi nhánh sẽ bố trí chương trình ngắm bình minh bằng Khinh khí cầu, bắt đầu từ lúc 5h sáng và kết thúc vào lúc 8h sáng.</p>
+        <!-- LỘ TRÌNH VÀ ĐỊA ĐIỂM CHÍNH -->
+        <section class="mb-12 p-6 bg-white rounded-xl shadow-lg">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4 border-b pb-2"><i class="fas fa-route mr-2 text-brand-accent"></i> Lộ Trình và Các Điểm Dừng Chân Chính</h2>
+            
+            <p class="text-sm text-gray-600 mb-6">Hành trình chính trong Ngày 2 (24/10) tập trung vào tam giác Văn hóa - Tôn giáo: **Yangon &rarr; Chùa Hòn Đá Vàng (Kyaiktiyo) &rarr; Bago &rarr; Yangon**.</p>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- Điểm dừng 1: Yangon -->
+                <a href="#intro-yangon" class="route-link block p-4 border-2 border-[#006b68] bg-[#006b68] bg-opacity-5 rounded-lg shadow-inner text-center hover:shadow-xl transition duration-300 transform hover:-translate-y-1">
+                    <i class="fas fa-city text-3xl text-brand-primary mb-2"></i>
+                    <h4 class="font-bold text-lg text-gray-800">1. Yangon (Khởi hành)</h4>
+                    <p class="text-xs text-gray-600">Đến: Ngày 1 - 23/10/2025 (21:30)</p>
+                    <p class="text-xs text-gray-600">Rời: Ngày 2 - 24/10/2025 (04:30)</p>
+                </a>
+
+                <!-- Điểm dừng 2: Chùa Hòn Đá Vàng (Golden Rock) -->
+                <a href="#intro-golden-rock" class="route-link block p-4 border-2 border-[#006b68] bg-[#006b68] bg-opacity-5 rounded-lg shadow-inner text-center hover:shadow-xl transition duration-300 transform hover:-translate-y-1">
+                    <i class="fas fa-gem text-3xl text-brand-primary mb-2"></i>
+                    <h4 class="font-bold text-lg text-gray-800">2. Chùa Hòn Đá Vàng</h4>
+                    <p class="text-xs text-gray-600">Đến: Ngày 2 - 24/10/2025 (08:45)</p>
+                    <p class="text-xs text-gray-600">Rời: Ngày 2 - 24/10/2025 (10:30)</p>
+                </a>
+
+                <!-- Điểm dừng 3: Bago -->
+                <a href="#intro-bago" class="route-link block p-4 border-2 border-[#006b68] bg-[#006b68] bg-opacity-5 rounded-lg shadow-inner text-center hover:shadow-xl transition duration-300 transform hover:-translate-y-1">
+                    <i class="fas fa-building text-3xl text-brand-primary mb-2"></i>
+                    <h4 class="font-bold text-lg text-gray-800">3. Bago</h4>
+                    <p class="text-xs text-gray-600">Đến: Ngày 2 - 24/10/2025 (13:00)</p>
+                    <p class="text-xs text-gray-600">Rời: Ngày 2 - 24/10/2025 (15:30)</p>
+                </a>
+            </div>
+            
+             <p class="text-xs text-gray-500 mt-4 italic text-center">Tổng quãng đường di chuyển trong Ngày 2 (Khứ hồi): Khoảng 400km.</p>
+        </section>
+
+        
+        <!-- LỊCH TRÌNH CÔNG TÁC & THAM QUAN CHI TIẾT -->
+        <section id="schedule-section" class="py-12 bg-white rounded-xl shadow-lg mb-12">
+            <h2 class="text-3xl font-bold text-center text-brand-primary mb-10"><i class="fas fa-clipboard-list mr-2"></i> Lịch Trình Chi Tiết (4 Ngày)</h2>
+            <div class="container mx-auto px-6">
+                
+                <!-- NGÀY 1: 23/10/2025 (Thứ Năm) -->
+                <div class="mb-12">
+                    <h3 class="text-xl font-extrabold text-brand-primary mb-6 p-3 bg-[#006b68] bg-opacity-10 rounded-xl shadow-md flex items-center">
+                        <i class="fas fa-plane-departure mr-3"></i> Ngày 23/10/2025 (Thứ Năm) - Khởi Hành & Đến Yangon
+                    </h3>
+                    
+                    <div class="relative pl-10 md:pl-0">
+                        <!-- Item: 17:00 -->
+                        <div class="timeline-item">
+                            <span class="timeline-time">17:00</span>
+                            <div class="bg-white p-4 rounded-lg shadow-md border border-[#006b68] border-opacity-30">
+                                <p class="font-semibold text-gray-900 flex items-center"><i class="fas fa-user-clock mr-2 text-brand-primary"></i> Tập trung tại sân bay Nội Bài</p>
+                                <p class="text-sm text-gray-600 mt-1">Làm thủ tục lên máy bay. *Lưu ý: Chị Hằng và Nhung hỗ trợ đoàn check in.*</p>
+                            </div>
+                        </div>
+
+                        <!-- Item: 20:05-21:30 -->
+                        <div class="timeline-item">
+                            <span class="timeline-time">20:05-21:30</span>
+                            <div class="bg-white p-4 rounded-lg shadow-md border border-[#006b68] border-opacity-30">
+                                <p class="font-semibold text-gray-900 flex items-center">
+                                    <i class="fas fa-plane mr-2 text-brand-primary"></i> 
+                                    Bay Hà Nội - Yangon (MAI 8M453) 
+                                    <a href="https://www.google.com/search?q=MAI+8M453" target="_blank" class="ml-2 text-xs text-[#006b68] hover:text-[#005a57] underline font-normal">
+                                        (Tra cứu chuyến bay)
+                                    </a>
+                                </p>
+                            </div>
+                        </div>
+
+                        <!-- Item: 21:30-22:00 -->
+                        <div class="timeline-item">
+                            <span class="timeline-time">21:30-22:00</span>
+                            <div class="bg-white p-4 rounded-lg shadow-md border border-[#006b68] border-opacity-30">
+                                <p class="font-semibold text-gray-900 flex items-center"><i class="fas fa-handshake mr-2 text-brand-primary"></i> Chi nhánh đón đoàn tại sân bay</p>
+                                <p class="text-sm text-gray-600 mt-1">*Lưu ý: Chi nhánh phát sinh cho Đoàn.*</p>
+                            </div>
+                        </div>
+
+                        <!-- Item: 22:00-22:30 -->
+                        <div class="timeline-item">
+                            <span class="timeline-time">22:00-22:30</span>
+                            <div class="bg-white p-4 rounded-lg shadow-md border border-[#006b68] border-opacity-30">
+                                <p class="font-semibold text-gray-900 flex items-center"><i class="fas fa-hotel mr-2 text-brand-primary"></i> Di chuyển về<a href="#intro-melia" class="text-brand-primary hover:text-brand-primary-dark underline font-normal"> Khách sạn Melia</a></p>
+                            </div>
+                        </div>
+                        
+                        <!-- Item: 22:30-23:30 -->
+                        <div class="timeline-item">
+                            <span class="timeline-time">22:30-23:30</span>
+                            <div class="bg-white p-4 rounded-lg shadow-md border border-[#006b68] border-opacity-30">
+                                <p class="font-semibold text-gray-900 flex items-center"><i class="fas fa-utensils mr-2 text-brand-primary"></i> Dùng bữa ăn khuya và nghỉ ngơi</p>
+                                <p class="text-sm text-gray-600 mt-1">*Lưu ý: Ăn khuya tại phòng ăn ở Melia do Chi nhánh nấu. Chi tiết danh sách phòng như Sheet Danh sach chi phong.*</p>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- NGÀY 2: 24/10/2025 (Thứ Sáu) -->
+                <div class="mb-12">
+                    <h3 class="text-xl font-extrabold text-brand-primary mb-6 p-3 bg-[#006b68] bg-opacity-10 rounded-xl shadow-md flex items-center">
+                        <i class="fas fa-mountain mr-3"></i> Ngày 24/10/2025 (Thứ Sáu) - Chùa Hòn Đá Vàng & Bago
+                    </h3>
+                    
+                    <div class="relative pl-10 md:pl-0">
+                        <!-- Item: 04:30 -->
+                        <div class="timeline-item">
+                            <span class="timeline-time">04:30</span>
+                            <div class="bg-white p-4 rounded-lg shadow-md border border-[#006b68] border-opacity-30">
+                                <p class="font-semibold text-gray-900 flex items-center"><i class="fas fa-bus mr-2 text-brand-primary"></i> Xuất phát đi tham quan Chùa Hòn Đá Vàng</p>
+                                <p class="text-sm text-gray-600 mt-1">*Lưu ý: Chùa Hòn Đá Vàng cách Yangon 200km.*</p>
+                            </div>
+                        </div>
+
+                        <!-- Item: 04:30-07:00 -->
+                        <div class="timeline-item">
+                            <span class="timeline-time">04:30-07:00</span>
+                            <div class="bg-white p-4 rounded-lg shadow-md border border-[#006b68] border-opacity-30">
+                                <p class="font-semibold text-gray-900 flex items-center"><i class="fas fa-mug-hot mr-2 text-brand-primary"></i> Dừng nghỉ & Ăn sáng tại<a href="#intro-feel-kyaw" class="text-brand-primary hover:text-brand-primary-dark underline font-normal"> Feel/Khaing Khaing Kyaw</a></p>
+                                <p class="text-sm text-gray-600 mt-1">Dừng nghỉ và ăn sáng tại quán Feel/Khaing Khaing Kyaw (cách Yangon 150km, cách Chùa Hòn Đá Vàng 40km).</p>
+                            </div>
+                        </div>
+
+                        <!-- Item: 07:00-07:45 -->
+                        <div class="timeline-item">
+                            <span class="timeline-time">07:00-07:45</span>
+                            <div class="bg-white p-4 rounded-lg shadow-md border border-[#006b68] border-opacity-30">
+                                <p class="font-semibold text-gray-900 flex items-center"><i class="fas fa-egg mr-2 text-brand-primary"></i> Cả đoàn ăn sáng</p>
+                            </div>
+                        </div>
+
+                        <!-- Item: 07:45-08:45 -->
+                        <div class="timeline-item">
+                            <span class="timeline-time">07:45-08:45</span>
+                            <div class="bg-white p-4 rounded-lg shadow-md border border-[#006b68] border-opacity-30">
+                                <p class="font-semibold text-gray-900 flex items-center"><i class="fas fa-road mr-2 text-brand-primary"></i> Tiếp tục di chuyển tới Chùa Hòn Đá Vàng</p>
+                            </div>
+                        </div>
+                        
+                        <!-- Item: 08:45-10:00 -->
+                        <div class="timeline-item">
+                            <span class="timeline-time">08:45-10:00</span>
+                            <div class="bg-white p-4 rounded-lg shadow-md border border-[#006b68] border-opacity-30">
+                                <p class="font-semibold text-gray-900 flex items-center"><i class="fas fa-hands-praying mr-2 text-brand-primary"></i> Thăm quan & Lễ tại<a href="#intro-golden-rock" class="text-brand-primary hover:text-brand-primary-dark underline font-normal"> Chùa Hòn Đá Vàng (Golden Rock)</a></p>
+                                <p class="text-sm text-gray-600 mt-1">Nghỉ ngơi ở chùa trên đỉnh núi Golden Rock với độ cao 1000m.</p>
+                            </div>
+                        </div>
+                        
+                        <!-- Item: 10:00-10:30 -->
+                        <div class="timeline-item">
+                            <span class="timeline-time">10:00-10:30</span>
+                            <div class="bg-white p-4 rounded-lg shadow-md border border-[#006b68] border-opacity-30">
+                                <p class="font-semibold text-gray-900 flex items-center"><i class="fas fa-car mr-2 text-brand-primary"></i> Xuống núi</p>
+                                <p class="text-sm text-gray-600 mt-1">Đoàn quay ra khu tập trung, lên xe chuyên dụng để xuống núi.</p>
+                            </div>
+                        </div>
+
+                        <!-- Item: 10:30-13:00 -->
+                        <div class="timeline-item">
+                            <span class="timeline-time">10:30-13:00</span>
+                            <div class="bg-white p-4 rounded-lg shadow-md border border-[#006b68] border-opacity-30">
+                                <p class="font-semibold text-gray-900 flex items-center"><i class="fas fa-city mr-2 text-brand-primary"></i> Di chuyển tới thành phố Bago</p>
+                                <p class="text-sm text-gray-600 mt-1">*Lưu ý: Cách Hòn Đá Vàng 110 km, dự kiến thời gian đi 2 giờ.*</p>
+                            </div>
+                        </div>
+
+                        <!-- Item: 13:00-14:00 -->
+                        <div class="timeline-item">
+                            <span class="timeline-time">13:00-14:00</span>
+                            <div class="bg-white p-4 rounded-lg shadow-md border border-[#006b68] border-opacity-30">
+                                <p class="font-semibold text-gray-900 flex items-center"><i class="fas fa-burger mr-2 text-brand-primary"></i> Ăn trưa tại<a href="#intro-bago" class="text-brand-primary hover:text-brand-primary-dark underline font-normal"> Bago</a></p>
+                            </div>
+                        </div>
+                        
+                        <!-- Item: 14:00-15:30 -->
+                        <div class="timeline-item">
+                            <span class="timeline-time">14:00-15:30</span>
+                            <div class="bg-white p-4 rounded-lg shadow-md border border-[#006b68] border-opacity-30">
+                                <p class="font-semibold text-gray-900 flex items-center"><i class="fas fa-archway mr-2 text-brand-primary"></i> Thăm quan Bago</p>
+                                <p class="text-sm text-gray-600 mt-1">Thăm quan một số địa điểm nổi tiếng ở Bago (Hoàng cung, chùa tượng Phật 4 mặt).</p>
+                            </div>
+                        </div>
+                        
+                        <!-- Item: 15:30-17:30 -->
+                        <div class="timeline-item">
+                            <span class="timeline-time">15:30-17:30</span>
+                            <div class="bg-white p-4 rounded-lg shadow-md border border-[#006b68] border-opacity-30">
+                                <p class="font-semibold text-gray-900 flex items-center"><i class="fas fa-route mr-2 text-brand-primary"></i> Quay về<a href="#intro-yangon" class="text-brand-primary hover:text-brand-primary-dark underline font-normal"> Yangon</a></p>
+                                <p class="text-sm text-gray-600 mt-1">Kết thúc chương trình du lịch Chùa Hòn Đá Vàng - Bago.</p>
+                            </div>
+                        </div>
+                        
+                        <!-- Item: 17:30-19:00 -->
+                        <div class="timeline-item">
+                            <span class="timeline-time">17:30-19:00</span>
+                            <div class="bg-white p-4 rounded-lg shadow-md border border-[#006b68] border-opacity-30">
+                                <p class="font-semibold text-gray-900 flex items-center"><i class="fas fa-bed mr-2 text-brand-primary"></i> Nghỉ ngơi tại<a href="#intro-melia" class="text-brand-primary hover:text-brand-primary-dark underline font-normal"> khách sạn Melia</a></p>
+                            </div>
+                        </div>
+
+                        <!-- Item: 19:00-21:30 -->
+                        <div class="timeline-item">
+                            <span class="timeline-time">19:00-21:30</span>
+                            <div class="bg-white p-4 rounded-lg shadow-md border border-[#006b68] border-opacity-30">
+                                <p class="font-semibold text-gray-900 flex items-center"><i class="fas fa-store mr-2 text-brand-primary"></i> Ăn tối tại Canteen Chi nhánh</p>
+                            </div>
+                        </div>
+
+                        <!-- Item: 21:30-22:00 -->
+                        <div class="timeline-item">
+                            <span class="timeline-time">21:30-22:00</span>
+                            <div class="bg-white p-4 rounded-lg shadow-md border border-[#006b68] border-opacity-30">
+                                <p class="font-semibold text-gray-900 flex items-center"><i class="fas fa-user-tie mr-2 text-brand-primary"></i> Đón đoàn Chủ tịch tại sân bay</p>
+                            </div>
+                        </div>
+                        
+                        <!-- Chốt Timeline -->
+                        <div class="timeline-item">
+                            <span class="timeline-time">22:00+</span>
+                            <div class="bg-white p-4 rounded-lg shadow-md border border-[#006b68] border-opacity-30">
+                                <p class="font-semibold text-gray-900 flex items-center"><i class="fas fa-moon mr-2 text-brand-primary"></i> Kết thúc ngày 2 & Nghỉ ngơi</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- NGÀY 3: 25/10/2025 (Thứ Bảy) -->
+                <div class="mb-12">
+                    <h3 class="text-xl font-extrabold text-brand-primary mb-6 p-3 bg-[#006b68] bg-opacity-10 rounded-xl shadow-md flex items-center">
+                        <i class="fas fa-handshake mr-3"></i> Ngày 25/10/2025 (Thứ Bảy) - Công Tác & Văn Hóa Yangon
+                    </h3>
+                    
+                    <div class="relative pl-10 md:pl-0">
+                        <!-- Item: 07:00-08:00 -->
+                        <div class="timeline-item">
+                            <span class="timeline-time">07:00-08:00</span>
+                            <div class="bg-white p-4 rounded-lg shadow-md border border-[#006b68] border-opacity-30">
+                                <p class="font-semibold text-gray-900 flex items-center"><i class="fas fa-coffee mr-2 text-brand-primary"></i> Ăn sáng tại<a href="#intro-melia" class="text-brand-primary hover:text-brand-primary-dark underline font-normal"> khách sạn Melia</a></p>
+                                <p class="text-sm text-gray-600 mt-1">Nghỉ ngơi và chuẩn bị cho ngày làm việc.</p>
+                            </div>
+                        </div>
+
+                        <!-- Item: 08:30-11:30 -->
+                        <div class="timeline-item">
+                            <span class="timeline-time">08:30-11:30</span>
+                            <div class="bg-white p-4 rounded-lg shadow-md border border-[#006b68] border-opacity-30">
+                                <p class="font-semibold text-gray-900 flex items-center"><i class="fas fa-briefcase mr-2 text-brand-primary"></i> Họp nội bộ/Tham quan Chi nhánh</p>
+                                <p class="text-sm text-gray-600 mt-1">Buổi làm việc chính thức tại văn phòng Chi nhánh Yangon, có sự tham gia của đoàn Chủ tịch.</p>
+                            </div>
+                        </div>
+
+                        <!-- Item: 11:30-13:30 -->
+                        <div class="timeline-item">
+                            <span class="timeline-time">11:30-13:30</span>
+                            <div class="bg-white p-4 rounded-lg shadow-md border border-[#006b68] border-opacity-30">
+                                <p class="font-semibold text-gray-900 flex items-center"><i class="fas fa-utensils mr-2 text-brand-primary"></i> Ăn trưa</p>
+                                <p class="text-sm text-gray-600 mt-1">Dùng bữa trưa tại nhà hàng địa phương hoặc tại khách sạn.</p>
+                            </div>
+                        </div>
+
+                        <!-- Item: 14:30-17:00 -->
+                        <div class="timeline-item">
+                            <span class="timeline-time">14:30-17:00</span>
+                            <div class="bg-white p-4 rounded-lg shadow-md border border-[#006b68] border-opacity-30">
+                                <p class="font-semibold text-gray-900 flex items-center"><i class="fas fa-landmark mr-2 text-brand-primary"></i> Tham quan<a href="#intro-shwedagon" class="text-brand-primary hover:text-brand-primary-dark underline font-normal"> Chùa Shwedagon</a></p>
+                                <p class="text-sm text-gray-600 mt-1">Tham quan biểu tượng của Yangon và Myanmar. *Lưu ý: Trang phục kín đáo, bỏ giày dép khi vào khu vực chùa.*</p>
+                            </div>
+                        </div>
+                        
+                        <!-- Item: 17:00-19:30 -->
+                        <div class="timeline-item">
+                            <span class="timeline-time">17:00-19:30</span>
+                            <div class="bg-white p-4 rounded-lg shadow-md border border-[#006b68] border-opacity-30">
+                                <p class="font-semibold text-gray-900 flex items-center"><i class="fas fa-shopping-bag mr-2 text-brand-primary"></i> Tự do mua sắm tại<a href="#intro-bogyoke-market" class="text-brand-primary hover:text-brand-primary-dark underline font-normal"> Chợ Bogyoke Aung San</a> hoặc nghỉ ngơi</p>
+                                <p class="text-sm text-gray-600 mt-1">Tùy chọn tự do mua sắm tại Chợ Bogyoke Aung San (Chợ Ngọc) hoặc trở về khách sạn chuẩn bị cho tiệc tối.</p>
+                            </div>
+                        </div>
+                        
+                        <!-- Item: 19:30-21:30 -->
+                        <div class="timeline-item">
+                            <span class="timeline-time">19:30-21:30</span>
+                            <div class="bg-white p-4 rounded-lg shadow-md border border-[#006b68] border-opacity-30">
+                                <p class="font-semibold text-gray-900 flex items-center"><i class="fas fa-glass-cheers mr-2 text-brand-primary"></i> Tiệc Gala Dinner</p>
+                                <p class="text-sm text-gray-600 mt-1">Tiệc tối chiêu đãi tại nhà hàng đặc biệt hoặc tại<a href="#intro-melia" class="text-brand-primary hover:text-brand-primary-dark underline font-normal"> khách sạn Melia</a> (Có thể kết hợp với Chi nhánh).</p>
+                            </div>
+                        </div>
+                        
+                        <!-- Item: 21:30+ -->
+                        <div class="timeline-item">
+                            <span class="timeline-time">21:30+</span>
+                            <div class="bg-white p-4 rounded-lg shadow-md border border-[#006b68] border-opacity-30">
+                                <p class="font-semibold text-gray-900 flex items-center"><i class="fas fa-bed mr-2 text-brand-primary"></i> Kết thúc ngày 3 & Nghỉ ngơi</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- NGÀY 4: 26/10/2025 (Chủ Nhật) -->
+                <div class="mb-12">
+                    <h3 class="text-xl font-extrabold text-brand-primary mb-6 p-3 bg-[#006b68] bg-opacity-10 rounded-xl shadow-md flex items-center">
+                        <i class="fas fa-plane-up mr-3"></i> Ngày 26/10/2025 (Chủ Nhật) - Khởi Hành Về Việt Nam
+                    </h3>
+                    
+                    <div class="relative pl-10 md:pl-0">
+                         <!-- Item: 07:00-08:00 -->
+                        <div class="timeline-item">
+                            <span class="timeline-time">07:00-08:00</span>
+                            <div class="bg-white p-4 rounded-lg shadow-md border border-[#006b68] border-opacity-30">
+                                <p class="font-semibold text-gray-900 flex items-center"><i class="fas fa-coffee mr-2 text-brand-primary"></i> Ăn sáng & đóng gói hành lý</p>
+                            </div>
+                        </div>
+                        
+                        <!-- Item: 08:00-10:00 -->
+                        <div class="timeline-item">
+                            <span class="timeline-time">08:00-10:00</span>
+                            <div class="bg-white p-4 rounded-lg shadow-md border border-[#006b68] border-opacity-30">
+                                <p class="font-semibold text-gray-900 flex items-center"><i class="fas fa-history mr-2 text-brand-primary"></i> Tham quan Bảo tàng Quốc gia Yangon </p>
+                                <p class="text-sm text-gray-600 mt-1">Hoạt động tham quan cuối cùng, tùy chọn thay thế bằng tự do mua sắm.</p>
+                            </div>
+                        </div>
+
+                        <!-- Item: 10:30 -->
+                        <div class="timeline-item">
+                            <span class="timeline-time">10:30</span>
+                            <div class="bg-white p-4 rounded-lg shadow-md border border-[#006b68] border-opacity-30">
+                                <p class="font-semibold text-gray-900 flex items-center"><i class="fas fa-suitcase-rolling mr-2 text-brand-primary"></i> Check-out<a href="#intro-melia" class="text-brand-primary hover:text-brand-primary-dark underline font-normal"> Khách sạn Melia</a></p>
+                                <p class="text-sm text-gray-600 mt-1">Hoàn tất thủ tục trả phòng và kiểm tra hành lý.</p>
+                            </div>
+                        </div>
+                        
+                        <!-- Item: 11:30-13:00 -->
+                        <div class="timeline-item">
+                            <span class="timeline-time">11:30-13:00</span>
+                            <div class="bg-white p-4 rounded-lg shadow-md border border-[#006b68] border-opacity-30">
+                                <p class="font-semibold text-gray-900 flex items-center"><i class="fas fa-burger mr-2 text-brand-primary"></i> Ăn trưa sớm tại<a href="#intro-seasons" class="text-brand-primary hover:text-brand-primary-dark underline font-normal"> Nhà hàng Seasons</a></p>
+                                <p class="text-sm text-gray-600 mt-1">Dùng bữa trưa gần sân bay hoặc trên đường di chuyển.</p>
+                            </div>
+                        </div>
+
+                        <!-- Item: 14:00 -->
+                        <div class="timeline-item">
+                            <span class="timeline-time">14:00</span>
+                            <div class="bg-white p-4 rounded-lg shadow-md border border-[#006b68] border-opacity-30">
+                                <p class="font-semibold text-gray-900 flex items-center"><i class="fas fa-car-side mr-2 text-brand-primary"></i> Di chuyển ra sân bay (YIA)</p>
+                            </div>
+                        </div>
+
+                        <!-- Item: 17:00 (Giả định giờ bay về, cần kiểm tra lại chuyến bay thực tế) -->
+                        <div class="timeline-item">
+                            <span class="timeline-time">17:00</span>
+                            <div class="bg-white p-4 rounded-lg shadow-md border border-[#006b68] border-opacity-30">
+                                <p class="font-semibold text-gray-900 flex items-center">
+                                    <i class="fas fa-plane-departure mr-2 text-brand-primary"></i> 
+                                    Chuyến bay về Hà Nội (MAI 8M454) 
+                                    <a href="https://www.google.com/search?q=MAI+8M454" target="_blank" class="ml-2 text-xs text-[#006b68] hover:text-[#005a57] underline font-normal">
+                                        (Tra cứu chuyến bay)
+                                    </a>
+                                </p>
+                                <p class="text-sm text-gray-600 mt-1">*Lưu ý: Tra cứu chuyến bay để kiểm tra trạng thái và giờ khởi hành chính thức.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </section>
 
-         <section id="important-notes-inle" class="hidden bg-white rounded-lg shadow-md p-6 md:p-8">
-            <h2 class="text-3xl font-bold text-[#004AAD] text-center mb-8">LƯU Ý QUAN TRỌNG</h2>
-            <div>
-                <h3 class="text-xl font-bold text-[#004AAD]">Chuyến bay nội địa</h3>
-                <p class="text-[#333333] mt-2">Các chuyến bay nội địa trong chương trình thường sử dụng loại máy bay cánh quạt ATR-72. Lịch trình bay chi tiết có thể được điều chỉnh và sẽ được Chi nhánh cập nhật khi có thông tin chính thức từ hãng hàng không.</p>
+        <!-- GIỚI THIỆU CHI TIẾT ĐIỂM ĐẾN -->
+        <section class="py-12 bg-gray-100 rounded-xl shadow-inner mb-12">
+            <h2 class="text-3xl font-bold text-center text-brand-primary mb-10"><i class="fas fa-map-marked-alt mr-2"></i> Giới Thiệu Chi Tiết Về Các Điểm Dừng</h2>
+            
+            <!-- 1. Yangon -->
+            <div id="intro-yangon" class="p-6 bg-white rounded-xl shadow-lg mb-8 border-l-4 border-brand-primary">
+                <h3 class="text-2xl font-extrabold text-gray-800 mb-4 border-b pb-2 flex items-center"><i class="fas fa-city mr-3 text-brand-primary"></i> 1. Yangon (Rangoon)</h3>
+                
+                <h4 class="detail-heading">Tổng quan</h4>
+                <p class="detail-text">Yangon, trước đây gọi là Rangoon, là thành phố lớn nhất và trung tâm kinh tế, thương mại của Myanmar. Dù không còn là thủ đô (thủ đô hiện tại là Naypyidaw từ năm 2005), Yangon vẫn giữ vị trí quan trọng về văn hóa, lịch sử và du lịch. Thành phố này nổi bật với sự pha trộn giữa kiến trúc thuộc địa Anh, các công trình Phật giáo lộng lẫy như Chùa Shwedagon, và không khí sôi động của một đô thị hiện đại. Yangon là cửa ngõ chính cho du khách quốc tế đến Myanmar, với sân bay quốc tế Yangon (RGN) là điểm trung chuyển chính.</p>
+
+                <h4 class="detail-heading">Lịch sử</h4>
+                <p class="detail-text">Yangon được thành lập từ thời Vương quốc Mon với tên gọi Dagon, gắn liền với Chùa Shwedagon. Dưới thời thuộc địa Anh (1824–1948), thành phố được đổi tên thành Rangoon và phát triển mạnh mẽ với các tòa nhà phong cách Victoria và Edwardian. Sau độc lập, Yangon tiếp tục là trung tâm chính trị và kinh tế cho đến khi thủ đô chuyển đi. Hiện nay, thành phố là nơi giao thoa giữa truyền thống và hiện đại, với các khu chợ sầm uất, chùa chiền cổ kính và các tòa nhà cao tầng.</p>
+
+                <h4 class="detail-heading">Hoạt động chính</h4>
+                <ul class="detail-list">
+                    <li><strong>Tham quan di tích văn hóa:</strong> Chùa Shwedagon, Nhà thờ Thánh Mary, Tòa thị chính Yangon, và các công trình thuộc địa trên đường Strand.</li>
+                    <li><strong>Mua sắm:</strong> Khám phá <a href="#intro-bogyoke-market" class="text-brand-primary hover:text-brand-primary-dark underline">Chợ Bogyoke Aung San</a> để mua đồ thủ công, ngọc bích, và vải truyền thống như Longyi.</li>
+                    <li><strong>Ẩm thực:</strong> Thưởng thức các món ăn Myanmar tại các quán địa phương như <a href="#intro-feel-kyaw" class="text-brand-primary hover:text-brand-primary-dark underline">Feel</a> hoặc các nhà hàng quốc tế.</li>
+                    <li><strong>Nghỉ dưỡng:</strong> Các công viên như Công viên Kandawgyi hoặc Hồ Inya là nơi lý tưởng để thư giãn.</li>
+                    <li><strong>Giao lưu văn hóa:</strong> Tham gia các lễ hội Phật giáo hoặc sự kiện văn hóa tại các chùa và quảng trường.</li>
+                </ul>
+
+                <div class="info-box">
+                    <p class="text-sm font-medium"><i class="fas fa-exclamation-circle mr-2 text-brand-accent"></i>Lưu ý khi tham quan</p>
+                    <ul class="list-disc pl-5 mt-2 text-sm space-y-1">
+                        <li>Trang phục cần lịch sự, đặc biệt khi vào các khu vực tôn giáo (áo dài tay, quần/váy dài).</li>
+                        <li>Yangon có khí hậu nhiệt đới, nóng ẩm quanh năm (nhiệt độ trung bình 25–33°C), nên mang giày dép thoải mái và chuẩn bị ô/kem chống nắng.</li>
+                        <li>Tiền tệ chính là Kyat (MMK), nhưng USD cũng được chấp nhận ở một số nơi.</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- 2. Khách Sạn Melia Yangon -->
+            <div id="intro-melia" class="p-6 bg-white rounded-xl shadow-lg mb-8 border-l-4 border-brand-primary">
+                <h3 class="text-2xl font-extrabold text-gray-800 mb-4 border-b pb-2 flex items-center"><i class="fas fa-hotel mr-3 text-brand-primary"></i> 2. Khách Sạn Melia Yangon</h3>
+
+                <h4 class="detail-heading">Tổng quan</h4>
+                <p class="detail-text">Melia Yangon là khách sạn 5 sao thuộc thương hiệu Melia Hotels International, tọa lạc tại số 192, đường Kaba Aye Pagoda, gần hồ Inya và cách trung tâm Yangon khoảng 10 phút di chuyển. Với vị trí thuận lợi gần các khu thương mại và điểm tham quan như Chùa Shwedagon, khách sạn là lựa chọn lý tưởng cho cả khách du lịch và khách công tác. Melia Yangon nổi bật với thiết kế hiện đại, dịch vụ cao cấp và không gian sang trọng.</p>
+
+                <h4 class="detail-heading">Tiện ích nổi bật</h4>
+                <ul class="detail-list">
+                    <li><strong>Phòng ốc:</strong> 430 phòng nghỉ và suite, được trang bị nội thất hiện đại, tầm nhìn ra hồ Inya hoặc thành phố, wifi miễn phí, và tiện nghi cao cấp.</li>
+                    <li><strong>Ẩm thực:</strong> Nhà hàng The Market phục vụ buffet quốc tế, nhà hàng Olea chuyên món Địa Trung Hải, và nhà hàng Garbo với các món châu Á. Quầy bar Elyx trên tầng thượng là nơi lý tưởng để ngắm cảnh đêm.</li>
+                    <li><strong>Bể bơi và spa:</strong> Hồ bơi ngoài trời với tầm nhìn đẹp, cùng YHI Spa cung cấp các liệu pháp thư giãn.</li>
+                    <li><strong>Tổ chức sự kiện:</strong> Trung tâm hội nghị hiện đại với sức chứa lên đến 800 người, phù hợp cho các buổi họp hoặc tiệc cưới.</li>
+                </ul>
+
+                <h4 class="detail-heading">Hoạt động chính</h4>
+                <ul class="detail-list">
+                    <li>Nghỉ dưỡng sau chuyến bay dài, đặc biệt phù hợp với du khách từ Việt Nam (chuyến bay khoảng 2–3 giờ).</li>
+                    <li>Tổ chức các buổi họp, hội thảo, hoặc sự kiện doanh nghiệp.</li>
+                    <li>Thư giãn tại bể bơi hoặc spa, hoặc khám phá các điểm tham quan gần đó như Công viên Inya Lake.</li>
+                </ul>
+                
+                <div class="info-box">
+                    <p class="text-sm font-medium"><i class="fas fa-exclamation-circle mr-2 text-brand-accent"></i>Lưu ý khi lưu trú</p>
+                    <ul class="list-disc pl-5 mt-2 text-sm space-y-1">
+                        <li>Đặt phòng trước để có giá tốt, đặc biệt trong mùa cao điểm (tháng 11–2).</li>
+                        <li>Kiểm tra các gói ưu đãi kết hợp lưu trú và tour du lịch từ khách sạn.</li>
+                        <li>Giá phòng dao động từ 80–150 USD/đêm, tùy loại phòng và thời điểm.</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- 3. Quán Ăn Feel / Khaing Khaing Kyaw -->
+            <div id="intro-feel-kyaw" class="p-6 bg-white rounded-xl shadow-lg mb-8 border-l-4 border-brand-primary">
+                <h3 class="text-2xl font-extrabold text-gray-800 mb-4 border-b pb-2 flex items-center"><i class="fas fa-utensils mr-3 text-brand-primary"></i> 3. Quán Ăn Feel / Khaing Khaing Kyaw</h3>
+
+                <h4 class="detail-heading">Tổng quan</h4>
+                <p class="detail-text">Feel Myanmar Food và Khaing Khaing Kyaw là hai quán ăn nổi tiếng tại Yangon, chuyên phục vụ các món ăn truyền thống Myanmar, được yêu thích bởi cả người dân địa phương và du khách. Các quán này thường nằm trên các tuyến đường chính, thuận tiện cho du khách dừng chân để ăn sáng hoặc nghỉ ngơi trong hành trình khám phá Yangon và các khu vực lân cận như Bago hoặc Kyaiktiyo.</p>
+
+                <h4 class="detail-heading">Đặc sản nổi bật</h4>
+                <ul class="detail-list">
+                    <li><strong>Mohinga:</strong> Món bún nước cá được xem là “quốc hồn quốc túy” của Myanmar, với nước dùng thơm lừng từ cá, gừng, nghệ, và sả, ăn kèm bún gạo, trứng luộc, và bánh chiên giòn.</li>
+                    <li><strong>Cà ri Myanmar:</strong> Các món cà ri gà, bò, hoặc hải sản, thường ăn kèm cơm hoặc bánh mì naan.</li>
+                    <li><strong>Trà sữa Myanmar:</strong> Loại trà đậm đà pha với sữa đặc, ngọt ngào và thơm.</li>
+                    <li><strong>Salad lá trà (Lahpet Thoke):</strong> Món salad độc đáo từ lá trà lên men, trộn với đậu phộng, tôm khô, và cà chua.</li>
+                </ul>
+
+                <h4 class="detail-heading">Hoạt động chính</h4>
+                <ul class="detail-list">
+                    <li>Trải nghiệm ẩm thực địa phương trong không gian giản dị, gần gũi.</li>
+                    <li>Nghỉ ngơi, thưởng thức bữa sáng hoặc bữa trưa nhẹ trước khi tiếp tục hành trình.</li>
+                    <li>Tìm hiểu văn hóa ẩm thực Myanmar qua các món ăn truyền thống.</li>
+                </ul>
+                
+                <div class="info-box">
+                    <p class="text-sm font-medium"><i class="fas fa-exclamation-circle mr-2 text-brand-accent"></i>Lưu ý khi thưởng thức</p>
+                    <ul class="list-disc pl-5 mt-2 text-sm space-y-1">
+                        <li>Giá cả phải chăng, khoảng 3.000–10.000 MMK/món (tương đương 1.5–5 USD).</li>
+                        <li>Một số món có thể hơi cay hoặc đậm vị, nên hỏi nhân viên trước khi gọi nếu không quen.</li>
+                        <li>Feel Myanmar Food có nhiều chi nhánh tại Yangon, trong khi Khaing Khaing Kyaw nổi tiếng hơn ở khu vực trung tâm.</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- 4. Chùa Hòn Đá Vàng (Kyaiktiyo Pagoda) -->
+            <div id="intro-golden-rock" class="p-6 bg-white rounded-xl shadow-lg mb-8 border-l-4 border-brand-primary">
+                <h3 class="text-2xl font-extrabold text-gray-800 mb-4 border-b pb-2 flex items-center"><i class="fas fa-gem mr-3 text-brand-primary"></i> 4. Chùa Hòn Đá Vàng (Kyaiktiyo Pagoda)</h3>
+
+                <h4 class="detail-heading">Tổng quan</h4>
+                <p class="detail-text">Chùa Kyaiktiyo, hay Chùa Hòn Đá Vàng (Golden Rock) , là một trong ba điểm hành hương quan trọng nhất của Phật giáo Myanmar. Nằm trên đỉnh núi Kyaiktiyo ở bang Mon, cách Yangon khoảng 210 km, ngôi chùa được xây dựng trên một tảng đá granite khổng lồ phủ vàng, nằm chênh vênh ở độ cao 1.100 mét so với mực nước biển. Theo truyền thuyết, tảng đá được giữ thăng bằng nhờ một sợi tóc của Đức Phật, khiến nó trở thành biểu tượng linh thiêng và kỳ diệu.</p>
+
+                <h4 class="detail-heading">Lịch sử và truyền thuyết</h4>
+                <p class="detail-text">Tương truyền, tảng đá được giữ cố định nhờ sợi tóc của Đức Phật do một ẩn sĩ dâng tặng cho vua Tissa vào thế kỷ 11. Tảng đá này được phủ vàng lá bởi các tín đồ qua hàng thế kỷ, tạo nên vẻ đẹp lấp lánh. Chùa Kyaiktiyo là nơi hành hương quan trọng, đặc biệt vào mùa lễ hội (tháng 11–3).</p>
+                
+                <h4 class="detail-heading">Kiến trúc và đặc điểm</h4>
+                <ul class="detail-list">
+                    <li><strong>Tảng đá vàng:</strong> Cao 7,3 mét, đường kính khoảng 15 mét, được dát vàng rực rỡ. Một bảo tháp nhỏ cao 7,6 mét được xây trên đỉnh.</li>
+                    <li><strong>Khu vực linh thiêng:</strong> Chỉ nam giới được phép tiếp cận và dán vàng lá lên tảng đá. Phụ nữ có thể cầu nguyện từ khu vực xung quanh.</li>
+                    <li><strong>Phong cảnh:</strong> Tọa lạc trên đỉnh núi, Kyaiktiyo mang lại tầm nhìn tuyệt đẹp ra thung lũng và rừng núi xung quanh.</li>
+                </ul>
+
+                <h4 class="detail-heading">Hoạt động chính</h4>
+                <ul class="detail-list">
+                    <li><strong>Hành hương và cầu nguyện:</strong> Tham gia các nghi lễ Phật giáo, dán vàng lá (đối với nam giới).</li>
+                    <li><strong>Ngắm cảnh:</strong> Hoàng hôn và bình minh tại Kyaiktiyo là thời điểm lý tưởng để chiêm ngưỡng vẻ đẹp của tảng đá vàng.</li>
+                </ul>
+
+                <div class="info-box">
+                    <p class="text-sm font-medium"><i class="fas fa-exclamation-circle mr-2 text-brand-accent"></i>Lưu ý khi tham quan</p>
+                    <ul class="list-disc pl-5 mt-2 text-sm space-y-1">
+                        <li><strong>Di chuyển:</strong> Từ Yangon, du khách đi xe bus hoặc xe riêng đến trạm Kinpun (3–4 giờ), sau đó chuyển sang xe tải chuyên dụng (giá khoảng 2.500–3.000 MMK) để lên núi. Có thể thuê kiệu (palanquin) với giá 20–30 USD nếu không muốn đi bộ.</li>
+                        <li><strong>Trang phục:</strong> Mặc trang phục kín đáo (quần dài, áo dài tay). Mang giày thể thao thoải mái vì đoạn đường đi bộ khá dốc (khoảng 1 km từ điểm dừng xe tải).</li>
+                        <li><strong>Thời gian lý tưởng:</strong> Tham quan vào sáng sớm hoặc chiều muộn để tránh nắng nóng.</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- 5. Bago (Pegu) -->
+            <div id="intro-bago" class="p-6 bg-white rounded-xl shadow-lg mb-8 border-l-4 border-brand-primary">
+                <h3 class="text-2xl font-extrabold text-gray-800 mb-4 border-b pb-2 flex items-center"><i class="fas fa-building mr-3 text-brand-primary"></i> 5. Bago (Pegu)</h3>
+
+                <h4 class="detail-heading">Tổng quan</h4>
+                <p class="detail-text">Bago, trước đây gọi là Pegu, là một thành phố cổ nằm cách Yangon khoảng 80 km về phía đông bắc, từng là thủ đô của Vương quốc Mon (thế kỷ 9–16) và Vương quốc Taungoo (thế kỷ 16). Bago là trung tâm lịch sử và tôn giáo, với các di tích cổ kính như Tượng Phật Nằm Shwethalyaung , Chùa Mahazedi, và phế tích Cung điện Kanbawzathadi, thu hút du khách yêu thích lịch sử và văn hóa.</p>
+
+                <h4 class="detail-heading">Lịch sử</h4>
+                <p class="detail-text">Bago từng là trung tâm thương mại và tôn giáo quan trọng trong khu vực Đông Nam Á. Vào thế kỷ 15–16, thành phố là thủ đô của Vương quốc Hanthawaddy, nổi tiếng với sự phồn thịnh và giao thương quốc tế. Nhiều di tích tại Bago phản ánh thời kỳ huy hoàng của các triều đại Mon và Myanmar.</p>
+
+                <h4 class="detail-heading">Địa điểm nổi bật</h4>
+                <ul class="detail-list">
+                    <li><strong>Tượng Phật Nằm Shwethalyaung:</strong> Dài 55 mét, cao 16 mét, được xây dựng từ năm 994, là một trong những tượng Phật nằm lớn nhất thế giới.</li>
+                    <li><strong>Chùa Mahazedi:</strong> Được xây dựng năm 1560, nổi bật với kiến trúc tháp hình chuông và lịch sử gắn liền với các báu vật Phật giáo.</li>
+                    <li><strong>Cung điện Kanbawzathadi:</strong> Phế tích của cung điện hoàng gia được xây dựng bởi vua Bayinnaung (1553), được phục dựng một phần để tái hiện vẻ lộng lẫy xưa.</li>
+                    <li><strong>Chùa Shwemawdaw:</strong> Bảo tháp cao 114 mét, được xem là cao nhất Myanmar, là điểm hành hương quan trọng.</li>
+                </ul>
+
+                <h4 class="detail-heading">Hoạt động chính</h4>
+                <ul class="detail-list">
+                    <li>Tham quan các di tích lịch sử và chùa chiền để tìm hiểu về văn hóa Mon và Myanmar.</li>
+                    <li>Chụp ảnh tại Tượng Phật Nằm và các công trình kiến trúc cổ.</li>
+                </ul>
+                
+                <div class="info-box">
+                    <p class="text-sm font-medium"><i class="fas fa-exclamation-circle mr-2 text-brand-accent"></i>Lưu ý khi tham quan</p>
+                    <ul class="list-disc pl-5 mt-2 text-sm space-y-1">
+                        <li>Bago cách Yangon khoảng 1,5–2 giờ đi xe, thường được kết hợp trong hành trình đến Kyaiktiyo.</li>
+                        <li>Mang giày dép dễ tháo vì phải cởi giày khi vào chùa.</li>
+                        <li>Giá vé tham quan các địa điểm dao động từ 10.000–15.000 MMK/người (khoảng 5–7 USD).</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- 6. Chùa Shwedagon (The Great Dagon Pagoda) -->
+            <div id="intro-shwedagon" class="p-6 bg-white rounded-xl shadow-lg mb-8 border-l-4 border-brand-primary">
+                <h3 class="text-2xl font-extrabold text-gray-800 mb-4 border-b pb-2 flex items-center"><i class="fas fa-star mr-3 text-brand-primary"></i> 6. Chùa Shwedagon (The Great Dagon Pagoda)</h3>
+
+                <h4 class="detail-heading">Tổng quan</h4>
+                <p class="detail-text">Chùa Shwedagon , hay Đại Bảo Tháp Dagon , là ngôi chùa linh thiêng nhất Myanmar, tọa lạc trên đồi Singuttara ở Yangon. Tháp chính cao 98–112 mét, được dát hàng tấn vàng lá và đính hơn 7.000 viên kim cương, hồng ngọc, cùng một viên kim cương 76 carat ở đỉnh. Ngôi chùa được cho là nơi lưu giữ bốn báu vật thiêng liêng của Phật giáo.</p>
+
+                <h4 class="detail-heading">Lịch sử</h4>
+                <p class="detail-text">Theo truyền thuyết, chùa được xây dựng từ thời Đức Phật còn tại thế bởi hai anh em thương gia Trapusa và Bhallika. Qua các triều đại, chùa được trùng tu và mở rộng, đặc biệt dưới thời Hoàng hậu Shin Sawbu (thế kỷ 15). Shwedagon từng bị cướp phá và hư hại do động đất, nhưng luôn được phục hồi để giữ gìn vẻ huy hoàng.</p>
+
+                <h4 class="detail-heading">Kiến trúc</h4>
+                <ul class="detail-list">
+                    <li><strong>Tháp chính:</strong> Cao gần 100 mét, dát vàng, với đỉnh tháp được trang trí bằng “hti” (ô che) đính đá quý.</li>
+                    <li><strong>Quần thể xung quanh:</strong> Hơn 1.000 công trình phụ, bao gồm các điện thờ, tượng Phật, và chuông lớn (như chuông Maha Ganda nặng 42 tấn).</li>
+                    <li><strong>Bốn lối vào:</strong> Canh giữ bởi tượng kỳ lân (chinthe), dẫn lên đồi qua các cầu thang dài.</li>
+                </ul>
+
+                <h4 class="detail-heading">Hoạt động chính</h4>
+                <ul class="detail-list">
+                    <li><strong>Hành hương và cầu nguyện:</strong> Tham gia nghi thức dán vàng lá (chỉ dành cho nam giới ở một số khu vực), cầu bình an.</li>
+                    <li><strong>Ngắm hoàng hôn:</strong> Thời điểm 16:30–18:30 là lý tưởng để chiêm ngưỡng tháp vàng lấp lánh dưới ánh nắng và ánh đèn.</li>
+                </ul>
+                
+                <div class="info-box">
+                    <p class="text-sm font-medium"><i class="fas fa-exclamation-circle mr-2 text-brand-accent"></i>Lưu ý khi tham quan</p>
+                    <ul class="list-disc pl-5 mt-2 text-sm space-y-1">
+                        <li><strong>Vé vào cửa:</strong> Khoảng 10.000 MMK (5 USD) cho du khách nước ngoài.</li>
+                        <li><strong>Trang phục:</strong> Kín đáo, cởi giày dép trước khi vào. Phụ nữ không được vào sân hiên nam hoặc chạm nhà sư.</li>
+                        <li><strong>Thời gian:</strong> Mở cửa từ 4:00–22:00, nhưng chiều tối là thời điểm đẹp nhất.</li>
+                        <li><strong>Hướng dẫn viên:</strong> Thuê hướng dẫn viên địa phương (khoảng 10–20 USD) để hiểu rõ hơn về lịch sử và ý nghĩa của chùa.</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <!-- 7. Chợ Bogyoke Aung San (Chợ Ngọc) -->
+            <div id="intro-bogyoke-market" class="p-6 bg-white rounded-xl shadow-lg mb-8 border-l-4 border-brand-primary">
+                <h3 class="text-2xl font-extrabold text-gray-800 mb-4 border-b pb-2 flex items-center"><i class="fas fa-shopping-bag mr-3 text-brand-primary"></i> 7. Chợ Bogyoke Aung San (Chợ Ngọc)</h3>
+
+                <h4 class="detail-heading">Tổng quan</h4>
+                <p class="detail-text">Chợ Bogyoke Aung San, còn gọi là Chợ Scott, là khu chợ nổi tiếng nhất Yangon, tọa lạc trên đường Bogyoke Aung San. Chợ này là điểm đến lý tưởng để mua sắm đồ lưu niệm, trang sức, và sản phẩm thủ công truyền thống Myanmar. Chợ đặc biệt nổi tiếng với các quầy bán ngọc bích, hồng ngọc, và đá quý, vì vậy được gọi là “Chợ Ngọc”.</p>
+
+                <h4 class="detail-heading">Sản phẩm nổi bật</h4>
+                <ul class="detail-list">
+                    <li><strong>Trang sức:</strong> Ngọc bích, hồng ngọc, sapphire, được chế tác thành nhẫn, vòng, và bông tai.</li>
+                    <li><strong>Vải vóc:</strong> Longyi (trang phục truyền thống Myanmar), vải lụa, và khăn choàng.</li>
+                    <li><strong>Đồ thủ công:</strong> Tranh sơn mài, đồ gỗ chạm khắc, tượng Phật nhỏ, và đồ gốm.</li>
+                    <li><strong>Đặc sản địa phương:</strong> Trà, cà phê Myanmar, và các loại gia vị.</li>
+                </ul>
+                
+                <h4 class="detail-heading">Hoạt động chính</h4>
+                <ul class="detail-list">
+                    <li>Mua sắm quà lưu niệm và đồ thủ công để mang về.</li>
+                    <li>Trải nghiệm văn hóa địa phương qua việc giao lưu với các tiểu thương.</li>
+                </ul>
+
+                <div class="info-box">
+                    <p class="text-sm font-medium"><i class="fas fa-exclamation-circle mr-2 text-brand-accent"></i>Lưu ý khi tham quan</p>
+                    <ul class="list-disc pl-5 mt-2 text-sm space-y-1">
+                        <li><strong>Giờ mở cửa:</strong> 10:00–17:00 (thường đóng cửa vào thứ Hai và ngày lễ).</li>
+                        <li><strong>Trả giá:</strong> Nên thương lượng giá khi mua hàng, đặc biệt với trang sức và đồ thủ công.</li>
+                        <li><strong>Chất lượng ngọc:</strong> Nếu mua đá quý, nên kiểm tra kỹ và yêu cầu giấy chứng nhận nguồn gốc.</li>
+                        <li><strong>Tiền tệ:</strong> Chấp nhận cả Kyat và USD, nhưng nên mang tiền mặt vì không phải quầy nào cũng nhận thẻ.</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- 8. Nhà Hàng Seasons (Gần Sân Bay) -->
+            <div id="intro-seasons" class="p-6 bg-white rounded-xl shadow-lg mb-8 border-l-4 border-brand-primary">
+                <h3 class="text-2xl font-extrabold text-gray-800 mb-4 border-b pb-2 flex items-center"><i class="fas fa-plane-departure mr-3 text-brand-primary"></i> 8. Nhà Hàng Seasons (Gần Sân Bay)</h3>
+
+                <h4 class="detail-heading">Tổng quan</h4>
+                <p class="detail-text">Nhà hàng Seasons (giả định dựa trên thông tin cung cấp) là một điểm dừng chân tiện lợi nằm gần sân bay quốc tế Yangon, phù hợp để ăn trưa hoặc nghỉ ngơi trước khi khởi hành. Với không gian thoải mái và thực đơn đa dạng, nhà hàng phục vụ cả món ăn Myanmar truyền thống và các món Âu-Á, đáp ứng nhu cầu của du khách quốc tế.</p>
+                
+                <h4 class="detail-heading">Thực đơn nổi bật</h4>
+                <ul class="detail-list">
+                    <li><strong>Món Myanmar:</strong> Mohinga, cà ri gà/bò, salad lá trà.</li>
+                    <li><strong>Món quốc tế:</strong> Mì Ý, burger, salad, và các món nướng.</li>
+                </ul>
+
+                <h4 class="detail-heading">Hoạt động chính</h4>
+                <ul class="detail-list">
+                    <li>Dùng bữa trưa hoặc bữa nhẹ trước khi ra sân bay.</li>
+                    <li>Nghỉ ngơi, kiểm tra hành lý, và chuẩn bị cho chuyến bay về nước.</li>
+                </ul>
+
+                <div class="info-box">
+                    <p class="text-sm font-medium"><i class="fas fa-exclamation-circle mr-2 text-brand-accent"></i>Lưu ý khi dùng bữa</p>
+                    <ul class="list-disc pl-5 mt-2 text-sm space-y-1">
+                        <li>Đặt bàn trước nếu đi theo đoàn đông để đảm bảo chỗ ngồi.</li>
+                        <li>Giá cả trung bình khoảng 5.000–15.000 MMK/món (2.5–7 USD).</li>
+                        <li>Kiểm tra thời gian phục vụ để phù hợp với lịch trình bay (sân bay Yangon cách trung tâm khoảng 30 phút di chuyển).</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <!-- LỜI KHUYÊN CHUNG -->
+             <div class="p-6 bg-white rounded-xl shadow-lg mt-10 border-l-4 border-[#FFC62F]">
+                <h3 class="text-2xl font-extrabold text-gray-800 mb-4 pb-2 flex items-center text-brand-accent"><i class="fas fa-lightbulb mr-3 text-brand-accent"></i> Lời Khuyên Chung cho Hành Trình</h3>
+                <ul class="detail-list pl-0 space-y-3">
+                    <li><strong>Lịch trình gợi ý:</strong> Kết hợp tham quan Yangon (Chùa Shwedagon, Chợ Bogyoke) trong ngày đầu, di chuyển đến Bago và Kyaiktiyo trong ngày thứ hai, và kết thúc bằng bữa ăn tại Seasons trước khi bay về.</li>
+                    <li><strong>Di chuyển:</strong> Thuê xe riêng hoặc tham gia tour trọn gói để tiết kiệm thời gian và đảm bảo an toàn.</li>
+                    <li><strong>Ngôn ngữ:</strong> Tiếng Anh được sử dụng phổ biến ở Yangon, nhưng ở Bago và Kyaiktiyo, nên có hướng dẫn viên hoặc ứng dụng dịch.</li>
+                    <li><strong>Tiền tệ và thanh toán:</strong> Mang theo tiền mặt (Kyat hoặc USD) vì thẻ tín dụng không phổ biến ở các khu vực ngoài Yangon.</li>
+                </ul>
+            </div>
+        </section>
+        
+        <!-- INFOGRAPHIC: PHÂN BỔ HOẠT ĐỘNG (Đã cập nhật dữ liệu 4 ngày) -->
+        <section class="py-12 bg-gray-100 rounded-xl shadow-inner mb-12 no-print">
+            <h2 class="text-3xl font-bold text-center text-brand-primary mb-8"><i class="fas fa-chart-pie mr-2"></i> Phân Bổ Thời Gian Hoạt Động (Ước tính 4 Ngày)</h2>
+            <div class="grid md:grid-cols-2 gap-8 px-4">
+                <div class="p-4 bg-white rounded-lg shadow-md">
+                    <h3 class="text-xl font-semibold text-center text-gray-700 mb-4">Hoạt Động (Tổng ~68 tiếng)</h3>
+                    <div class="chart-container">
+                        <canvas id="activityChart"></canvas>
+                    </div>
+                </div>
+                <div class="p-4 bg-white rounded-lg shadow-md">
+                    <h3 class="text-xl font-semibold text-center text-gray-700 mb-4">Các Điểm Đến Chính</h3>
+                    <div class="chart-container">
+                        <canvas id="locationChart"></canvas>
+                    </div>
+                </div>
             </div>
         </section>
 
-    </div>
+    </main>
 
-    <button id="scrollTopBtn" class="hidden fixed bottom-5 right-5 bg-[#004AAD] text-white rounded-full p-3 shadow-lg hover:bg-[#003c8c] transition-colors duration-300 z-50">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
-        </svg>
-    </button>
-
-    <!-- Gemini Modal -->
-    <div id="gemini-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4">
-        <div class="gemini-modal-backdrop fixed inset-0"></div>
-        <div class="gemini-modal-content bg-white rounded-lg shadow-xl w-full max-w-lg relative overflow-y-auto p-6">
-            <button id="gemini-modal-close" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
-            </button>
-            <h2 class="text-2xl font-bold text-[#004AAD] mb-4">✨ Gợi ý trang phục từ Gemini</h2>
-            <div id="gemini-modal-loader" class="flex justify-center items-center h-40">
-                <div class="loader"></div>
+    <!-- Modal cho Gợi Ý Trang Phục -->
+    <div id="suggestion-modal" class="fixed inset-0 bg-gray-600 bg-opacity-75 hidden items-center justify-center z-50 transition-opacity duration-300">
+        <div id="modal-backdrop" class="absolute inset-0"></div>
+        <div class="bg-white rounded-xl shadow-2xl w-11/12 md:w-1/2 lg:w-1/3 p-6 relative transform transition-all duration-300 scale-95 opacity-0" id="modal-content">
+            <h3 class="text-2xl font-bold text-brand-primary mb-4 border-b pb-2 flex items-center"><i class="fas fa-tshirt mr-2"></i> Gợi Ý Trang Phục</h3>
+            <div id="modal-loader" class="text-center py-8 hidden">
+                <!-- Loader ẩn vì không dùng API nữa -->
             </div>
-            <div id="gemini-modal-response" class="text-gray-700 space-y-2"></div>
+            <div id="modal-response" class="text-gray-700 max-h-96 overflow-y-auto">
+                <!-- Nội dung tĩnh sẽ được chèn vào đây -->
+            </div>
+            <button id="modal-close-btn" class="mt-4 w-full bg-brand-primary hover:bg-brand-primary-dark text-white font-semibold py-2 rounded-lg shadow-md transition duration-300">Đóng</button>
         </div>
     </div>
 
 
     <script>
-        function wrapLabel(label, maxLength = 16) {
-            if (label.length <= maxLength) return label;
-            const words = label.split(' ');
-            const lines = [];
-            let currentLine = '';
-            for (const word of words) {
-                if ((currentLine + ' ' + word).trim().length > maxLength) {
-                    lines.push(currentLine.trim());
-                    currentLine = word;
-                } else {
-                    currentLine = (currentLine + ' ' + word).trim();
-                }
-            }
-            if (currentLine) lines.push(currentLine.trim());
-            return lines;
-        }
-
-        const tooltipTitleCallback = function(tooltipItems) {
-            const item = tooltipItems[0];
-            let label = item.chart.data.labels[item.dataIndex];
-            return Array.isArray(label) ? label.join(' ') : label;
-        };
-        
-        let chartBaganActivity, chartBaganHighlights, chartInleActivity, chartInleHighlights;
-
-        function createCharts() {
-            const activityDataBagan = {
-                labels: [wrapLabel('Làm việc & Giao lưu'), wrapLabel('Tham quan & Văn hóa'), 'Di chuyển', wrapLabel('Nghỉ ngơi & Ăn uống')],
-                datasets: [{ label: 'Phân bổ thời gian (%)', data: [20, 16, 31, 33], backgroundColor: ['#004AAD', '#64B5F6', '#FFC107', '#0094D1'], hoverOffset: 4 }]
-            };
-            const activityChartCtxBagan = document.getElementById('activityDistributionChartBagan').getContext('2d');
-            chartBaganActivity = new Chart(activityChartCtxBagan, {
-                type: 'doughnut', data: activityDataBagan, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' }, tooltip: { callbacks: { title: tooltipTitleCallback } } } }
-            });
-
-            const baganData = {
-                labels: ['Chùa Shwezigon', 'Đền Ananda', 'Đền Htilominlo', wrapLabel('Bình minh & Hoàng hôn')],
-                datasets: [{ label: 'Điểm nhấn (trên thang 10)', data: [9, 10, 8, 10], backgroundColor: ['#004AAD', '#0094D1', '#64B5F6', '#FFC107'], borderWidth: 1 }]
-            };
-            const baganChartCtx = document.getElementById('baganHighlightsChart').getContext('2d');
-            chartBaganHighlights = new Chart(baganChartCtx, {
-                type: 'bar', data: baganData, options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, scales: { x: { beginAtZero: true, max: 10 } }, plugins: { legend: { display: false }, tooltip: { callbacks: { title: tooltipTitleCallback } } } }
-            });
-
-            const activityDataInle = {
-                labels: [wrapLabel('Làm việc & Giao lưu'), wrapLabel('Tham quan & Văn hóa'), 'Di chuyển', wrapLabel('Nghỉ ngơi & Ăn uống')],
-                datasets: [{ label: 'Phân bổ thời gian (%)', data: [20, 22, 28, 30], backgroundColor: ['#004AAD', '#64B5F6', '#FFC107', '#0094D1'], hoverOffset: 4 }]
-            };
-            const activityChartCtxInle = document.getElementById('activityDistributionChartInle').getContext('2d');
-            chartInleActivity = new Chart(activityChartCtxInle, {
-                type: 'doughnut', data: activityDataInle, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' }, tooltip: { callbacks: { title: tooltipTitleCallback } } } }
-            });
-
-            const inleData = {
-                labels: [wrapLabel('Chèo thuyền một chân'), wrapLabel('Làng & Vườn nổi'), 'Cảnh quan hồ'],
-                datasets: [{ label: 'Điểm nhấn (trên thang 10)', data: [10, 9, 9], backgroundColor: ['#004AAD', '#0094D1', '#64B5F6'], borderWidth: 1 }]
-            };
-            const inleChartCtx = document.getElementById('inleHighlightsChart').getContext('2d');
-            chartInleHighlights = new Chart(inleChartCtx, {
-                type: 'bar', data: inleData, options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, scales: { x: { beginAtZero: true, max: 10 } }, plugins: { legend: { display: false }, tooltip: { callbacks: { title: tooltipTitleCallback } } } }
-            });
-        }
-
-        function switchInfographic(type) {
-            const baganInfographic = document.getElementById('bagan-infographic');
-            const inleInfographic = document.getElementById('inle-infographic');
-            const baganBtn = document.getElementById('bagan-btn');
-            const inleBtn = document.getElementById('inle-btn');
-            
-            const attractionsBagan = document.getElementById('attractions-bagan');
-            const attractionsInle = document.getElementById('attractions-inle');
-            const notesBagan = document.getElementById('important-notes-bagan');
-            const notesInle = document.getElementById('important-notes-inle');
-
-            let targetScheduleId;
-
-            if (type === 'bagan') {
-                baganInfographic.classList.remove('hidden');
-                inleInfographic.classList.add('hidden');
-                baganBtn.classList.add('active');
-                inleBtn.classList.remove('active');
+        // --- DATA NỘI DUNG TĨNH (THAY THẾ API) ---
+        const OUTFIT_SUGGESTIONS = {
+            'cong-tac': `
+                <h4 class="text-lg font-semibold text-brand-primary mt-3 mb-1">Gợi ý chung</h4>
+                <p class="mt-2 text-sm">Trang phục cần thể hiện sự chuyên nghiệp, lịch sự nhưng vẫn đảm bảo sự thoải mái do khí hậu nhiệt đới của Yangon (nhiệt độ 20-30°C).</p>
                 
-                attractionsBagan.classList.remove('hidden');
-                attractionsInle.classList.add('hidden');
-                notesBagan.classList.remove('hidden');
-                notesInle.classList.add('hidden');
-                targetScheduleId = 'bagan-schedule';
-            } else {
-                baganInfographic.classList.add('hidden');
-                inleInfographic.classList.remove('hidden');
-                baganBtn.classList.remove('active');
-                inleBtn.classList.add('active');
-
-                attractionsBagan.classList.add('hidden');
-                attractionsInle.classList.remove('hidden');
-                notesBagan.classList.add('hidden');
-                notesInle.classList.remove('hidden');
-                targetScheduleId = 'inle-schedule';
-            }
-            
-            const targetElement = document.getElementById(targetScheduleId);
-            if (targetElement) {
-                // A short delay ensures the element is rendered and visible before scrolling
-                setTimeout(() => {
-                    targetElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                }, 100);
-            }
-        }
-
-        const scrollTopBtn = document.getElementById('scrollTopBtn');
-        window.onscroll = function() {
-          if (document.body.scrollTop > 20 || document.documentElement.scrollTop > 20) {
-            scrollTopBtn.classList.remove('hidden');
-          } else {
-            scrollTopBtn.classList.add('hidden');
-          }
+                <h4 class="text-lg font-semibold text-brand-primary mt-3 mb-1">Trang phục chi tiết</h4>
+                <ul class="list-disc pl-5 space-y-1">
+                    <li class="text-sm"><strong>Quần áo:</strong> Áo sơ mi dài tay, quần âu hoặc váy/đầm công sở (qua gối). Nên chọn chất liệu linen hoặc cotton thoáng mát.</li>
+                    <li class="text-sm"><strong>Áo khoác:</strong> Mang theo blazer hoặc áo khoác mỏng nếu cần cho phòng họp lạnh hoặc các buổi gặp gỡ chính thức.</li>
+                    <li class="text-sm"><strong>Giày dép:</strong> Giày da công sở, giày cao gót hoặc giày bệt kín mũi. Tránh mang dép lê hoặc giày thể thao quá năng động trong buổi họp.</li>
+                    <li class="text-sm"><strong>Phụ kiện:</strong> Cà vạt (nam), khăn quàng mỏng (nữ), túi xách công sở, đồng hồ chuyên nghiệp.</li>
+                </ul>
+                
+                <h4 class="text-lg font-semibold text-brand-primary mt-3 mb-1">Lưu ý văn hóa</h4>
+                <p class="mt-2 text-sm">Tuy là công tác, nhưng trang phục tối thiểu cần che vai và che đầu gối khi di chuyển trong các khu vực công cộng hoặc gần cơ quan, tôn giáo.</p>
+            `,
+            'le-bai': `
+                <h4 class="text-lg font-semibold text-brand-primary mt-3 mb-1">Gợi ý chung</h4>
+                <p class="mt-2 text-sm">Khi tham quan các địa điểm tôn giáo (Chùa Hòn Đá Vàng, Shwedagon, Bago), trang phục phải thể hiện lòng tôn kính, đặc biệt cần kín đáo và dễ dàng tháo giày dép.</p>
+                
+                <h4 class="text-lg font-semibold text-brand-primary mt-3 mb-1">Trang phục chi tiết</h4>
+                <ul class="list-disc pl-5 space-y-1">
+                    <li class="text-sm"><strong>Quần áo:</strong> Quần dài, váy dài hoặc Longyi (váy truyền thống Myanmar). Áo phải có tay (không sát nách), che vai và ngực.</li>
+                    <li class="text-sm"><strong>Áo khoác:</strong> Nên mang theo khăn choàng/áo khoác mỏng để che vai/lưng khi cần thiết.</li>
+                    <li class="text-sm"><strong>Giày dép:</strong> Giày bệt, dép tông hoặc sandal dễ tháo cởi. Tuyệt đối không được mang giày/vớ vào khu vực chính điện.</li>
+                    <li class="text-sm"><strong>Đặc biệt:</strong> Chùa Hòn Đá Vàng yêu cầu di chuyển nhiều, nên chọn giày dép thoải mái và bền.</li>
+                </ul>
+                
+                <h4 class="text-lg font-semibold text-brand-primary mt-3 mb-1">Lưu ý văn hóa</h4>
+                <p class="mt-2 text-sm">Luôn luôn tháo giày và vớ khi bước vào khu vực chùa. Phụ nữ không được phép chạm vào tảng đá ở Chùa Hòn Đá Vàng. Ăn mặc quá hở hang là điều cấm kỵ.</p>
+            `
         };
-        scrollTopBtn.addEventListener('click', () => window.scrollTo({top: 0, behavior: 'smooth'}));
 
-        // Gemini API Integration
-        const modal = document.getElementById('gemini-modal');
-        const modalBackdrop = modal.querySelector('.gemini-modal-backdrop');
-        const modalCloseBtn = document.getElementById('gemini-modal-close');
-        const modalLoader = document.getElementById('gemini-modal-loader');
-        const modalResponse = document.getElementById('gemini-modal-response');
+        // --- CODE XỬ LÝ CHART.JS (GIỮ NGUYÊN) ---
+        function createCharts() {
+            // Dữ liệu mới dựa trên lịch trình 4 ngày (23/10 -> 26/10) - Tổng ~68 giờ
+            const activityData = {
+                labels: ['Di chuyển (Transit/Internal)', 'Tham quan/Lễ bái', 'Nghỉ ngơi/Ăn uống', 'Công tác (Họp/Dinner)'],
+                datasets: [{
+                    // Ước tính: Di chuyển: 20.5h | Tham quan: 7.75h | Nghỉ/Ăn: 30.75h | Công tác: 8.5h
+                    data: [20.5, 7.75, 30.75, 8.5], 
+                    backgroundColor: [
+                        '#006b68', // Brand Primary (Di chuyển)
+                        '#FFC62F', // Brand Accent (Tham quan)
+                        '#48bb78', // Xanh Lá (Nghỉ ngơi/Ăn) - Giữ màu này vì nó là màu trung tính/tự nhiên (Green-500)
+                        '#9f7aea', // Tím (Công tác) - Giữ màu này vì nó là màu trung tính/công việc (Purple-500)
+                    ],
+                    hoverOffset: 10
+                }]
+            };
 
-        async function getOutfitSuggestion(location, activities) {
-            modal.classList.remove('hidden');
-            modalLoader.classList.remove('hidden');
-            modalResponse.innerHTML = '';
+            const locationData = {
+                labels: ['Yangon (KS/VP)', 'Chùa Hòn Đá Vàng', 'Bago', 'Yangon (Văn hóa)'],
+                datasets: [{
+                    // Phân bổ tương đối về thời gian dừng chân
+                    data: [45, 15, 10, 30], 
+                    backgroundColor: [
+                        '#006b68', // Brand Primary
+                        '#FFC62F', // Brand Accent
+                        '#f6e05e', // Màu phụ trợ (Yellow-400)
+                        '#e53e3e', // Màu phụ trợ (Red-600)
+                    ],
+                    hoverOffset: 10
+                }]
+            };
 
-            const prompt = `Bạn là một stylist chuyên nghiệp và am hiểu văn hóa Myanmar. Dựa vào thông tin sau, hãy gợi ý một bộ trang phục phù hợp cho một người Việt Nam đi công tác.
-            - Thời gian: Đầu tháng 10.
-            - Địa điểm: ${location}.
-            - Hoạt động trong ngày: ${activities}.
-            Lưu ý: Trang phục cần lịch sự cho công việc, thoải mái để di chuyển, và đặc biệt phải kín đáo, lịch sự (che vai và đầu gối) khi viếng thăm những nơi tôn nghiêm như chùa chiền. Trình bày gợi ý dưới dạng các mục rõ ràng và giải thích ngắn gọn lý do.`;
-            
-            let chatHistory = [{ role: "user", parts: [{ text: prompt }] }];
-            const payload = { contents: chatHistory };
-            const apiKey = "AIzaSyAFa7rQBk1iKD1-ZblDWoLLK6Ou5f7OBA4"; 
-            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+            // Biểu đồ Hoạt Động (Doughnut Chart)
+            new Chart(document.getElementById('activityChart'), {
+                type: 'doughnut',
+                data: activityData,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                        },
+                        title: {
+                            display: false,
+                        }
+                    }
+                }
+            });
 
-            try {
-                const response = await fetch(apiUrl, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-                const result = await response.json();
-                if (result.candidates && result.candidates.length > 0 && result.candidates[0].content && result.candidates[0].content.parts && result.candidates[0].content.parts.length > 0) {
-                    const rawText = result.candidates[0].content.parts[0].text;
-                    let htmlResponse = '';
-                    const lines = rawText.split('\n').filter(line => line.trim() !== '');
-
-                    let inList = false;
-                    lines.forEach(line => {
-                        line = line.trim();
-                        if (line.startsWith('* ') || line.startsWith('- ')) {
-                            if (!inList) {
-                                htmlResponse += '<ul>';
-                                inList = true;
-                            }
-                            let listItem = line.substring(2).replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-                            htmlResponse += `<li class="ml-5 list-disc">${listItem}</li>`;
-                        } else {
-                            if (inList) {
-                                htmlResponse += '</ul>';
-                                inList = false;
-                            }
-                            if (line.match(/^\*\*(.*)\*\*$/)) {
-                                 htmlResponse += `<h4 class="font-semibold text-gray-800 mt-3">${line.replace(/\*\*/g, '')}</h4>`;
-                            } else {
-                                let paragraph = line.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-                                htmlResponse += `<p class="mt-2">${paragraph}</p>`;
+            // Biểu đồ Địa Điểm (Bar Chart)
+            new Chart(document.getElementById('locationChart'), {
+                type: 'bar',
+                data: locationData,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false,
+                        },
+                        title: {
+                            display: false,
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Tỷ lệ (%)'
                             }
                         }
-                    });
-                    if (inList) {
-                        htmlResponse += '</ul>';
                     }
-                    modalResponse.innerHTML = htmlResponse;
-
-                } else {
-                    modalResponse.textContent = 'Rất tiếc, không thể nhận được gợi ý lúc này. Vui lòng thử lại sau.';
                 }
-            } catch (error) {
-                console.error("Error calling Gemini API:", error);
-                modalResponse.textContent = 'Đã xảy ra lỗi kết nối. Vui lòng kiểm tra lại đường truyền và thử lại.';
-            } finally {
-                modalLoader.classList.add('hidden');
-            }
+            });
+        }
+
+
+        // --- CODE XỬ LÝ MODAL (CẬP NHẬT SỬ DỤNG NỘI DUNG TĨNH) ---
+        const modal = document.getElementById('suggestion-modal');
+        const modalContent = document.getElementById('modal-content');
+        const modalCloseBtn = document.getElementById('modal-close-btn');
+        const modalBackdrop = document.getElementById('modal-backdrop');
+        const modalResponse = document.getElementById('modal-response');
+
+        function showOutfitSuggestion(type) {
+            modalResponse.innerHTML = OUTFIT_SUGGESTIONS[type] || '<p class="text-sm">Không tìm thấy gợi ý cho loại trang phục này.</p>';
+            
+            // Hiển thị modal với hiệu ứng chuyển tiếp
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            // Kích hoạt animation
+            setTimeout(() => {
+                modalContent.classList.remove('scale-95', 'opacity-0');
+                modalContent.classList.add('scale-100', 'opacity-100');
+            }, 10); 
+        }
+
+        function hideModal() {
+            // Kích hoạt animation ẩn
+            modalContent.classList.remove('scale-100', 'opacity-100');
+            modalContent.classList.add('scale-95', 'opacity-0');
+            // Ẩn hoàn toàn sau khi animation kết thúc
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }, 300); 
         }
 
         document.querySelectorAll('.outfit-suggester-btn').forEach(button => {
             button.addEventListener('click', (e) => {
-                const location = e.target.dataset.location;
-                const activities = e.target.dataset.activities;
-                getOutfitSuggestion(location, activities);
+                const type = e.target.dataset.type;
+                showOutfitSuggestion(type);
             });
         });
 
-        modalCloseBtn.addEventListener('click', () => modal.classList.add('hidden'));
-        modalBackdrop.addEventListener('click', () => modal.classList.add('hidden'));
+        modalCloseBtn.addEventListener('click', hideModal);
+        modalBackdrop.addEventListener('click', hideModal);
+
 
         window.onload = createCharts;
     </script>
 </body>
 </html>
-
-
-
