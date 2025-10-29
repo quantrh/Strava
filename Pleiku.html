@@ -12,7 +12,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
     
-    <!-- Thêm Font Awesome để có icon cho lịch trình -->
+    <!-- Thêm Font Awesome để có icon -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
         
     <style>
@@ -95,12 +95,13 @@
             margin-top: 1rem;
         }
         /* Style cho danh sách gộp */
-        .condensed-list li {
+        .condensed-list > li { /* Target direct children li */
             padding-top: 1rem;
             padding-bottom: 1rem;
             border-bottom: 1px solid #e5e7eb; /* gray-200 */
+            transition: background-color 0.3s; /* Add transition for filtering */
         }
-         .condensed-list li:last-child {
+         .condensed-list > li:last-child {
             border-bottom: none;
         }
         /* Style cho danh sách trong thông tin giải chạy */
@@ -126,6 +127,30 @@
             display: none; /* Ẩn mặc định */
             transition: opacity 0.3s;
         }
+        
+        /* CSS cho nút Like */
+        .like-button {
+            cursor: pointer;
+            font-size: 1.25rem; /* Kích thước icon */
+            color: #ccc; /* Màu mặc định (xám nhạt) */
+            transition: color 0.2s ease-in-out;
+            margin-left: 0.75rem; /* Khoảng cách với tiêu đề */
+        }
+        .like-button.liked {
+            color: #ef4444; /* Màu đỏ khi đã like (Tailwind red-500) */
+        }
+        .like-button:hover {
+             color: #a5a5a5; /* Màu khi hover (xám đậm hơn) */
+        }
+         .like-button.liked:hover {
+             color: #dc2626; /* Màu đỏ đậm hơn khi hover (Tailwind red-600) */
+         }
+
+         /* Class để ẩn item khi lọc */
+         .hidden-by-filter {
+             display: none !important; /* Dùng !important để ghi đè */
+         }
+
     </style>
 </head>
 <body class="text-gray-800">
@@ -504,21 +529,31 @@
         </section>
 
         <!-- MỤC ĐÃ SỬA: GIỚI THIỆU CHI TIẾT ĐIỂM DỪNG (Gộp các mục nhỏ) -->
-        <section class="py-10 bg-gray-50 rounded-xl shadow-inner mb-12">
-            <h2 class="text-3xl font-bold text-center text-brand-primary mb-10 px-4"><i class="fas fa-map-marked-alt mr-3"></i> Giới Thiệu Chi Tiết Về Các Điểm Dừng</h2>
+        <section id="detail-section" class="py-10 bg-gray-50 rounded-xl shadow-inner mb-12">
+             <!-- Thêm nút Filter -->
+            <div class="max-w-4xl mx-auto px-4 mb-6 flex justify-between items-center">
+                <h2 class="text-3xl font-bold text-brand-primary flex items-center"><i class="fas fa-map-marked-alt mr-3"></i> Giới Thiệu Chi Tiết</h2>
+                <button id="filter-liked-btn" class="bg-brand-accent hover:bg-brand-accent-dark text-gray-800 font-semibold py-2 px-4 rounded-lg shadow transition duration-300">
+                    <i class="fas fa-filter mr-2"></i> Xem Mục Yêu Thích
+                </button>
+            </div>
             
             <div class="max-w-4xl mx-auto px-4 space-y-10"> 
                 
                 <!-- Mục giữ chỗ cho Lộ trình -->
-                <div id="stop-pleiku" class="p-6 bg-white rounded-xl shadow-lg border-l-4 border-brand-primary">
-                    <h3 class="text-2xl font-extrabold text-gray-800 mb-4 border-b pb-2 flex items-center"><i class="fas fa-city mr-3 text-brand-primary"></i> TP. Pleiku</h3>
+                <div id="stop-pleiku" class="p-6 bg-white rounded-xl shadow-lg border-l-4 border-brand-primary detail-item" data-id="stop-pleiku">
+                    <h3 class="text-2xl font-extrabold text-gray-800 mb-4 border-b pb-2 flex items-center justify-between">
+                        <span><i class="fas fa-city mr-3 text-brand-primary"></i> TP. Pleiku</span>
+                        <i class="like-button far fa-heart" data-item-id="stop-pleiku"></i>
+                    </h3>
                     <p class="detail-text">Thành phố Pleiku là trung tâm chính trị, kinh tế, văn hóa của tỉnh Gia Lai. Đây là điểm đến chính, nơi đặt sân bay và là trung tâm diễn ra các hoạt động chính của đoàn như nhận phòng, ăn uống và xuất phát đi các điểm tham quan.</p>
                 </div>
                 
                  <!-- Mục MỚI: Thông tin giải chạy -->
-                 <div id="stop-marathon" class="p-6 bg-white rounded-xl shadow-lg border-l-4 border-brand-primary">
-                    <h3 class="text-2xl font-extrabold text-gray-800 mb-4 border-b pb-2 flex items-center">
-                        <i class="fas fa-running mr-3 text-brand-primary"></i> Gia Lai City Trail 2025 – Giấc mơ đại ngàn
+                 <div id="stop-marathon" class="p-6 bg-white rounded-xl shadow-lg border-l-4 border-brand-primary detail-item" data-id="stop-marathon">
+                    <h3 class="text-2xl font-extrabold text-gray-800 mb-4 border-b pb-2 flex items-center justify-between">
+                        <span><i class="fas fa-running mr-3 text-brand-primary"></i> Gia Lai City Trail 2025 – Giấc mơ đại ngàn</span>
+                         <i class="like-button far fa-heart" data-item-id="stop-marathon"></i>
                     </h3>
                     <h4 class="text-lg font-semibold text-brand-primary mt-4 mb-2">🕒 THỜI GIAN XUẤT PHÁT & GIỚI HẠN HOÀN THÀNH (COT)</h4>
                     <p class="detail-text text-sm mb-4">Anh em runners ơi, đã đến lúc lên lịch chuẩn bị raceday 02/11/2025 thật chuẩn chỉnh rồi nha! BTC chính thức công bố thời gian xuất phát và giới hạn hoàn thành (Cut-off Time) của từng cự ly như sau 👇</p>
@@ -574,81 +609,119 @@
                     <p class="text-xs text-gray-500 mt-4 italic">#gialaicitytrail2025 #GLCT2025 #trail #GiaLai #giaichaybo2025 #vietrace365 #marathon #chaybo #runners #timve365</p>
                  </div>
                 
-                <div id="stop-chuprong" class="p-6 bg-white rounded-xl shadow-lg border-l-4 border-brand-primary">
-                    <h3 class="text-2xl font-extrabold text-gray-800 mb-4 border-b pb-2 flex items-center"><i class="fas fa-home mr-3 text-brand-primary"></i> Xã Chư Prông</h3>
+                <div id="stop-chuprong" class="p-6 bg-white rounded-xl shadow-lg border-l-4 border-brand-primary detail-item" data-id="stop-chuprong">
+                    <h3 class="text-2xl font-extrabold text-gray-800 mb-4 border-b pb-2 flex items-center justify-between">
+                       <span> <i class="fas fa-home mr-3 text-brand-primary"></i> Xã Chư Prông</span>
+                       <i class="like-button far fa-heart" data-item-id="stop-chuprong"></i>
+                    </h3>
                     <p class="detail-text">Địa điểm đoàn đến thăm nhà thành viên (Quân) tại xã Chư Prông. Đây là hoạt động giao lưu văn hóa và tình cảm, trải nghiệm cuộc sống địa phương ngoài trung tâm thành phố.</p>
                 </div>
 
-                <div id="stop-muasam" class="p-6 bg-white rounded-xl shadow-lg border-l-4 border-brand-primary">
-                    <h3 class="text-2xl font-extrabold text-gray-800 mb-4 border-b pb-2 flex items-center"><i class="fas fa-shopping-bag mr-3 text-brand-primary"></i> Mua sắm Đặc sản</h3>
+                <div id="stop-muasam" class="p-6 bg-white rounded-xl shadow-lg border-l-4 border-brand-primary detail-item" data-id="stop-muasam">
+                    <h3 class="text-2xl font-extrabold text-gray-800 mb-4 border-b pb-2 flex items-center justify-between">
+                       <span> <i class="fas fa-shopping-bag mr-3 text-brand-primary"></i> Mua sắm Đặc sản</span>
+                         <i class="like-button far fa-heart" data-item-id="stop-muasam"></i>
+                    </h3>
                     <p class="detail-text">Hoạt động mua sắm các đặc sản nổi tiếng của Gia Lai như cà phê, mật ong rừng, tiêu... làm quà cho gia đình và bạn bè.</p>
                 </div>
 
                 <!-- Mục Ẩm thực và Cà phê (đã gộp) -->
-                <div id="stop-amthuc" class="p-6 bg-white rounded-xl shadow-lg border-l-4 border-brand-primary">
-                    <h3 class="text-2xl font-extrabold text-gray-800 mb-6 border-b pb-3 flex items-center"><i class="fas fa-coffee mr-3 text-brand-primary"></i> Ẩm thực và Cà phê</h3>
+                <div id="stop-amthuc" class="p-6 bg-white rounded-xl shadow-lg border-l-4 border-brand-primary detail-item" data-id="stop-amthuc">
+                     <h3 class="text-2xl font-extrabold text-gray-800 mb-6 border-b pb-3 flex items-center justify-between">
+                       <span> <i class="fas fa-coffee mr-3 text-brand-primary"></i> Ẩm thực và Cà phê</span>
+                         <i class="like-button far fa-heart" data-item-id="stop-amthuc"></i>
+                    </h3>
                     
                     <!-- Cà phê -->
                     <h4 class="text-xl font-semibold text-gray-700 mt-4 mb-4">☕ Cà phê Pleiku</h4>
                     <ul class="condensed-list divide-y divide-gray-200">
-                        <li>
-                            <h5 class="font-semibold text-lg text-gray-800 mb-1">Hani - Kafe & Kitchen</h5>
+                        <!-- Thêm data-id và nút like cho từng li -->
+                        <li data-id="cafe-hani">
+                            <h5 class="font-semibold text-lg text-gray-800 mb-1 flex items-center justify-between">
+                               <span> Hani - Kafe & Kitchen</span>
+                                <i class="like-button far fa-heart" data-item-id="cafe-hani"></i>
+                            </h5>
                             <p class="detail-text text-sm">Nằm trên lưng chừng đồi với view toàn cảnh thành phố, không gian hiện đại, trẻ trung với tông màu nâu-trắng, nhiều góc "sống ảo" lý tưởng để ngắm hoàng hôn.</p>
                             <a href="https://www.google.com/maps/search/?q=Hani+Kafe+Kitchen+Pleiku" target="_blank" class="text-xs text-brand-primary hover:text-[#004a48] hover:underline mr-3"><i class="fas fa-map-marker-alt mr-1"></i> Google Maps</a>
                             <a href="https://www.google.com/search?q=Hani+Kafe+Kitchen+Pleiku" target="_blank" class="text-xs text-brand-primary hover:text-[#004a48] hover:underline"><i class="fab fa-google mr-1"></i> Google Search</a>
                         </li>
-                        <li>
-                            <h5 class="font-semibold text-lg text-gray-800 mb-1">KAP Bistro</h5>
+                        <li data-id="cafe-kap">
+                             <h5 class="font-semibold text-lg text-gray-800 mb-1 flex items-center justify-between">
+                               <span> KAP Bistro</span>
+                                <i class="like-button far fa-heart" data-item-id="cafe-kap"></i>
+                            </h5>
                             <p class="detail-text text-sm">Quán cà phê mang phong cách châu Âu cổ điển, tông màu trầm ấm, sang trọng và tinh tế. Có 3 tầng với nhiều không gian riêng tư, yên tĩnh.</p>
                             <a href="https://www.google.com/maps/search/?q=KAP+Bistro+Pleiku" target="_blank" class="text-xs text-brand-primary hover:text-[#004a48] hover:underline mr-3"><i class="fas fa-map-marker-alt mr-1"></i> Google Maps</a>
                             <a href="https://www.google.com/search?q=KAP+Bistro+Pleiku" target="_blank" class="text-xs text-brand-primary hover:text-[#004a48] hover:underline"><i class="fab fa-google mr-1"></i> Google Search</a>
                         </li>
-                         <li>
-                            <h5 class="font-semibold text-lg text-gray-800 mb-1">King Coffee Pleiku</h5>
+                         <li data-id="cafe-king">
+                             <h5 class="font-semibold text-lg text-gray-800 mb-1 flex items-center justify-between">
+                               <span> King Coffee Pleiku</span>
+                                <i class="like-button far fa-heart" data-item-id="cafe-king"></i>
+                            </h5>
                             <p class="detail-text text-sm">Cửa hàng flagship của chuỗi King Coffee, mang ý tưởng "Cà phê thế giới – Thế giới cà phê". Không gian sang trọng...</p>
                             <a href="https://www.google.com/maps/search/?q=King+Coffee+Pleiku" target="_blank" class="text-xs text-brand-primary hover:text-[#004a48] hover:underline mr-3"><i class="fas fa-map-marker-alt mr-1"></i> Google Maps</a>
                             <a href="https://www.google.com/search?q=King+Coffee+Pleiku" target="_blank" class="text-xs text-brand-primary hover:text-[#004a48] hover:underline"><i class="fab fa-google mr-1"></i> Google Search</a>
                         </li>
-                        <li>
-                            <h5 class="font-semibold text-lg text-gray-800 mb-1">OMELY COFFEE</h5>
+                        <li data-id="cafe-omely">
+                            <h5 class="font-semibold text-lg text-gray-800 mb-1 flex items-center justify-between">
+                               <span> OMELY COFFEE</span>
+                                <i class="like-button far fa-heart" data-item-id="cafe-omely"></i>
+                            </h5>
                             <p class="detail-text text-sm">Quán cafe sân vườn nổi tiếng với hồ Cá Koi tuyệt đẹp, lối decor hiện đại, độc đáo và không gian xanh mát.</p>
                             <a href="https://maps.app.goo.gl/t1KMJ3D4dVrXJREk9" target="_blank" class="text-xs text-brand-primary hover:text-[#004a48] hover:underline mr-3"><i class="fas fa-map-marker-alt mr-1"></i> Google Maps</a>
                             <a href="https://www.google.com/search?q=OMELY+COFFEE+Pleiku" target="_blank" class="text-xs text-brand-primary hover:text-[#004a48] hover:underline"><i class="fab fa-google mr-1"></i> Google Search</a>
                         </li>
-                         <li>
-                            <h5 class="font-semibold text-lg text-gray-800 mb-1">Chill Lừng chừng</h5>
+                         <li data-id="cafe-chill">
+                            <h5 class="font-semibold text-lg text-gray-800 mb-1 flex items-center justify-between">
+                               <span> Chill Lừng chừng</span>
+                                <i class="like-button far fa-heart" data-item-id="cafe-chill"></i>
+                            </h5>
                             <p class="detail-text text-sm">Quán cà phê và BBQ, không gian sân vườn trên đồi, view toàn cảnh thành phố lý tưởng để ngắm hoàng hôn.</p>
                             <a href="https://maps.app.goo.gl/qj1Hwj85XXjgKDgXA" target="_blank" class="text-xs text-brand-primary hover:text-[#004a48] hover:underline mr-3"><i class="fas fa-map-marker-alt mr-1"></i> Google Maps</a>
                             <a href="https://www.google.com/search?q=Chill+Lừng+chừng+Pleiku" target="_blank" class="text-xs text-brand-primary hover:text-[#004a48] hover:underline"><i class="fab fa-google mr-1"></i> Google Search</a>
                         </li>
-                        <li>
-                            <h5 class="font-semibold text-lg text-gray-800 mb-1">Phía sau nhà</h5>
+                        <li data-id="cafe-phia-sau-nha">
+                            <h5 class="font-semibold text-lg text-gray-800 mb-1 flex items-center justify-between">
+                               <span> Phía sau nhà</span>
+                                <i class="like-button far fa-heart" data-item-id="cafe-phia-sau-nha"></i>
+                            </h5>
                             <p class="detail-text text-sm">Quán cafe phong cách Vintage sân vườn, view nhìn ra ruộng lúa cực chill. Có không gian yên tĩnh, mộc mạc...</p>
                             <a href="https://maps.app.goo.gl/VfddqcbtiBhacTkv5" target="_blank" class="text-xs text-brand-primary hover:text-[#004a48] hover:underline mr-3"><i class="fas fa-map-marker-alt mr-1"></i> Google Maps</a>
                             <a href="https://www.google.com/search?q=Phía+sau+nhà+Pleiku" target="_blank" class="text-xs text-brand-primary hover:text-[#004a48] hover:underline"><i class="fab fa-google mr-1"></i> Google Search</a>
                         </li>
-                         <li>
-                            <h5 class="font-semibold text-lg text-gray-800 mb-1">Ngày bình yên</h5>
+                         <li data-id="cafe-ngay-binh-yen">
+                            <h5 class="font-semibold text-lg text-gray-800 mb-1 flex items-center justify-between">
+                               <span> Ngày bình yên</span>
+                                <i class="like-button far fa-heart" data-item-id="cafe-ngay-binh-yen"></i>
+                            </h5>
                             <p class="detail-text text-sm">Không gian mở, thoáng đãng, có thể ngắm nhìn toàn cảnh sân bay Pleiku và cánh đồng lúa...</p>
                             <a href="https://maps.app.goo.gl/c3WKvsrHkRt1Q7Qv7" target="_blank" class="text-xs text-brand-primary hover:text-[#004a48] hover:underline mr-3"><i class="fas fa-map-marker-alt mr-1"></i> Google Maps</a>
                             <a href="https://www.google.com/search?q=Ngày+bình+yên+Pleiku" target="_blank" class="text-xs text-brand-primary hover:text-[#004a48] hover:underline"><i class="fab fa-google mr-1"></i> Google Search</a>
                         </li>
-                         <li>
-                            <h5 class="font-semibold text-lg text-gray-800 mb-1">Cà phê Thu Hà</h5>
+                         <li data-id="cafe-thu-ha">
+                            <h5 class="font-semibold text-lg text-gray-800 mb-1 flex items-center justify-between">
+                               <span> Cà phê Thu Hà</span>
+                                <i class="like-button far fa-heart" data-item-id="cafe-thu-ha"></i>
+                            </h5>
                             <p class="detail-text text-sm">Một quán cà phê lâu đời và nổi tiếng tại Pleiku, được biết đến với hương vị cà phê đậm chất truyền thống của Tây Nguyên...</p>
                             <a href="https://maps.app.goo.gl/n1TbvH1Ma57iM7sV7" target="_blank" class="text-xs text-brand-primary hover:text-[#004a48] hover:underline mr-3"><i class="fas fa-map-marker-alt mr-1"></i> Google Maps</a>
                             <a href="https://www.google.com/search?q=Cà+phê+Thu+Hà+Pleiku" target="_blank" class="text-xs text-brand-primary hover:text-[#004a48] hover:underline"><i class="fab fa-google mr-1"></i> Google Search</a>
                         </li>
-                         <!-- Bổ sung Lem Coffee & Tea -->
-                         <li>
-                            <h5 class="font-semibold text-lg text-gray-800 mb-1">Lem Coffee & Tea</h5>
+                         <li data-id="cafe-lem">
+                            <h5 class="font-semibold text-lg text-gray-800 mb-1 flex items-center justify-between">
+                               <span> Lem Coffee & Tea</span>
+                                <i class="like-button far fa-heart" data-item-id="cafe-lem"></i>
+                            </h5>
                             <p class="detail-text text-sm">Một quán cà phê & trà với không gian hiện đại, trẻ trung, thường được yêu thích bởi các bạn trẻ.</p>
                             <a href="https://maps.app.goo.gl/CXyqsnhGMoEiDQJz7" target="_blank" class="text-xs text-brand-primary hover:text-[#004a48] hover:underline mr-3"><i class="fas fa-map-marker-alt mr-1"></i> Google Maps</a>
                             <a href="https://www.google.com/search?q=Lem+Coffee+Tea+Pleiku" target="_blank" class="text-xs text-brand-primary hover:text-[#004a48] hover:underline"><i class="fab fa-google mr-1"></i> Google Search</a>
                         </li>
-                        <!-- Bổ sung Film Ngoại Ô -->
-                         <li>
-                            <h5 class="font-semibold text-lg text-gray-800 mb-1">Film Ngoại Ô</h5>
+                         <li data-id="cafe-film-ngoai-o">
+                            <h5 class="font-semibold text-lg text-gray-800 mb-1 flex items-center justify-between">
+                               <span> Film Ngoại Ô</span>
+                                <i class="like-button far fa-heart" data-item-id="cafe-film-ngoai-o"></i>
+                            </h5>
                             <p class="detail-text text-sm">Quán cà phê kết hợp không gian xem phim, thường có phong cách trang trí độc đáo, gần gũi với thiên nhiên.</p>
                             <a href="https://maps.app.goo.gl/fzGyM6iELfXptXg39" target="_blank" class="text-xs text-brand-primary hover:text-[#004a48] hover:underline mr-3"><i class="fas fa-map-marker-alt mr-1"></i> Google Maps</a>
                             <a href="https://www.google.com/search?q=Film+Ngoại+Ô+Pleiku" target="_blank" class="text-xs text-brand-primary hover:text-[#004a48] hover:underline"><i class="fab fa-google mr-1"></i> Google Search</a>
@@ -657,71 +730,102 @@
 
                     <!-- Món ăn -->
                     <h4 class="text-xl font-semibold text-gray-700 mt-10 mb-4">🍜 Món ăn đặc trưng</h4>
-                    <ul class="condensed-list divide-y divide-gray-200">
-                         <li>
-                            <h5 class="font-semibold text-lg text-gray-800 mb-1">Phở khô Hồng</h5>
+                     <ul class="condensed-list divide-y divide-gray-200">
+                         <li data-id="food-pho-hong">
+                             <h5 class="font-semibold text-lg text-gray-800 mb-1 flex items-center justify-between">
+                               <span> Phở khô Hồng</span>
+                                <i class="like-button far fa-heart" data-item-id="food-pho-hong"></i>
+                            </h5>
                             <p class="detail-text text-sm">Quán phở khô (phở hai tô) lâu đời và nổi tiếng nhất Pleiku, gia truyền 3 thế hệ...</p>
                             <a href="https://www.google.com/maps/search/?q=Phở+khô+Hồng+Pleiku" target="_blank" class="text-xs text-brand-primary hover:text-[#004a48] hover:underline mr-3"><i class="fas fa-map-marker-alt mr-1"></i> Google Maps</a>
                             <a href="https://www.google.com/search?q=Phở+khô+Hồng+Pleiku" target="_blank" class="text-xs text-brand-primary hover:text-[#004a48] hover:underline"><i class="fab fa-google mr-1"></i> Google Search</a>
                         </li>
-                         <li>
-                            <h5 class="font-semibold text-lg text-gray-800 mb-1">Phở Nữ</h5>
+                         <li data-id="food-pho-nu">
+                             <h5 class="font-semibold text-lg text-gray-800 mb-1 flex items-center justify-between">
+                               <span> Phở Nữ</span>
+                                <i class="like-button far fa-heart" data-item-id="food-pho-nu"></i>
+                            </h5>
                             <p class="detail-text text-sm">Nổi tiếng với nước dùng ngon, ngọt thanh, thịt bò tươi và mềm. Sợi phở nhỏ và dai...</p>
                             <a href="https://www.google.com/maps/search/?q=Phở+Nữ+Pleiku" target="_blank" class="text-xs text-brand-primary hover:text-[#004a48] hover:underline mr-3"><i class="fas fa-map-marker-alt mr-1"></i> Google Maps</a>
                             <a href="https://www.google.com/search?q=Phở+Nữ+Pleiku" target="_blank" class="text-xs text-brand-primary hover:text-[#004a48] hover:underline"><i class="fab fa-google mr-1"></i> Google Search</a>
                         </li>
-                         <li>
-                            <h5 class="font-semibold text-lg text-gray-800 mb-1">Phở Ngọc Sơn</h5>
+                         <li data-id="food-pho-ngoc-son">
+                            <h5 class="font-semibold text-lg text-gray-800 mb-1 flex items-center justify-between">
+                               <span> Phở Ngọc Sơn</span>
+                                <i class="like-button far fa-heart" data-item-id="food-pho-ngoc-son"></i>
+                            </h5>
                             <p class="detail-text text-sm">Quán phở khô được yêu thích bởi hương vị đậm đà và phần ăn "siêu hậu hĩnh", đầy đặn...</p>
                             <a href="https://www.google.com/maps/search/?q=Phở+Ngọc+Sơn+Pleiku" target="_blank" class="text-xs text-brand-primary hover:text-[#004a48] hover:underline mr-3"><i class="fas fa-map-marker-alt mr-1"></i> Google Maps</a>
                             <a href="https://www.google.com/search?q=Phở+Ngọc+Sơn+Pleiku" target="_blank" class="text-xs text-brand-primary hover:text-[#004a48] hover:underline"><i class="fab fa-google mr-1"></i> Google Search</a>
                         </li>
-                        <li>
-                            <h5 class="font-semibold text-lg text-gray-800 mb-1">Bánh xèo Bà Tám</h5>
+                        <li data-id="food-banh-xeo-ba-tam">
+                            <h5 class="font-semibold text-lg text-gray-800 mb-1 flex items-center justify-between">
+                               <span> Bánh xèo Bà Tám</span>
+                                <i class="like-button far fa-heart" data-item-id="food-banh-xeo-ba-tam"></i>
+                            </h5>
                             <p class="detail-text text-sm">Quán bánh xèo nổi tiếng, thường chỉ bán buổi sáng. Bánh xèo nhỏ, giòn rụm...</p>
                             <a href="https://www.google.com/maps/search/?q=Bánh+xèo+Bà+Tám+Pleiku" target="_blank" class="text-xs text-brand-primary hover:text-[#004a48] hover:underline mr-3"><i class="fas fa-map-marker-alt mr-1"></i> Google Maps</a>
                             <a href="https://www.google.com/search?q=Bánh+xèo+Bà+Tám+Pleiku" target="_blank" class="text-xs text-brand-primary hover:text-[#004a48] hover:underline"><i class="fab fa-google mr-1"></i> Google Search</a>
                         </li>
-                         <li>
-                            <h5 class="font-semibold text-lg text-gray-800 mb-1">Bún Phương (Bún mắm cua)</h5>
+                         <li data-id="food-bun-phuong">
+                             <h5 class="font-semibold text-lg text-gray-800 mb-1 flex items-center justify-between">
+                               <span> Bún Phương (Bún mắm cua)</span>
+                                <i class="like-button far fa-heart" data-item-id="food-bun-phuong"></i>
+                            </h5>
                             <p class="detail-text text-sm">Đặc sản "thử thách" với mùi mắm cua lên men đặc trưng (còn gọi là bún cua thối)...</p>
                             <a href="https://www.google.com/maps/search/?q=Bún+Phương+Pleiku" target="_blank" class="text-xs text-brand-primary hover:text-[#004a48] hover:underline mr-3"><i class="fas fa-map-marker-alt mr-1"></i> Google Maps</a>
                             <a href="https://www.google.com/search?q=Bún+Phương+Pleiku" target="_blank" class="text-xs text-brand-primary hover:text-[#004a48] hover:underline"><i class="fab fa-google mr-1"></i> Google Search</a>
                         </li>
-                        <li>
-                            <h5 class="font-semibold text-lg text-gray-800 mb-1">Cơm gà Bà Hòa</h5>
+                        <li data-id="food-com-ga-ba-hoa">
+                             <h5 class="font-semibold text-lg text-gray-800 mb-1 flex items-center justify-between">
+                               <span> Cơm gà Bà Hòa</span>
+                                <i class="like-button far fa-heart" data-item-id="food-com-ga-ba-hoa"></i>
+                            </h5>
                             <p class="detail-text text-sm">Quán cơm gà nổi tiếng, thịt gà ta dai ngon, giòn da, ăn cùng cơm xối mỡ béo dẻo...</p>
                             <a href="https://www.google.com/maps/search/?q=Cơm+gà+Bà+Hòa+Pleiku" target="_blank" class="text-xs text-brand-primary hover:text-[#004a48] hover:underline mr-3"><i class="fas fa-map-marker-alt mr-1"></i> Google Maps</a>
                             <a href="https://www.google.com/search?q=Cơm+Gà+Bà+Hòa+Pleiku" target="_blank" class="text-xs text-brand-primary hover:text-[#004a48] hover:underline"><i class="fab fa-google mr-1"></i> Google Search</a>
                         </li>
-                         <li>
-                            <h5 class="font-semibold text-lg text-gray-800 mb-1">Gà Nướng Ia Gui</h5>
+                         <li data-id="food-ga-nuong-ia-gui">
+                             <h5 class="font-semibold text-lg text-gray-800 mb-1 flex items-center justify-between">
+                               <span> Gà Nướng Ia Gui</span>
+                                <i class="like-button far fa-heart" data-item-id="food-ga-nuong-ia-gui"></i>
+                            </h5>
                             <p class="detail-text text-sm">Quán ăn mang đậm phong cách Jrai (dân tộc bản địa), chuyên phục vụ các món đặc sản núi rừng...</p>
                             <a href="https://www.google.com/maps/search/?q=Gà+Nướng+Ia+Gui+Pleiku" target="_blank" class="text-xs text-brand-primary hover:text-[#004a48] hover:underline mr-3"><i class="fas fa-map-marker-alt mr-1"></i> Google Maps</a>
                             <a href="https://www.google.com/search?q=Gà+Nướng+Ia+Gui+Pleiku" target="_blank" class="text-xs text-brand-primary hover:text-[#004a48] hover:underline"><i class="fab fa-google mr-1"></i> Google Search</a>
                         </li>
-                         <li>
-                            <h5 class="font-semibold text-lg text-gray-800 mb-1">Gà nướng Bazan</h5>
+                         <li data-id="food-ga-nuong-bazan">
+                            <h5 class="font-semibold text-lg text-gray-800 mb-1 flex items-center justify-between">
+                               <span> Gà nướng Bazan</span>
+                                <i class="like-button far fa-heart" data-item-id="food-ga-nuong-bazan"></i>
+                            </h5>
                             <p class="detail-text text-sm">Một lựa chọn nổi tiếng khác cho món gà nướng cơm lam. Gà được ướp gia vị đậm đà...</p>
                             <a href="https://www.google.com/maps/search/?q=Gà+nướng+Bazan+Pleiku" target="_blank" class="text-xs text-brand-primary hover:text-[#004a48] hover:underline mr-3"><i class="fas fa-map-marker-alt mr-1"></i> Google Maps</a>
                             <a href="https://www.google.com/search?q=Gà+nướng+Bazan+Pleiku" target="_blank" class="text-xs text-brand-primary hover:text-[#004a48] hover:underline"><i class="fab fa-google mr-1"></i> Google Search</a>
                         </li>
-                         <!-- Bổ sung Ẩm Thực Kơ Nia -->
-                         <li>
-                            <h5 class="font-semibold text-lg text-gray-800 mb-1">Ẩm Thực Kơ Nia - Cơm Lam Gà Nướng</h5>
+                         <li data-id="food-am-thuc-ko-nia">
+                            <h5 class="font-semibold text-lg text-gray-800 mb-1 flex items-center justify-between">
+                               <span> Ẩm Thực Kơ Nia - Cơm Lam Gà Nướng</span>
+                                <i class="like-button far fa-heart" data-item-id="food-am-thuc-ko-nia"></i>
+                            </h5>
                             <p class="detail-text text-sm">Quán chuyên về cơm lam gà nướng, mang đậm hương vị đặc sản núi rừng Tây Nguyên.</p>
                             <a href="https://maps.app.goo.gl/HF5KCMqBfGqzJqPMA" target="_blank" class="text-xs text-brand-primary hover:text-[#004a48] hover:underline mr-3"><i class="fas fa-map-marker-alt mr-1"></i> Google Maps</a>
                             <a href="https://www.google.com/search?q=Ẩm+Thực+Kơ+Nia+Cơm+Lam+Gà+Nướng+Pleiku" target="_blank" class="text-xs text-brand-primary hover:text-[#004a48] hover:underline"><i class="fab fa-google mr-1"></i> Google Search</a>
                         </li>
-                         <li>
-                            <h5 class="font-semibold text-lg text-gray-800 mb-1">PizzaViet (Quán Ngon Xắp Xắp 1)</h5>
+                         <li data-id="food-pizzaviet">
+                             <h5 class="font-semibold text-lg text-gray-800 mb-1 flex items-center justify-between">
+                               <span> PizzaViet (Quán Ngon Xắp Xắp 1)</span>
+                                <i class="like-button far fa-heart" data-item-id="food-pizzaviet"></i>
+                            </h5>
                             <p class="detail-text text-sm">Địa điểm ăn vặt nổi tiếng với món xắp xắp (gỏi đu đủ) đặc trưng của Pleiku...</p>
                             <a href="https://maps.app.goo.gl/fM41Avc2kjsv7Ujd8" target="_blank" class="text-xs text-brand-primary hover:text-[#004a48] hover:underline mr-3"><i class="fas fa-map-marker-alt mr-1"></i> Google Maps</a>
                             <a href="https://www.google.com/search?q=PizzaViet+Quán+Ngon+Xắp+Xắp+1+Pleiku" target="_blank" class="text-xs text-brand-primary hover:text-[#004a48] hover:underline"><i class="fab fa-google mr-1"></i> Google Search</a>
                         </li>
-                         <!-- Bổ sung Ban Dê Quán 1 -->
-                         <li>
-                            <h5 class="font-semibold text-lg text-gray-800 mb-1">Ban Dê Quán 1</h5>
+                         <li data-id="food-ban-de-quan-1">
+                             <h5 class="font-semibold text-lg text-gray-800 mb-1 flex items-center justify-between">
+                               <span> Ban Dê Quán 1</span>
+                                <i class="like-button far fa-heart" data-item-id="food-ban-de-quan-1"></i>
+                            </h5>
                             <p class="detail-text text-sm">Quán chuyên các món ăn chế biến từ thịt dê, một lựa chọn ẩm thực khác biệt tại Pleiku.</p>
                             <a href="https://maps.app.goo.gl/xuMyRXFru5CGZVr19" target="_blank" class="text-xs text-brand-primary hover:text-[#004a48] hover:underline mr-3"><i class="fas fa-map-marker-alt mr-1"></i> Google Maps</a>
                             <a href="https://www.google.com/search?q=Ban+Dê+Quán+1+Pleiku" target="_blank" class="text-xs text-brand-primary hover:text-[#004a48] hover:underline"><i class="fab fa-google mr-1"></i> Google Search</a>
@@ -730,43 +834,63 @@
                 </div>
 
                 <!-- Mục Các điểm du lịch (đã gộp) -->
-                 <div id="stop-diadanh" class="p-6 bg-white rounded-xl shadow-lg border-l-4 border-brand-primary">
-                    <h3 class="text-2xl font-extrabold text-gray-800 mb-6 border-b pb-3 flex items-center"><i class="fas fa-map-signs mr-3 text-brand-primary"></i> Các điểm du lịch</h3>
+                 <div id="stop-diadanh" class="p-6 bg-white rounded-xl shadow-lg border-l-4 border-brand-primary detail-item" data-id="stop-diadanh">
+                    <h3 class="text-2xl font-extrabold text-gray-800 mb-6 border-b pb-3 flex items-center justify-between">
+                        <span><i class="fas fa-map-signs mr-3 text-brand-primary"></i> Các điểm du lịch</span>
+                         <i class="like-button far fa-heart" data-item-id="stop-diadanh"></i>
+                    </h3>
                     
                     <ul class="condensed-list divide-y divide-gray-200">
-                        <li id="stop-minhthanh">
-                            <h5 class="font-semibold text-lg text-gray-800 mb-1">Chùa Minh Thành</h5>
+                        <li id="stop-minhthanh" data-id="place-minh-thanh">
+                             <h5 class="font-semibold text-lg text-gray-800 mb-1 flex items-center justify-between">
+                               <span> Chùa Minh Thành</span>
+                                <i class="like-button far fa-heart" data-item-id="place-minh-thanh"></i>
+                            </h5>
                             <p class="detail-text text-sm">Ngôi chùa có kiến trúc ấn tượng, kết hợp phong cách Nhật Bản và Đài Loan. Nổi bật với bảo tháp 9 tầng...</p>
                             <a href="https://www.google.com/maps/search/?q=Chùa+Minh+Thành+Gia+Lai" target="_blank" class="text-xs text-brand-primary hover:text-[#004a48] hover:underline mr-3"><i class="fas fa-map-marker-alt mr-1"></i> Google Maps</a>
                             <a href="https://www.google.com/search?q=Chùa+Minh+Thành+Gia+Lai" target="_blank" class="text-xs text-brand-primary hover:text-[#004a48] hover:underline"><i class="fab fa-google mr-1"></i> Google Search</a>
                         </li>
-                         <li id="stop-kontum">
-                            <h5 class="font-semibold text-lg text-gray-800 mb-1">Nhà thờ gỗ & Chủng viện Kontum</h5>
+                         <li id="stop-kontum" data-id="place-kontum">
+                             <h5 class="font-semibold text-lg text-gray-800 mb-1 flex items-center justify-between">
+                               <span> Nhà thờ gỗ & Chủng viện Kontum</span>
+                                <i class="like-button far fa-heart" data-item-id="place-kontum"></i>
+                            </h5>
                             <p class="detail-text text-sm">Nhà thờ được làm hoàn toàn bằng gỗ cà chít, kiến trúc Roman kết hợp với kiểu nhà sàn Ba Na...</p>
                             <a href="https://www.google.com/maps/search/?q=Nhà+thờ+gỗ+Kontum" target="_blank" class="text-xs text-brand-primary hover:text-[#004a48] hover:underline mr-3"><i class="fas fa-map-marker-alt mr-1"></i> Google Maps</a>
                             <a href="https://www.google.com/search?q=Nhà+thờ+gỗ+Kontum" target="_blank" class="text-xs text-brand-primary hover:text-[#004a48] hover:underline"><i class="fab fa-google mr-1"></i> Google Search</a>
                         </li>
-                         <li id="stop-bienho">
-                            <h5 class="font-semibold text-lg text-gray-800 mb-1">Biển Hồ (Hồ T'Nưng)</h5>
+                         <li id="stop-bienho" data-id="place-bien-ho">
+                            <h5 class="font-semibold text-lg text-gray-800 mb-1 flex items-center justify-between">
+                               <span> Biển Hồ (Hồ T'Nưng)</span>
+                                <i class="like-button far fa-heart" data-item-id="place-bien-ho"></i>
+                            </h5>
                             <p class="detail-text text-sm">"Đôi mắt Pleiku" - là một hồ nước ngọt tự nhiên khổng lồ, hình thành trên miệng núi lửa đã tắt...</p>
                             <a href="https://www.google.com/maps/search/?q=Biển+Hồ+Pleiku" target="_blank" class="text-xs text-brand-primary hover:text-[#004a48] hover:underline mr-3"><i class="fas fa-map-marker-alt mr-1"></i> Google Maps</a>
                             <a href="https://www.google.com/search?q=Biển+Hồ+Pleiku" target="_blank" class="text-xs text-brand-primary hover:text-[#004a48] hover:underline"><i class="fab fa-google mr-1"></i> Google Search</a>
                         </li>
-                         <li>
-                            <h5 class="font-semibold text-lg text-gray-800 mb-1">Hàng thông trăm tuổi</h5>
+                         <li data-id="place-hang-thong">
+                            <h5 class="font-semibold text-lg text-gray-800 mb-1 flex items-center justify-between">
+                               <span> Hàng thông trăm tuổi</span>
+                                <i class="like-button far fa-heart" data-item-id="place-hang-thong"></i>
+                            </h5>
                             <p class="detail-text text-sm">Con đường thơ mộng dẫn vào Biển Hồ, với hai hàng thông cổ thụ vươn cao, tạo nên khung cảnh lãng mạn...</p>
                             <a href="https://www.google.com/maps/search/?q=Hàng+thông+trăm+tuổi+Biển+Hồ" target="_blank" class="text-xs text-brand-primary hover:text-[#004a48] hover:underline mr-3"><i class="fas fa-map-marker-alt mr-1"></i> Google Maps</a>
                             <a href="https://www.google.com/search?q=Hàng+thông+trăm+tuổi+Biển+Hồ" target="_blank" class="text-xs text-brand-primary hover:text-[#004a48] hover:underline"><i class="fab fa-google mr-1"></i> Google Search</a>
                         </li>
-                         <li>
-                            <h5 class="font-semibold text-lg text-gray-800 mb-1">Quảng trường Đại Đoàn Kết</h5>
+                         <li data-id="place-quang-truong">
+                             <h5 class="font-semibold text-lg text-gray-800 mb-1 flex items-center justify-between">
+                               <span> Quảng trường Đại Đoàn Kết</span>
+                                <i class="like-button far fa-heart" data-item-id="place-quang-truong"></i>
+                            </h5>
                             <p class="detail-text text-sm">Trung tâm của Pleiku, nổi bật với tượng Bác Hồ và khối đá tạc lớn nhất Việt Nam...</p>
                             <a href="https://www.google.com/maps/search/?q=Quảng+trường+Đại+Đoàn+Kết+Pleiku" target="_blank" class="text-xs text-brand-primary hover:text-[#004a48] hover:underline mr-3"><i class="fas fa-map-marker-alt mr-1"></i> Google Maps</a>
                             <a href="https://www.google.com/search?q=Quảng+trường+Đại+Đoàn+Kết+Pleiku" target="_blank" class="text-xs text-brand-primary hover:text-[#004a48] hover:underline"><i class="fab fa-google mr-1"></i> Google Search</a>
                         </li>
-                        <!-- Bổ sung Núi lửa Chư Đăng Ya -->
-                        <li id="stop-chudangya"> 
-                            <h5 class="font-semibold text-lg text-gray-800 mb-1">Núi lửa Chư Đăng Ya</h5>
+                        <li id="stop-chudangya" data-id="place-chu-dang-ya"> 
+                             <h5 class="font-semibold text-lg text-gray-800 mb-1 flex items-center justify-between">
+                               <span> Núi lửa Chư Đăng Ya</span>
+                                <i class="like-button far fa-heart" data-item-id="place-chu-dang-ya"></i>
+                            </h5>
                             <p class="detail-text text-sm">Một ngọn núi lửa đã tắt, nổi tiếng với vẻ đẹp hoang sơ và mùa hoa dã quỳ vàng rực vào cuối năm (khoảng tháng 11). </p>
                             <a href="https://maps.app.goo.gl/zuZnY6wuqsoZdkwZ8" target="_blank" class="text-xs text-brand-primary hover:text-[#004a48] hover:underline mr-3"><i class="fas fa-map-marker-alt mr-1"></i> Google Maps</a>
                             <a href="https://www.google.com/search?q=Núi+lửa+Chư+Đăng+Ya" target="_blank" class="text-xs text-brand-primary hover:text-[#004a48] hover:underline"><i class="fab fa-google mr-1"></i> Google Search</a>
@@ -865,6 +989,127 @@
     </button>
     
     <script>
+        const likedItemsKey = 'likedPleikuItems'; // Khóa cho localStorage
+
+        // --- Lấy danh sách ID đã thích từ localStorage ---
+        function getLikedItems() {
+            const items = localStorage.getItem(likedItemsKey);
+            return items ? JSON.parse(items) : [];
+        }
+
+        // --- Lưu danh sách ID đã thích vào localStorage ---
+        function saveLikedItems(likedIds) {
+            localStorage.setItem(likedItemsKey, JSON.stringify(likedIds));
+        }
+
+        // --- Cập nhật giao diện nút like dựa trên localStorage ---
+        function updateLikeButtonsUI() {
+            const likedIds = getLikedItems();
+            document.querySelectorAll('.like-button').forEach(button => {
+                const itemId = button.dataset.itemId;
+                if (likedIds.includes(itemId)) {
+                    button.classList.add('liked');
+                    button.classList.remove('far'); // Bỏ icon rỗng
+                    button.classList.add('fas');    // Thêm icon đầy
+                } else {
+                    button.classList.remove('liked');
+                    button.classList.add('far');    // Thêm icon rỗng
+                    button.classList.remove('fas'); // Bỏ icon đầy
+                }
+            });
+        }
+
+        // --- Xử lý sự kiện click nút like ---
+        function handleLikeButtonClick(event) {
+            const button = event.target;
+            const itemId = button.dataset.itemId;
+            let likedIds = getLikedItems();
+
+            if (likedIds.includes(itemId)) {
+                // Bỏ thích: Xóa ID khỏi mảng
+                likedIds = likedIds.filter(id => id !== itemId);
+                button.classList.remove('liked');
+                button.classList.add('far');
+                button.classList.remove('fas');
+            } else {
+                // Thích: Thêm ID vào mảng
+                likedIds.push(itemId);
+                button.classList.add('liked');
+                button.classList.remove('far');
+                button.classList.add('fas');
+            }
+            saveLikedItems(likedIds);
+
+             // Cập nhật lại hiển thị nếu đang ở chế độ lọc
+             if (document.body.classList.contains('filtering-liked')) {
+                 filterLikedItems(true); // Gọi lại hàm lọc để ẩn/hiện mục vừa thay đổi
+             }
+        }
+        
+         // --- Xử lý lọc hiển thị ---
+         let isFiltering = false;
+         const filterButton = document.getElementById('filter-liked-btn');
+         const detailSection = document.getElementById('detail-section'); // Section chứa các mục chi tiết
+
+         function filterLikedItems(forceUpdate = false) {
+             const likedIds = getLikedItems();
+            
+             // Chỉ toggle trạng thái nếu không phải là forceUpdate
+             if (!forceUpdate) {
+                isFiltering = !isFiltering;
+             }
+             
+             const allItems = detailSection.querySelectorAll('.condensed-list > li[data-id], .detail-item[data-id]'); // Lấy cả mục lớn và mục con có data-id
+            
+             allItems.forEach(item => {
+                 const itemId = item.dataset.id;
+                 const isLiked = likedIds.includes(itemId);
+                 
+                 // Kiểm tra xem item có chứa item con nào được like không (cho các mục lớn)
+                 const containsLikedChild = item.querySelector('.like-button.liked') !== null;
+                 
+                 if (isFiltering) {
+                     // Nếu đang lọc: Chỉ hiện item được like hoặc item lớn chứa item con được like
+                     if (isLiked || containsLikedChild) {
+                         item.classList.remove('hidden-by-filter');
+                     } else {
+                         item.classList.add('hidden-by-filter');
+                     }
+                 } else {
+                     // Nếu không lọc: Hiện tất cả
+                     item.classList.remove('hidden-by-filter');
+                 }
+             });
+
+             // Cập nhật text và icon của nút filter
+             if (isFiltering) {
+                 filterButton.innerHTML = '<i class="fas fa-list mr-2"></i> Hiện Tất Cả';
+                 document.body.classList.add('filtering-liked'); // Thêm class để biết đang lọc
+             } else {
+                 filterButton.innerHTML = '<i class="fas fa-filter mr-2"></i> Xem Mục Yêu Thích';
+                 document.body.classList.remove('filtering-liked'); // Bỏ class lọc
+             }
+         }
+
+
+        // --- Thêm Event Listeners ---
+        document.addEventListener('DOMContentLoaded', () => {
+            // Cập nhật UI ban đầu
+            updateLikeButtonsUI();
+
+            // Thêm sự kiện click cho tất cả nút like
+            document.querySelectorAll('.like-button').forEach(button => {
+                button.addEventListener('click', handleLikeButtonClick);
+            });
+            
+             // Thêm sự kiện click cho nút filter
+            if (filterButton) {
+                 filterButton.addEventListener('click', () => filterLikedItems());
+            }
+
+        });
+
+
         // --- CODE XỬ LÝ NÚT SCROLL TO TOP ---
         const scrollToTopBtn = document.getElementById("scrollToTopBtn");
         const scrollThreshold = 300; // Ngưỡng cuộn (pixels)
@@ -872,17 +1117,14 @@
         function handleScroll() {
             if (document.body.scrollTop > scrollThreshold || document.documentElement.scrollTop > scrollThreshold) {
                 scrollToTopBtn.style.display = "block";
-                // Thêm hiệu ứng fade-in nhẹ nhàng (tùy chọn)
                 scrollToTopBtn.style.opacity = "1"; 
             } else {
-                // Thêm hiệu ứng fade-out nhẹ nhàng (tùy chọn)
                 scrollToTopBtn.style.opacity = "0"; 
-                // Ẩn nút sau khi hiệu ứng kết thúc
                 setTimeout(() => {
-                     if (window.scrollY < scrollThreshold) { // Kiểm tra lại vị trí cuộn
+                     if (window.scrollY < scrollThreshold) { 
                          scrollToTopBtn.style.display = "none";
                      }
-                }, 300); // Thời gian transition
+                }, 300); 
             }
         }
 
