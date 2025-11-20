@@ -88,10 +88,19 @@
         .modal-content { background: #fffbf0; padding: 25px; border-radius: 4px; width: 90%; max-width: 500px; max-height: 90vh; overflow-y: auto; border: 4px double #5a3a22; box-shadow: 0 10px 25px rgba(0,0,0,0.5); animation: fadeIn 0.3s; }
         .modal-content h2 { color: #8b0000; border-bottom: 1px solid #d7ccc8; padding-bottom: 10px; margin-bottom: 15px; font-family: 'Playfair Display', serif; }
         .form-group { margin-bottom: 15px; }
+        
+        /* CSS MỚI: Form Row Split để gộp 2 controls trên 1 dòng */
+        .form-row-split { display: flex; gap: 15px; margin-bottom: 15px; align-items: flex-start; }
+        .form-item-compact { flex: 1; display: flex; flex-direction: column; gap: 5px; }
+        .form-item-compact label { margin-bottom: 0; font-size: 0.9rem; font-weight: 700; color: #4e342e; }
+        .form-item-compact .toggle-switch { width: 100%; } /* Toggle chiếm hết bề ngang của cột */
+        
         .form-group label { display: block; margin-bottom: 5px; font-weight: 700; font-size: 0.9rem; color: #4e342e; }
         .form-control, .form-select { width: 100%; padding: 10px; border: 1px solid #a1887f; border-radius: 2px; font-size: 1rem; background: #fff; color: #3e2723; }
+        textarea.form-control { height: 60px; min-height: 60px; resize: vertical; }
+
         .toggle-switch { display: flex; border: 1px solid #a1887f; border-radius: 2px; overflow: hidden; }
-        .toggle-option { flex: 1; padding: 10px; text-align: center; cursor: pointer; background: #efebe9; transition: 0.2s; color: #5d4037; }
+        .toggle-option { flex: 1; padding: 8px 5px; text-align: center; cursor: pointer; background: #efebe9; transition: 0.2s; color: #5d4037; font-size: 0.9rem; font-weight: 600; white-space: nowrap; }
         .toggle-option.selected[data-value="male"] { background: #2c3e50; color: white; }
         .toggle-option.selected[data-value="female"] { background: #a52a2a; color: white; }
         .toggle-option.selected[data-value="alive"] { background: #556b2f; color: white; }
@@ -198,24 +207,37 @@
                         </div>
                     </div>
                     <div class="form-group"><label>Họ và Tên (*)</label><input type="text" id="field-name" class="form-control" required placeholder="Nhập họ tên..."></div>
-                    <div class="form-group"><label>Giới tính</label>
-                        <div class="toggle-switch" id="gender-toggle">
-                            <div class="toggle-option selected" data-value="male" onclick="app.setToggle('gender', 'male')">Nam</div>
-                            <div class="toggle-option" data-value="female" onclick="app.setToggle('gender', 'female')">Nữ</div>
+                    
+                    <!-- CẬP NHẬT: Gộp Giới tính và Tình trạng vào 1 hàng -->
+                    <div class="form-row-split">
+                        <!-- Cột Giới tính -->
+                        <div class="form-item-compact">
+                            <label>Giới tính</label>
+                            <div class="toggle-switch" id="gender-toggle">
+                                <div class="toggle-option selected" data-value="male" onclick="app.setToggle('gender', 'male')">Nam</div>
+                                <div class="toggle-option" data-value="female" onclick="app.setToggle('gender', 'female')">Nữ</div>
+                            </div>
+                            <input type="hidden" id="field-gender" value="male">
                         </div>
-                        <input type="hidden" id="field-gender" value="male">
+                        
+                        <!-- Cột Tình trạng -->
+                        <div class="form-item-compact">
+                            <label>Tình trạng</label>
+                            <div class="toggle-switch" id="status-toggle">
+                                <div class="toggle-option selected" data-value="alive" onclick="app.setToggle('status', 'alive')">Còn sống</div>
+                                <div class="toggle-option" data-value="dead" onclick="app.setToggle('status', 'dead')">Đã mất</div>
+                            </div>
+                            <input type="hidden" id="field-status" value="alive">
+                        </div>
                     </div>
+
                     <div class="form-group"><label>Ngày sinh</label><input type="date" id="field-dob" class="form-control"></div>
                     <div class="form-group"><label>Nghề nghiệp</label><input type="text" id="field-job" class="form-control" placeholder="Ví dụ: Giáo viên, Kỹ sư..."></div>
-                    <div class="form-group"><label>Tình trạng</label>
-                        <div class="toggle-switch" id="status-toggle">
-                            <div class="toggle-option selected" data-value="alive" onclick="app.setToggle('status', 'alive')">Còn sống</div>
-                            <div class="toggle-option" data-value="dead" onclick="app.setToggle('status', 'dead')">Đã mất</div>
-                        </div>
-                        <input type="hidden" id="field-status" value="alive">
-                    </div>
+
                     <div class="form-group"><label>Ảnh minh hoạ (URL)</label><input type="text" id="field-photo" class="form-control" placeholder="http://example.com/photo.jpg"></div>
-                    <div class="form-group"><label>Ghi chú</label><textarea id="field-notes" class="form-control" rows="2"></textarea></div>
+                    
+                    <div class="form-group"><label>Ghi chú</label><textarea id="field-notes" class="form-control"></textarea></div>
+                    
                     <div style="display: flex; justify-content: space-between; gap: 10px; margin-top: 20px;">
                         <button type="button" class="btn btn-outline" onclick="app.closeModal()">Huỷ</button>
                         <div style="display:flex; gap:10px;">
