@@ -3,256 +3,89 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GIA PHẢ</title>
+    <title>GIA PHẢ (Logic Guard)</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Font Cổ Điển -->
     <link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700;900&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    <!-- Supabase JS -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     
     <style>
         :root {
-            /* BẢNG MÀU TRUYỀN THỐNG */
-            --primary-color: #5a3a22; /* Nâu gỗ đậm */
-            --secondary-color: #8b0000; /* Đỏ son (cho viền/điểm nhấn) */
-            --accent-color: #cd853f; /* Vàng đồng */
-            --bg-color: #f9f4e6; /* Màu giấy dó/kem */
-            --text-color: #2c1810; /* Nâu đen */
-            --card-bg: #fffdf5; /* Màu nền thẻ */
-            --tree-line-color: #5a3a22; /* Màu đường kẻ */
+            --primary-color: #5a3a22; --secondary-color: #8b0000; --accent-color: #cd853f;
+            --bg-color: #f9f4e6; --text-color: #2c1810; --card-bg: #fffdf5; --tree-line-color: #5a3a22;
         }
-
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Merriweather', serif; }
-        
-        body { 
-            background-color: var(--bg-color); 
-            color: var(--text-color); 
-            height: 100vh; 
-            overflow: hidden; 
-            background-image: radial-gradient(#e6d5ac 1px, transparent 1px);
-            background-size: 20px 20px; 
-        }
-
-        /* --- UTILITIES --- */
+        body { background-color: var(--bg-color); color: var(--text-color); height: 100vh; overflow: hidden; background-image: radial-gradient(#e6d5ac 1px, transparent 1px); background-size: 20px 20px; }
         .btn { padding: 6px 12px; border: 1px solid #8b5a2b; border-radius: 4px; cursor: pointer; font-size: 13px; transition: 0.2s; display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; font-family: 'Segoe UI', sans-serif; }
         .btn-primary { background-color: var(--primary-color); color: #f1e6d2; border-color: #3e2723; }
         .btn-danger { background-color: #a52a2a; color: white; border-color: #800000; }
         .btn-success { background-color: #556b2f; color: white; }
         .btn-warning { background-color: #d2691e; color: white; }
+        .btn-info { background-color: #2980b9; color: white; }
         .btn-outline { background-color: #fffef9; border: 1px solid #8b5a2b; color: #5a3a22; }
-        .btn:hover { opacity: 0.9; transform: translateY(-1px); box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
         .hidden { display: none !important; }
-        
-        /* --- LAYOUT --- */
         #app { height: 100%; display: flex; flex-direction: column; }
-        
-        header { 
-            background: #4e342e; 
-            background: linear-gradient(to right, #3e2723, #5d4037);
-            color: #ffecb3; 
-            padding: 10px 20px; 
-            display: flex; justify-content: space-between; align-items: center; 
-            box-shadow: 0 4px 6px rgba(0,0,0,0.3); z-index: 10; 
-            border-bottom: 3px solid #bcaaa4;
-        }
-        /* TITLE SỬA THÀNH GIA PHẢ */
+        header { background: linear-gradient(to right, #3e2723, #5d4037); color: #ffecb3; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 6px rgba(0,0,0,0.3); z-index: 10; border-bottom: 3px solid #bcaaa4; }
         header h1 { font-family: 'Playfair Display', serif; font-size: 1.5rem; text-transform: uppercase; letter-spacing: 1px; }
-
         main { flex: 1; overflow: hidden; position: relative; }
-
-        /* --- DASHBOARD --- */
         #dashboard-view { padding: 20px; overflow-y: auto; height: 100%; }
         .tree-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; margin-top: 20px; }
-        .tree-card { 
-            background: #fffbf0; 
-            padding: 20px; 
-            border: 2px solid #8b5a2b; 
-            box-shadow: 4px 4px 0px rgba(90, 58, 34, 0.2); 
-            display: flex; flex-direction: column; gap: 15px; 
-            cursor: pointer; transition: transform 0.2s; 
-            position: relative;
-        }
+        .tree-card { background: #fffbf0; padding: 20px; border: 2px solid #8b5a2b; box-shadow: 4px 4px 0px rgba(90, 58, 34, 0.2); display: flex; flex-direction: column; gap: 15px; cursor: pointer; transition: transform 0.2s; position: relative; }
         .tree-card:hover { transform: translateY(-3px); border-color: #a52a2a; }
         .tree-card h3 { color: #800000; margin-bottom: 5px; font-size: 1.2rem; text-transform: uppercase; }
         .tree-actions { display: flex; justify-content: space-between; margin-top: auto; padding-top: 10px; border-top: 1px dashed #ccc; gap: 10px; }
         .protected-icon { position: absolute; top: 10px; right: 10px; color: #8b0000; opacity: 0.5; }
-
-        /* --- TREE VIEW --- */
         #tree-view { height: 100%; display: flex; flex-direction: column; }
-        .tree-toolbar { 
-            background: #fdf5e6; padding: 10px 20px; border-bottom: 1px solid #d7ccc8; 
-            display: flex; gap: 10px; flex-wrap: wrap; align-items: center; 
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-        }
-        
-        .tree-container { 
-            flex: 1; overflow: auto; padding: 60px; 
-            background: #fdfbf7; 
-            cursor: grab; position: relative; display: block; 
-            background-image: 
-                linear-gradient(45deg, #f4eace 25%, transparent 25%, transparent 75%, #f4eace 75%, #f4eace),
-                linear-gradient(45deg, #f4eace 25%, transparent 25%, transparent 75%, #f4eace 75%, #f4eace);
-            background-position: 0 0, 10px 10px;
-            background-size: 20px 20px;
-        }
-        .tree-container:active { cursor: grabbing; }
-
-        /* --- TREE CSS --- */
-        .tree { display: inline-block; min-width: 100%; white-space: nowrap; }
+        .tree-toolbar { background: #fdf5e6; padding: 10px 20px; border-bottom: 1px solid #d7ccc8; display: flex; gap: 10px; flex-wrap: wrap; align-items: center; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .tree-container { flex: 1; overflow: auto; padding: 60px; background: #fdfbf7; cursor: grab; position: relative; display: block; text-align: center; background-image: linear-gradient(45deg, #f4eace 25%, transparent 25%, transparent 75%, #f4eace 75%, #f4eace), linear-gradient(45deg, #f4eace 25%, transparent 25%, transparent 75%, #f4eace 75%, #f4eace); background-position: 0 0, 10px 10px; background-size: 20px 20px; }
+        .tree { display: inline-block; min-width: fit-content; white-space: nowrap; margin: 0 auto; text-align: center; }
         .tree ul { padding-top: 40px; position: relative; transition: all 0.5s; display: flex; justify-content: center; }
         .tree li { float: left; text-align: center; list-style-type: none; position: relative; padding: 40px 10px 0 10px; transition: all 0.5s; }
-        
-        /* Tree Lines */
-        .tree li::before, .tree li::after { 
-            content: ''; position: absolute; top: 0; right: 50%; 
-            border-top: 2px solid var(--tree-line-color); 
-            width: 50%; height: 40px; z-index: 1; 
-        }
+        .tree li::before, .tree li::after { content: ''; position: absolute; top: 0; right: 50%; border-top: 2px solid var(--tree-line-color); width: 50%; height: 40px; z-index: 1; }
         .tree li::after { right: auto; left: 50%; border-left: 2px solid var(--tree-line-color); }
         .tree li:only-child::after, .tree li:only-child::before { display: none; }
         .tree li:only-child { padding-top: 0; }
         .tree li:first-child::before, .tree li:last-child::after { border: 0 none; }
         .tree li:last-child::before { border-right: 2px solid var(--tree-line-color); border-radius: 0; }
         .tree li:first-child::after { border-radius: 0; }
-        .tree ul ul::before { 
-            content: ''; position: absolute; top: 0; left: 50%; 
-            border-left: 2px solid var(--tree-line-color); 
-            width: 0; height: 40px; z-index: 1; 
-        }
+        .tree ul ul::before { content: ''; position: absolute; top: 0; left: 50%; border-left: 2px solid var(--tree-line-color); width: 0; height: 40px; z-index: 1; }
         .tree li.active-branch { z-index: 10000 !important; }
-
         .node-container { display: flex; align-items: flex-end; justify-content: center; gap: 30px; position: relative; z-index: 2; padding: 5px; }
-        .node-container.has-spouse::before { 
-            content: ''; position: absolute; top: auto; bottom: 60px; left: 50px; right: 50px; 
-            border-top: 1px dashed #8b4513; z-index: -1; 
-        }
-
-        /* --- THẺ THÀNH VIÊN (FIXED SIZE) --- */
-        .member-node { 
-            background: #fffdf9; 
-            border: 2px double #8b0000; 
-            padding: 10px 5px; 
-            border-radius: 0; 
-            display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
-            /* Kích thước cố định cho mọi node */
-            width: 150px; 
-            height: 190px;
-            box-shadow: 3px 3px 0 rgba(0,0,0,0.1); 
-            transition: all 0.2s; cursor: pointer; 
-            position: relative; overflow: visible; z-index: 5; 
-            white-space: normal; /* Cho phép xuống dòng trong thẻ */
-        }
-        
+        .node-container.has-spouse::before { content: ''; position: absolute; top: auto; bottom: 60px; left: 50px; right: 50px; border-top: 1px dashed #8b4513; z-index: -1; }
+        .member-node { background: #fffdf9; border: 2px double #8b0000; padding: 10px 5px; border-radius: 0; display: flex; flex-direction: column; align-items: center; width: 150px; height: 190px; box-shadow: 3px 3px 0 rgba(0,0,0,0.1); transition: all 0.2s; cursor: pointer; position: relative; overflow: visible; z-index: 5; white-space: normal; }
         .member-node.male { border-color: #2c3e50; background-color: #fdfcf5; } 
         .member-node.female { border-color: #a52a2a; background-color: #fffaf0; }
         .member-node.deceased { filter: sepia(0.6) grayscale(0.5); border-style: solid; opacity: 0.9; }
         .member-node:hover { transform: scale(1.05); z-index: 20; box-shadow: 0 5px 15px rgba(0,0,0,0.2); border-color: #d4af37; }
         .member-node.active-popup { z-index: 10001 !important; border-color: #d4af37; box-shadow: 0 0 10px rgba(212, 175, 55, 0.5); }
-
-        /* Mini Card -> Giờ cũng to bằng node thường để đồng bộ */
-        .member-node.mini { 
-            width: 150px; height: 190px; 
-            font-size: 1em; border-width: 2px; margin-bottom: 20px; 
-        }
+        .member-node.mini { width: 150px; height: 190px; font-size: 1em; border-width: 2px; margin-bottom: 20px; }
         .member-node.mini .node-img { width: 50px; height: 50px; }
         .member-node.mini .node-actions { display: none; }
-
-        /* Avatar */
-        .node-img { 
-            width: 50px; height: 50px; 
-            border-radius: 50%; 
-            background: #fff; border: 2px solid #d4af37; 
-            display: flex; align-items: center; justify-content: center; 
-            margin-bottom: 8px; object-fit: cover; 
-        }
-        
-        /* Text Styles */
-        .node-name { 
-            font-weight: 700; font-size: 13px; margin-bottom: 4px; width: 100%; text-align: center; 
-            color: #3e2723; text-transform: uppercase; letter-spacing: 0.5px; line-height: 1.2;
-            max-height: 32px; overflow: hidden; /* Giới hạn 2 dòng */
-        }
-        .node-dates { 
-            font-size: 11px; color: #6d4c41; font-style: italic; font-weight: 600;
-        }
-        
-        /* Badge */
-        .role-badge { 
-            position: absolute; top: -10px; right: -5px; 
-            font-size: 10px; padding: 2px 6px; 
-            background: #8b0000; color: #fff; 
-            border: 1px solid #fff; font-family: 'Segoe UI', sans-serif;
-            box-shadow: 1px 1px 2px rgba(0,0,0,0.2); z-index: 10; white-space: nowrap; 
-        }
-        .badge-male { background-color: #2c3e50; }
-        .badge-female { background-color: #a52a2a; }
-
-        /* Menu Trigger */
+        .node-img { width: 50px; height: 50px; border-radius: 50%; background: #fff; border: 2px solid #d4af37; display: flex; align-items: center; justify-content: center; margin-bottom: 8px; object-fit: cover; }
+        .node-name { font-weight: 700; font-size: 13px; margin-bottom: 4px; width: 100%; text-align: center; color: #3e2723; text-transform: uppercase; letter-spacing: 0.5px; line-height: 1.2; max-height: 32px; overflow: hidden; }
+        .node-dates { font-size: 11px; color: #6d4c41; font-style: italic; font-weight: 600; }
+        .role-badge { position: absolute; top: -10px; right: -5px; font-size: 10px; padding: 2px 6px; background: #8b0000; color: #fff; border: 1px solid #fff; font-family: 'Segoe UI', sans-serif; box-shadow: 1px 1px 2px rgba(0,0,0,0.2); z-index: 10; white-space: nowrap; }
+        .badge-male { background-color: #2c3e50; } .badge-female { background-color: #a52a2a; }
         .node-actions { margin-top: auto; width: 100%; display: flex; justify-content: center; position: relative; padding-bottom: 5px; }
-        .action-trigger {
-            width: 22px; height: 22px; border-radius: 50%; 
-            background: #fff; border: 1px solid #8b5a2b;
-            display: flex; align-items: center; justify-content: center; cursor: pointer; 
-            color: #5a3a22; font-size: 11px; transition: 0.2s;
-        }
+        .action-trigger { width: 22px; height: 22px; border-radius: 50%; background: #fff; border: 1px solid #8b5a2b; display: flex; align-items: center; justify-content: center; cursor: pointer; color: #5a3a22; font-size: 11px; transition: 0.2s; }
         .action-trigger:hover { background: #5a3a22; color: #fff; }
-
-        /* GLOBAL POPUP MENU */
-        #global-popup-menu {
-            position: absolute; 
-            background: #fffbf0; border: 1px solid #8b5a2b; border-radius: 0; 
-            padding: 5px; display: flex; flex-direction: column; gap: 2px;
-            box-shadow: 3px 3px 10px rgba(0,0,0,0.3); 
-            z-index: 99999 !important; min-width: 150px;
-        }
-        #global-popup-menu button {
-            text-align: left; padding: 8px 12px; border: none; background: transparent; 
-            cursor: pointer; font-size: 13px; color: #3e2723; font-weight: 600;
-            display: flex; align-items: center; gap: 10px;
-            border-bottom: 1px dotted #d7ccc8;
-        }
+        #global-popup-menu { position: absolute; background: #fffbf0; border: 1px solid #8b5a2b; border-radius: 0; padding: 5px; display: flex; flex-direction: column; gap: 2px; box-shadow: 3px 3px 10px rgba(0,0,0,0.3); z-index: 99999 !important; min-width: 150px; }
+        #global-popup-menu button { text-align: left; padding: 8px 12px; border: none; background: transparent; cursor: pointer; font-size: 13px; color: #3e2723; font-weight: 600; display: flex; align-items: center; gap: 10px; border-bottom: 1px dotted #d7ccc8; }
         #global-popup-menu button:last-child { border-bottom: none; }
         #global-popup-menu button:hover { background-color: #f5e6d3; color: #8b0000; }
-        
-        .icon-add-child { color: #2e7d32; }
-        .icon-add-spouse { color: #c62828; }
-        .icon-add-parent { color: #1565c0; }
-
-        /* Toggle */
-        .toggle-btn { 
-            position: absolute; bottom: -20px; left: 50%; transform: translateX(-50%); 
-            width: 18px; height: 18px; background: #fff; border: 1px solid #5a3a22; border-radius: 50%; 
-            display: flex; align-items: center; justify-content: center; font-size: 10px; cursor: pointer; z-index: 3; color: #5a3a22;
-        }
-
-        /* Connectors */
+        .icon-add-child { color: #2e7d32; } .icon-add-spouse { color: #c62828; } .icon-add-parent { color: #1565c0; }
+        .toggle-btn { position: absolute; bottom: -20px; left: 50%; transform: translateX(-50%); width: 18px; height: 18px; background: #fff; border: 1px solid #5a3a22; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; cursor: pointer; z-index: 50; color: #5a3a22; }
+        .tree li.collapsed ul { display: none; }
         .connector-wrapper { position: absolute; top: -35px; left: 50%; transform: translateX(-50%); z-index: 0; display: flex; flex-direction: column; align-items: center; pointer-events: none; }
         .connector-line { width: 2px; height: 35px; background-color: #8b4513; transform-origin: bottom center; }
-        .connector-label { 
-            font-size: 9px; padding: 1px 4px; background: #fff; border: 1px solid #8b4513; 
-            color: #8b4513; white-space: nowrap; margin-bottom: 2px; font-weight: bold; 
-        }
-        .point-left .connector-line { transform: rotate(-25deg); }
-        .point-left .connector-label { margin-left: -40px; }
-        .point-right .connector-line { transform: rotate(25deg); }
-        .point-right .connector-label { margin-right: -40px; }
-
-        /* Spouse Group */
+        .connector-label { font-size: 9px; padding: 1px 4px; background: #fff; border: 1px solid #8b4513; color: #8b4513; white-space: nowrap; margin-bottom: 2px; font-weight: bold; }
+        .point-left .connector-line { transform: rotate(-25deg); } .point-left .connector-label { margin-left: -40px; }
+        .point-right .connector-line { transform: rotate(25deg); } .point-right .connector-label { margin-right: -40px; }
         .spouse-group { display: flex; flex-direction: column; align-items: center; position: relative; }
         .spouse-parents-row { display: flex; gap: 10px; position: relative; }
-        .spouse-parents-row::after { 
-            content: ''; position: absolute; bottom: -20px; left: 50%; transform: translateX(-50%);
-            width: 2px; height: 20px; background: #ccc; z-index: -1;
-        }
-
-        /* Modals */
+        .spouse-parents-row::after { content: ''; position: absolute; bottom: -20px; left: 50%; transform: translateX(-50%); width: 2px; height: 20px; background: #ccc; z-index: -1; }
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(44, 24, 16, 0.7); z-index: 100; display: flex; justify-content: center; align-items: center; backdrop-filter: blur(2px); }
-        .modal-content { 
-            background: #fffbf0; padding: 25px; border-radius: 4px; width: 90%; max-width: 500px; max-height: 90vh; overflow-y: auto; 
-            border: 4px double #5a3a22; /* Viền kép */
-            box-shadow: 0 10px 25px rgba(0,0,0,0.5); animation: fadeIn 0.3s; 
-        }
+        .modal-content { background: #fffbf0; padding: 25px; border-radius: 4px; width: 90%; max-width: 500px; max-height: 90vh; overflow-y: auto; border: 4px double #5a3a22; box-shadow: 0 10px 25px rgba(0,0,0,0.5); animation: fadeIn 0.3s; }
         .modal-content h2 { color: #8b0000; border-bottom: 1px solid #d7ccc8; padding-bottom: 10px; margin-bottom: 15px; font-family: 'Playfair Display', serif; }
         .form-group { margin-bottom: 15px; }
         .form-group label { display: block; margin-bottom: 5px; font-weight: 700; font-size: 0.9rem; color: #4e342e; }
@@ -264,9 +97,7 @@
         .toggle-option.selected[data-value="alive"] { background: #556b2f; color: white; }
         .toggle-option.selected[data-value="dead"] { background: #5d4037; color: white; }
         .bg-highlight { background-color: #fff8e1; padding: 10px; border: 1px dashed #d7ccc8; margin-bottom: 15px; }
-        
         #delete-confirm-modal { z-index: 2000; }
-        
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
@@ -274,10 +105,9 @@
     <div id="app">
         <header>
             <div style="display: flex; align-items: center; gap: 10px;">
-                <i class="fas fa-scroll fa-lg"></i><h1 id="app-title">GIA PHẢ</h1>
+                <i class="fas fa-scroll fa-lg"></i><h1 id="app-title">QUẢN LÝ GIA PHẢ</h1>
             </div>
-            <!-- Status indicator -->
-            <div id="db-status" style="font-size: 10px; color: #ccc; margin-left: 10px;">Supabase Ready</div>
+            <div id="db-status" style="font-size: 10px; color: #ccc; margin-left: 10px;"></div>
             <div id="header-actions" style="margin-left: auto;">
                 <button class="btn btn-primary" onclick="location.reload()"><i class="fas fa-sync"></i> Tải lại</button>
             </div>
@@ -286,7 +116,11 @@
             <section id="dashboard-view">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
                     <h2 style="font-family: 'Playfair Display'; color: #5a3a22;">Danh Sách Cây Gia Phả</h2>
-                    <button class="btn btn-primary" onclick="app.openTreeModal()"><i class="fas fa-plus"></i> Tạo Cây Mới</button>
+                    <div style="display:flex; gap: 10px;">
+                        <input type="file" id="import-file" accept=".json" style="display:none" onchange="app.importData(event)">
+                        <button class="btn btn-info" onclick="document.getElementById('import-file').click()"><i class="fas fa-file-import"></i> Nhập File</button>
+                        <button class="btn btn-primary" onclick="app.openTreeModal()"><i class="fas fa-plus"></i> Tạo Cây Mới</button>
+                    </div>
                 </div>
                 <div id="loading-indicator" class="text-center hidden"><i class="fas fa-spinner fa-spin fa-2x" style="color: #8b4513;"></i></div>
                 <div id="tree-list-container" class="tree-list"></div>
@@ -307,10 +141,7 @@
                 </div>
             </section>
         </main>
-        
         <div id="global-popup-menu" class="hidden"></div>
-
-        <!-- MODALS -->
         <div id="tree-modal" class="modal-overlay hidden">
             <div class="modal-content" style="max-width: 400px;">
                 <h2>Tạo Cây Gia Phả Mới</h2>
@@ -323,7 +154,6 @@
                 </form>
             </div>
         </div>
-        
         <div id="member-modal" class="modal-overlay hidden" style="z-index: 100;">
             <div class="modal-content">
                 <h2 id="modal-title" style="margin-bottom: 15px;">Thông tin thành viên</h2>
@@ -346,7 +176,6 @@
                                 <select id="field-mother-select" class="form-select"><option value="">-- Chưa có --</option></select>
                             </div>
                         </div>
-                        <small style="color:#666; display:block; margin-top:5px; font-size: 0.8rem;">Chọn cả hai để tự động kết nối họ thành vợ chồng.</small>
                     </div>
                     <div class="form-group"><label>Họ và Tên (*)</label><input type="text" id="field-name" class="form-control" required placeholder="Nhập họ tên..."></div>
                     <div class="form-group"><label>Giới tính</label>
@@ -377,7 +206,6 @@
                 </form>
             </div>
         </div>
-
         <div id="delete-confirm-modal" class="modal-overlay hidden" style="z-index: 2000;">
             <div class="modal-content" style="max-width: 350px; text-align: center; border: 2px solid var(--accent-color);">
                 <h3 style="color: var(--accent-color); margin-bottom: 15px; font-size: 1.2rem;"><i class="fas fa-exclamation-triangle"></i> Xác nhận xoá</h3>
@@ -391,7 +219,6 @@
     </div>
 
     <script>
-        // CẤU HÌNH SUPABASE
         const SUPABASE_URL = 'https://rmbsxccrwrktbjlnezpu.supabase.co';
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJtYnN4Y2Nyd3JrdGJqbG5lenB1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg2MjczNjQsImV4cCI6MjA2NDIwMzM2NH0.ydCqificftdtn1niRciFCifeuo8aX6SDGti-hCY5Z_Y';
         const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -400,211 +227,122 @@
             data: { trees: [] },
             securityData: [],
             state: { currentTreeId: null, editingMemberId: null, actionMode: null, targetRelatedId: null, isUnlocked: false },
-            
+            childMap: {},
+
             async init() { 
                 this.renderDashboard();
                 document.addEventListener('click', (e) => {
-                    if(!e.target.closest('.action-trigger') && !e.target.closest('#global-popup-menu')) {
-                        this.closeAllMenus();
-                    }
+                    if(!e.target.closest('.action-trigger') && !e.target.closest('#global-popup-menu')) { this.closeAllMenus(); }
                 });
                 const treeCont = document.querySelector('.tree-container');
                 if(treeCont) { treeCont.addEventListener('scroll', () => this.closeAllMenus()); }
-                
                 await this.loadAllData();
             },
 
-            // --- SUPABASE DATA LOADING ---
             async loadAllData() {
                 document.getElementById('loading-indicator').classList.remove('hidden');
-                
-                // 1. Fetch Trees
                 const { data: trees, error: err1 } = await _supabase.from('family_trees').select('*');
-                if (err1) console.error("Error loading trees:", err1);
-                else this.data.trees = trees || [];
-
-                // 2. Fetch Security Configs
+                if (err1) console.error("Error loading trees:", err1); else this.data.trees = trees || [];
                 const { data: configs, error: err2 } = await _supabase.from('tree_access_controls').select('*');
-                if (err2) console.error("Error loading security:", err2);
-                else this.securityData = configs || [];
-                
+                if (err2) console.error("Error loading security:", err2); else this.securityData = configs || [];
                 document.getElementById('loading-indicator').classList.add('hidden');
                 this.renderDashboard();
             },
 
-            // --- SUPABASE SAVE (UPSERT) & RE-RENDER ---
             async saveTree(tree) {
-                // 1. Optimistic UI Update
                 const idx = this.data.trees.findIndex(t => t.id === tree.id);
                 if(idx >= 0) this.data.trees[idx] = tree; else this.data.trees.push(tree);
-                
-                // 2. Render UI Updates Immediately
                 this.renderDashboard();
-                if (this.state.currentTreeId === tree.id) {
-                    this.renderTreeGraph();
-                }
-
-                // 3. Send to DB
-                const { error } = await _supabase.from('family_trees').upsert({
-                    id: tree.id,
-                    name: tree.name,
-                    members: tree.members
-                });
-                
-                if (error) {
-                    alert("Lỗi lưu dữ liệu: " + error.message);
-                    console.error(error);
-                    // In a real app, you might want to rollback state here if error occurs
-                } else {
-                    console.log("Saved tree:", tree.name);
-                }
+                if (this.state.currentTreeId === tree.id) this.renderTreeGraph();
+                const { error } = await _supabase.from('family_trees').upsert({ id: tree.id, name: tree.name, members: tree.members });
+                if (error) { alert("Lỗi lưu dữ liệu: " + error.message); console.error(error); }
             },
 
             async deleteTreeFromDB(id) {
                  const { error } = await _supabase.from('family_trees').delete().eq('id', id);
                  if(error) alert("Lỗi xoá cây: " + error.message);
-                 else {
-                     this.data.trees = this.data.trees.filter(t => t.id !== id);
-                     this.showDashboard();
-                 }
+                 else { this.data.trees = this.data.trees.filter(t => t.id !== id); this.showDashboard(); }
             },
             
-            // --- SECURITY CHECK LOGIC ---
-            checkPermission(treeName) {
-                if (this.state.isUnlocked) return true; // Đã mở khóa trong phiên này
-                
-                const config = this.securityData.find(c => c.tree_name === treeName);
-                if (!config) return true; // Không có trong danh sách bảo mật -> Cho phép
-                
-                const pass = prompt(`Cây gia phả "${treeName}" yêu cầu mật khẩu để chỉnh sửa:`);
-                if (pass === config.password) {
-                    this.state.isUnlocked = true; // Mở khóa phiên làm việc
-                    return true;
-                } else {
-                    alert("Mật khẩu không đúng!");
-                    return false;
-                }
+            importData(event) {
+                const file = event.target.files[0]; if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    try {
+                        const json = JSON.parse(e.target.result);
+                        // Handle Array of trees OR Single tree object
+                        const treesToImport = Array.isArray(json) ? json : [json];
+                        
+                        let successCount = 0;
+                        treesToImport.forEach(t => {
+                             if (t.name && t.members) {
+                                // Clean up self-references
+                                t.members.forEach(m => { 
+                                    if (String(m.fatherId) === String(m.id)) m.fatherId = null; 
+                                    if (String(m.motherId) === String(m.id)) m.motherId = null; 
+                                });
+                                t.id = this.generateId();
+                                this.saveTree(t);
+                                successCount++;
+                             }
+                        });
+                        
+                        if(successCount > 0) alert(`Đã nhập thành công ${successCount} cây gia phả!`);
+                        else throw new Error("File không chứa dữ liệu gia phả hợp lệ");
+                        
+                    } catch (err) { alert("Lỗi nhập file: " + err.message); }
+                    event.target.value = '';
+                };
+                reader.readAsText(file);
             },
 
-            // Wrapper cho các hành động cần bảo mật
+            checkPermission(treeName) {
+                if (this.state.isUnlocked) return true; 
+                const config = this.securityData.find(c => c.tree_name === treeName);
+                if (!config) return true; 
+                const pass = prompt(`Cây gia phả "${treeName}" yêu cầu mật khẩu để chỉnh sửa:`);
+                if (pass === config.password) { this.state.isUnlocked = true; return true; } else { alert("Mật khẩu không đúng!"); return false; }
+            },
+
             safeAction(actionType, ...args) {
                 const currentTree = this.data.trees.find(t => t.id === this.state.currentTreeId);
-                // Nếu đang ở Dashboard (xóa cây) thì lấy tree từ arg
                 let treeName = currentTree ? currentTree.name : "";
-                
-                if (actionType === 'DELETE_TREE_BY_ID') {
-                    const t = this.data.trees.find(x => x.id === args[0]);
-                    if (t) treeName = t.name;
-                } else if (actionType === 'RENAME_TREE') {
-                    const t = this.data.trees.find(x => x.id === args[0]);
-                    if (t) treeName = t.name;
-                }
-
-                // Kiểm tra quyền
+                if (actionType === 'DELETE_TREE_BY_ID' || actionType === 'RENAME_TREE') { const t = this.data.trees.find(x => x.id === args[0]); if (t) treeName = t.name; }
                 if (treeName && !this.checkPermission(treeName)) return;
-
-                // Thực thi hành động
                 if (actionType === 'ROOT') this.openMemberModal('ROOT');
                 else if (actionType === 'DELETE_TREE') this.deleteCurrentTree();
                 else if (actionType === 'DELETE_TREE_BY_ID') this.deleteTreeById(args[0], args[1]);
                 else if (actionType === 'RENAME_TREE') this.renameTree(args[0], args[1]);
                 else if (actionType === 'DELETE_MEMBER') this.deleteMember();
-                else if (actionType === 'ADD_CHILD' || actionType === 'ADD_SPOUSE' || actionType === 'ADD_PARENT' || actionType === 'EDIT') {
-                     // Với các hành động này, modal đã mở hoặc chuẩn bị mở, check trước khi mở
-                     // Logic này được tích hợp trong openMemberModal
-                }
             },
             
-            // --- CORE FUNCTIONS ---
             generateId() { return crypto.randomUUID ? crypto.randomUUID() : '_' + Math.random().toString(36).substr(2, 9); },
-            
             openTreeModal() { document.getElementById('new-tree-name').value=''; document.getElementById('tree-modal').classList.remove('hidden'); setTimeout(()=>document.getElementById('new-tree-name').focus(),100); },
             closeTreeModal() { document.getElementById('tree-modal').classList.add('hidden'); },
-            
-            handleCreateTree(e) { 
-                e.preventDefault(); 
-                const name = document.getElementById('new-tree-name').value; 
-                if(name){ 
-                    const t = { id: this.generateId(), name: name, members: [] }; 
-                    this.saveTree(t); // Save to Supabase
-                    this.closeTreeModal(); 
-                    // Reload dashboard local
-                    this.renderDashboard();
-                } 
-            },
-
+            handleCreateTree(e) { e.preventDefault(); const name=document.getElementById('new-tree-name').value; if(name){ const t={id:this.generateId(),name:name,members:[]}; this.saveTree(t); this.closeTreeModal(); } },
             deleteCurrentTree() { if(confirm("Xoá cây này?")){ this.deleteTreeFromDB(this.state.currentTreeId); } },
             deleteTreeById(id,e) { e.stopPropagation(); if(confirm("Xoá?")){ this.deleteTreeFromDB(id); } },
-            
-            renameTree(id,e) { 
-                e.stopPropagation(); 
-                // Check permission passed in safeAction wrapper or here?
-                // Let's re-check to be safe if called directly from onclick
-                const t = this.data.trees.find(x=>x.id===id); 
-                if(t && this.checkPermission(t.name)){ 
-                    const n=prompt("Tên mới:",t.name); 
-                    if(n){ t.name=n; this.saveTree(t); } 
-                } 
-            },
-
-            selectTree(id) { 
-                this.closeAllMenus(); 
-                this.state.currentTreeId = id; 
-                this.state.isUnlocked = false; // Reset lock state when switching trees
-                const t = this.data.trees.find(x=>x.id===id); 
-                if(!t) return; 
-                
-                document.getElementById('current-tree-name').textContent = t.name; 
-                document.getElementById('dashboard-view').classList.add('hidden'); 
-                document.getElementById('tree-view').classList.remove('hidden'); 
-                this.renderTreeGraph(); 
-            },
-
-            showDashboard() { 
-                this.closeAllMenus(); this.state.currentTreeId=null; 
-                document.getElementById('tree-view').classList.add('hidden'); 
-                document.getElementById('dashboard-view').classList.remove('hidden'); 
-                this.renderDashboard(); 
-            },
-
+            renameTree(id,e) { e.stopPropagation(); const t=this.data.trees.find(x=>x.id===id); if(t && this.checkPermission(t.name)){ const n=prompt("Tên mới:",t.name); if(n){ t.name=n; this.saveTree(t); } } },
+            selectTree(id) { this.closeAllMenus(); this.state.currentTreeId=id; this.state.isUnlocked=false; const t=this.data.trees.find(x=>x.id===id); if(!t)return; document.getElementById('current-tree-name').textContent=t.name; document.getElementById('dashboard-view').classList.add('hidden'); document.getElementById('tree-view').classList.remove('hidden'); this.renderTreeGraph(); },
+            showDashboard() { this.closeAllMenus(); this.state.currentTreeId=null; document.getElementById('tree-view').classList.add('hidden'); document.getElementById('dashboard-view').classList.remove('hidden'); this.renderDashboard(); },
             renderDashboard() {
                 const c = document.getElementById('tree-list-container'); c.innerHTML='';
                 if(!this.data.trees || this.data.trees.length===0) { c.innerHTML='<p class="text-center" style="width:100%;color:#777">Chưa có dữ liệu.</p>'; return; }
                 this.data.trees.forEach(t => { 
                     const isProtected = this.securityData.some(s => s.tree_name === t.name);
-                    const d = document.createElement('div'); 
-                    d.className = 'tree-card'; 
-                    d.onclick = () => this.selectTree(t.id); 
-                    d.innerHTML = `
-                        ${isProtected ? '<i class="fas fa-lock protected-icon" title="Được bảo vệ"></i>' : ''}
-                        <div style="margin-bottom:10px;">
-                            <h3><i class="fas fa-scroll"></i> ${t.name}</h3>
-                            <p style="color:#666;font-size:.9rem">${t.members.length} thành viên</p>
-                        </div>
-                        <div class="tree-actions">
-                            <button class="btn btn-primary" style="flex:1; justify-content:center;" onclick="event.stopPropagation(); app.selectTree('${t.id}')"><i class="fas fa-folder-open"></i> Vào xem</button>
-                            <button class="btn btn-outline" title="Đổi tên" onclick="app.safeAction('RENAME_TREE', '${t.id}', event)"><i class="fas fa-pen"></i></button>
-                            <button class="btn btn-danger" title="Xoá" onclick="app.safeAction('DELETE_TREE_BY_ID', '${t.id}', event)"><i class="fas fa-trash"></i></button>
-                        </div>`;
-                    c.appendChild(d); 
+                    const d = document.createElement('div'); d.className = 'tree-card'; d.onclick = () => this.selectTree(t.id); 
+                    d.innerHTML = `${isProtected ? '<i class="fas fa-lock protected-icon" title="Được bảo vệ"></i>' : ''}<div style="margin-bottom:10px;"><h3><i class="fas fa-scroll"></i> ${t.name}</h3><p style="color:#666;font-size:.9rem">${t.members.length} thành viên</p></div><div class="tree-actions"><button class="btn btn-primary" style="flex:1; justify-content:center;" onclick="event.stopPropagation(); app.selectTree('${t.id}')"><i class="fas fa-folder-open"></i> Vào xem</button><button class="btn btn-outline" title="Đổi tên" onclick="app.safeAction('RENAME_TREE', '${t.id}', event)"><i class="fas fa-pen"></i></button><button class="btn btn-danger" title="Xoá" onclick="app.safeAction('DELETE_TREE_BY_ID', '${t.id}', event)"><i class="fas fa-trash"></i></button></div>`; c.appendChild(d); 
                 });
             },
-
-            getMember(id) { const t=this.data.trees.find(x=>x.id===this.state.currentTreeId); return t?t.members.find(m=>m.id===id):null; },
+            getMember(id) { const t=this.data.trees.find(x=>x.id===this.state.currentTreeId); return t?t.members.find(m=>String(m.id)===String(id)):null; },
             setToggle(f,v) { document.getElementById(`field-${f}`).value=v; document.querySelectorAll(`#${f}-toggle .toggle-option`).forEach(o=>{ if(o.dataset.value===v)o.classList.add('selected'); else o.classList.remove('selected'); }); },
-            
             openMemberModal(mode, relatedId=null) {
-                // Security Check for Editing Operations
                 const currentTree = this.data.trees.find(t => t.id === this.state.currentTreeId);
                 if (currentTree && !this.checkPermission(currentTree.name)) return;
-
                 this.state.actionMode=mode; this.state.targetRelatedId=relatedId; this.state.editingMemberId=null;
                 document.getElementById('member-form').reset(); document.getElementById('field-id').value='';
                 this.setToggle('gender','male'); this.setToggle('status','alive');
-                document.getElementById('btn-delete-member').classList.add('hidden');
-                document.getElementById('second-parent-container').classList.add('hidden');
-                document.getElementById('edit-parents-container').classList.add('hidden');
-
+                document.getElementById('btn-delete-member').classList.add('hidden'); document.getElementById('second-parent-container').classList.add('hidden'); document.getElementById('edit-parents-container').classList.add('hidden');
                 let title="Thêm thành viên";
                 if(mode==='ROOT') title="Thêm thành viên gốc";
                 else if(mode==='ADD_CHILD') {
@@ -612,7 +350,7 @@
                     if(p && p.spouseIds && p.spouseIds.length>0) {
                         const sel=document.getElementById('field-second-parent'); sel.innerHTML='';
                         const tree=this.data.trees.find(x=>x.id===this.state.currentTreeId);
-                        p.spouseIds.forEach(sid=>{ const s=tree.members.find(m=>m.id===sid); if(s) { const r=s.gender==='male'?'Bố':'Mẹ'; const opt=document.createElement('option'); opt.value=s.id; opt.text=`Con chung với: ${s.fullName} (${r})`; sel.appendChild(opt); } });
+                        p.spouseIds.forEach(sid=>{ const s=tree.members.find(m=>String(m.id)===String(sid)); if(s) { const r=s.gender==='male'?'Bố':'Mẹ'; const opt=document.createElement('option'); opt.value=s.id; opt.text=`Con chung với: ${s.fullName} (${r})`; sel.appendChild(opt); } });
                         const optP=document.createElement('option'); optP.value='PRIVATE'; optP.text="Là con riêng (Chỉ 1 bố/mẹ này)"; sel.appendChild(optP);
                         document.getElementById('second-parent-container').classList.remove('hidden');
                     }
@@ -632,35 +370,57 @@
                         const tree = this.data.trees.find(t => t.id === this.state.currentTreeId);
                         const fSelect = document.getElementById('field-father-select'); const mSelect = document.getElementById('field-mother-select');
                         fSelect.innerHTML = '<option value="">-- Chưa có --</option>'; mSelect.innerHTML = '<option value="">-- Chưa có --</option>';
-                        tree.members.forEach(mem => { if (mem.id === m.id) return; const opt = document.createElement('option'); opt.value = mem.id; opt.text = mem.fullName; if (mem.gender === 'male') fSelect.appendChild(opt); else mSelect.appendChild(opt); });
+                        tree.members.forEach(mem => { if (String(mem.id) === String(m.id)) return; const opt = document.createElement('option'); opt.value = mem.id; opt.text = mem.fullName; if (mem.gender === 'male') fSelect.appendChild(opt); else mSelect.appendChild(opt); });
                         fSelect.value = m.fatherId || ""; mSelect.value = m.motherId || "";
                     }
                 }
                 document.getElementById('modal-title').textContent=title; document.getElementById('member-modal').classList.remove('hidden');
             },
             closeModal(){ document.getElementById('member-modal').classList.add('hidden'); },
-            
-            closeAllMenus() { 
-                const globalMenu = document.getElementById('global-popup-menu');
-                if(globalMenu) globalMenu.classList.add('hidden');
-                document.querySelectorAll('.member-node').forEach(n => n.classList.remove('active-popup'));
-                document.querySelectorAll('.tree li').forEach(li => li.classList.remove('active-branch'));
-            },
+            closeAllMenus() { document.querySelectorAll('.action-popup').forEach(m => m.classList.add('hidden')); document.querySelectorAll('.member-node').forEach(n => n.classList.remove('active-popup')); document.querySelectorAll('.tree li').forEach(li => li.classList.remove('active-branch')); },
             
             handleFormSubmit(e) {
                 e.preventDefault(); const tree=this.data.trees.find(x=>x.id===this.state.currentTreeId);
                 const fd={ id:this.state.actionMode==='EDIT'?this.state.editingMemberId:this.generateId(), fullName:document.getElementById('field-name').value, gender:document.getElementById('field-gender').value, dob:document.getElementById('field-dob').value, job:document.getElementById('field-job').value, isAlive:document.getElementById('field-status').value==='alive', photoUrl:document.getElementById('field-photo').value, notes:document.getElementById('field-notes').value, spouseIds:[], childrenIds:[], fatherId:null, motherId:null, collapsed:false };
                 if(this.state.actionMode==='EDIT'){
-                    const idx=tree.members.findIndex(m=>m.id===this.state.editingMemberId);
+                    const idx=tree.members.findIndex(m=>String(m.id)===String(this.state.editingMemberId));
                     if(idx!==-1){ 
                         const old=tree.members[idx]; fd.spouseIds=old.spouseIds||[]; fd.childrenIds=old.childrenIds||[]; fd.collapsed=old.collapsed; 
                         const newFId = document.getElementById('field-father-select').value || null; const newMId = document.getElementById('field-mother-select').value || null;
-                        if(old.fatherId && old.fatherId !== newFId) { const oldF = tree.members.find(x=>x.id===old.fatherId); if(oldF && oldF.childrenIds) oldF.childrenIds = oldF.childrenIds.filter(c=>c!==old.id); }
-                        if(old.motherId && old.motherId !== newMId) { const oldM = tree.members.find(x=>x.id===old.motherId); if(oldM && oldM.childrenIds) oldM.childrenIds = oldM.childrenIds.filter(c=>c!==old.id); }
+
+                        // --- LOGIC VALIDATION BLOCK ---
+                        // 1. Check Self-reference
+                        if (newFId === fd.id || newMId === fd.id) { alert("Lỗi Logic: Không thể chọn chính mình làm Bố/Mẹ!"); return; }
+                        
+                        // 2. Check Duplicate (Father is same as Mother)
+                        if (newFId && newMId && String(newFId) === String(newMId)) { alert("Lỗi Logic: Bố và Mẹ không thể là cùng một người!"); return; }
+
+                        // 3. Check Cyclic & Role Conflicts
+                        if (newFId) {
+                            if (fd.childrenIds && fd.childrenIds.map(String).includes(String(newFId))) { alert("Lỗi Logic: Con cái không thể trở thành Bố của chính mình (Vòng lặp gia phả)!"); return; }
+                            if (fd.spouseIds && fd.spouseIds.map(String).includes(String(newFId))) { alert("Lỗi Logic: Vợ/Chồng không thể là Bố của nhau!"); return; }
+                        }
+                        if (newMId) {
+                            if (fd.childrenIds && fd.childrenIds.map(String).includes(String(newMId))) { alert("Lỗi Logic: Con cái không thể trở thành Mẹ của chính mình (Vòng lặp gia phả)!"); return; }
+                            if (fd.spouseIds && fd.spouseIds.map(String).includes(String(newMId))) { alert("Lỗi Logic: Vợ/Chồng không thể là Mẹ của nhau!"); return; }
+                        }
+                        // --- END VALIDATION ---
+
+                        if(old.fatherId && old.fatherId !== newFId) { const oldF = tree.members.find(x=>String(x.id)===String(old.fatherId)); if(oldF && oldF.childrenIds) oldF.childrenIds = oldF.childrenIds.filter(c=>String(c)!==String(old.id)); }
+                        if(old.motherId && old.motherId !== newMId) { const oldM = tree.members.find(x=>String(x.id)===String(old.motherId)); if(oldM && oldM.childrenIds) oldM.childrenIds = oldM.childrenIds.filter(c=>String(c)!==String(old.id)); }
                         fd.fatherId = newFId; fd.motherId = newMId;
-                        if(newFId) { const newF = tree.members.find(x=>x.id===newFId); if(newF) { if(!newF.childrenIds) newF.childrenIds=[]; if(!newF.childrenIds.includes(fd.id)) newF.childrenIds.push(fd.id); } }
-                        if(newMId) { const newM = tree.members.find(x=>x.id===newMId); if(newM) { if(!newM.childrenIds) newM.childrenIds=[]; if(!newM.childrenIds.includes(fd.id)) newM.childrenIds.push(fd.id); } }
-                        if(newFId && newMId) { const f = tree.members.find(x=>x.id===newFId); const m = tree.members.find(x=>x.id===newMId); if(f && m) { if(!f.spouseIds) f.spouseIds=[]; if(!m.spouseIds) m.spouseIds=[]; if(!f.spouseIds.includes(m.id)) f.spouseIds.push(m.id); if(!m.spouseIds.includes(f.id)) m.spouseIds.push(f.id); } }
+                        if(newFId) { const newF = tree.members.find(x=>String(x.id)===String(newFId)); if(newF) { if(!newF.childrenIds) newF.childrenIds=[]; if(!newF.childrenIds.includes(fd.id)) newF.childrenIds.push(fd.id); } }
+                        if(newMId) { const newM = tree.members.find(x=>String(x.id)===String(newMId)); if(newM) { if(!newM.childrenIds) newM.childrenIds=[]; if(!newM.childrenIds.includes(fd.id)) newM.childrenIds.push(fd.id); } }
+                        // Sync spouses for parents
+                        if(newFId && newMId) { 
+                            const f = tree.members.find(x=>String(x.id)===String(newFId)); 
+                            const m = tree.members.find(x=>String(x.id)===String(newMId)); 
+                            if(f && m) { 
+                                if(!f.spouseIds) f.spouseIds=[]; if(!m.spouseIds) m.spouseIds=[]; 
+                                if(!f.spouseIds.includes(m.id)) f.spouseIds.push(m.id); 
+                                if(!m.spouseIds.includes(f.id)) m.spouseIds.push(f.id); 
+                            } 
+                        }
                         tree.members[idx]=fd; 
                     }
                 } else {
@@ -678,20 +438,20 @@
                     else if(this.state.actionMode==='ADD_PARENT'){ 
                         const c=this.getMember(this.state.targetRelatedId); 
                         if(fd.gender==='male') {
-                            if(c.fatherId) { const oldF = tree.members.find(x=>x.id===c.fatherId); if(oldF && oldF.childrenIds) oldF.childrenIds = oldF.childrenIds.filter(id=>id!==c.id); }
+                            if(c.fatherId) { const oldF = tree.members.find(x=>String(x.id)===String(c.fatherId)); if(oldF && oldF.childrenIds) oldF.childrenIds = oldF.childrenIds.filter(id=>String(id)!==String(c.id)); }
                             c.fatherId=fd.id; 
                         } else {
-                            if(c.motherId) { const oldM = tree.members.find(x=>x.id===c.motherId); if(oldM && oldM.childrenIds) oldM.childrenIds = oldM.childrenIds.filter(id=>id!==c.id); }
+                            if(c.motherId) { const oldM = tree.members.find(x=>String(x.id)===String(c.motherId)); if(oldM && oldM.childrenIds) oldM.childrenIds = oldM.childrenIds.filter(id=>String(id)!==String(c.id)); }
                             c.motherId=fd.id; 
                         }
+                        // Auto link parents as spouses
                         if(fd.gender==='male' && c.motherId) { const m = this.getMember(c.motherId); if(m) { if(!m.spouseIds) m.spouseIds=[]; if(!m.spouseIds.includes(fd.id)) m.spouseIds.push(fd.id); fd.spouseIds.push(m.id); } } 
                         else if(fd.gender!=='male' && c.fatherId) { const f = this.getMember(c.fatherId); if(f) { if(!f.spouseIds) f.spouseIds=[]; if(!f.spouseIds.includes(fd.id)) f.spouseIds.push(fd.id); fd.spouseIds.push(f.id); } }
                         if(!fd.childrenIds) fd.childrenIds=[]; fd.childrenIds.push(c.id);
                     }
                     tree.members.push(fd);
                 }
-                this.saveTree(tree); // Save to DB
-                this.closeModal();
+                this.saveTree(tree); this.closeModal();
             },
             deleteMember() { document.getElementById('delete-confirm-modal').classList.remove('hidden'); },
             closeDeleteModal() { document.getElementById('delete-confirm-modal').classList.add('hidden'); },
@@ -707,45 +467,30 @@
                         if (String(m.motherId) === String(id)) m.motherId = null;
                     });
                     tree.members = tree.members.filter(m => String(m.id) !== String(id));
-                    this.saveTree(tree); // Save to DB
-                    this.closeDeleteModal(); this.closeModal(); this.state.editingMemberId = null; setTimeout(() => this.renderTreeGraph(), 50); 
+                    this.saveTree(tree); this.closeDeleteModal(); this.closeModal(); this.state.editingMemberId = null; setTimeout(() => this.renderTreeGraph(), 50); 
                 } catch (e) { console.error("Lỗi xoá:", e); alert("Lỗi: " + e.message); }
             },
-            toggleCollapse(id){ const m=this.getMember(id); if(m){m.collapsed=!m.collapsed;this.saveData();} },
+            toggleCollapse(id){ const m=this.getMember(id); if(m){m.collapsed=!m.collapsed; this.saveTree(this.data.trees.find(t=>t.id===this.state.currentTreeId)); this.renderTreeGraph();} },
 
             exportImage() {
-                const element = document.getElementById('tree-render-area');
-                if (!element) return;
-                const btn = document.querySelector('.btn-success');
-                const originalText = btn.innerHTML;
-                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Xử lý...';
+                const element = document.getElementById('tree-render-area'); if (!element) return;
+                const btn = document.querySelector('.btn-success'); const originalText = btn.innerHTML; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Xử lý...';
                 html2canvas(element, { scrollX: 0, scrollY: 0, backgroundColor: '#fdfbf7', scale: 2, useCORS: true }).then(canvas => {
                     const link = document.createElement('a'); link.download = `GiaPha_${this.state.currentTreeId}.png`; link.href = canvas.toDataURL(); link.click(); btn.innerHTML = originalText;
                 }).catch(err => { console.error(err); alert("Lỗi xuất ảnh: " + err); btn.innerHTML = originalText; });
             },
-
             exportData() {
                 const tree = this.data.trees.find(t => t.id === this.state.currentTreeId); if (!tree) return;
                 const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(tree, null, 2));
                 const downloadAnchorNode = document.createElement('a'); downloadAnchorNode.setAttribute("href", dataStr); downloadAnchorNode.setAttribute("download", `GiaPha_${tree.name}.json`); document.body.appendChild(downloadAnchorNode); downloadAnchorNode.click(); downloadAnchorNode.remove();
             },
-
             showActionMenu(e, memberId, missingParents) {
-                const menu = document.getElementById('global-popup-menu');
-                const btn = e.currentTarget;
-                const rect = btn.getBoundingClientRect();
-                
+                const menu = document.getElementById('global-popup-menu'); const btn = e.currentTarget; const rect = btn.getBoundingClientRect();
                 let html = `<button onclick="app.openMemberModal('ADD_CHILD','${memberId}');app.closeAllMenus()"><i class="fas fa-child icon-add-child"></i> Con</button><button onclick="app.openMemberModal('ADD_SPOUSE','${memberId}');app.closeAllMenus()"><i class="fas fa-ring icon-add-spouse"></i> Vợ/Chồng</button>`;
-                if (missingParents) {
-                    html += `<button onclick="app.openMemberModal('ADD_PARENT','${memberId}');app.closeAllMenus()"><i class="fas fa-venus-mars icon-add-parent"></i> Bố/Mẹ</button>`;
-                }
+                if (missingParents) { html += `<button onclick="app.openMemberModal('ADD_PARENT','${memberId}');app.closeAllMenus()"><i class="fas fa-venus-mars icon-add-parent"></i> Bố/Mẹ</button>`; }
                 menu.innerHTML = html;
-
-                let top = rect.bottom + window.scrollY + 5;
-                let left = rect.left + window.scrollX - 50;
-                menu.style.top = top + 'px';
-                menu.style.left = left + 'px';
-                menu.classList.remove('hidden');
+                let top = rect.bottom + window.scrollY + 5; let left = rect.left + window.scrollX - 50;
+                menu.style.top = top + 'px'; menu.style.left = left + 'px'; menu.classList.remove('hidden');
             },
 
             renderTreeGraph() {
@@ -753,27 +498,59 @@
                 const t=this.data.trees.find(x=>x.id===this.state.currentTreeId);
                 if(!t||t.members.length===0){ c.innerHTML='<div style="margin-top:50px;text-align:center"><button class="btn btn-primary" onclick="app.openMemberModal(\'ROOT\')">Thêm Gốc</button></div>'; return; }
                 
-                const memberIds = new Set(t.members.map(m => m.id));
-                const hasParents = (m) => (m.fatherId && memberIds.has(m.fatherId)) || (m.motherId && memberIds.has(m.motherId));
+                // Ensure all IDs are treated as strings for comparison
+                const memberIds = new Set(t.members.map(m => String(m.id)));
+                const hasParents = (m) => (m.fatherId && memberIds.has(String(m.fatherId))) || (m.motherId && memberIds.has(String(m.motherId)));
 
-                const descendants = new Set();
-                t.members.forEach(m => { if (hasParents(m)) descendants.add(m.id); });
-                const inLaws = new Set();
-                t.members.forEach(m => { if (descendants.has(m.id) && m.spouseIds) m.spouseIds.forEach(sid => inLaws.add(sid)); });
+                // --- ROBUST CHILD MAP BUILDING ---
+                this.childMap = {};
                 
-                const inLawParents = new Set();
-                t.members.forEach(m => { if (inLaws.has(m.id)) { if (m.fatherId) inLawParents.add(m.fatherId); if (m.motherId) inLawParents.add(m.motherId); } });
-
-                let roots = t.members.filter(m => {
-                    if (hasParents(m)) return false; 
-                    if (inLaws.has(m.id)) return false; 
-                    if (inLawParents.has(m.id)) return false; 
-                    return true;
+                t.members.forEach(m => {
+                    const mId = String(m.id);
+                    if (m.childrenIds && Array.isArray(m.childrenIds)) {
+                        if(!this.childMap[mId]) this.childMap[mId] = new Set();
+                        m.childrenIds.forEach(cid => this.childMap[mId].add(String(cid)));
+                    }
+                    if(m.fatherId) { 
+                        const fId = String(m.fatherId);
+                        if(!this.childMap[fId]) this.childMap[fId] = new Set(); 
+                        this.childMap[fId].add(mId); 
+                    }
+                    if(m.motherId) { 
+                        const moId = String(m.motherId);
+                        if(!this.childMap[moId]) this.childMap[moId] = new Set(); 
+                        this.childMap[moId].add(mId); 
+                    }
                 });
-                
+
+                const descendants = new Set(); t.members.forEach(m => { if (hasParents(m)) descendants.add(String(m.id)); });
+                const inLaws = new Set(); t.members.forEach(m => { 
+                    if (descendants.has(String(m.id)) && m.spouseIds) {
+                        m.spouseIds.forEach(sid => inLaws.add(String(sid)));
+                    }
+                });
+                const inLawParents = new Set(); t.members.forEach(m => { 
+                    if (inLaws.has(String(m.id))) { 
+                        if (m.fatherId) inLawParents.add(String(m.fatherId)); 
+                        if (m.motherId) inLawParents.add(String(m.motherId)); 
+                    } 
+                });
+
+                let roots = t.members.filter(m => { 
+                    if (hasParents(m)) return false; 
+                    if (inLaws.has(String(m.id))) return false; 
+                    if (inLawParents.has(String(m.id))) return false; 
+                    return true; 
+                });
+
                 roots.sort((a,b)=>(a.gender==='male'&&b.gender!=='male')?-1:1);
                 const uniqRoots=[]; const proc=new Set();
-                roots.forEach(r=>{ if(proc.has(r.id)) return; uniqRoots.push(r); proc.add(r.id); if(r.spouseIds) r.spouseIds.forEach(s=>proc.add(s)); });
+                roots.forEach(r=>{ 
+                    const rid = String(r.id);
+                    if(proc.has(rid)) return; 
+                    uniqRoots.push(r); proc.add(rid); 
+                    if(r.spouseIds) r.spouseIds.forEach(s=>proc.add(String(s))); 
+                });
                 
                 const dRoots=uniqRoots.length>0?uniqRoots:[t.members[0]];
                 const ul=document.createElement('ul');
@@ -785,14 +562,7 @@
                 const d=document.createElement('div'); d.className=`member-node ${m.gender} ${isMini?'mini':''}`; if(!m.isAlive) d.classList.add('deceased');
                 d.onclick=(e)=>{e.stopPropagation();this.openMemberModal('EDIT',m.id);};
                 let bHtml=label?`<span class="role-badge ${m.gender==='male'?'badge-male':'badge-female'}">${label}</span>`:'';
-                
-                let defaultIcon = '';
-                if (m.gender === 'male') {
-                    defaultIcon = `<i class="fas fa-male" style="font-size: 30px; color: #34495e;"></i>`; // Male Icon
-                } else {
-                    defaultIcon = `<i class="fas fa-female" style="font-size: 30px; color: #e91e63;"></i>`; // Female Icon
-                }
-                
+                let defaultIcon = m.gender === 'male' ? `<i class="fas fa-male" style="font-size: 30px; color: #34495e;"></i>` : `<i class="fas fa-female" style="font-size: 30px; color: #e91e63;"></i>`;
                 const ic = m.photoUrl ? `<img src="${m.photoUrl}" class="node-img" onerror="this.parentNode.innerHTML='${defaultIcon.replace(/'/g, "\\'")}'">` : `<div class="node-img" style="background: #f0f0f0; border: 2px solid ${m.gender==='male'?'#2c3e50':'#e91e63'};">${defaultIcon}</div>`;
                 d.innerHTML=`${bHtml}${ic}<div class="node-name">${m.fullName}</div>`;
                 if(!isMini) d.innerHTML += `<div class="node-dates">${m.dob?m.dob.split('-')[0]:''}</div>`;
@@ -800,20 +570,8 @@
                 if(!isMini) {
                     const act=document.createElement('div'); act.className='node-actions';
                     const trig = document.createElement('div'); trig.className = 'action-trigger'; trig.innerHTML = '<i class="fas fa-ellipsis-h"></i>';
-                    trig.onclick = (e) => {
-                        e.stopPropagation();
-                        const wasHidden = document.getElementById('global-popup-menu').classList.contains('hidden');
-                        app.closeAllMenus(); 
-                        if(wasHidden) {
-                            app.showActionMenu(e, m.id, (!m.fatherId || !m.motherId));
-                            d.classList.add('active-popup'); 
-                            // FIX Z-INDEX: Elevate parent li to top stack
-                            const parentLi = d.closest('li');
-                            if(parentLi) parentLi.classList.add('active-branch');
-                        }
-                    };
-                    act.appendChild(trig);
-                    d.appendChild(act);
+                    trig.onclick = (e) => { e.stopPropagation(); const wasHidden = document.getElementById('global-popup-menu').classList.contains('hidden'); app.closeAllMenus(); if(wasHidden) { app.showActionMenu(e, m.id, (!m.fatherId || !m.motherId)); d.classList.add('active-popup'); const li = d.closest('li'); if(li) li.classList.add('active-branch'); } };
+                    act.appendChild(trig); d.appendChild(act);
                 }
                 return d;
             },
@@ -821,14 +579,32 @@
             createNodeElement(m, tree, ctx=null) {
                 const li=document.createElement('li'); if(m.collapsed) li.classList.add('collapsed');
                 const div=document.createElement('div'); div.className='node-container';
-                if(m.spouseIds&&m.spouseIds.length>0) div.classList.add('has-spouse');
+                
+                // --- CRITICAL FIX: INFINITE LOOP PROTECTION ---
+                // Determine valid spouses: Remove anyone who is also a child or parent of this node
+                let rawSpouseIds = m.spouseIds || [];
+                const knownChildren = new Set();
+                if(this.childMap[String(m.id)]) this.childMap[String(m.id)].forEach(c=>knownChildren.add(c));
+                
+                // Filter: Keep only if NOT a child AND NOT a parent
+                const mySpouseIds = rawSpouseIds.filter(sid => {
+                    const sIdStr = String(sid);
+                    if (knownChildren.has(sIdStr)) return false; // It's a child, not a spouse (corruption)
+                    if (String(m.fatherId) === sIdStr) return false; // It's a parent (corruption)
+                    if (String(m.motherId) === sIdStr) return false;
+                    return true;
+                });
+                
+                if(mySpouseIds.length > 0) div.classList.add('has-spouse');
                 
                 if(ctx) {
                     const {mainId, spouseIds, mainGender} = ctx;
-                    const fatherIsMain = m.fatherId === mainId; const motherIsMain = m.motherId === mainId;
-                    const fatherIsSpouse = m.fatherId && spouseIds.includes(m.fatherId); const motherIsSpouse = m.motherId && spouseIds.includes(m.motherId);
-                    const isCommon = (fatherIsMain && motherIsSpouse) || (motherIsMain && fatherIsSpouse);
-                    if(!isCommon && spouseIds.length > 0) {
+                    const safeSpouseIds = spouseIds || []; 
+                    const fatherIsMain = String(m.fatherId) === String(mainId); 
+                    const motherIsMain = String(m.motherId) === String(mainId);
+                    const isCommon = (fatherIsMain && m.motherId && safeSpouseIds.includes(m.motherId)) || (motherIsMain && m.fatherId && safeSpouseIds.includes(m.fatherId));
+                    
+                    if(!isCommon && safeSpouseIds.length > 0) {
                         let txt="", dir="";
                         if(fatherIsMain && mainGender==='male') { txt="Con riêng Bố"; dir="point-left"; }
                         else if(motherIsMain && mainGender==='female') { txt="Con riêng Mẹ"; dir="point-left"; }
@@ -837,51 +613,58 @@
                     }
                 }
 
-                let mLabel=(m.spouseIds&&m.spouseIds.length>0)?(m.gender==='male'?'Chồng':'Vợ'):null;
+                let mLabel=(mySpouseIds.length > 0)?(m.gender==='male'?'Chồng':'Vợ'):null;
                 div.appendChild(this.createSingleMemberCard(m, mLabel));
                 
-                if(m.spouseIds){ 
-                    m.spouseIds.forEach(sid=>{ 
-                        const s=tree.members.find(x=>x.id===sid); 
-                        if(s) {
-                            const sFather = s.fatherId ? tree.members.find(x=>x.id===s.fatherId) : null;
-                            const sMother = s.motherId ? tree.members.find(x=>x.id===s.motherId) : null;
-                            
-                            if(sFather || sMother) {
-                                const wrap = document.createElement('div'); wrap.className = 'spouse-group';
-                                const pRow = document.createElement('div'); pRow.className = 'spouse-parents-row';
-                                if(sFather) pRow.appendChild(this.createSingleMemberCard(sFather, 'Bố', true));
-                                if(sMother) pRow.appendChild(this.createSingleMemberCard(sMother, 'Mẹ', true));
-                                wrap.appendChild(pRow);
-                                wrap.appendChild(this.createSingleMemberCard(s, s.gender==='male'?'Chồng':'Vợ'));
-                                div.appendChild(wrap);
-                            } else {
-                                div.appendChild(this.createSingleMemberCard(s, s.gender==='male'?'Chồng':'Vợ')); 
-                            }
-                        }
-                    }); 
-                }
+                mySpouseIds.forEach(sid=>{ 
+                    const s=tree.members.find(x=>String(x.id)===String(sid)); 
+                    if(s) {
+                        const sFather = s.fatherId ? tree.members.find(x=>String(x.id)===String(s.fatherId)) : null; 
+                        const sMother = s.motherId ? tree.members.find(x=>String(x.id)===String(s.motherId)) : null;
+                        if(sFather || sMother) {
+                            const wrap = document.createElement('div'); wrap.className = 'spouse-group';
+                            const pRow = document.createElement('div'); pRow.className = 'spouse-parents-row';
+                            if(sFather) pRow.appendChild(this.createSingleMemberCard(sFather, 'Bố', true)); if(sMother) pRow.appendChild(this.createSingleMemberCard(sMother, 'Mẹ', true));
+                            wrap.appendChild(pRow); wrap.appendChild(this.createSingleMemberCard(s, s.gender==='male'?'Chồng':'Vợ')); div.appendChild(wrap);
+                        } else { div.appendChild(this.createSingleMemberCard(s, s.gender==='male'?'Chồng':'Vợ')); }
+                    }
+                }); 
                 
-                if(m.childrenIds || (m.spouseIds && m.spouseIds.some(sid => { const s = tree.members.find(x=>x.id===sid); return s && s.childrenIds && s.childrenIds.length > 0; }))) {
+                const currentGroupIds = [String(m.id), ...mySpouseIds.map(id => String(id))];
+                let allChildIds = new Set();
+                currentGroupIds.forEach(pid => {
+                    if(this.childMap[pid]) this.childMap[pid].forEach(cid => allChildIds.add(cid));
+                });
+
+                if(allChildIds.size > 0) {
                     const btn=document.createElement('div'); btn.className='toggle-btn'; btn.innerHTML=m.collapsed?'<i class="fas fa-plus"></i>':'<i class="fas fa-minus"></i>';
                     btn.onclick=(e)=>{e.stopPropagation();this.toggleCollapse(m.id);}; div.appendChild(btn);
                 }
                 li.appendChild(div);
 
-                const currentGroupIds = [m.id, ...(m.spouseIds || [])];
-                let allChildIds = new Set();
-                currentGroupIds.forEach(pid => { const p = tree.members.find(x => x.id === pid); if (p && p.childrenIds) p.childrenIds.forEach(cid => allChildIds.add(cid)); });
-
                 if(allChildIds.size > 0) {
                     const ulChild=document.createElement('ul');
-                    let children = Array.from(allChildIds).map(id=>tree.members.find(x=>x.id===id)).filter(x=>x);
+                    let children = Array.from(allChildIds).map(id=>tree.members.find(x=>String(x.id)===String(id))).filter(x=>x);
+                    
                     children.sort((a,b)=>{
-                        const isACommon = (a.fatherId===m.id && m.spouseIds.includes(a.motherId)) || (a.motherId===m.id && m.spouseIds.includes(a.fatherId));
-                        const isBCommon = (b.fatherId===m.id && m.spouseIds.includes(b.motherId)) || (b.motherId===m.id && m.spouseIds.includes(b.fatherId));
-                        const isAMainP = !isACommon && (a.fatherId===m.id || a.motherId===m.id); const isBMainP = !isBCommon && (b.fatherId===m.id || b.motherId===m.id);
-                        if(isAMainP && !isBMainP) return -1; if(!isAMainP && isBMainP) return 1; if(isACommon && !isBCommon) return -1; if(!isACommon && isBCommon) return 1; return 0;
+                        const aF = String(a.fatherId); const aM = String(a.motherId);
+                        const bF = String(b.fatherId); const bM = String(b.motherId);
+                        const mId = String(m.id);
+                        const parentSpouses = m.spouseIds || []; 
+
+                        const isACommon = (aF === mId && parentSpouses.includes(a.motherId)) || (aM === mId && parentSpouses.includes(a.fatherId));
+                        const isBCommon = (bF === mId && parentSpouses.includes(b.motherId)) || (bM === mId && parentSpouses.includes(b.fatherId));
+                        const isAMainP = !isACommon && (aF === mId || aM === mId); 
+                        const isBMainP = !isBCommon && (bF === mId || bM === mId);
+                        
+                        if(isAMainP && !isBMainP) return -1; 
+                        if(!isAMainP && isBMainP) return 1; 
+                        if(isACommon && !isBCommon) return -1; 
+                        if(!isACommon && isBCommon) return 1; 
+                        return (a.dob||"").localeCompare(b.dob||"");
                     });
-                    const nextCtx = { mainId: m.id, mainGender: m.gender, spouseIds: m.spouseIds||[] };
+                    
+                    const nextCtx = { mainId: m.id, mainGender: m.gender, spouseIds: mySpouseIds };
                     children.forEach(child=>ulChild.appendChild(this.createNodeElement(child, tree, nextCtx)));
                     li.appendChild(ulChild);
                 }
