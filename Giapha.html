@@ -694,7 +694,6 @@
 
                 // --- ROBUST CHILD MAP BUILDING ---
                 this.childMap = {};
-                
                 t.members.forEach(m => {
                     const mId = String(m.id);
                     if (m.childrenIds && Array.isArray(m.childrenIds)) {
@@ -713,38 +712,93 @@
                     }
                 });
 
-                const descendants = new Set(); t.members.forEach(m => { if (hasParents(m)) descendants.add(String(m.id)); });
-                const inLaws = new Set(); t.members.forEach(m => { 
-                    if (descendants.has(String(m.id)) && m.spouseIds) {
-                        m.spouseIds.forEach(sid => inLaws.add(String(sid)));
-                    }
-                });
-                const inLawParents = new Set(); t.members.forEach(m => { 
-                    if (inLaws.has(String(m.id))) { 
-                        if (m.fatherId) inLawParents.add(String(m.fatherId)); 
-                        if (m.motherId) inLawParents.add(String(m.motherId)); 
-                    } 
-                });
-
-                let roots = t.members.filter(m => { 
-                    if (hasParents(m)) return false; 
-                    if (inLaws.has(String(m.id))) return false; 
-                    if (inLawParents.has(String(m.id))) return false; 
-                    return true; 
-                });
-
-                roots.sort((a,b)=>(a.gender==='male'&&b.gender!=='male')?-1:1);
-                const uniqRoots=[]; const proc=new Set();
-                roots.forEach(r=>{ 
-                    const rid = String(r.id);
-                    if(proc.has(rid)) return; 
-                    uniqRoots.push(r); proc.add(rid); 
-                    if(r.spouseIds) r.spouseIds.forEach(s=>proc.add(String(s))); 
-                });
+                // --- LOGIC MỚI: ƯU TIÊN DÒNG DÕI CỦA NGƯỜI TẠO ĐẦU TIÊN ---
                 
-                const dRoots=uniqRoots.length>0?uniqRoots:[t.members[0]];
+                // 1. Tìm "Người Gốc" (Anchor) - Là thành viên đầu tiên trong mảng (được tạo sớm nhất)
+                const anchorMember = t.members[0];
+                
+                // 2. Tìm "Tổ Tiên Cao Nhất" của Anchor (Primary Root)
+                let primaryRoot = anchorMember;
+                let safeGuard = 0;
+                // Leo ngược lên cây để tìm gốc của dòng họ này
+                while (primaryRoot && safeGuard < 100) {
+                    const dad = primaryRoot.fatherId ? t.members.find(m => String(m.id) === String(primaryRoot.fatherId)) : null;
+                    const mom = primaryRoot.motherId ? t.members.find(m => String(m.id) === String(primaryRoot.motherId)) : null;
+                    if (dad) primaryRoot = dad;
+                    else if (mom) primaryRoot = mom;
+                    else break; // Đã đến đỉnh
+                    safeGuard++;
+                }
+
+                // 3. Xác định "Dòng Chính" (Main Line IDs) - Bao gồm PrimaryRoot và tất cả con cháu trực hệ
+                // Dùng BFS để quét toàn bộ con cháu của PrimaryRoot
+                const mainLineIds = new Set();
+                const queue = [String(primaryRoot.id)];
+                const visited = new Set();
+                
+                while(queue.length > 0) {
+                    const currentId = queue.shift();
+                    if (visited.has(currentId)) continue;
+                    visited.add(currentId);
+                    mainLineIds.add(currentId);
+
+                    // Thêm con cái vào hàng đợi
+                    if (this.childMap[currentId]) {
+                        this.childMap[currentId].forEach(childId => queue.push(childId));
+                    }
+                }
+
+                // 4. Lọc danh sách Gốc để hiển thị
+                // Quy tắc: Chỉ hiển thị những người không có bố mẹ (Root tự nhiên)
+                // NHƯNG loại bỏ những người là "Bố/Mẹ Vợ/Chồng" của Dòng Chính (vì họ sẽ hiển thị dạng phụ)
+                
+                let roots = t.members.filter(m => {
+                    // Điều kiện 1: Phải là người không có bố mẹ (hoặc bố mẹ không nằm trong cây)
+                    if (hasParents(m)) return false;
+
+                    const mId = String(m.id);
+
+                    // Điều kiện 2: Nếu là PrimaryRoot thì CHẮC CHẮN hiển thị
+                    if (mId === String(primaryRoot.id)) return true;
+
+                    // Điều kiện 3: Kiểm tra xem người này có phải là "phụ tùng" của Dòng Chính không?
+                    
+                    // 3a. Có phải là Vợ/Chồng của Dòng Chính không? (Nếu có -> Ẩn, vì sẽ hiện cạnh chồng/vợ)
+                    let isSpouseOfMain = false;
+                    if (m.spouseIds) {
+                        m.spouseIds.forEach(sid => {
+                            if (mainLineIds.has(String(sid))) isSpouseOfMain = true;
+                        });
+                    }
+                    if (isSpouseOfMain) return false;
+
+                    // 3b. Có phải là BỐ MẸ của Vợ/Chồng Dòng Chính không? (Quan trọng nhất)
+                    // (Ví dụ: Bố vợ của tôi. Tôi thuộc Dòng Chính. Vợ tôi là spouse. Bố vợ là cha của spouse)
+                    let isParentOfSpouseOfMain = false;
+                    if (this.childMap[mId]) {
+                        this.childMap[mId].forEach(childId => {
+                            const child = t.members.find(x => String(x.id) === String(childId));
+                            if (child && child.spouseIds) {
+                                child.spouseIds.forEach(grandSpouseId => {
+                                    // Nếu con tôi cưới một người thuộc dòng chính -> Tôi là bố vợ/chồng của dòng chính -> Ẩn
+                                    if (mainLineIds.has(String(grandSpouseId))) {
+                                        isParentOfSpouseOfMain = true;
+                                    }
+                                });
+                            }
+                        });
+                    }
+                    if (isParentOfSpouseOfMain) return false;
+
+                    // Nếu không vi phạm gì (ví dụ: dòng họ khác không liên quan), thì cho hiển thị
+                    return true;
+                });
+
+                // Sắp xếp: Nam trước Nữ
+                roots.sort((a,b)=>(a.gender==='male'&&b.gender!=='male')?-1:1);
+                
                 const ul=document.createElement('ul');
-                dRoots.forEach(r=>ul.appendChild(this.createNodeElement(r,t,null)));
+                roots.forEach(r=>ul.appendChild(this.createNodeElement(r,t,null)));
                 c.appendChild(ul);
             },
 
