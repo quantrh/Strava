@@ -154,6 +154,26 @@
                 </form>
             </div>
         </div>
+
+        <!-- MODAL QUẢN LÝ BẢO MẬT -->
+        <div id="security-modal" class="modal-overlay hidden" style="z-index: 2050;">
+            <div class="modal-content" style="max-width: 400px;">
+                <h2 style="color: #d35400;"><i class="fas fa-key"></i> Quản lý bảo mật</h2>
+                <p style="margin-bottom: 15px; color: #666;">Cài đặt mật khẩu cho cây gia phả: <strong id="sec-tree-name" style="color: #5a3a22;"></strong></p>
+                
+                <div class="form-group">
+                    <label>Mật khẩu truy cập</label>
+                    <input type="text" id="sec-password-input" class="form-control" placeholder="Nhập mật khẩu (để trống nếu muốn gỡ)">
+                </div>
+                
+                <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px;">
+                    <button type="button" class="btn btn-outline" onclick="app.closeSecurityModal()">Đóng</button>
+                    <button type="button" id="btn-remove-sec" class="btn btn-danger hidden" onclick="app.removeSecurityConfig()">Gỡ mật khẩu</button>
+                    <button type="button" class="btn btn-primary" onclick="app.saveSecurityConfig()">Lưu cài đặt</button>
+                </div>
+            </div>
+        </div>
+
         <div id="member-modal" class="modal-overlay hidden" style="z-index: 100;">
             <div class="modal-content">
                 <h2 id="modal-title" style="margin-bottom: 15px;">Thông tin thành viên</h2>
@@ -226,7 +246,7 @@
         window.app = {
             data: { trees: [] },
             securityData: [],
-            state: { currentTreeId: null, editingMemberId: null, actionMode: null, targetRelatedId: null, isUnlocked: false },
+            state: { currentTreeId: null, editingMemberId: null, actionMode: null, targetRelatedId: null, isUnlocked: false, managingSecurityTreeId: null },
             childMap: {},
 
             async init() { 
@@ -331,9 +351,92 @@
                 this.data.trees.forEach(t => { 
                     const isProtected = this.securityData.some(s => s.tree_name === t.name);
                     const d = document.createElement('div'); d.className = 'tree-card'; d.onclick = () => this.selectTree(t.id); 
-                    d.innerHTML = `${isProtected ? '<i class="fas fa-lock protected-icon" title="Được bảo vệ"></i>' : ''}<div style="margin-bottom:10px;"><h3><i class="fas fa-scroll"></i> ${t.name}</h3><p style="color:#666;font-size:.9rem">${t.members.length} thành viên</p></div><div class="tree-actions"><button class="btn btn-primary" style="flex:1; justify-content:center;" onclick="event.stopPropagation(); app.selectTree('${t.id}')"><i class="fas fa-folder-open"></i> Vào xem</button><button class="btn btn-outline" title="Đổi tên" onclick="app.safeAction('RENAME_TREE', '${t.id}', event)"><i class="fas fa-pen"></i></button><button class="btn btn-danger" title="Xoá" onclick="app.safeAction('DELETE_TREE_BY_ID', '${t.id}', event)"><i class="fas fa-trash"></i></button></div>`; c.appendChild(d); 
+                    d.innerHTML = `${isProtected ? '<i class="fas fa-lock protected-icon" title="Được bảo vệ"></i>' : ''}<div style="margin-bottom:10px;"><h3><i class="fas fa-scroll"></i> ${t.name}</h3><p style="color:#666;font-size:.9rem">${t.members.length} thành viên</p></div>
+                    <div class="tree-actions">
+                        <button class="btn btn-primary" style="flex:1; justify-content:center;" onclick="event.stopPropagation(); app.selectTree('${t.id}')"><i class="fas fa-folder-open"></i> Vào xem</button>
+                        <button class="btn btn-warning" title="Bảo mật" onclick="event.stopPropagation(); app.openSecurityModal('${t.id}')"><i class="fas fa-key"></i></button>
+                        <button class="btn btn-outline" title="Đổi tên" onclick="app.safeAction('RENAME_TREE', '${t.id}', event)"><i class="fas fa-pen"></i></button>
+                        <button class="btn btn-danger" title="Xoá" onclick="app.safeAction('DELETE_TREE_BY_ID', '${t.id}', event)"><i class="fas fa-trash"></i></button>
+                    </div>`; c.appendChild(d); 
                 });
             },
+
+            // --- CÁC HÀM QUẢN LÝ BẢO MẬT (MỚI) ---
+            openSecurityModal(treeId) {
+                const t = this.data.trees.find(x => x.id === treeId);
+                if(!t) return;
+                
+                // Kiểm tra quyền trước khi mở modal (nếu đã có pass)
+                if (!this.checkPermission(t.name)) return;
+
+                this.state.managingSecurityTreeId = treeId;
+                document.getElementById('sec-tree-name').textContent = t.name;
+                
+                const existingConfig = this.securityData.find(c => c.tree_name === t.name);
+                const input = document.getElementById('sec-password-input');
+                const btnRemove = document.getElementById('btn-remove-sec');
+                
+                if(existingConfig) {
+                    input.value = existingConfig.password;
+                    btnRemove.classList.remove('hidden');
+                } else {
+                    input.value = '';
+                    btnRemove.classList.add('hidden');
+                }
+                
+                document.getElementById('security-modal').classList.remove('hidden');
+            },
+
+            closeSecurityModal() {
+                document.getElementById('security-modal').classList.add('hidden');
+                this.state.managingSecurityTreeId = null;
+            },
+
+            async saveSecurityConfig() {
+                const treeId = this.state.managingSecurityTreeId;
+                const t = this.data.trees.find(x => x.id === treeId);
+                if(!t) return;
+
+                const newPass = document.getElementById('sec-password-input').value;
+                if(!newPass) {
+                    alert("Vui lòng nhập mật khẩu hoặc chọn 'Gỡ mật khẩu'!");
+                    return;
+                }
+
+                // Lưu vào Supabase
+                const { error } = await _supabase.from('tree_access_controls').upsert({ 
+                    tree_name: t.name, 
+                    password: newPass 
+                }, { onConflict: 'tree_name' });
+
+                if(error) {
+                    alert("Lỗi lưu bảo mật: " + error.message);
+                } else {
+                    alert("Đã cập nhật mật khẩu thành công!");
+                    this.closeSecurityModal();
+                    this.loadAllData(); // Refresh để cập nhật icon khoá
+                }
+            },
+
+            async removeSecurityConfig() {
+                const treeId = this.state.managingSecurityTreeId;
+                const t = this.data.trees.find(x => x.id === treeId);
+                if(!t) return;
+
+                if(!confirm("Bạn chắc chắn muốn gỡ bỏ mật khẩu bảo vệ cho cây gia phả này?")) return;
+
+                const { error } = await _supabase.from('tree_access_controls').delete().eq('tree_name', t.name);
+
+                if(error) {
+                    alert("Lỗi xoá bảo mật: " + error.message);
+                } else {
+                    alert("Đã gỡ bỏ mật khẩu!");
+                    this.closeSecurityModal();
+                    this.loadAllData();
+                }
+            },
+            // --------------------------------------
+
             getMember(id) { const t=this.data.trees.find(x=>x.id===this.state.currentTreeId); return t?t.members.find(m=>String(m.id)===String(id)):null; },
             setToggle(f,v) { document.getElementById(`field-${f}`).value=v; document.querySelectorAll(`#${f}-toggle .toggle-option`).forEach(o=>{ if(o.dataset.value===v)o.classList.add('selected'); else o.classList.remove('selected'); }); },
             openMemberModal(mode, relatedId=null) {
