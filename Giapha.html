@@ -346,6 +346,7 @@
                                 <select id="field-mother-select" class="form-select"><option value="">-- Chưa có --</option></select>
                             </div>
                         </div>
+                        <small style="color:#666; display:block; margin-top:5px; font-size: 0.8rem;">Chọn cả hai để tự động kết nối họ thành vợ chồng.</small>
                     </div>
                     <div class="form-group"><label>Họ và Tên (*)</label><input type="text" id="field-name" class="form-control" required placeholder="Nhập họ tên..."></div>
                     <div class="form-group"><label>Giới tính</label>
@@ -403,7 +404,9 @@
             async init() { 
                 this.renderDashboard();
                 document.addEventListener('click', (e) => {
-                    if(!e.target.closest('.action-trigger') && !e.target.closest('#global-popup-menu')) this.closeAllMenus();
+                    if(!e.target.closest('.action-trigger') && !e.target.closest('#global-popup-menu')) {
+                        this.closeAllMenus();
+                    }
                 });
                 const treeCont = document.querySelector('.tree-container');
                 if(treeCont) { treeCont.addEventListener('scroll', () => this.closeAllMenus()); }
@@ -429,13 +432,19 @@
                 this.renderDashboard();
             },
 
-            // --- SUPABASE SAVE (UPSERT) ---
+            // --- SUPABASE SAVE (UPSERT) & RE-RENDER ---
             async saveTree(tree) {
-                // Cập nhật UI ngay lập tức (Optimistic UI)
+                // 1. Optimistic UI Update
                 const idx = this.data.trees.findIndex(t => t.id === tree.id);
                 if(idx >= 0) this.data.trees[idx] = tree; else this.data.trees.push(tree);
                 
-                // Gửi lên DB
+                // 2. Render UI Updates Immediately
+                this.renderDashboard();
+                if (this.state.currentTreeId === tree.id) {
+                    this.renderTreeGraph();
+                }
+
+                // 3. Send to DB
                 const { error } = await _supabase.from('family_trees').upsert({
                     id: tree.id,
                     name: tree.name,
@@ -445,6 +454,7 @@
                 if (error) {
                     alert("Lỗi lưu dữ liệu: " + error.message);
                     console.error(error);
+                    // In a real app, you might want to rollback state here if error occurs
                 } else {
                     console.log("Saved tree:", tree.name);
                 }
