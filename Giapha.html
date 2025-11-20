@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GIA PHẢ (Logic Guard)</title>
+    <title>QUẢN LÝ GIA PHẢ</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700;900&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
@@ -107,7 +107,7 @@
             <div style="display: flex; align-items: center; gap: 10px;">
                 <i class="fas fa-scroll fa-lg"></i><h1 id="app-title">QUẢN LÝ GIA PHẢ</h1>
             </div>
-            <div id="db-status" style="font-size: 10px; color: #ccc; margin-left: 10px;"></div>
+            
             <div id="header-actions" style="margin-left: auto;">
                 <button class="btn btn-primary" onclick="location.reload()"><i class="fas fa-sync"></i> Tải lại</button>
             </div>
@@ -472,6 +472,15 @@
             },
             toggleCollapse(id){ const m=this.getMember(id); if(m){m.collapsed=!m.collapsed; this.saveTree(this.data.trees.find(t=>t.id===this.state.currentTreeId)); this.renderTreeGraph();} },
 
+            // --- FIX: Hàm xử lý lỗi ảnh riêng biệt để tránh xung đột dấu nháy HTML ---
+            handleImageError(img, gender) {
+                const defaultIcon = gender === 'male' ? '<i class="fas fa-male" style="font-size: 30px; color: #34495e;"></i>' : '<i class="fas fa-female" style="font-size: 30px; color: #e91e63;"></i>';
+                const div = document.createElement('div'); div.className = 'node-img';
+                div.style.background = '#f0f0f0'; div.style.border = `2px solid ${gender==='male'?'#2c3e50':'#e91e63'}`;
+                div.innerHTML = defaultIcon;
+                if(img && img.parentNode) img.replaceWith(div);
+            },
+
             exportImage() {
                 const element = document.getElementById('tree-render-area'); if (!element) return;
                 const btn = document.querySelector('.btn-success'); const originalText = btn.innerHTML; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Xử lý...';
@@ -563,7 +572,10 @@
                 d.onclick=(e)=>{e.stopPropagation();this.openMemberModal('EDIT',m.id);};
                 let bHtml=label?`<span class="role-badge ${m.gender==='male'?'badge-male':'badge-female'}">${label}</span>`:'';
                 let defaultIcon = m.gender === 'male' ? `<i class="fas fa-male" style="font-size: 30px; color: #34495e;"></i>` : `<i class="fas fa-female" style="font-size: 30px; color: #e91e63;"></i>`;
-                const ic = m.photoUrl ? `<img src="${m.photoUrl}" class="node-img" onerror="this.parentNode.innerHTML='${defaultIcon.replace(/'/g, "\\'")}'">` : `<div class="node-img" style="background: #f0f0f0; border: 2px solid ${m.gender==='male'?'#2c3e50':'#e91e63'};">${defaultIcon}</div>`;
+                
+                // --- FIX: Gọi hàm app.handleImageError thay vì viết code inline ---
+                const ic = m.photoUrl ? `<img src="${m.photoUrl}" class="node-img" onerror="app.handleImageError(this, '${m.gender}')">` : `<div class="node-img" style="background: #f0f0f0; border: 2px solid ${m.gender==='male'?'#2c3e50':'#e91e63'};">${defaultIcon}</div>`;
+                
                 d.innerHTML=`${bHtml}${ic}<div class="node-name">${m.fullName}</div>`;
                 if(!isMini) d.innerHTML += `<div class="node-dates">${m.dob?m.dob.split('-')[0]:''}</div>`;
                 
