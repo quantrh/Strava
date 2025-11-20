@@ -338,19 +338,39 @@
                 reader.readAsText(file);
             },
 
-            checkPermission(treeName) {
+            // --- SECURITY UPGRADE: SHA-256 HASHING ---
+            async hashPassword(str) {
+                const msgBuffer = new TextEncoder().encode(str);
+                const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+                return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
+            },
+
+            async checkPermission(treeName) {
                 if (this.state.isUnlocked) return true; 
                 const config = this.securityData.find(c => c.tree_name === treeName);
                 if (!config) return true; 
                 const pass = prompt(`Cây gia phả "${treeName}" yêu cầu mật khẩu để chỉnh sửa:`);
-                if (pass === config.password) { this.state.isUnlocked = true; return true; } else { alert("Mật khẩu không đúng!"); return false; }
+                if (!pass) return false;
+                
+                const hashedPassword = await this.hashPassword(pass);
+                
+                // Check new HASH OR legacy Plain Text
+                if (hashedPassword === config.password || pass === config.password) { 
+                    this.state.isUnlocked = true; 
+                    return true; 
+                } else { 
+                    alert("Mật khẩu không đúng!"); 
+                    return false; 
+                }
             },
 
-            safeAction(actionType, ...args) {
+            async safeAction(actionType, ...args) {
                 const currentTree = this.data.trees.find(t => t.id === this.state.currentTreeId);
                 let treeName = currentTree ? currentTree.name : "";
                 if (actionType === 'DELETE_TREE_BY_ID' || actionType === 'RENAME_TREE') { const t = this.data.trees.find(x => x.id === args[0]); if (t) treeName = t.name; }
-                if (treeName && !this.checkPermission(treeName)) return;
+                
+                if (treeName && !(await this.checkPermission(treeName))) return;
+                
                 if (actionType === 'ROOT') this.openMemberModal('ROOT');
                 else if (actionType === 'DELETE_TREE') this.deleteCurrentTree();
                 else if (actionType === 'DELETE_TREE_BY_ID') this.deleteTreeById(args[0], args[1]);
@@ -364,7 +384,14 @@
             handleCreateTree(e) { e.preventDefault(); const name=document.getElementById('new-tree-name').value; if(name){ const t={id:this.generateId(),name:name,members:[]}; this.saveTree(t); this.closeTreeModal(); } },
             deleteCurrentTree() { if(confirm("Xoá cây này?")){ this.deleteTreeFromDB(this.state.currentTreeId); } },
             deleteTreeById(id,e) { e.stopPropagation(); if(confirm("Xoá?")){ this.deleteTreeFromDB(id); } },
-            renameTree(id,e) { e.stopPropagation(); const t=this.data.trees.find(x=>x.id===id); if(t && this.checkPermission(t.name)){ const n=prompt("Tên mới:",t.name); if(n){ t.name=n; this.saveTree(t); } } },
+            async renameTree(id,e) { 
+                e.stopPropagation(); 
+                const t=this.data.trees.find(x=>x.id===id); 
+                if(t && (await this.checkPermission(t.name))){ 
+                    const n=prompt("Tên mới:",t.name); 
+                    if(n){ t.name=n; this.saveTree(t); } 
+                } 
+            },
             selectTree(id) { this.closeAllMenus(); this.state.currentTreeId=id; this.state.isUnlocked=false; const t=this.data.trees.find(x=>x.id===id); if(!t)return; document.getElementById('current-tree-name').textContent=t.name; document.getElementById('dashboard-view').classList.add('hidden'); document.getElementById('tree-view').classList.remove('hidden'); this.renderTreeGraph(); },
             showDashboard() { this.closeAllMenus(); this.state.currentTreeId=null; document.getElementById('tree-view').classList.add('hidden'); document.getElementById('dashboard-view').classList.remove('hidden'); this.renderDashboard(); },
             renderDashboard() {
@@ -384,12 +411,12 @@
             },
 
             // --- CÁC HÀM QUẢN LÝ BẢO MẬT (MỚI) ---
-            openSecurityModal(treeId) {
+            async openSecurityModal(treeId) {
                 const t = this.data.trees.find(x => x.id === treeId);
                 if(!t) return;
                 
                 // Kiểm tra quyền trước khi mở modal (nếu đã có pass)
-                if (!this.checkPermission(t.name)) return;
+                if (!(await this.checkPermission(t.name))) return;
 
                 this.state.managingSecurityTreeId = treeId;
                 document.getElementById('sec-tree-name').textContent = t.name;
@@ -399,10 +426,13 @@
                 const btnRemove = document.getElementById('btn-remove-sec');
                 
                 if(existingConfig) {
-                    input.value = existingConfig.password;
+                    // Không hiển thị mật khẩu cũ vì đã bị hash, chỉ hiển thị trống hoặc placeholder
+                    input.value = ''; 
+                    input.placeholder = "Nhập mật khẩu mới để đổi...";
                     btnRemove.classList.remove('hidden');
                 } else {
                     input.value = '';
+                    input.placeholder = "Nhập mật khẩu...";
                     btnRemove.classList.add('hidden');
                 }
                 
@@ -424,11 +454,14 @@
                     alert("Vui lòng nhập mật khẩu hoặc chọn 'Gỡ mật khẩu'!");
                     return;
                 }
+                
+                // HASH PASSWORD BEFORE SAVING
+                const hashedPassword = await this.hashPassword(newPass);
 
                 // Lưu vào Supabase
                 const { error } = await _supabase.from('tree_access_controls').upsert({ 
                     tree_name: t.name, 
-                    password: newPass 
+                    password: hashedPassword 
                 }, { onConflict: 'tree_name' });
 
                 if(error) {
@@ -461,9 +494,10 @@
 
             getMember(id) { const t=this.data.trees.find(x=>x.id===this.state.currentTreeId); return t?t.members.find(m=>String(m.id)===String(id)):null; },
             setToggle(f,v) { document.getElementById(`field-${f}`).value=v; document.querySelectorAll(`#${f}-toggle .toggle-option`).forEach(o=>{ if(o.dataset.value===v)o.classList.add('selected'); else o.classList.remove('selected'); }); },
-            openMemberModal(mode, relatedId=null) {
+            async openMemberModal(mode, relatedId=null) {
                 const currentTree = this.data.trees.find(t => t.id === this.state.currentTreeId);
-                if (currentTree && !this.checkPermission(currentTree.name)) return;
+                if (currentTree && !(await this.checkPermission(currentTree.name))) return;
+                
                 this.state.actionMode=mode; this.state.targetRelatedId=relatedId; this.state.editingMemberId=null;
                 document.getElementById('member-form').reset(); document.getElementById('field-id').value='';
                 this.setToggle('gender','male'); this.setToggle('status','alive');
@@ -609,15 +643,6 @@
                 } catch (e) { console.error("Lỗi xoá:", e); alert("Lỗi: " + e.message); }
             },
             toggleCollapse(id){ const m=this.getMember(id); if(m){m.collapsed=!m.collapsed; this.saveTree(this.data.trees.find(t=>t.id===this.state.currentTreeId)); this.renderTreeGraph();} },
-
-            // --- FIX: Hàm xử lý lỗi ảnh riêng biệt để tránh xung đột dấu nháy HTML ---
-            handleImageError(img, gender) {
-                const defaultIcon = gender === 'male' ? '<i class="fas fa-male" style="font-size: 30px; color: #34495e;"></i>' : '<i class="fas fa-female" style="font-size: 30px; color: #e91e63;"></i>';
-                const div = document.createElement('div'); div.className = 'node-img';
-                div.style.background = '#f0f0f0'; div.style.border = `2px solid ${gender==='male'?'#2c3e50':'#e91e63'}`;
-                div.innerHTML = defaultIcon;
-                if(img && img.parentNode) img.replaceWith(div);
-            },
 
             exportImage() {
                 const element = document.getElementById('tree-render-area'); if (!element) return;
