@@ -23,6 +23,29 @@
         .btn-warning { background-color: #d2691e; color: white; }
         .btn-info { background-color: #2980b9; color: white; }
         .btn-outline { background-color: #fffef9; border: 1px solid #8b5a2b; color: #5a3a22; }
+        
+        /* Nút Hướng dẫn nổi bật */
+        .btn-guide {
+            background: linear-gradient(135deg, #ff9800, #f57c00);
+            color: white;
+            border: none;
+            border-radius: 20px;
+            padding: 6px 15px;
+            box-shadow: 0 0 0 0 rgba(255, 152, 0, 0.7);
+            animation: pulse-orange 2s infinite;
+            font-weight: bold;
+            border: 1px solid #e65100;
+        }
+        .btn-guide:hover {
+            background: linear-gradient(135deg, #f57c00, #ef6c00);
+            transform: scale(1.05);
+        }
+        @keyframes pulse-orange {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(255, 152, 0, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(255, 152, 0, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(255, 152, 0, 0); }
+        }
+
         .hidden { display: none !important; }
         #app { height: 100%; display: flex; flex-direction: column; }
         header { background: linear-gradient(to right, #3e2723, #5d4037); color: #ffecb3; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 6px rgba(0,0,0,0.3); z-index: 10; border-bottom: 3px solid #bcaaa4; }
@@ -116,7 +139,6 @@
         .node-menu-btn:hover { background: #5a3a22; color: #fff; }
 
         .node-actions { display: none; }
-        /* ------------------------------------------ */
 
         #global-popup-menu { position: absolute; background: #fffbf0; border: 1px solid #8b5a2b; border-radius: 0; padding: 5px; display: flex; flex-direction: column; gap: 2px; box-shadow: 3px 3px 10px rgba(0,0,0,0.3); z-index: 99999 !important; min-width: 150px; }
         #global-popup-menu button { text-align: left; padding: 8px 12px; border: none; background: transparent; cursor: pointer; font-size: 13px; color: #3e2723; font-weight: 600; display: flex; align-items: center; gap: 10px; border-bottom: 1px dotted #d7ccc8; }
@@ -138,7 +160,6 @@
         .modal-content h2 { color: #8b0000; border-bottom: 1px solid #d7ccc8; padding-bottom: 10px; margin-bottom: 15px; font-family: 'Playfair Display', serif; }
         .form-group { margin-bottom: 15px; }
         
-        /* CSS MỚI: Form Row Split để gộp 2 controls trên 1 dòng */
         .form-row-split { display: flex; gap: 15px; margin-bottom: 15px; align-items: flex-start; }
         .form-item-compact { flex: 1; display: flex; flex-direction: column; gap: 5px; }
         .form-item-compact label { margin-bottom: 0; font-size: 0.9rem; font-weight: 700; color: #4e342e; }
@@ -148,7 +169,6 @@
         .form-control, .form-select { width: 100%; padding: 10px; border: 1px solid #a1887f; border-radius: 2px; font-size: 1rem; background: #fff; color: #3e2723; }
         textarea.form-control { height: 60px; min-height: 60px; resize: vertical; }
 
-        /* Custom Checkbox */
         .checkbox-wrapper { display: flex; align-items: center; gap: 10px; margin-top: 10px; }
         .checkbox-wrapper input[type="checkbox"] { width: 18px; height: 18px; cursor: pointer; }
         .checkbox-wrapper label { margin-bottom: 0; cursor: pointer; font-weight: 600; color: #5a3a22; }
@@ -171,7 +191,9 @@
                 <i class="fas fa-scroll fa-lg"></i><h1 id="app-title">QUẢN LÝ GIA PHẢ</h1>
             </div>
             
-            <div id="header-actions" style="margin-left: auto;">
+            <div id="header-actions" style="margin-left: auto; display: flex; gap: 10px; align-items: center;">
+                <!-- Nút Hướng dẫn Mới với style nổi bật -->
+                <button class="btn-guide" onclick="app.openGuideModal()"><i class="fas fa-question-circle"></i> Hướng dẫn</button>
                 <button class="btn btn-primary" onclick="location.reload()"><i class="fas fa-sync"></i> Tải lại</button>
             </div>
         </header>
@@ -218,7 +240,70 @@
             </div>
         </div>
 
-        <!-- MODAL QUẢN LÝ BẢO MẬT (Đã thêm checkbox) -->
+        <!-- MODAL HƯỚNG DẪN SỬ DỤNG CHI TIẾT -->
+        <div id="guide-modal" class="modal-overlay hidden" style="z-index: 3000;">
+            <div class="modal-content" style="max-width: 650px; max-height: 90vh; overflow-y: auto;">
+                <h2 style="color: #e65100; border-bottom: 2px solid #ffcc80; text-align: center;"><i class="fas fa-book-reader"></i> Hướng dẫn sử dụng</h2>
+                
+                <div style="line-height: 1.6; color: #3e2723; padding: 10px;">
+                    <!-- 1. Bắt đầu -->
+                    <h4 style="color: #8d6e63; margin-top: 10px; border-bottom: 1px dashed #ccc;"><i class="fas fa-play-circle"></i> 1. Bắt đầu</h4>
+                    <ul style="margin-left: 20px; margin-bottom: 10px;">
+                        <li>Tạo cây gia phả mới bằng nút <b>"Tạo Cây Mới"</b> hoặc chọn cây có sẵn.</li>
+                        <li>Nhấn nút <b>"Thêm Gốc"</b> để tạo người đầu tiên trong dòng họ (Tổ tiên/Ông bà).</li>
+                    </ul>
+
+                    <!-- 2. Thao tác thành viên -->
+                    <h4 style="color: #8d6e63; margin-top: 15px; border-bottom: 1px dashed #ccc;"><i class="fas fa-users-cog"></i> 2. Thao tác với thành viên</h4>
+                    <ul style="margin-left: 20px; margin-bottom: 10px;">
+                        <li><strong>Thêm người thân:</strong> Bấm vào biểu tượng <b>Cây bút <i class="fas fa-pen"></i></b> ở góc phải của thẻ thành viên để mở menu: Thêm Con, Thêm Vợ/Chồng, Thêm Bố/Mẹ.</li>
+                        <li><strong>Sửa thông tin:</strong> Bấm trực tiếp vào <b>khung thẻ thành viên</b> để mở bảng nhập liệu:
+                            <ul style="margin-left: 20px; font-size: 0.9em; color: #555;">
+                                <li>Cập nhật Tên, Ngày sinh, Nghề nghiệp, Ảnh đại diện.</li>
+                                <li>Thêm ghi chú chi tiết về tiểu sử.</li>
+                                <li>Chọn tình trạng Còn sống/Đã mất.</li>
+                            </ul>
+                        </li>
+                        <li><strong>Thu gọn/Mở rộng:</strong> Bấm vào dấu <b>(+)</b> hoặc <b>(-)</b> dưới chân thẻ để ẩn/hiện các nhánh con.</li>
+                    </ul>
+
+                    <!-- 3. Linh hoạt dữ liệu (Điểm nhấn) -->
+                    <div style="background-color: #fff3e0; padding: 10px; border-radius: 5px; margin-top: 15px; border-left: 4px solid #ff9800;">
+                        <h4 style="color: #ef6c00; margin-top: 0;"><i class="fas fa-database"></i> 3. Quản lý Dữ liệu Linh hoạt</h4>
+                        <p>Bạn hoàn toàn làm chủ dữ liệu của mình, không lo mất mát:</p>
+                        <ul style="margin-left: 20px;">
+                            <li><strong>Sao lưu (Backup):</strong> Nhấn nút <b>"Data"</b> (Màu vàng) để tải toàn bộ dữ liệu cây gia phả về máy tính dưới dạng file `.json`.</li>
+                            <li><strong>Khôi phục (Restore):</strong> Nhấn nút <b>"Nhập File"</b> (Màu xanh dương) ở màn hình chính và chọn file `.json` đã lưu để khôi phục lại cây gia phả trên thiết bị khác.</li>
+                        </ul>
+                    </div>
+
+                    <!-- 4. Xuất bản ảnh (Điểm nhấn) -->
+                    <div style="background-color: #e8f5e9; padding: 10px; border-radius: 5px; margin-top: 15px; border-left: 4px solid #4caf50;">
+                        <h4 style="color: #2e7d32; margin-top: 0;"><i class="fas fa-image"></i> 4. Lưu Ảnh Gia Phả</h4>
+                        <p>Muốn in ấn hoặc chia sẻ lên mạng xã hội?</p>
+                        <ul style="margin-left: 20px;">
+                            <li>Nhấn nút <b>"Ảnh"</b> (Màu xanh lá) để xuất toàn bộ sơ đồ ra file hình ảnh `.png` chất lượng cao.</li>
+                            <li>Hệ thống tự động chụp lại toàn bộ cây, kể cả các phần bị khuất màn hình.</li>
+                        </ul>
+                    </div>
+
+                    <!-- 5. Bảo mật (Điểm nhấn) -->
+                    <div style="background-color: #ffebee; padding: 10px; border-radius: 5px; margin-top: 15px; border-left: 4px solid #c62828;">
+                        <h4 style="color: #c62828; margin-top: 0;"><i class="fas fa-shield-alt"></i> 5. Bảo Mật 2 Lớp</h4>
+                        <p>Bấm vào biểu tượng <b>Chìa khoá <i class="fas fa-key"></i></b> ở màn hình chính để cài đặt:</p>
+                        <ul style="margin-left: 20px;">
+                            <li><strong>Chế độ "Chỉ đọc" (Public View):</strong> Đặt mật khẩu và TÍCH chọn <i>"Cho phép ai cũng có thể xem"</i>. Người lạ xem được cây nhưng <b>cần mật khẩu mới sửa được</b>.</li>
+                            <li><strong>Chế độ "Riêng tư" (Private):</strong> Đặt mật khẩu và BỎ TÍCH chọn <i>"Cho phép xem..."</i>. Người lạ <b>không thể truy cập</b> vào cây nếu không có mật khẩu.</li>
+                        </ul>
+                    </div>
+                </div>
+                <div style="text-align: center; margin-top: 20px; padding-top: 10px; border-top: 1px solid #eee;">
+                    <button class="btn btn-primary" style="padding: 10px 30px; font-size: 1.1em;" onclick="app.closeGuideModal()">Đã hiểu, bắt đầu ngay!</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- MODAL QUẢN LÝ BẢO MẬT -->
         <div id="security-modal" class="modal-overlay hidden" style="z-index: 2050;">
             <div class="modal-content" style="max-width: 400px;">
                 <h2 style="color: #d35400;"><i class="fas fa-key"></i> Quản lý bảo mật</h2>
@@ -407,15 +492,12 @@
                 return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
             },
 
-            // Hàm kiểm tra quyền: check xem đã unlock chưa hoặc hỏi pass
-            // isViewAction = true nếu chỉ là hành động xem (để kiểm tra cờ public view)
             async checkPermission(treeName, isViewAction = false) {
-                if (this.state.isUnlocked) return true; // Đã mở khóa phiên làm việc này
+                if (this.state.isUnlocked) return true; 
 
                 const config = this.securityData.find(c => c.tree_name === treeName);
-                if (!config) return true; // Không có bảo mật -> OK
+                if (!config) return true; 
 
-                // Nếu là hành động xem và cây cho phép xem công khai -> Cho qua (nhưng không set isUnlocked)
                 if (isViewAction && config.is_public_viewable !== false) { 
                     return true; 
                 }
@@ -438,7 +520,6 @@
                 let treeName = currentTree ? currentTree.name : "";
                 if (actionType === 'DELETE_TREE_BY_ID' || actionType === 'RENAME_TREE') { const t = this.data.trees.find(x => x.id === args[0]); if (t) treeName = t.name; }
                 
-                // Các hành động sửa đổi (safeAction) luôn yêu cầu quyền ghi (không phải view action)
                 if (treeName && !(await this.checkPermission(treeName, false))) return;
                 
                 if (actionType === 'ROOT') this.openMemberModal('ROOT');
@@ -463,7 +544,6 @@
                 } 
             },
             
-            // Cập nhật logic selectTree để hỗ trợ Public View
             async selectTree(id) { 
                 this.closeAllMenus(); 
                 this.state.currentTreeId = id; 
@@ -472,9 +552,8 @@
                 const t = this.data.trees.find(x=>x.id===id); 
                 if(!t) return; 
 
-                // Kiểm tra quyền xem (true = view action)
                 if (!(await this.checkPermission(t.name, true))) {
-                    this.state.currentTreeId = null; // Reset nếu sai pass
+                    this.state.currentTreeId = null; 
                     return;
                 }
 
@@ -505,7 +584,6 @@
                 const t = this.data.trees.find(x => x.id === treeId);
                 if(!t) return;
                 
-                // Sửa bảo mật yêu cầu quyền ghi (false)
                 if (!(await this.checkPermission(t.name, false))) return;
 
                 this.state.managingSecurityTreeId = treeId;
@@ -520,13 +598,12 @@
                     input.value = ''; 
                     input.placeholder = "Nhập mật khẩu mới để đổi...";
                     btnRemove.classList.remove('hidden');
-                    // Load checkbox state (default true if undefined)
                     checkbox.checked = existingConfig.is_public_viewable !== false;
                 } else {
                     input.value = '';
                     input.placeholder = "Nhập mật khẩu...";
                     btnRemove.classList.add('hidden');
-                    checkbox.checked = true; // Default checked for new config
+                    checkbox.checked = true; 
                 }
                 
                 document.getElementById('security-modal').classList.remove('hidden');
@@ -558,10 +635,17 @@
                 if(error) { alert("Lỗi xoá bảo mật: " + error.message); } else { alert("Đã gỡ bỏ mật khẩu!"); this.closeSecurityModal(); this.loadAllData(); }
             },
 
+            // --- HÀM HƯỚNG DẪN SỬ DỤNG ---
+            openGuideModal() {
+                document.getElementById('guide-modal').classList.remove('hidden');
+            },
+            closeGuideModal() {
+                document.getElementById('guide-modal').classList.add('hidden');
+            },
+
             getMember(id) { const t=this.data.trees.find(x=>x.id===this.state.currentTreeId); return t?t.members.find(m=>String(m.id)===String(id)):null; },
             setToggle(f,v) { document.getElementById(`field-${f}`).value=v; document.querySelectorAll(`#${f}-toggle .toggle-option`).forEach(o=>{ if(o.dataset.value===v)o.classList.add('selected'); else o.classList.remove('selected'); }); },
             
-            // Mở form member cũng cần quyền ghi
             async openMemberModal(mode, relatedId=null) {
                 const currentTree = this.data.trees.find(t => t.id === this.state.currentTreeId);
                 if (currentTree && !(await this.checkPermission(currentTree.name, false))) return;
