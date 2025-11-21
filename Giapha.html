@@ -90,7 +90,7 @@
         .node-name { font-weight: 700; font-size: 9px; margin-bottom: 3px; width: 100%; text-align: center; color: #3e2723; text-transform: uppercase; letter-spacing: 0.5px; line-height: 1.2; max-height: 32px; overflow: hidden; flex-shrink: 0; }
         .node-dates { font-size: 8px; color: #6d4c41; font-style: italic; font-weight: 600; flex-shrink: 0; }
         
-        /* CẬP NHẬT: CSS cho thông tin bổ sung để hiển thị hết */
+        /* CẬP NHẬT: CSS cho thông tin bổ sung để hiển thị hết phần trống còn lại */
         .node-info { 
             font-size: 8px; 
             color: #555; 
@@ -102,7 +102,7 @@
             word-wrap: break-word;
             padding: 2px; 
             border-top: 1px dotted #ddd;
-            flex-grow: 1; /* Cho phép chiếm khoảng trống còn lại */
+            flex-grow: 1; /* Tự động chiếm hết chiều cao còn lại */
             display: flex;
             justify-content: center;
             align-items: flex-start;
@@ -126,7 +126,8 @@
         }
         .badge-male { background-color: #2c3e50; } .badge-female { background-color: #a52a2a; }
         
-        .node-edit-btn { 
+        /* Nút Menu hình cây bút */
+        .node-menu-btn { 
             position: absolute; 
             top: 3px; 
             right: 3px; 
@@ -143,7 +144,7 @@
             border-radius: 50%; 
             z-index: 15;
         }
-        .node-edit-btn:hover { background: #5a3a22; color: #fff; }
+        .node-menu-btn:hover { background: #5a3a22; color: #fff; }
 
         .node-actions { display: none; }
         /* ------------------------------------------ */
@@ -287,9 +288,7 @@
                     </div>
                     <div class="form-group"><label>Họ và Tên (*)</label><input type="text" id="field-name" class="form-control" required placeholder="Nhập họ tên..."></div>
                     
-                    <!-- CẬP NHẬT: Gộp Giới tính và Tình trạng vào 1 hàng -->
                     <div class="form-row-split">
-                        <!-- Cột Giới tính -->
                         <div class="form-item-compact">
                             <label>Giới tính</label>
                             <div class="toggle-switch" id="gender-toggle">
@@ -299,7 +298,6 @@
                             <input type="hidden" id="field-gender" value="male">
                         </div>
                         
-                        <!-- Cột Tình trạng -->
                         <div class="form-item-compact">
                             <label>Tình trạng</label>
                             <div class="toggle-switch" id="status-toggle">
@@ -310,7 +308,6 @@
                         </div>
                     </div>
 
-                    <!-- CẬP NHẬT: Gộp Ngày sinh và Nghề nghiệp vào 1 hàng -->
                     <div class="form-row-split">
                         <div class="form-item-compact">
                             <label>Ngày sinh</label>
@@ -400,13 +397,11 @@
                 reader.onload = (e) => {
                     try {
                         const json = JSON.parse(e.target.result);
-                        // Handle Array of trees OR Single tree object
                         const treesToImport = Array.isArray(json) ? json : [json];
                         
                         let successCount = 0;
                         treesToImport.forEach(t => {
                              if (t.name && t.members) {
-                                // Clean up self-references
                                 t.members.forEach(m => { 
                                     if (String(m.fatherId) === String(m.id)) m.fatherId = null; 
                                     if (String(m.motherId) === String(m.id)) m.motherId = null; 
@@ -426,7 +421,6 @@
                 reader.readAsText(file);
             },
 
-            // --- SECURITY UPGRADE: SHA-256 HASHING ---
             async hashPassword(str) {
                 const msgBuffer = new TextEncoder().encode(str);
                 const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
@@ -441,8 +435,6 @@
                 if (!pass) return false;
                 
                 const hashedPassword = await this.hashPassword(pass);
-                
-                // Check new HASH OR legacy Plain Text
                 if (hashedPassword === config.password || pass === config.password) { 
                     this.state.isUnlocked = true; 
                     return true; 
@@ -456,9 +448,7 @@
                 const currentTree = this.data.trees.find(t => t.id === this.state.currentTreeId);
                 let treeName = currentTree ? currentTree.name : "";
                 if (actionType === 'DELETE_TREE_BY_ID' || actionType === 'RENAME_TREE') { const t = this.data.trees.find(x => x.id === args[0]); if (t) treeName = t.name; }
-                
                 if (treeName && !(await this.checkPermission(treeName))) return;
-                
                 if (actionType === 'ROOT') this.openMemberModal('ROOT');
                 else if (actionType === 'DELETE_TREE') this.deleteCurrentTree();
                 else if (actionType === 'DELETE_TREE_BY_ID') this.deleteTreeById(args[0], args[1]);
@@ -498,94 +488,39 @@
                 });
             },
 
-            // --- CÁC HÀM QUẢN LÝ BẢO MẬT (MỚI) ---
             async openSecurityModal(treeId) {
                 const t = this.data.trees.find(x => x.id === treeId);
                 if(!t) return;
-                
-                // Kiểm tra quyền trước khi mở modal (nếu đã có pass)
                 if (!(await this.checkPermission(t.name))) return;
-
                 this.state.managingSecurityTreeId = treeId;
                 document.getElementById('sec-tree-name').textContent = t.name;
-                
                 const existingConfig = this.securityData.find(c => c.tree_name === t.name);
                 const input = document.getElementById('sec-password-input');
                 const btnRemove = document.getElementById('btn-remove-sec');
-                
-                if(existingConfig) {
-                    // Không hiển thị mật khẩu cũ vì đã bị hash, chỉ hiển thị trống hoặc placeholder
-                    input.value = ''; 
-                    input.placeholder = "Nhập mật khẩu mới để đổi...";
-                    btnRemove.classList.remove('hidden');
-                } else {
-                    input.value = '';
-                    input.placeholder = "Nhập mật khẩu...";
-                    btnRemove.classList.add('hidden');
-                }
-                
+                if(existingConfig) { input.value = ''; input.placeholder = "Nhập mật khẩu mới để đổi..."; btnRemove.classList.remove('hidden'); } else { input.value = ''; input.placeholder = "Nhập mật khẩu..."; btnRemove.classList.add('hidden'); }
                 document.getElementById('security-modal').classList.remove('hidden');
             },
-
-            closeSecurityModal() {
-                document.getElementById('security-modal').classList.add('hidden');
-                this.state.managingSecurityTreeId = null;
-            },
-
+            closeSecurityModal() { document.getElementById('security-modal').classList.add('hidden'); this.state.managingSecurityTreeId = null; },
             async saveSecurityConfig() {
-                const treeId = this.state.managingSecurityTreeId;
-                const t = this.data.trees.find(x => x.id === treeId);
-                if(!t) return;
-
+                const treeId = this.state.managingSecurityTreeId; const t = this.data.trees.find(x => x.id === treeId); if(!t) return;
                 const newPass = document.getElementById('sec-password-input').value;
-                if(!newPass) {
-                    alert("Vui lòng nhập mật khẩu hoặc chọn 'Gỡ mật khẩu'!");
-                    return;
-                }
-                
-                // HASH PASSWORD BEFORE SAVING
+                if(!newPass) { alert("Vui lòng nhập mật khẩu hoặc chọn 'Gỡ mật khẩu'!"); return; }
                 const hashedPassword = await this.hashPassword(newPass);
-
-                // Lưu vào Supabase
-                const { error } = await _supabase.from('tree_access_controls').upsert({ 
-                    tree_name: t.name, 
-                    password: hashedPassword 
-                }, { onConflict: 'tree_name' });
-
-                if(error) {
-                    alert("Lỗi lưu bảo mật: " + error.message);
-                } else {
-                    alert("Đã cập nhật mật khẩu thành công!");
-                    this.closeSecurityModal();
-                    this.loadAllData(); // Refresh để cập nhật icon khoá
-                }
+                const { error } = await _supabase.from('tree_access_controls').upsert({ tree_name: t.name, password: hashedPassword }, { onConflict: 'tree_name' });
+                if(error) { alert("Lỗi lưu bảo mật: " + error.message); } else { alert("Đã cập nhật mật khẩu thành công!"); this.closeSecurityModal(); this.loadAllData(); }
             },
-
             async removeSecurityConfig() {
-                const treeId = this.state.managingSecurityTreeId;
-                const t = this.data.trees.find(x => x.id === treeId);
-                if(!t) return;
-
+                const treeId = this.state.managingSecurityTreeId; const t = this.data.trees.find(x => x.id === treeId); if(!t) return;
                 if(!confirm("Bạn chắc chắn muốn gỡ bỏ mật khẩu bảo vệ cho cây gia phả này?")) return;
-
                 const { error } = await _supabase.from('tree_access_controls').delete().eq('tree_name', t.name);
-
-                if(error) {
-                    alert("Lỗi xoá bảo mật: " + error.message);
-                } else {
-                    alert("Đã gỡ bỏ mật khẩu!");
-                    this.closeSecurityModal();
-                    this.loadAllData();
-                }
+                if(error) { alert("Lỗi xoá bảo mật: " + error.message); } else { alert("Đã gỡ bỏ mật khẩu!"); this.closeSecurityModal(); this.loadAllData(); }
             },
-            // --------------------------------------
 
             getMember(id) { const t=this.data.trees.find(x=>x.id===this.state.currentTreeId); return t?t.members.find(m=>String(m.id)===String(id)):null; },
             setToggle(f,v) { document.getElementById(`field-${f}`).value=v; document.querySelectorAll(`#${f}-toggle .toggle-option`).forEach(o=>{ if(o.dataset.value===v)o.classList.add('selected'); else o.classList.remove('selected'); }); },
             async openMemberModal(mode, relatedId=null) {
                 const currentTree = this.data.trees.find(t => t.id === this.state.currentTreeId);
                 if (currentTree && !(await this.checkPermission(currentTree.name))) return;
-                
                 this.state.actionMode=mode; this.state.targetRelatedId=relatedId; this.state.editingMemberId=null;
                 document.getElementById('member-form').reset(); document.getElementById('field-id').value='';
                 this.setToggle('gender','male'); this.setToggle('status','alive');
@@ -624,17 +559,9 @@
                 document.getElementById('modal-title').textContent=title; document.getElementById('member-modal').classList.remove('hidden');
             },
             closeModal(){ document.getElementById('member-modal').classList.add('hidden'); },
-            
-            // --- FIX: Cập nhật hàm đóng menu để ẩn chính xác ID của popup ---
             closeAllMenus() { 
-                // Đóng menu chính
-                const menu = document.getElementById('global-popup-menu');
-                if (menu) menu.classList.add('hidden');
-                
-                // Đóng các menu khác (nếu có)
+                const menu = document.getElementById('global-popup-menu'); if (menu) menu.classList.add('hidden');
                 document.querySelectorAll('.action-popup').forEach(m => m.classList.add('hidden')); 
-                
-                // Xoá highlight
                 document.querySelectorAll('.member-node').forEach(n => n.classList.remove('active-popup')); 
                 document.querySelectorAll('.tree li').forEach(li => li.classList.remove('active-branch')); 
             },
@@ -647,15 +574,8 @@
                     if(idx!==-1){ 
                         const old=tree.members[idx]; fd.spouseIds=old.spouseIds||[]; fd.childrenIds=old.childrenIds||[]; fd.collapsed=old.collapsed; 
                         const newFId = document.getElementById('field-father-select').value || null; const newMId = document.getElementById('field-mother-select').value || null;
-
-                        // --- LOGIC VALIDATION BLOCK ---
-                        // 1. Check Self-reference
                         if (newFId === fd.id || newMId === fd.id) { alert("Lỗi Logic: Không thể chọn chính mình làm Bố/Mẹ!"); return; }
-                        
-                        // 2. Check Duplicate (Father is same as Mother)
                         if (newFId && newMId && String(newFId) === String(newMId)) { alert("Lỗi Logic: Bố và Mẹ không thể là cùng một người!"); return; }
-
-                        // 3. Check Cyclic & Role Conflicts
                         if (newFId) {
                             if (fd.childrenIds && fd.childrenIds.map(String).includes(String(newFId))) { alert("Lỗi Logic: Con cái không thể trở thành Bố của chính mình (Vòng lặp gia phả)!"); return; }
                             if (fd.spouseIds && fd.spouseIds.map(String).includes(String(newFId))) { alert("Lỗi Logic: Vợ/Chồng không thể là Bố của nhau!"); return; }
@@ -664,23 +584,12 @@
                             if (fd.childrenIds && fd.childrenIds.map(String).includes(String(newMId))) { alert("Lỗi Logic: Con cái không thể trở thành Mẹ của chính mình (Vòng lặp gia phả)!"); return; }
                             if (fd.spouseIds && fd.spouseIds.map(String).includes(String(newMId))) { alert("Lỗi Logic: Vợ/Chồng không thể là Mẹ của nhau!"); return; }
                         }
-                        // --- END VALIDATION ---
-
                         if(old.fatherId && old.fatherId !== newFId) { const oldF = tree.members.find(x=>String(x.id)===String(old.fatherId)); if(oldF && oldF.childrenIds) oldF.childrenIds = oldF.childrenIds.filter(c=>String(c)!==String(old.id)); }
                         if(old.motherId && old.motherId !== newMId) { const oldM = tree.members.find(x=>String(x.id)===String(old.motherId)); if(oldM && oldM.childrenIds) oldM.childrenIds = oldM.childrenIds.filter(c=>String(c)!==String(old.id)); }
                         fd.fatherId = newFId; fd.motherId = newMId;
                         if(newFId) { const newF = tree.members.find(x=>String(x.id)===String(newFId)); if(newF) { if(!newF.childrenIds) newF.childrenIds=[]; if(!newF.childrenIds.includes(fd.id)) newF.childrenIds.push(fd.id); } }
                         if(newMId) { const newM = tree.members.find(x=>String(x.id)===String(newMId)); if(newM) { if(!newM.childrenIds) newM.childrenIds=[]; if(!newM.childrenIds.includes(fd.id)) newM.childrenIds.push(fd.id); } }
-                        // Sync spouses for parents
-                        if(newFId && newMId) { 
-                            const f = tree.members.find(x=>String(x.id)===String(newFId)); 
-                            const m = tree.members.find(x=>String(x.id)===String(newMId)); 
-                            if(f && m) { 
-                                if(!f.spouseIds) f.spouseIds=[]; if(!m.spouseIds) m.spouseIds=[]; 
-                                if(!f.spouseIds.includes(m.id)) f.spouseIds.push(m.id); 
-                                if(!m.spouseIds.includes(f.id)) m.spouseIds.push(f.id); 
-                            } 
-                        }
+                        if(newFId && newMId) { const f = tree.members.find(x=>String(x.id)===String(newFId)); const m = tree.members.find(x=>String(x.id)===String(newMId)); if(f && m) { if(!f.spouseIds) f.spouseIds=[]; if(!m.spouseIds) m.spouseIds=[]; if(!f.spouseIds.includes(m.id)) f.spouseIds.push(m.id); if(!m.spouseIds.includes(f.id)) m.spouseIds.push(f.id); } }
                         tree.members[idx]=fd; 
                     }
                 } else {
@@ -697,14 +606,8 @@
                     else if(this.state.actionMode==='ADD_SPOUSE'){ const p=this.getMember(this.state.targetRelatedId); if(!p.spouseIds) p.spouseIds=[]; p.spouseIds.push(fd.id); fd.spouseIds.push(p.id); }
                     else if(this.state.actionMode==='ADD_PARENT'){ 
                         const c=this.getMember(this.state.targetRelatedId); 
-                        if(fd.gender==='male') {
-                            if(c.fatherId) { const oldF = tree.members.find(x=>String(x.id)===String(c.fatherId)); if(oldF && oldF.childrenIds) oldF.childrenIds = oldF.childrenIds.filter(id=>String(id)!==String(c.id)); }
-                            c.fatherId=fd.id; 
-                        } else {
-                            if(c.motherId) { const oldM = tree.members.find(x=>String(x.id)===String(c.motherId)); if(oldM && oldM.childrenIds) oldM.childrenIds = oldM.childrenIds.filter(id=>String(id)!==String(c.id)); }
-                            c.motherId=fd.id; 
-                        }
-                        // Auto link parents as spouses
+                        if(fd.gender==='male') { if(c.fatherId) { const oldF = tree.members.find(x=>String(x.id)===String(c.fatherId)); if(oldF && oldF.childrenIds) oldF.childrenIds = oldF.childrenIds.filter(id=>String(id)!==String(c.id)); } c.fatherId=fd.id; } 
+                        else { if(c.motherId) { const oldM = tree.members.find(x=>String(x.id)===String(c.motherId)); if(oldM && oldM.childrenIds) oldM.childrenIds = oldM.childrenIds.filter(id=>String(id)!==String(c.id)); } c.motherId=fd.id; }
                         if(fd.gender==='male' && c.motherId) { const m = this.getMember(c.motherId); if(m) { if(!m.spouseIds) m.spouseIds=[]; if(!m.spouseIds.includes(fd.id)) m.spouseIds.push(fd.id); fd.spouseIds.push(m.id); } } 
                         else if(fd.gender!=='male' && c.fatherId) { const f = this.getMember(c.fatherId); if(f) { if(!f.spouseIds) f.spouseIds=[]; if(!f.spouseIds.includes(fd.id)) f.spouseIds.push(fd.id); fd.spouseIds.push(f.id); } }
                         if(!fd.childrenIds) fd.childrenIds=[]; fd.childrenIds.push(c.id);
@@ -732,7 +635,6 @@
             },
             toggleCollapse(id){ const m=this.getMember(id); if(m){m.collapsed=!m.collapsed; this.saveTree(this.data.trees.find(t=>t.id===this.state.currentTreeId)); this.renderTreeGraph();} },
 
-            // --- FIX: Hàm xử lý lỗi ảnh riêng biệt để tránh xung đột dấu nháy HTML ---
             handleImageError(img, gender) {
                 const defaultIcon = gender === 'male' ? '<i class="fas fa-male" style="font-size: 30px; color: #34495e;"></i>' : '<i class="fas fa-female" style="font-size: 30px; color: #e91e63;"></i>';
                 const div = document.createElement('div'); div.className = 'node-img';
@@ -766,89 +668,47 @@
                 const c=document.getElementById('tree-render-area'); c.innerHTML='';
                 const t=this.data.trees.find(x=>x.id===this.state.currentTreeId);
                 if(!t||t.members.length===0){ c.innerHTML='<div style="margin-top:50px;text-align:center"><button class="btn btn-primary" onclick="app.openMemberModal(\'ROOT\')">Thêm Gốc</button></div>'; return; }
-                
-                // Ensure all IDs are treated as strings for comparison
                 const memberIds = new Set(t.members.map(m => String(m.id)));
                 const hasParents = (m) => (m.fatherId && memberIds.has(String(m.fatherId))) || (m.motherId && memberIds.has(String(m.motherId)));
-
-                // --- ROBUST CHILD MAP BUILDING ---
                 this.childMap = {};
                 t.members.forEach(m => {
                     const mId = String(m.id);
-                    if (m.childrenIds && Array.isArray(m.childrenIds)) {
-                        if(!this.childMap[mId]) this.childMap[mId] = new Set();
-                        m.childrenIds.forEach(cid => this.childMap[mId].add(String(cid)));
-                    }
-                    if(m.fatherId) { 
-                        const fId = String(m.fatherId);
-                        if(!this.childMap[fId]) this.childMap[fId] = new Set(); 
-                        this.childMap[fId].add(mId); 
-                    }
-                    if(m.motherId) { 
-                        const moId = String(m.motherId);
-                        if(!this.childMap[moId]) this.childMap[moId] = new Set(); 
-                        this.childMap[moId].add(mId); 
-                    }
+                    if (m.childrenIds && Array.isArray(m.childrenIds)) { if(!this.childMap[mId]) this.childMap[mId] = new Set(); m.childrenIds.forEach(cid => this.childMap[mId].add(String(cid))); }
+                    if(m.fatherId) { const fId = String(m.fatherId); if(!this.childMap[fId]) this.childMap[fId] = new Set(); this.childMap[fId].add(mId); }
+                    if(m.motherId) { const moId = String(m.motherId); if(!this.childMap[moId]) this.childMap[moId] = new Set(); this.childMap[moId].add(mId); }
                 });
-
-                // --- LOGIC MỚI: ƯU TIÊN DÒNG DÕI CỦA NGƯỜI TẠO ĐẦU TIÊN ---
                 const anchorMember = t.members[0];
                 let primaryRoot = anchorMember;
                 let safeGuard = 0;
                 while (primaryRoot && safeGuard < 100) {
                     const dad = primaryRoot.fatherId ? t.members.find(m => String(m.id) === String(primaryRoot.fatherId)) : null;
                     const mom = primaryRoot.motherId ? t.members.find(m => String(m.id) === String(primaryRoot.motherId)) : null;
-                    if (dad) primaryRoot = dad;
-                    else if (mom) primaryRoot = mom;
-                    else break;
+                    if (dad) primaryRoot = dad; else if (mom) primaryRoot = mom; else break;
                     safeGuard++;
                 }
-
                 const mainLineIds = new Set();
                 const queue = [String(primaryRoot.id)];
                 const visited = new Set();
-                
                 while(queue.length > 0) {
                     const currentId = queue.shift();
                     if (visited.has(currentId)) continue;
                     visited.add(currentId);
                     mainLineIds.add(currentId);
-
-                    if (this.childMap[currentId]) {
-                        this.childMap[currentId].forEach(childId => queue.push(childId));
-                    }
+                    if (this.childMap[currentId]) { this.childMap[currentId].forEach(childId => queue.push(childId)); }
                 }
-
                 let roots = t.members.filter(m => {
                     if (hasParents(m)) return false;
                     const mId = String(m.id);
                     if (mId === String(primaryRoot.id)) return true;
                     let isSpouseOfMain = false;
-                    if (m.spouseIds) {
-                        m.spouseIds.forEach(sid => {
-                            if (mainLineIds.has(String(sid))) isSpouseOfMain = true;
-                        });
-                    }
+                    if (m.spouseIds) { m.spouseIds.forEach(sid => { if (mainLineIds.has(String(sid))) isSpouseOfMain = true; }); }
                     if (isSpouseOfMain) return false;
                     let isParentOfSpouseOfMain = false;
-                    if (this.childMap[mId]) {
-                        this.childMap[mId].forEach(childId => {
-                            const child = t.members.find(x => String(x.id) === String(childId));
-                            if (child && child.spouseIds) {
-                                child.spouseIds.forEach(grandSpouseId => {
-                                    if (mainLineIds.has(String(grandSpouseId))) {
-                                        isParentOfSpouseOfMain = true;
-                                    }
-                                });
-                            }
-                        });
-                    }
+                    if (this.childMap[mId]) { this.childMap[mId].forEach(childId => { const child = t.members.find(x => String(x.id) === String(childId)); if (child && child.spouseIds) { child.spouseIds.forEach(grandSpouseId => { if (mainLineIds.has(String(grandSpouseId))) { isParentOfSpouseOfMain = true; } }); } }); }
                     if (isParentOfSpouseOfMain) return false;
                     return true;
                 });
-
                 roots.sort((a,b)=>(a.gender==='male'&&b.gender!=='male')?-1:1);
-                
                 const ul=document.createElement('ul');
                 roots.forEach(r=>ul.appendChild(this.createNodeElement(r,t,null)));
                 c.appendChild(ul);
@@ -856,39 +716,36 @@
 
             createSingleMemberCard(m, label=null, isMini=false){
                 const d=document.createElement('div'); d.className=`member-node ${m.gender} ${isMini?'mini':''}`; if(!m.isAlive) d.classList.add('deceased');
+                
+                // --- EDIT FORM TRIGGER: Click NODE BODY ---
                 d.onclick=(e)=>{e.stopPropagation();this.openMemberModal('EDIT',m.id);};
                 
                 let contentHtml = '';
                 if(label) contentHtml += `<span class="role-badge ${m.gender==='male'?'badge-male':'badge-female'}">${label}</span>`;
                 
                 let defaultIcon = m.gender === 'male' ? `<i class="fas fa-male" style="font-size: 30px; color: #34495e;"></i>` : `<i class="fas fa-female" style="font-size: 30px; color: #e91e63;"></i>`;
-                
                 const ic = m.photoUrl ? `<img src="${m.photoUrl}" class="node-img" onerror="app.handleImageError(this, '${m.gender}')">` : `<div class="node-img" style="background: #f0f0f0; border: 2px solid ${m.gender==='male'?'#2c3e50':'#e91e63'};">${defaultIcon}</div>`;
                 
                 contentHtml += `${ic}<div class="node-name">${m.fullName}</div>`;
                 
                 if(!isMini) {
                     contentHtml += `<div class="node-dates">${m.dob?m.dob.split('-')[0]:''}</div>`;
-                    
-                    // Thêm thông tin Nghề nghiệp và Ghi chú
                     const infoParts = [];
                     if(m.job && m.job.trim()) infoParts.push(m.job);
                     if(m.notes && m.notes.trim()) infoParts.push(m.notes);
-                    
                     if(infoParts.length > 0) {
                         const infoStr = infoParts.join(' - ');
                         contentHtml += `<div class="node-info" title="${infoStr.replace(/"/g, '&quot;')}">${infoStr}</div>`;
                     }
                 }
-                
                 d.innerHTML = contentHtml;
 
-                // Nút Edit
-                const editBtn = document.createElement('div');
-                editBtn.className = 'node-edit-btn';
-                editBtn.innerHTML = '<i class="fas fa-pen"></i>';
-                editBtn.onclick = (e) => { 
-                    e.stopPropagation(); 
+                // --- MENU TRIGGER: Click PEN ICON ---
+                const menuBtn = document.createElement('div');
+                menuBtn.className = 'node-menu-btn'; // Changed class name for semantic clarity
+                menuBtn.innerHTML = '<i class="fas fa-pen"></i>';
+                menuBtn.onclick = (e) => { 
+                    e.stopPropagation(); // Prevent opening Edit modal
                     const wasHidden = document.getElementById('global-popup-menu').classList.contains('hidden'); 
                     app.closeAllMenus(); 
                     if(wasHidden) { 
@@ -898,7 +755,7 @@
                         if(li) li.classList.add('active-branch'); 
                     } 
                 };
-                d.appendChild(editBtn);
+                d.appendChild(menuBtn);
                 
                 return d;
             },
@@ -906,31 +763,23 @@
             createNodeElement(m, tree, ctx=null) {
                 const li=document.createElement('li'); if(m.collapsed) li.classList.add('collapsed');
                 const div=document.createElement('div'); div.className='node-container';
-                
-                // --- CRITICAL FIX: INFINITE LOOP PROTECTION ---
-                // Determine valid spouses: Remove anyone who is also a child or parent of this node
                 let rawSpouseIds = m.spouseIds || [];
                 const knownChildren = new Set();
                 if(this.childMap[String(m.id)]) this.childMap[String(m.id)].forEach(c=>knownChildren.add(c));
-                
-                // Filter: Keep only if NOT a child AND NOT a parent
                 const mySpouseIds = rawSpouseIds.filter(sid => {
                     const sIdStr = String(sid);
-                    if (knownChildren.has(sIdStr)) return false; // It's a child, not a spouse (corruption)
-                    if (String(m.fatherId) === sIdStr) return false; // It's a parent (corruption)
+                    if (knownChildren.has(sIdStr)) return false;
+                    if (String(m.fatherId) === sIdStr) return false; 
                     if (String(m.motherId) === sIdStr) return false;
                     return true;
                 });
-                
                 if(mySpouseIds.length > 0) div.classList.add('has-spouse');
-                
                 if(ctx) {
                     const {mainId, spouseIds, mainGender} = ctx;
                     const safeSpouseIds = spouseIds || []; 
                     const fatherIsMain = String(m.fatherId) === String(mainId); 
                     const motherIsMain = String(m.motherId) === String(mainId);
                     const isCommon = (fatherIsMain && m.motherId && safeSpouseIds.includes(m.motherId)) || (motherIsMain && m.fatherId && safeSpouseIds.includes(m.fatherId));
-                    
                     if(!isCommon && safeSpouseIds.length > 0) {
                         let txt="", dir="";
                         if(fatherIsMain && mainGender==='male') { txt="Con riêng Bố"; dir="point-left"; }
@@ -939,10 +788,8 @@
                         const wr=document.createElement('div'); wr.className=`connector-wrapper ${dir}`; wr.innerHTML=`<div class="connector-label">${txt}</div><div class="connector-line"></div>`; div.appendChild(wr);
                     }
                 }
-
                 let mLabel=(mySpouseIds.length > 0)?(m.gender==='male'?'Chồng':'Vợ'):null;
                 div.appendChild(this.createSingleMemberCard(m, mLabel));
-                
                 mySpouseIds.forEach(sid=>{ 
                     const s=tree.members.find(x=>String(x.id)===String(sid)); 
                     if(s) {
@@ -956,41 +803,30 @@
                         } else { div.appendChild(this.createSingleMemberCard(s, s.gender==='male'?'Chồng':'Vợ')); }
                     }
                 }); 
-                
                 const currentGroupIds = [String(m.id), ...mySpouseIds.map(id => String(id))];
                 let allChildIds = new Set();
                 currentGroupIds.forEach(pid => {
                     if(this.childMap[pid]) this.childMap[pid].forEach(cid => allChildIds.add(cid));
                 });
-
                 if(allChildIds.size > 0) {
                     const btn=document.createElement('div'); btn.className='toggle-btn'; btn.innerHTML=m.collapsed?'<i class="fas fa-plus"></i>':'<i class="fas fa-minus"></i>';
                     btn.onclick=(e)=>{e.stopPropagation();this.toggleCollapse(m.id);}; div.appendChild(btn);
                 }
                 li.appendChild(div);
-
                 if(allChildIds.size > 0) {
                     const ulChild=document.createElement('ul');
                     let children = Array.from(allChildIds).map(id=>tree.members.find(x=>String(x.id)===String(id))).filter(x=>x);
-                    
                     children.sort((a,b)=>{
                         const aF = String(a.fatherId); const aM = String(a.motherId);
                         const bF = String(b.fatherId); const bM = String(b.motherId);
                         const mId = String(m.id);
                         const parentSpouses = m.spouseIds || []; 
-
                         const isACommon = (aF === mId && parentSpouses.includes(a.motherId)) || (aM === mId && parentSpouses.includes(a.fatherId));
                         const isBCommon = (bF === mId && parentSpouses.includes(b.motherId)) || (bM === mId && parentSpouses.includes(b.fatherId));
                         const isAMainP = !isACommon && (aF === mId || aM === mId); 
                         const isBMainP = !isBCommon && (bF === mId || bM === mId);
-                        
-                        if(isAMainP && !isBMainP) return -1; 
-                        if(!isAMainP && isBMainP) return 1; 
-                        if(isACommon && !isBCommon) return -1; 
-                        if(!isACommon && isBCommon) return 1; 
-                        return (a.dob||"").localeCompare(b.dob||"");
+                        if(isAMainP && !isBMainP) return -1; if(!isAMainP && isBMainP) return 1; if(isACommon && !isBCommon) return -1; if(!isACommon && isBCommon) return 1; return (a.dob||"").localeCompare(b.dob||"");
                     });
-                    
                     const nextCtx = { mainId: m.id, mainGender: m.gender, spouseIds: mySpouseIds };
                     children.forEach(child=>ulChild.appendChild(this.createNodeElement(child, tree, nextCtx)));
                     li.appendChild(ulChild);
