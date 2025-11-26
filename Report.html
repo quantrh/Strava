@@ -867,10 +867,17 @@
             return `${Math.round(meters)} m`;
         }
         
-        // Function to format kilojoules (kJ)
+        // Cập nhật: Hàm formatKilojoules chỉ trả về giá trị số hoặc 'N/A'
         function formatKilojoules(kilojoules) {
             if (kilojoules === null || isNaN(kilojoules) || kilojoules === 0) return 'N/A';
-            // Format to nearest whole number, add thousands separator, and append " KJ"
+            // Trả về giá trị số được làm tròn
+            return Math.round(kilojoules);
+        }
+
+        // Hàm mới để hiển thị giá trị năng lượng KÈM ĐƠN VỊ (cho modal, tooltip, v.v.)
+        function formatKilojoulesDisplay(kilojoules) {
+            if (kilojoules === null || isNaN(kilojoules) || kilojoules === 0) return 'N/A';
+            // Format có đơn vị và dấu phân cách hàng nghìn
             return `${Math.round(kilojoules).toLocaleString('vi-VN')} KJ`;
         }
         
@@ -1088,10 +1095,9 @@
                     return;
                 }
 
-                // Cập nhật câu lệnh SELECT: Thay vì truy vấn `kilojoules` trực tiếp, ta truy vấn cột `data` (JSONB)
+                // Cập nhật câu lệnh SELECT: Truy vấn cột 'data' để lấy kilojoules từ JSONB
                 let query = supabaseClientInstance
                     .from('activities')
-                    // Thêm cột 'data' vào truy vấn để lấy giá trị kilojoules từ đó
                     .select('strava_activity_id, name, type, distance, moving_time, total_elevation_gain, start_date, average_speed, average_heartrate, user_id, data')
                     .in('user_id', queryRunnerIds); // Filter by runner IDs
 
@@ -1257,7 +1263,7 @@
                     <td>${(activity.distance / 1000).toFixed(2)}</td>
                     <td>${formatTime(activity.moving_time)}</td>
                     <td>${formatPaceForTable(activity.average_speed)}</td>
-                    <td>${formatKilojoules(activity.kilojoules)}</td> <!-- Hiển thị trường kilojoules mới -->
+                    <td>${formatKilojoules(activity.kilojoules)}</td> <!-- Hiển thị giá trị số đã được format -->
                     <td>${activity.average_heartrate ? activity.average_heartrate.toFixed(0) : 'N/A'}</td>
                     <td>${formatElevationGain(activity.total_elevation_gain)}</td>
                 `;
@@ -1528,7 +1534,7 @@
                         <p class="text-sm text-gray-600">Quãng đường: ${(activity.distance / 1000).toFixed(2)} km</p>
                         <p class="text-sm text-gray-600">Thời gian: ${formatTime(activity.moving_time)}</p>
                         <p class="text-sm text-gray-600">Pace: ${formatPaceForTable(activity.average_speed)}</p>
-                        <p class="text-sm text-gray-600">Năng lượng: ${formatKilojoules(activity.kilojoules)}</p> <!-- Thêm kilojoules vào modal -->
+                        <p class="text-sm text-gray-600">Năng lượng: ${formatKilojoulesDisplay(activity.kilojoules)}</p> <!-- Sử dụng hàm mới KÈM ĐƠN VỊ -->
                         ${activity.strava_activity_id ? `<button class="btn-primary mt-2 text-xs px-2 py-1 view-map-btn" data-activity-id="${activity.strava_activity_id}">Xem bản đồ</button>` : ''}
                     `;
                     weeklyActivitiesList.appendChild(li);
