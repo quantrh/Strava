@@ -1088,10 +1088,11 @@
                     return;
                 }
 
-                // Cập nhật câu lệnh SELECT để bổ sung trường 'kilojoules'
+                // Cập nhật câu lệnh SELECT: Thay vì truy vấn `kilojoules` trực tiếp, ta truy vấn cột `data` (JSONB)
                 let query = supabaseClientInstance
                     .from('activities')
-                    .select('strava_activity_id, name, type, distance, moving_time, total_elevation_gain, start_date, average_speed, average_heartrate, user_id, kilojoules')
+                    // Thêm cột 'data' vào truy vấn để lấy giá trị kilojoules từ đó
+                    .select('strava_activity_id, name, type, distance, moving_time, total_elevation_gain, start_date, average_speed, average_heartrate, user_id, data')
                     .in('user_id', queryRunnerIds); // Filter by runner IDs
 
                 if (selectedActivityTypesReport.length > 0) {
@@ -1143,6 +1144,10 @@
                 // Process fetched data to include formatted fields for Chart.js and D3.js
                 allActivitiesData = data.map(activity => ({
                     ...activity,
+                    // Lấy giá trị kilojoules từ cột data (JSONB)
+                    kilojoules: activity.data ? activity.data.kilojoules : null,
+                    // Xóa cột data sau khi đã trích xuất, để giữ sạch sẽ cho các bước xử lý sau
+                    data: undefined, 
                     start_date: new Date(activity.start_date), // Convert date string to Date object
                     distance_km: (activity.distance / 1000).toFixed(2), // Convert meters to km
                     moving_time_formatted: formatTime(activity.moving_time),
@@ -1394,7 +1399,7 @@
                 .enter().append("text")
                 .attr("class", "weekly-bubble-text")
                 .attr("x", d => x(d.week) + x.bandwidth() / 2)
-                .attr("y", d => y(d.totalDistance))
+                .attr("y", d => d.y)
                 .text(d => `${(d.totalDistance / 1000).toFixed(0)}km`) // Display KM value
                 .attr("dy", "0.35em")
                 .attr("text-anchor", "middle")
