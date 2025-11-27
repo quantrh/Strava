@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BankB Ebank | Virtual Account Management</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        bankb: {
+                            primary: '#006B68', // BankB Green (formerly BIDV)
+                            accent: '#FFC62F',  // BankB Yellow
+                            red: '#D0202E',     // BankB Red
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- React & ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <!-- Babel for JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <!-- Google Font: Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; }
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #c1c1c1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #a8a8a8; }
+        
+        .animate-bounce-in { animation: bounceIn 0.5s cubic-bezier(0.68, -0.55, 0.27, 1.55); }
+        @keyframes bounceIn {
+            0% { transform: scale(0); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useMemo } = React;
+        
+        // --- TRANSLATION RESOURCES ---
+        const resources = {
+            vi: {
+                app_name: "BankB Ebank | Virtual Account",
+                subtitle: "Hệ thống quản lý tài khoản định danh",
+                welcome: "Xin chào",
+                reset_demo: "Reset Demo",
+                menu: {
+                    dashboard: "Tổng Quan",
+                    onboarding: "Hồ Sơ Doanh Nghiệp",
+                    lifecycle: "Quản Lý VA (N Cấp)",
+                    identifiers: "Định Danh & Routing",
+                    transactions: "Giao Dịch (POBO)",
+                    reports: "Báo Cáo & Đối Soát",
+                    guide: "Hướng Dẫn & Thuật Ngữ"
+                },
+                dashboard: {
+                    title: "Dashboard Tổng Quan",
+                    total_shadow: "Tổng Số Dư Ảo (Shadow)",
+                    active_vas: "Số lượng VA Hoạt động",
+                    tx_today: "Giao dịch ghi nhận",
+                    dda_info: "Thông tin Tài khoản Thực (DDA) - Core Banking",
+                    account_no: "Số Tài Khoản",
+                    cif: "CIF Doanh Nghiệp",
+                    real_balance: "Số Dư Thực Tế",
+                    status: "Trạng Thái"
+                },
+                onboarding: {
+                    title: "Hồ Sơ Doanh Nghiệp (Corporate Profile)",
+                    cif_label: "Mã CIF (Core Banking)",
+                    name_label: "Tên Doanh Nghiệp",
+                    corp_id_label: "Corporate ID (Hệ thống VA)",
+                    segment_label: "Phân khúc",
+                    dda_list: "Danh sách Tài khoản DDA liên kết",
+                    edit: "Chỉnh Sửa",
+                    save: "Lưu Thay Đổi"
+                },
+                lifecycle: {
+                    title: "Quản lý Cây Thư Mục VA (Multi-level)",
+                    add_btn: "Thêm Sub-Account Mới",
+                    table_code: "Mã VA",
+                    table_name: "Tên Tài Khoản Ảo",
+                    table_balance: "Số Dư (Shadow)",
+                    table_status: "Trạng Thái",
+                    table_meta: "Metadata",
+                    modal_title: "Tạo Virtual Account Mới",
+                    modal_parent: "VA Cha (Parent)",
+                    modal_meta_title: "METADATA (Tùy chọn)",
+                    btn_cancel: "Hủy",
+                    btn_create: "Tạo Mới"
+                },
+                identifiers: {
+                    map_title: "Map Định Danh (Identifier)",
+                    type_label: "Loại Định Danh",
+                    value_label: "Giá Trị (VD: MST-001)",
+                    target_va_label: "Map vào VA nào?",
+                    btn_add: "Thêm Mapping",
+                    list_title: "Danh sách Routing Rules",
+                    table_action: "Hành Động"
+                },
+                transactions: {
+                    incoming: "Tiền Vào (Credit)",
+                    outgoing: "Chi Hộ (POBO)",
+                    routing_content: "Nội dung GD (Routing)",
+                    va_label: "Tài Khoản Ảo (VA)",
+                    amount_label: "Số Tiền",
+                    beneficiary_label: "Người Thụ Hưởng",
+                    payment_content: "Nội dung thanh toán",
+                    btn_credit: "Ghi Có (Shadow Credit)",
+                    btn_debit: "Lập Lệnh Chi (POBO)",
+                    history_title: "Lịch sử Giao dịch (Shadow Ledger)",
+                    table_time: "Thời gian",
+                    table_type: "Loại",
+                    table_content: "Nội dung"
+                },
+                reports: {
+                    summary_title: "Báo Cáo Tổng Hợp Theo Phân Cấp",
+                    statement_title: "Sao Kê Chi Tiết (Statement)",
+                    level: "Cấp độ",
+                    total_in: "Tổng Thu (In)",
+                    total_out: "Tổng Chi (Out)"
+                },
+                guide: {
+                    title: "Hướng Dẫn Sử Dụng & Thuật Ngữ",
+                    glossary_title: "Giải Thích Thuật Ngữ & Từ Viết Tắt",
+                    guide_title: "Hướng Dẫn Chi Tiết (Quy Trình Nghiệp Vụ)",
+                    terms: {
+                        VA: "Virtual Account (Tài khoản ảo/định danh). Là tài khoản phụ (Sub-account) được sinh ra để định danh dòng tiền, không phải tài khoản thực tại Core Banking.",
+                        DDA: "Demand Deposit Account (Tài khoản thanh toán). Là tài khoản thực của doanh nghiệp tại ngân hàng, nơi chứa tiền thực tế.",
+                        Shadow: "Shadow Posting/Ledger (Sổ cái ảo). Cơ chế ghi nhận số dư song song. Tiền vào VA được ghi nhận tăng số dư ảo ngay lập tức để doanh nghiệp quản lý, dù tiền thực vẫn nằm chung tại DDA mẹ.",
+                        POBO: "Payments On Behalf Of (Chi hộ). Thực hiện lệnh chuyển tiền đi từ tài khoản ảo. Hệ thống sẽ kiểm tra số dư ảo của VA đó trước, sau đó mới trừ tiền thật từ DDA.",
+                        CIF: "Customer Information File. Mã số định danh duy nhất của khách hàng tại ngân hàng.",
+                        Identifier: "Mã định danh. Các thông tin như Mã hợp đồng, Mã thuế, Số hóa đơn... được gán (map) vào VA. Khi giao dịch có chứa các mã này, hệ thống tự động điều hướng tiền vào VA tương ứng."
+                    },
+                    steps: [
+                        {
+                            title: "Bước 1: Thiết lập Hồ sơ Doanh nghiệp (Onboarding)",
+                            desc: "Tại tab 'Hồ Sơ Doanh Nghiệp', Nhân viên vận hành (OPS) kiểm tra thông tin công ty và danh sách tài khoản thực (DDA) được đồng bộ từ Core Banking. Đây là bước tiên quyết để hệ thống biết tiền thực đang nằm ở đâu."
+                        },
+                        {
+                            title: "Bước 2: Xây dựng Cây Tài khoản (VA Lifecycle)",
+                            desc: "Tại tab 'Quản Lý VA', doanh nghiệp tự định nghĩa cấu trúc tài khoản phân cấp (Ví dụ: Công ty mẹ -> Dự án A -> Gói thầu 1). Mỗi VA con được tạo ra sẽ có mã riêng và Metadata (thông tin bổ trợ như Mã dự án, Mã hộ dân) đi kèm để phục vụ báo cáo."
+                        },
+                        {
+                            title: "Bước 3: Cấu hình Định tuyến (Routing)",
+                            desc: "Tại tab 'Định Danh & Routing', người dùng gán các mã định danh (Hợp đồng, MST, Số hóa đơn) vào từng VA cụ thể. Ví dụ: Gán mã 'HD-001' vào VA Dự án A. Khi tiền về có nội dung chứa 'HD-001', tiền sẽ tự động chảy vào Dự án A."
+                        },
+                        {
+                            title: "Bước 4: Thực hiện Giao dịch (Transactions)",
+                            desc: "Hỗ trợ 2 chiều: (1) Incoming Credit: Giả lập tiền vào, hệ thống dùng Rules ở Bước 3 để tự động ghi có (Shadow Credit). (2) Outgoing POBO: Lập lệnh chi từ VA, hệ thống kiểm tra 2 lớp: Số dư ảo của VA và Số dư thực của DDA."
+                        },
+                        {
+                            title: "Bước 5: Báo cáo & Đối soát (Reporting)",
+                            desc: "Xem báo cáo tổng hợp dòng tiền theo mô hình cây (Roll-up balance) hoặc xem sao kê chi tiết từng tài khoản ảo để phục vụ đối soát với kế toán nội bộ."
+                        }
+                    ]
+                }
+            },
+            en: {
+                app_name: "BankB Ebank | Virtual Account",
+                subtitle: "Virtual Account Management System",
+                welcome: "Welcome",
+                reset_demo: "Reset Demo",
+                menu: {
+                    dashboard: "Dashboard",
+                    onboarding: "Corporate Profile",
+                    lifecycle: "VA Management",
+                    identifiers: "Identity & Routing",
+                    transactions: "Transactions (POBO)",
+                    reports: "Reports & Recon",
+                    guide: "User Guide & Glossary"
+                },
+                dashboard: {
+                    title: "General Dashboard",
+                    total_shadow: "Total Shadow Balance",
+                    active_vas: "Active VAs",
+                    tx_today: "Transactions Today",
+                    dda_info: "Real Account Info (DDA) - Core Banking",
+                    account_no: "Account No",
+                    cif: "Corporate CIF",
+                    real_balance: "Real Balance",
+                    status: "Status"
+                },
+                onboarding: {
+                    title: "Corporate Profile",
+                    cif_label: "CIF Code",
+                    name_label: "Corporate Name",
+                    corp_id_label: "Corporate ID",
+                    segment_label: "Segment",
+                    dda_list: "Linked DDA Accounts",
+                    edit: "Edit",
+                    save: "Save Changes"
+                },
+                lifecycle: {
+                    title: "VA Hierarchy Management",
+                    add_btn: "Add New Sub-Account",
+                    table_code: "VA Code",
+                    table_name: "VA Name",
+                    table_balance: "Balance (Shadow)",
+                    table_status: "Status",
+                    table_meta: "Metadata",
+                    modal_title: "Create New Virtual Account",
+                    modal_parent: "Parent VA",
+                    modal_meta_title: "METADATA (Optional)",
+                    btn_cancel: "Cancel",
+                    btn_create: "Create"
+                },
+                identifiers: {
+                    map_title: "Map Identifier",
+                    type_label: "Identifier Type",
+                    value_label: "Value (e.g., TAX-001)",
+                    target_va_label: "Map to which VA?",
+                    btn_add: "Add Mapping",
+                    list_title: "Routing Rules List",
+                    table_action: "Action"
+                },
+                transactions: {
+                    incoming: "Incoming (Credit)",
+                    outgoing: "Outgoing (POBO)",
+                    routing_content: "Ref Content (Routing)",
+                    va_label: "Virtual Account (VA)",
+                    amount_label: "Amount",
+                    beneficiary_label: "Beneficiary",
+                    payment_content: "Payment Description",
+                    btn_credit: "Credit (Shadow)",
+                    btn_debit: "Debit Order (POBO)",
+                    history_title: "Transaction History (Shadow Ledger)",
+                    table_time: "Time",
+                    table_type: "Type",
+                    table_content: "Content"
+                },
+                reports: {
+                    summary_title: "Consolidated Report by Level",
+                    statement_title: "Detailed Statement",
+                    level: "Level",
+                    total_in: "Total In",
+                    total_out: "Total Out"
+                },
+                guide: {
+                    title: "User Guide & Glossary",
+                    glossary_title: "Glossary & Acronyms",
+                    guide_title: "Detailed User Guide (Business Process)",
+                    terms: {
+                        VA: "Virtual Account. A sub-account used for funds identification, not a real account in Core Banking.",
+                        DDA: "Demand Deposit Account. The actual checking account of the corporate where real funds are stored.",
+                        Shadow: "Shadow Posting/Ledger. A virtual bookkeeping mechanism. Funds credited to VA update virtual balance immediately.",
+                        POBO: "Payments On Behalf Of. Making payments from a virtual account. System checks virtual balance before debiting real funds.",
+                        CIF: "Customer Information File. Unique customer identifier in the bank.",
+                        Identifier: "Unique codes (Contract No, Tax Code, Invoice No) mapped to a VA for automatic funds routing."
+                    },
+                    steps: [
+                        {
+                            title: "Step 1: Corporate Onboarding",
+                            desc: "In 'Corporate Profile' tab, OPS verifies company info and linked real accounts (DDA) synced from Core Banking. This ensures the system knows where the real funds reside."
+                        },
+                        {
+                            title: "Step 2: Define Account Hierarchy (VA Lifecycle)",
+                            desc: "In 'VA Management' tab, corporate defines the multi-level structure (e.g., HQ -> Project A -> Package 1). Each sub-account has a unique code and Metadata (Project Code, Household ID) for reporting."
+                        },
+                        {
+                            title: "Step 3: Routing Configuration",
+                            desc: "In 'Identity & Routing' tab, map identifiers (Contract No, Tax ID) to specific VAs. E.g., Map 'CTR-001' to Project A VA. Incoming funds with 'CTR-001' in remarks will auto-route to Project A."
+                        },
+                        {
+                            title: "Step 4: Execute Transactions",
+                            desc: "Supports 2 flows: (1) Incoming Credit: Simulates incoming funds, uses Rules from Step 3 for auto-credit (Shadow). (2) Outgoing POBO: Payment from VA, system double-checks VA Balance (virtual) and DDA Balance (real)."
+                        },
+                        {
+                            title: "Step 5: Reporting & Reconciliation",
+                            desc: "View consolidated funds flow via hierarchy roll-up or check detailed statements per virtual account for internal reconciliation."
+                        }
+                    ]
+                }
+            }
+        };
+
+        // --- ICONS ---
+        const Icons = {
+            LayoutDashboard: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>,
+            Building2: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"/><path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"/><path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"/><path d="M10 6h4"/><path d="M10 10h4"/><path d="M10 14h4"/><path d="M10 18h4"/></svg>,
+            GitFork: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="18" r="3"/><circle cx="6" cy="6" r="3"/><circle cx="18" cy="6" r="3"/><path d="M18 9v1a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V9"/><path d="M12 12v3"/></svg>,
+            Tag: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l5 5a2 2 0 0 0 2.828 0l7.172-7.172a2 2 0 0 0 0-2.828z"/><path d="M7 7h.01"/></svg>,
+            ArrowRightLeft: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m16 3 4 4-4 4"/><path d="M20 7H4"/><path d="m8 21-4-4 4-4"/><path d="M4 17h16"/></svg>,
+            FileBarChart: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M8 18v-1"/><path d="M12 18v-6"/><path d="M16 18v-3"/></svg>,
+            Wallet: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1"/><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"/></svg>,
+            CheckCircle: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/></svg>,
+            Activity: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>,
+            Plus: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>,
+            Search: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>,
+            Trash2: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>,
+            BookOpen: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>,
+            Globe: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+        };
+
+        const IconWrapper = ({ name, size = 18, className = "" }) => {
+            const IconComp = Icons[name] || Icons.Activity;
+            return <IconComp width={size} height={size} className={className} />;
+        };
+
+        // --- UTILITIES ---
+        const generateId = () => Math.random().toString(36).substr(2, 9);
+        const formatDate = (date) => new Date(date).toLocaleDateString('vi-VN') + ' ' + new Date(date).toLocaleTimeString('vi-VN');
+        const loadState = (key, initialValue) => {
+            try { return localStorage.getItem(key) ? JSON.parse(localStorage.getItem(key)) : initialValue; } 
+            catch { return initialValue; }
+        };
+        const saveState = (key, value) => localStorage.setItem(key, JSON.stringify(value));
+
+        // --- MOCK INITIAL DATA ---
+        const initialCorporate = {
+            id: 'CORP001',
+            cif: 'CIF888999',
+            name: 'TỔNG CÔNG TY XÂY DỰNG ĐS',
+            segment: 'CORPORATE',
+            ddaAccounts: [
+                { id: 'DDA001', accountNo: '11110000123456', balance: 50000000000, currency: 'VND' },
+                { id: 'DDA002', accountNo: '22220000987654', balance: 15000000000, currency: 'VND' }
+            ]
+        };
+
+        const initialVAs = [
+            { id: 'VA_ROOT', code: 'VA000', name: 'TK Tổng Tập Đoàn', parentId: null, level: 0, balance: 25000000000, status: 'ACTIVE', metadata: {} },
+            { id: 'VA_PROJ_A', code: 'VA001', name: 'DA Cao tốc Bắc Nam - CP1', parentId: 'VA_ROOT', level: 1, balance: 10000000000, status: 'ACTIVE', metadata: { project_code: 'PJ-BN-01' } },
+            { id: 'VA_BLOCK_1', code: 'VA001-B1', name: 'Gói thầu XL01 - Licochu', parentId: 'VA_PROJ_A', level: 2, balance: 4000000000, status: 'ACTIVE', metadata: { contractor: 'Licochu' } },
+            { id: 'VA_BLOCK_2', code: 'VA001-B2', name: 'Gói thầu XL02 - Cầu Hưng Hà', parentId: 'VA_PROJ_A', level: 2, balance: 6000000000, status: 'ACTIVE', metadata: { contractor: 'Cienco' } },
+            { id: 'VA_PROJ_B', code: 'VA002', name: 'Khu Đô Thị Demo City', parentId: 'VA_ROOT', level: 1, balance: 15000000000, status: 'ACTIVE', metadata: { project_code: 'PJ-DEMO-CITY' } },
+            { id: 'VA_PROJ_B_BLK_A', code: 'VA002-A', name: 'Phân khu A - Biệt thự', parentId: 'VA_PROJ_B', level: 2, balance: 5000000000, status: 'ACTIVE', metadata: { zone: 'Villa' } },
+            { id: 'VA_PROJ_B_BLK_B', code: 'VA002-B', name: 'Phân khu B - Chung cư cao tầng', parentId: 'VA_PROJ_B', level: 2, balance: 8000000000, status: 'ACTIVE', metadata: { zone: 'Highrise' } },
+            { id: 'VA_PROJ_B_BLK_B_M', code: 'VA002-B-M', name: 'Ban QL Tòa nhà B1', parentId: 'VA_PROJ_B_BLK_B', level: 3, balance: 2000000000, status: 'ACTIVE', metadata: { unit: 'B1' } },
+        ];
+
+        const initialTx = [
+            { id: 'TX001', date: new Date().toISOString(), type: 'CREDIT', vaId: 'VA_BLOCK_1', vaCode: 'VA001-B1', vaName: 'Gói thầu XL01 - Licochu', amount: 4000000000, reference: 'Tam ung hop dong dot 1', beneficiary: '', status: 'SUCCESS' },
+            { id: 'TX002', date: new Date(Date.now() - 86400000).toISOString(), type: 'CREDIT', vaId: 'VA_PROJ_B_BLK_A', vaCode: 'VA002-A', vaName: 'Phân khu A - Biệt thự', amount: 5000000000, reference: 'Thu tien coc khach hang', beneficiary: '', status: 'SUCCESS' },
+        ];
+
+        const initialIdentifiers = [
+            { id: 'ID001', type: 'CONTRACT_NO', value: 'HD-XL01-2024', vaId: 'VA_BLOCK_1', status: 'ACTIVE' },
+            { id: 'ID002', type: 'TAX_CODE', value: '0100100099-001', vaId: 'VA_PROJ_A', status: 'ACTIVE' },
+            { id: 'ID003', type: 'INVOICE_NO', value: 'INV-2024-999', vaId: 'VA_PROJ_B_BLK_B', status: 'ACTIVE' },
+        ];
+
+        // --- MAIN APP COMPONENT ---
+        const App = () => {
+            const [activeTab, setActiveTab] = useState('DASHBOARD');
+            const [lang, setLang] = useState('vi'); // 'vi' or 'en'
+            
+            // Global State with Persistence
+            const [corporate, setCorporate] = useState(() => loadState('BANKB_CORP', initialCorporate));
+            const [virtualAccounts, setVirtualAccounts] = useState(() => loadState('BANKB_VAS', initialVAs));
+            const [transactions, setTransactions] = useState(() => loadState('BANKB_TXS', initialTx));
+            const [identifiers, setIdentifiers] = useState(() => loadState('BANKB_IDS', initialIdentifiers));
+            
+            const [notifications, setNotifications] = useState([]);
+
+            useEffect(() => saveState('BANKB_CORP', corporate), [corporate]);
+            useEffect(() => saveState('BANKB_VAS', virtualAccounts), [virtualAccounts]);
+            useEffect(() => saveState('BANKB_TXS', transactions), [transactions]);
+            useEffect(() => saveState('BANKB_IDS', identifiers), [identifiers]);
+
+            const notify = (msg, type = 'info') => {
+                const id = generateId();
+                setNotifications(prev => [...prev, { id, msg, type }]);
+                setTimeout(() => setNotifications(prev => prev.filter(n => n.id !== id)), 3000);
+            };
+
+            const handleResetData = () => {
+                if (confirm(lang === 'vi' ? 'Bạn có chắc chắn muốn xóa dữ liệu?' : 'Are you sure you want to reset data?')) {
+                    localStorage.clear();
+                    window.location.reload();
+                }
+            };
+
+            const t = (section, key) => {
+                try { return resources[lang][section][key] || key; } 
+                catch { return key; }
+            };
+
+            const toggleLang = () => setLang(prev => prev === 'vi' ? 'en' : 'vi');
+
+            const renderContent = () => {
+                switch (activeTab) {
+                    case 'DASHBOARD': return <Dashboard corporate={corporate} vas={virtualAccounts} txs={transactions} t={t} />;
+                    case 'ONBOARDING': return <CorporateOnboarding corporate={corporate} setCorporate={setCorporate} notify={notify} t={t} />;
+                    case 'VA_LIFECYCLE': return <VALifecycle vas={virtualAccounts} setVas={setVirtualAccounts} notify={notify} corporate={corporate} t={t} />;
+                    case 'TRANSACTIONS': return <TransactionHub vas={virtualAccounts} setVas={setVirtualAccounts} txs={transactions} setTxs={setTransactions} corporate={corporate} notify={notify} identifiers={identifiers} t={t} />;
+                    case 'IDENTIFIERS': return <IdentifierManager identifiers={identifiers} setIdentifiers={setIdentifiers} vas={virtualAccounts} notify={notify} t={t} />;
+                    case 'REPORTS': return <Reporting vas={virtualAccounts} txs={transactions} t={t} />;
+                    case 'GUIDE': return <UserGuide t={t} lang={lang} />;
+                    default: return <Dashboard corporate={corporate} vas={virtualAccounts} txs={transactions} t={t} />;
+                }
+            };
+
+            return (
+                <div className="min-h-screen flex flex-col font-sans text-gray-800">
+                    {/* Header */}
+                    <header className="bg-bankb-primary text-white p-4 shadow-md flex justify-between items-center relative overflow-hidden">
+                        <div className="absolute bottom-0 left-0 w-full h-1 bg-bankb-accent"></div>
+                        <div className="flex items-center gap-3 z-10">
+                            {/* Updated Logo from URL */}
+                            <img 
+                                src="https://logos-world.net/wp-content/uploads/2023/02/BIDV-Logo-500x281.png" 
+                                alt="BIDV Logo" 
+                                className="h-10 w-auto object-contain bg-white rounded-lg px-1 shadow"
+                            />
+                            <div>
+                                <h1 className="font-bold text-lg tracking-wide">{resources[lang].app_name}</h1>
+                                <p className="text-xs opacity-90 text-bankb-accent">{resources[lang].subtitle}</p>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-4 text-sm z-10">
+                            {/* Lang Toggle */}
+                            <button onClick={toggleLang} className="flex items-center gap-1 px-3 py-1 bg-white/10 hover:bg-white/20 rounded border border-white/20 transition-all">
+                                <IconWrapper name="Globe" size={14} />
+                                <span className="font-bold">{lang.toUpperCase()}</span>
+                            </button>
+
+                            <button onClick={handleResetData} className="flex items-center gap-1 px-3 py-1 bg-red-800 hover:bg-red-700 text-white rounded text-xs transition-colors border border-red-600">
+                                <IconWrapper name="Trash2" size={14} /> {resources[lang].reset_demo}
+                            </button>
+                            <div>
+                                <span className="opacity-75 block text-right text-xs">{resources[lang].welcome},</span>
+                                <span className="font-semibold text-white">Admin (OPS)</span>
+                            </div>
+                        </div>
+                    </header>
+
+                    {/* Layout */}
+                    <div className="flex flex-1 overflow-hidden">
+                        <nav className="w-64 bg-white border-r border-gray-200 flex flex-col shadow-sm relative">
+                            <div className="p-4 text-xs font-bold text-gray-400 uppercase tracking-wider">Apps / Modules</div>
+                            <NavButton active={activeTab === 'DASHBOARD'} onClick={() => setActiveTab('DASHBOARD')} icon="LayoutDashboard" label={t('menu', 'dashboard')} color="text-bankb-primary" />
+                            <NavButton active={activeTab === 'ONBOARDING'} onClick={() => setActiveTab('ONBOARDING')} icon="Building2" label={t('menu', 'onboarding')} color="text-blue-600" />
+                            <NavButton active={activeTab === 'VA_LIFECYCLE'} onClick={() => setActiveTab('VA_LIFECYCLE')} icon="GitFork" label={t('menu', 'lifecycle')} color="text-purple-600" />
+                            <NavButton active={activeTab === 'IDENTIFIERS'} onClick={() => setActiveTab('IDENTIFIERS')} icon="Tag" label={t('menu', 'identifiers')} color="text-orange-500" />
+                            <NavButton active={activeTab === 'TRANSACTIONS'} onClick={() => setActiveTab('TRANSACTIONS')} icon="ArrowRightLeft" label={t('menu', 'transactions')} color="text-green-600" />
+                            <NavButton active={activeTab === 'REPORTS'} onClick={() => setActiveTab('REPORTS')} icon="FileBarChart" label={t('menu', 'reports')} color="text-indigo-600" />
+                            
+                            <div className="mt-4 pt-4 border-t border-gray-100">
+                                <NavButton active={activeTab === 'GUIDE'} onClick={() => setActiveTab('GUIDE')} icon="BookOpen" label={t('menu', 'guide')} color="text-gray-600" />
+                            </div>
+
+                            <div className="mt-auto p-4 text-[10px] text-gray-400 text-center border-t">
+                                © 2024 BankB Ebank<br/>
+                                Bản quyền Trương Hồng Quân
+                            </div>
+                        </nav>
+
+                        <main className="flex-1 overflow-auto bg-gray-50 p-6 relative">
+                            {renderContent()}
+                            <div className="absolute top-4 right-4 flex flex-col gap-2 z-50">
+                                {notifications.map(n => (
+                                    <div key={n.id} className={`p-3 rounded shadow-lg text-white text-sm animate-bounce-in flex items-center gap-2 ${n.type === 'error' ? 'bg-bankb-red' : 'bg-bankb-primary'}`}>
+                                        <IconWrapper name={n.type === 'error' ? 'Activity' : 'CheckCircle'} size={16} />
+                                        {n.msg}
+                                    </div>
+                                ))}
+                            </div>
+                        </main>
+                    </div>
+                </div>
+            );
+        };
+
+        const NavButton = ({ active, onClick, icon, label, color }) => (
+            <button 
+                onClick={onClick}
+                className={`flex items-center gap-3 px-6 py-3.5 text-sm font-medium transition-all w-full text-left border-l-4
+                ${active ? 'bg-green-50 text-bankb-primary border-bankb-primary' : 'text-gray-600 hover:bg-gray-50 border-transparent'}`}
+            >
+                <IconWrapper name={icon} size={20} className={active ? 'text-bankb-primary' : color} />
+                {label}
+            </button>
+        );
+
+        // --- SUB COMPONENTS ---
+
+        const Dashboard = ({ corporate, vas, txs, t }) => {
+            const totalBalance = vas ? vas.reduce((sum, v) => sum + v.balance, 0) : 0;
+            const activeVAs = vas ? vas.filter(v => v.status === 'ACTIVE').length : 0;
+            const txToday = txs ? txs.length : 0;
+
+            return (
+                <div className="space-y-6">
+                    <h2 className="text-2xl font-bold text-gray-800">{t('dashboard', 'title')}</h2>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <StatCard title={t('dashboard', 'total_shadow')} value={totalBalance.toLocaleString() + ' VND'} icon="Wallet" color="text-emerald-600" bgColor="bg-emerald-100" />
+                        <StatCard title={t('dashboard', 'active_vas')} value={activeVAs} icon="CheckCircle" color="text-blue-600" bgColor="bg-blue-100" />
+                        <StatCard title={t('dashboard', 'tx_today')} value={txToday} icon="Activity" color="text-purple-600" bgColor="bg-purple-100" />
+                    </div>
+                    <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+                        <h3 className="font-semibold mb-4 text-bankb-primary flex items-center gap-2">
+                            <IconWrapper name="Building2" size={20} /> {t('dashboard', 'dda_info')}
+                        </h3>
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-sm text-left">
+                                <thead className="bg-gray-50 text-gray-600 uppercase">
+                                    <tr>
+                                        <th className="px-4 py-3">{t('dashboard', 'account_no')}</th>
+                                        <th className="px-4 py-3">{t('dashboard', 'cif')}</th>
+                                        <th className="px-4 py-3">{t('dashboard', 'real_balance')}</th>
+                                        <th className="px-4 py-3">{t('dashboard', 'status')}</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {corporate?.ddaAccounts.map(dda => (
+                                        <tr key={dda.id} className="border-b last:border-0 hover:bg-gray-50 transition-colors">
+                                            <td className="px-4 py-3 font-medium text-gray-800">{dda.accountNo}</td>
+                                            <td className="px-4 py-3 text-gray-500">{corporate.cif}</td>
+                                            <td className="px-4 py-3 font-bold text-bankb-primary text-lg">{dda.balance.toLocaleString()} {dda.currency}</td>
+                                            <td className="px-4 py-3"><span className="px-2 py-1 bg-green-100 text-green-800 rounded text-xs font-semibold">ACTIVE</span></td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const StatCard = ({ title, value, icon, color, bgColor }) => (
+            <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 flex items-center justify-between hover:shadow-md transition-shadow">
+                <div><p className="text-sm text-gray-500 font-medium mb-1">{title}</p><p className="text-2xl font-bold text-gray-800">{value}</p></div>
+                <div className={`p-4 rounded-full ${bgColor} ${color}`}><IconWrapper name={icon} size={28} /></div>
+            </div>
+        );
+
+        const UserGuide = ({ t, lang }) => {
+            const terms = resources[lang].guide.terms;
+            const steps = resources[lang].guide.steps || [];
+            return (
+                <div className="space-y-8">
+                    <h2 className="text-2xl font-bold text-gray-800">{t('guide', 'title')}</h2>
+                    
+                    {/* Glossary Section */}
+                    <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+                        <h3 className="text-lg font-bold mb-4 text-bankb-primary flex items-center gap-2">
+                            <IconWrapper name="BookOpen" /> {t('guide', 'glossary_title')}
+                        </h3>
+                        <div className="grid gap-4 md:grid-cols-2">
+                            {Object.entries(terms).map(([key, desc]) => (
+                                <div key={key} className="p-4 bg-gray-50 rounded border border-gray-100">
+                                    <span className="font-bold text-blue-700 block mb-1">{key}</span>
+                                    <p className="text-sm text-gray-600 leading-relaxed">{desc}</p>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Detailed Steps Guide */}
+                    <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+                         <h3 className="text-lg font-bold mb-6 text-gray-700 flex items-center gap-2">
+                            <IconWrapper name="Activity" className="text-orange-500" />
+                            {t('guide', 'guide_title')}
+                        </h3>
+                         <div className="space-y-6">
+                            {steps.map((step, index) => (
+                                <div key={index} className="flex gap-4">
+                                    <div className="w-8 h-8 rounded-full bg-bankb-primary text-white flex items-center justify-center font-bold flex-shrink-0 text-sm shadow-sm ring-4 ring-green-50">
+                                        {index + 1}
+                                    </div>
+                                    <div className="pt-1">
+                                        <h4 className="font-bold text-gray-800 mb-1">{step.title}</h4>
+                                        <p className="text-sm text-gray-600 leading-relaxed">{step.desc}</p>
+                                    </div>
+                                </div>
+                            ))}
+                         </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const CorporateOnboarding = ({ corporate, setCorporate, notify, t }) => {
+            const [isEditing, setIsEditing] = useState(false);
+            const [formData, setFormData] = useState(corporate);
+            const handleSave = () => { setCorporate(formData); setIsEditing(false); notify('Success'); };
+
+            return (
+                <div className="max-w-4xl mx-auto bg-white p-8 rounded-lg shadow-sm border border-gray-200">
+                    <div className="flex justify-between items-center mb-6 pb-4 border-b">
+                        <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2"><IconWrapper name="Building2" className="text-bankb-primary" />{t('onboarding', 'title')}</h2>
+                        <button onClick={() => isEditing ? handleSave() : setIsEditing(true)} className={`px-4 py-2 rounded text-white text-sm font-medium transition-colors ${isEditing ? 'bg-bankb-primary' : 'bg-gray-600'}`}>{isEditing ? t('onboarding', 'save') : t('onboarding', 'edit')}</button>
+                    </div>
+                    <div className="grid grid-cols-2 gap-6">
+                        <InputGroup label={t('onboarding', 'cif_label')} value={formData.cif} onChange={e => setFormData({...formData, cif: e.target.value})} disabled={!isEditing} />
+                        <InputGroup label={t('onboarding', 'name_label')} value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} disabled={!isEditing} />
+                        <InputGroup label={t('onboarding', 'corp_id_label')} value={formData.id} disabled={true} />
+                        <InputGroup label={t('onboarding', 'segment_label')} value={formData.segment} onChange={e => setFormData({...formData, segment: e.target.value})} disabled={!isEditing} type="select" options={['CORPORATE', 'SME', 'FDI', 'LDC/UBND']} />
+                    </div>
+                    <div className="mt-8">
+                        <h3 className="text-md font-semibold text-gray-700 mb-3 border-b pb-2">{t('onboarding', 'dda_list')}</h3>
+                        {formData.ddaAccounts.map((dda, idx) => (
+                            <div key={idx} className="flex gap-4 items-end mb-4 bg-gray-50 p-4 rounded border border-gray-100">
+                                <InputGroup label={t('dashboard', 'account_no')} value={dda.accountNo} disabled={true} />
+                                <InputGroup label={t('dashboard', 'real_balance')} value={dda.balance.toLocaleString()} disabled={true} />
+                                <InputGroup label="Currency" value={dda.currency} disabled={true} />
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            );
+        };
+
+        const VALifecycle = ({ vas, setVas, notify, t }) => {
+            const [showModal, setShowModal] = useState(false);
+            const [newVA, setNewVA] = useState({ name: '', parentId: '', metadata: { project_code: '', household_id: '', end_date: '' } });
+            
+            const treeData = useMemo(() => {
+                const map = {}; const roots = []; const nodeList = JSON.parse(JSON.stringify(vas));
+                nodeList.forEach((node, i) => { map[node.id] = i; nodeList[i].children = []; });
+                nodeList.forEach(node => {
+                    if (node.parentId !== null && map[node.parentId] !== undefined) nodeList[map[node.parentId]].children.push(node);
+                    else roots.push(node);
+                });
+                return roots;
+            }, [vas]);
+
+            const handleCreateVA = (e) => {
+                e.preventDefault();
+                if(!newVA.parentId) return notify('Select Parent!', 'error');
+                const parent = vas.find(v => v.id === newVA.parentId);
+                const code = parent.code + '-' + generateId().substring(0,3).toUpperCase();
+                const createdVA = { id: 'VA_' + generateId(), code, name: newVA.name, parentId: newVA.parentId, level: parent.level + 1, balance: 0, status: 'ACTIVE', metadata: { ...newVA.metadata } };
+                setVas([...vas, createdVA]); notify(`Created ${code}`); setShowModal(false); setNewVA({ name: '', parentId: '', metadata: { project_code: '', household_id: '', end_date: '' } });
+            };
+
+            const VARow = ({ node, depth }) => (
+                <>
+                    <tr className="hover:bg-gray-50 group border-b border-gray-100 text-sm transition-colors">
+                        <td className="p-3 pl-4"><div style={{ marginLeft: depth * 24 + 'px' }} className="flex items-center gap-2">{depth > 0 && <span className="text-gray-300 font-light">└──</span>}<span className="font-mono text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded border border-blue-100">{node.code}</span></div></td>
+                        <td className="p-3 font-medium text-gray-800">{node.name}</td>
+                        <td className="p-3 text-right font-bold text-bankb-primary">{node.balance.toLocaleString()}</td>
+                        <td className="p-3"><span className={`px-2 py-1 rounded-full text-xs font-bold ${node.status === 'ACTIVE' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>{node.status}</span></td>
+                        <td className="p-3 text-xs text-gray-500">{Object.entries(node.metadata).filter(([_,v])=>v).map(([k,v]) => <div key={k} className="truncate max-w-[120px]"><span className="font-semibold">{k}:</span> {v}</div>)}</td>
+                    </tr>
+                    {node.children && node.children.map(child => <VARow key={child.id} node={child} depth={depth + 1} />)}
+                </>
+            );
+
+            return (
+                <div className="space-y-4">
+                    <div className="flex justify-between items-end">
+                        <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2"><IconWrapper name="GitFork" className="text-purple-600" />{t('lifecycle', 'title')}</h2>
+                        <button onClick={() => setShowModal(true)} className="bg-bankb-primary text-white px-4 py-2 rounded shadow flex items-center gap-2 text-sm font-medium"><IconWrapper name="Plus" size={16} /> {t('lifecycle', 'add_btn')}</button>
+                    </div>
+                    <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+                        <table className="w-full">
+                            <thead className="bg-gray-50 text-gray-500 text-xs uppercase font-bold tracking-wider">
+                                <tr><th className="p-3 text-left w-1/4">{t('lifecycle', 'table_code')}</th><th className="p-3 text-left w-1/4">{t('lifecycle', 'table_name')}</th><th className="p-3 text-right">{t('lifecycle', 'table_balance')}</th><th className="p-3 text-left">{t('lifecycle', 'table_status')}</th><th className="p-3 text-left">{t('lifecycle', 'table_meta')}</th></tr>
+                            </thead>
+                            <tbody>{treeData.map(node => <VARow key={node.id} node={node} depth={0} />)}</tbody>
+                        </table>
+                    </div>
+                    {showModal && (
+                        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 backdrop-blur-sm">
+                            <div className="bg-white p-6 rounded-lg w-full max-w-md shadow-2xl animate-bounce-in">
+                                <h3 className="text-lg font-bold mb-4 border-b pb-2 text-bankb-primary">{t('lifecycle', 'modal_title')}</h3>
+                                <form onSubmit={handleCreateVA} className="space-y-4">
+                                    <InputGroup label={t('lifecycle', 'table_name')} value={newVA.name} onChange={e => setNewVA({...newVA, name: e.target.value})} />
+                                    <div className="flex flex-col gap-1 w-full"><label className="text-xs font-bold text-gray-500 uppercase">{t('lifecycle', 'modal_parent')}</label><select value={newVA.parentId} onChange={e => setNewVA({...newVA, parentId: e.target.value})} className="border border-gray-300 p-2 rounded text-sm bg-white focus:ring-1 focus:ring-bankb-primary outline-none"><option value="">-- Select --</option>{vas.filter(v => v.status !== 'CLOSED').map(v => <option key={v.id} value={v.id}>{'--'.repeat(v.level)} {v.name} ({v.code})</option>)}</select></div>
+                                    <div className="border-t pt-2 mt-2"><p className="text-xs font-bold text-gray-500 mb-2">{t('lifecycle', 'modal_meta_title')}</p><div className="grid grid-cols-2 gap-2"><InputGroup label="Project" value={newVA.metadata.project_code} onChange={e => setNewVA({...newVA, metadata: {...newVA.metadata, project_code: e.target.value}})} /><InputGroup label="Household" value={newVA.metadata.household_id} onChange={e => setNewVA({...newVA, metadata: {...newVA.metadata, household_id: e.target.value}})} /></div></div>
+                                    <div className="flex justify-end gap-2 mt-4 pt-4 border-t"><button type="button" onClick={() => setShowModal(false)} className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded">{t('lifecycle', 'btn_cancel')}</button><button type="submit" className="px-4 py-2 text-sm bg-bankb-primary text-white rounded hover:bg-teal-700 shadow-sm">{t('lifecycle', 'btn_create')}</button></div>
+                                </form>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        const IdentifierManager = ({ identifiers, setIdentifiers, vas, notify, t }) => {
+            const [newId, setNewId] = useState({ type: 'TAX_CODE', value: '', vaId: '' });
+            const handleAdd = () => {
+                if (!newId.value || !newId.vaId) return notify('Missing info', 'error');
+                setIdentifiers([...identifiers, { ...newId, id: generateId(), status: 'ACTIVE' }]);
+                setNewId({ type: 'TAX_CODE', value: '', vaId: '' }); notify('Mapped successfully');
+            };
+
+            return (
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div className="col-span-1 bg-white p-6 rounded-lg shadow-sm border border-gray-200 h-fit">
+                        <h3 className="font-bold text-gray-800 mb-4 flex items-center gap-2"><IconWrapper name="Tag" className="text-orange-500" /> {t('identifiers', 'map_title')}</h3>
+                        <div className="space-y-4">
+                            <InputGroup label={t('identifiers', 'type_label')} type="select" value={newId.type} onChange={e => setNewId({...newId, type: e.target.value})} options={['TAX_CODE', 'CONTRACT_NO', 'INVOICE_NO']} />
+                            <InputGroup label={t('identifiers', 'value_label')} value={newId.value} onChange={e => setNewId({...newId, value: e.target.value})} />
+                            <div className="flex flex-col gap-1 w-full"><label className="text-xs font-bold text-gray-500 uppercase">{t('identifiers', 'target_va_label')}</label><select value={newId.vaId} onChange={e => setNewId({...newId, vaId: e.target.value})} className="border p-2 rounded text-sm bg-white border-gray-300 outline-none"><option value="">-- Select VA --</option>{vas.filter(v => v.status === 'ACTIVE').map(v => <option key={v.id} value={v.id}>{v.code} - {v.name}</option>)}</select></div>
+                            <button onClick={handleAdd} className="w-full py-2 bg-bankb-primary text-white rounded text-sm font-bold shadow-sm">{t('identifiers', 'btn_add')}</button>
+                        </div>
+                    </div>
+                    <div className="col-span-2 bg-white rounded-lg shadow-sm overflow-hidden border border-gray-200">
+                        <div className="p-4 border-b bg-gray-50 flex justify-between items-center"><h3 className="font-bold text-gray-700">{t('identifiers', 'list_title')}</h3><span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded font-semibold border border-blue-200">Exact Match</span></div>
+                        <table className="w-full text-sm text-left"><thead className="bg-white text-gray-500 border-b"><tr><th className="p-3">{t('identifiers', 'type_label')}</th><th className="p-3">{t('identifiers', 'value_label')}</th><th className="p-3">VA</th><th className="p-3">{t('identifiers', 'table_action')}</th></tr></thead><tbody>{identifiers.map(i => <tr key={i.id} className="border-b"><td className="p-3 font-mono text-xs">{i.type}</td><td className="p-3 font-bold">{i.value}</td><td className="p-3 text-bankb-primary">{vas.find(v=>v.id===i.vaId)?.code}</td><td className="p-3"><button onClick={() => setIdentifiers(identifiers.filter(x => x.id !== i.id))} className="text-red-500 hover:underline">X</button></td></tr>)}</tbody></table>
+                    </div>
+                </div>
+            );
+        };
+
+        const TransactionHub = ({ vas, setVas, txs, setTxs, corporate, notify, identifiers, t }) => {
+            const [mode, setMode] = useState('CREDIT');
+            const [formData, setFormData] = useState({ vaId: '', amount: '', reference: '', beneficiary: '' });
+
+            const handleSubmit = (e) => {
+                e.preventDefault();
+                const amountNum = parseInt(formData.amount.replace(/[^0-9]/g, ''));
+                if (!formData.vaId || !amountNum) return notify('Invalid Data', 'error');
+                const va = vas.find(v => v.id === formData.vaId);
+                if (mode === 'DEBIT' && (va.balance < amountNum || corporate.ddaAccounts[0].balance < amountNum)) return notify('Insufficient Balance', 'error');
+                
+                const signedAmount = mode === 'CREDIT' ? amountNum : -amountNum;
+                const updatedVas = vas.map(v => v.id === formData.vaId ? { ...v, balance: v.balance + signedAmount } : v);
+                if (mode === 'DEBIT') corporate.ddaAccounts[0].balance -= amountNum; else corporate.ddaAccounts[0].balance += amountNum;
+                
+                setVas(updatedVas);
+                setTxs([{ id: 'TX'+generateId(), date: new Date().toISOString(), type: mode, vaId: formData.vaId, vaCode: va.code, amount: amountNum, reference: formData.reference }, ...txs]);
+                notify('Transaction Success'); setFormData({ vaId: '', amount: '', reference: '', beneficiary: '' });
+            };
+
+            const resolveRef = () => {
+                const found = identifiers.find(i => formData.reference.includes(i.value));
+                if(found) { setFormData(p => ({...p, vaId: found.vaId})); notify('Routing Found!'); } else notify('No Route Found');
+            };
+
+            return (
+                <div className="space-y-6">
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+                            <div className="flex border-b mb-4">
+                                <button onClick={() => setMode('CREDIT')} className={`flex-1 py-3 text-sm font-bold ${mode === 'CREDIT' ? 'text-bankb-primary border-b-2 border-bankb-primary bg-green-50' : 'text-gray-500'}`}>{t('transactions', 'incoming')}</button>
+                                <button onClick={() => setMode('DEBIT')} className={`flex-1 py-3 text-sm font-bold ${mode === 'DEBIT' ? 'text-bankb-red border-b-2 border-bankb-red bg-red-50' : 'text-gray-500'}`}>{t('transactions', 'outgoing')}</button>
+                            </div>
+                            <form onSubmit={handleSubmit} className="space-y-4">
+                                {mode === 'CREDIT' && <div className="flex gap-2 items-end"><InputGroup label={t('transactions', 'routing_content')} value={formData.reference} onChange={e => setFormData({...formData, reference: e.target.value})} /><button type="button" onClick={resolveRef} className="mb-0.5 p-2.5 bg-gray-100 border border-gray-300 rounded"><IconWrapper name="Search" /></button></div>}
+                                <div className="flex flex-col gap-1 w-full"><label className="text-xs font-bold text-gray-500 uppercase">{t('transactions', 'va_label')}</label><select value={formData.vaId} onChange={e => setFormData({...formData, vaId: e.target.value})} className="border border-gray-300 p-2.5 rounded text-sm bg-white"><option value="">-- Select --</option>{vas.filter(v => v.status === 'ACTIVE').map(v => <option key={v.id} value={v.id}>{v.code} - {v.name}</option>)}</select></div>
+                                <InputGroup label={t('transactions', 'amount_label')} value={formData.amount} onChange={e => setFormData({...formData, amount: e.target.value})} type="number" />
+                                {mode === 'DEBIT' && <InputGroup label={t('transactions', 'payment_content')} value={formData.reference} onChange={e => setFormData({...formData, reference: e.target.value})} />}
+                                <button type="submit" className={`w-full py-2.5 text-white font-bold rounded shadow-sm ${mode === 'CREDIT' ? 'bg-bankb-primary' : 'bg-bankb-red'}`}>{mode === 'CREDIT' ? t('transactions', 'btn_credit') : t('transactions', 'btn_debit')}</button>
+                            </form>
+                        </div>
+                        <div className="col-span-2 bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden flex flex-col">
+                            <div className="p-4 border-b bg-gray-50 flex items-center gap-2"><IconWrapper name="FileBarChart" className="text-indigo-600" /><h3 className="font-bold text-gray-700">{t('transactions', 'history_title')}</h3></div>
+                            <div className="flex-1 overflow-auto">
+                                <table className="w-full text-sm text-left"><thead className="bg-white text-gray-500 sticky top-0 border-b"><tr><th className="p-3">{t('transactions', 'table_time')}</th><th className="p-3">{t('transactions', 'table_type')}</th><th className="p-3">VA</th><th className="p-3">{t('transactions', 'table_content')}</th><th className="p-3 text-right">{t('transactions', 'amount_label')}</th></tr></thead><tbody>{txs.map(tx => <tr key={tx.id} className="border-b"><td className="p-3 text-xs">{formatDate(tx.date)}</td><td className="p-3 font-bold text-xs">{tx.type}</td><td className="p-3 font-medium">{tx.vaCode}</td><td className="p-3 text-xs truncate max-w-[150px]">{tx.reference}</td><td className={`p-3 text-right font-bold ${tx.type === 'CREDIT' ? 'text-bankb-primary' : 'text-bankb-red'}`}>{tx.type === 'CREDIT' ? '+' : '-'}{tx.amount.toLocaleString()}</td></tr>)}</tbody></table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const Reporting = ({ vas, txs, t }) => {
+            const stats = useMemo(() => {
+                const l = {}; vas.forEach(v => { if(!l[v.level]) l[v.level] = {c:0,b:0}; l[v.level].c++; l[v.level].b+=v.balance; });
+                return l;
+            }, [vas]);
+            return (
+                <div className="space-y-8">
+                    <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+                        <h2 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2"><IconWrapper name="Activity" className="text-bankb-primary" />{t('reports', 'summary_title')}</h2>
+                        <div className="grid grid-cols-4 gap-4">{Object.entries(stats).map(([l, d]) => <div key={l} className="bg-gray-50 p-4 rounded border"><p className="text-xs font-bold text-gray-500">{t('reports', 'level')} {l}</p><p className="text-2xl font-bold text-bankb-primary">{d.b.toLocaleString()}</p></div>)}</div>
+                    </div>
+                    <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+                        <h2 className="text-xl font-bold text-gray-800 mb-4">{t('reports', 'statement_title')}</h2>
+                        <div className="overflow-x-auto"><table className="w-full text-sm"><thead className="bg-gray-100 border-b font-semibold"><tr><th className="p-3 text-left">Code</th><th className="p-3 text-left">Name</th><th className="p-3 text-right">Balance</th><th className="p-3 text-right">{t('reports', 'total_in')}</th><th className="p-3 text-right">{t('reports', 'total_out')}</th></tr></thead><tbody>{vas.map(v => { const vTx=txs.filter(x=>x.vaId===v.id); return <tr key={v.id} className="border-b"><td className="p-3 font-mono text-blue-800">{v.code}</td><td className="p-3">{v.name}</td><td className="p-3 text-right font-bold">{v.balance.toLocaleString()}</td><td className="p-3 text-right text-bankb-primary">+{vTx.filter(x=>x.type==='CREDIT').reduce((a,b)=>a+b.amount,0).toLocaleString()}</td><td className="p-3 text-right text-bankb-red">-{vTx.filter(x=>x.type==='DEBIT').reduce((a,b)=>a+b.amount,0).toLocaleString()}</td></tr> })}</tbody></table></div>
+                    </div>
+                </div>
+            );
+        };
+
+        const InputGroup = ({ label, value, onChange, disabled, type = 'text', options = [] }) => (
+            <div className="flex flex-col gap-1 w-full">
+                <label className="text-xs font-bold text-gray-500 uppercase tracking-wide">{label}</label>
+                {type === 'select' ? <select disabled={disabled} value={value} onChange={onChange} className="border border-gray-300 p-2.5 rounded text-sm bg-white outline-none focus:border-bankb-primary">{options.map(o => <option key={o} value={o}>{o}</option>)}</select> : <input type={type} value={value} onChange={onChange} disabled={disabled} className="border border-gray-300 p-2.5 rounded text-sm outline-none focus:border-bankb-primary disabled:bg-gray-100" />}
+            </div>
+        );
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
