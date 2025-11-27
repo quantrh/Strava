@@ -57,9 +57,9 @@
                     onboarding: "Hồ Sơ Doanh Nghiệp",
                     lifecycle: "Quản Lý VA (N Cấp)",
                     identifiers: "Định Danh & Routing",
-                    transactions: "Giao Dịch (POBO)",
+                    transactions: "Giao Dịch & Điều Chuyển",
                     reports: "Báo Cáo & Đối Soát",
-                    guide: "Hướng Dẫn & Thuật Ngữ"
+                    guide: "Hướng Dẫn & Quy Trình"
                 },
                 dashboard: {
                     title: "Dashboard Tổng Quan",
@@ -108,6 +108,7 @@
                 transactions: {
                     incoming: "Tiền Vào (Credit)",
                     outgoing: "Chi Hộ (POBO)",
+                    internal: "Điều Chuyển (Internal)",
                     routing_content: "Nội dung GD",
                     va_label: "Tài Khoản Ảo (Đích)",
                     amount_label: "Số Tiền",
@@ -115,10 +116,20 @@
                     payment_content: "Nội dung chi",
                     btn_credit: "Ghi Có (Credit)",
                     btn_debit: "Lập Lệnh Chi",
+                    btn_transfer: "Thực Hiện Điều Chuyển",
                     history_title: "Lịch sử Giao dịch",
                     table_time: "TG",
                     table_type: "Loại",
-                    table_content: "Nội dung"
+                    table_content: "Nội dung",
+                    mode_vava: "Nội bộ (VA ↔ VA)",
+                    mode_ddava: "Cấp/Thu Vốn (DDA ↔ VA)",
+                    source_va: "VA Nguồn (Chuyển đi)",
+                    dest_va: "VA Đích (Nhận tiền)",
+                    source_dda: "DDA Nguồn (Tài khoản thực)",
+                    dest_dda: "DDA Đích",
+                    direction: "Hướng Điều Chuyển",
+                    dir_fund: "Cấp Vốn (DDA → VA)",
+                    dir_sweep: "Thu Hồi (VA → DDA)"
                 },
                 reports: {
                     summary_title: "Báo Cáo Tổng Hợp",
@@ -131,19 +142,43 @@
                     no_tx: "Không có giao dịch nào trong kỳ."
                 },
                 guide: {
-                    title: "Hướng Dẫn & Thuật Ngữ",
-                    glossary_title: "Cơ Chế Roll-up & Sao Kê",
-                    guide_title: "Quy Trình Nghiệp Vụ",
+                    title: "Hướng Dẫn Sử Dụng & Quy Trình",
+                    glossary_title: "Giải Thích Thuật Ngữ",
+                    guide_title: "Quy Trình Xử Lý Giao Dịch (Chi Tiết)",
                     terms: {
-                        Rollup: "Cơ chế cộng dồn số dư: Khi tiền vào VA con (Cấp 3), số dư sẽ tự động được cộng vào VA cha (Cấp 2) và VA ông (Cấp 1) theo thời gian thực.",
-                        StatementMapping: "Sao kê phân cấp: Cho phép VA cha xem được giao dịch của chính mình VÀ giao dịch của các VA con trực thuộc nếu chọn chế độ 'Gộp cấp dưới'.",
-                        VA: "Virtual Account (TK ảo). Dùng để định danh dòng tiền.",
-                        DDA: "Demand Deposit Account. TK thanh toán thực tại ngân hàng."
+                        VA: "Virtual Account (Tài khoản ảo/định danh). Công cụ để phân loại và định danh dòng tiền, không phải tài khoản thực tại Core Banking.",
+                        DDA: "Demand Deposit Account (Tài khoản thanh toán). Tài khoản thực của doanh nghiệp tại ngân hàng, nơi chứa tiền thực tế.",
+                        Shadow: "Shadow Posting (Ghi sổ cái ảo). Cơ chế ghi nhận bút toán song song tại hệ thống VA mà không ảnh hưởng trực tiếp ngay lập tức đến DDA (đối với giao dịch nội bộ VA).",
+                        POBO: "Payments On Behalf Of (Chi hộ). Chi tiền từ VA. Hệ thống kiểm tra số dư VA trước khi trừ tiền thật tại DDA.",
+                        Rollup: "Cơ chế cộng dồn số dư. Số dư VA cha = Tổng số dư các VA con + Số dư riêng của nó.",
                     },
-                    steps: [
-                        { title: "B1: Giao Dịch", desc: "Thực hiện nạp tiền vào VA con (Ví dụ: Gói thầu XL01). Hệ thống ghi nhận giao dịch tại XL01, đồng thời tăng số dư của Dự án mẹ và Công ty mẹ." },
-                        { title: "B2: Tra Cứu (Cơ bản)", desc: "Vào Báo Cáo -> Chọn VA Gói thầu XL01. Bạn sẽ thấy giao dịch nạp tiền vừa rồi." },
-                        { title: "B3: Tra Cứu (Nâng cao)", desc: "Vào Báo Cáo -> Chọn VA Dự án mẹ -> Tích 'Gộp giao dịch cấp dưới'. Bạn sẽ thấy giao dịch của XL01 hiển thị trong sao kê của Dự án mẹ." }
+                    processes: [
+                        {
+                            title: "1. Giao Dịch Nạp Tiền (Incoming Credit: DDA Khách Hàng -> VA Doanh Nghiệp)",
+                            steps: [
+                                "Bước 1 (Tại Core): Trích nợ (Debit) tài khoản của Khách hàng chuyển tiền.",
+                                "Bước 2 (Tại Core): Ghi có (Credit) vào Tài khoản thực (Master DDA) của Doanh nghiệp.",
+                                "Bước 3 (Tại VA System): Hệ thống quét giao dịch Ghi có tại Master DDA -> Phân tích nội dung chuyển tiền (Dựa trên Mã định danh đã cấu hình).",
+                                "Bước 4 (Shadow Posting): Ghi tăng (Credit) số dư ảo cho VA tương ứng và cập nhật số dư cộng dồn cho các cấp cha."
+                            ]
+                        },
+                        {
+                            title: "2. Giao Dịch Chi Tiền (Outgoing POBO: VA Doanh Nghiệp -> Đối Tác)",
+                            steps: [
+                                "Bước 1 (Tại VA System): Người dùng lập lệnh chi từ VA. Hệ thống kiểm tra: (1) Số dư VA có đủ không? (2) Số dư thực DDA có đủ không?",
+                                "Bước 2 (Gửi lệnh): Nếu đủ điều kiện, gửi lệnh Debit Master DDA xuống Core Banking.",
+                                "Bước 3 (Tại Core): Trích nợ Master DDA -> Ghi có cho tài khoản Đối tác.",
+                                "Bước 4 (Shadow Posting): Sau khi Core báo thành công, hệ thống VA ghi giảm (Debit) số dư ảo của VA."
+                            ]
+                        },
+                        {
+                            title: "3. Điều Chuyển Nội Bộ (Internal Transfer: VA A -> VA B)",
+                            steps: [
+                                "Bước 1: Kiểm tra số dư VA A (Nguồn).",
+                                "Bước 2 (Shadow Posting): Ghi giảm (Debit) số dư VA A -> Ghi tăng (Credit) số dư VA B.",
+                                "Lưu ý: Không phát sinh giao dịch trên tài khoản thực (Master DDA) vì tiền vẫn nằm trong cùng một tài khoản tổng của doanh nghiệp."
+                            ]
+                        }
                     ]
                 }
             },
@@ -158,9 +193,9 @@
                     onboarding: "Corp Profile",
                     lifecycle: "VA Management",
                     identifiers: "Routing",
-                    transactions: "Transact (POBO)",
+                    transactions: "Transactions",
                     reports: "Reports",
-                    guide: "Guide"
+                    guide: "Guide & Process"
                 },
                 dashboard: {
                     title: "Dashboard",
@@ -209,6 +244,7 @@
                 transactions: {
                     incoming: "In (Credit)",
                     outgoing: "Out (POBO)",
+                    internal: "Internal / Allocation",
                     routing_content: "Routing Ref",
                     va_label: "Target VA",
                     amount_label: "Amount",
@@ -216,10 +252,20 @@
                     payment_content: "Desc",
                     btn_credit: "Credit",
                     btn_debit: "Debit",
+                    btn_transfer: "Execute Transfer",
                     history_title: "History",
                     table_time: "Time",
                     table_type: "Type",
-                    table_content: "Desc"
+                    table_content: "Desc",
+                    mode_vava: "VA to VA",
+                    mode_ddava: "DDA <-> VA",
+                    source_va: "Source VA",
+                    dest_va: "Dest VA",
+                    source_dda: "Source DDA",
+                    dest_dda: "Dest DDA",
+                    direction: "Direction",
+                    dir_fund: "Allocation (DDA -> VA)",
+                    dir_sweep: "Sweep (VA -> DDA)"
                 },
                 reports: {
                     summary_title: "Summary Rpt",
@@ -232,19 +278,42 @@
                     no_tx: "No transactions found."
                 },
                 guide: {
-                    title: "User Guide",
-                    glossary_title: "Roll-up & Statement Logic",
-                    guide_title: "Process",
+                    title: "User Guide & Process",
+                    glossary_title: "Glossary",
+                    guide_title: "Transaction Logic Flows",
                     terms: {
-                        Rollup: "Balance Aggregation: Crediting a child VA automatically updates parent balances in real-time.",
-                        StatementMapping: "Hierarchical Statement: Parent VA can view child transactions if 'Include Child Txs' is checked.",
-                        VA: "Virtual Account.",
-                        DDA: "Real checking account."
+                        VA: "Virtual Account. Sub-account for tracking.",
+                        DDA: "Real checking account.",
+                        Shadow: "Virtual bookkeeping.",
+                        POBO: "Payments On Behalf Of.",
+                        Rollup: "Balance Aggregation."
                     },
-                    steps: [
-                        { title: "S1: Transact", desc: "Credit a child VA. Balance updates propagate to all ancestors." },
-                        { title: "S2: View Child", desc: "View Statement of Child VA to see the specific transaction." },
-                        { title: "S3: View Parent", desc: "View Statement of Parent VA -> Check 'Include Child Txs' to see the aggregated view." }
+                    processes: [
+                        {
+                            title: "1. Incoming Credit Flow (Customer -> Corp VA)",
+                            steps: [
+                                "Step 1 (Core): Debit Payer's Account.",
+                                "Step 2 (Core): Credit Corporate Master DDA.",
+                                "Step 3 (VA System): Detect Credit on Master DDA -> Resolve Target VA via Routing Rules.",
+                                "Step 4 (Shadow): Credit Target VA Shadow Balance & Roll-up to parents."
+                            ]
+                        },
+                        {
+                            title: "2. Outgoing POBO Flow (Corp VA -> Partner)",
+                            steps: [
+                                "Step 1 (VA System): Initiate Payment. Check VA Balance AND Master DDA Balance.",
+                                "Step 2 (Core): Debit Master DDA -> Credit Partner Account.",
+                                "Step 3 (Shadow): Debit Target VA Shadow Balance."
+                            ]
+                        },
+                        {
+                            title: "3. Internal Transfer (VA -> VA)",
+                            steps: [
+                                "Step 1: Check Source VA Balance.",
+                                "Step 2 (Shadow): Debit Source VA -> Credit Destination VA.",
+                                "Note: No transaction on Master DDA."
+                            ]
+                        }
                     ]
                 }
             }
@@ -268,7 +337,9 @@
             Globe: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>,
             Menu: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/></svg>,
             X: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>,
-            Filter: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+            Filter: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>,
+            Repeat: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m17 2 4 4-4 4"/><path d="M3 11v-1a4 4 0 0 1 4-4h14"/><path d="m7 22-4-4 4-4"/><path d="M21 13v1a4 4 0 0 1-4 4H3"/></svg>,
+            Info: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
         };
 
         const IconWrapper = ({ name, size = 18, className = "" }) => {
@@ -473,17 +544,33 @@
 
         const UserGuide = ({ t, lang }) => {
             const terms = resources[lang].guide.terms;
-            const steps = resources[lang].guide.steps || [];
+            const processes = resources[lang].guide.processes || [];
             return (
                 <div className="space-y-6 md:space-y-8">
                     <h2 className="text-xl md:text-2xl font-bold text-gray-800">{t('guide', 'title')}</h2>
+                    
                     <div className="bg-white p-4 md:p-6 rounded-lg shadow-sm border border-gray-200">
                         <h3 className="text-base md:text-lg font-bold mb-4 text-bankb-primary flex items-center gap-2"><IconWrapper name="BookOpen" /> {t('guide', 'glossary_title')}</h3>
                         <div className="grid gap-3 md:gap-4 grid-cols-1 md:grid-cols-2">{Object.entries(terms).map(([key, desc]) => <div key={key} className="p-3 md:p-4 bg-gray-50 rounded border border-gray-100"><span className="font-bold text-blue-700 block mb-1 text-sm md:text-base">{key}</span><p className="text-xs md:text-sm text-gray-600 leading-relaxed">{desc}</p></div>)}</div>
                     </div>
+
                     <div className="bg-white p-4 md:p-6 rounded-lg shadow-sm border border-gray-200">
                          <h3 className="text-base md:text-lg font-bold mb-4 md:mb-6 text-gray-700 flex items-center gap-2"><IconWrapper name="Activity" className="text-orange-500" />{t('guide', 'guide_title')}</h3>
-                         <div className="space-y-4 md:space-y-6">{steps.map((step, index) => <div key={index} className="flex gap-3 md:gap-4"><div className="w-6 h-6 md:w-8 md:h-8 rounded-full bg-bankb-primary text-white flex items-center justify-center font-bold flex-shrink-0 text-xs md:text-sm shadow-sm ring-2 md:ring-4 ring-green-50">{index + 1}</div><div className="pt-0.5 md:pt-1"><h4 className="font-bold text-gray-800 mb-1 text-sm md:text-base">{step.title}</h4><p className="text-xs md:text-sm text-gray-600 leading-relaxed">{step.desc}</p></div></div>)}</div>
+                         <div className="space-y-6">
+                            {processes.map((proc, index) => (
+                                <div key={index} className="border-l-4 border-bankb-primary pl-4">
+                                    <h4 className="font-bold text-gray-800 mb-2 text-sm md:text-base">{proc.title}</h4>
+                                    <ul className="list-none space-y-2">
+                                        {proc.steps.map((step, idx) => (
+                                            <li key={idx} className="text-xs md:text-sm text-gray-600 flex gap-2">
+                                                <span className="text-bankb-primary font-bold">•</span>
+                                                <span>{step}</span>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            ))}
+                         </div>
                     </div>
                 </div>
             );
@@ -533,42 +620,87 @@
         };
 
         const TransactionHub = ({ vas, setVas, txs, setTxs, corporate, notify, identifiers, t }) => {
-            const [mode, setMode] = useState('CREDIT');
-            const [formData, setFormData] = useState({ vaId: '', amount: '', reference: '', beneficiary: '' });
+            const [mode, setMode] = useState('CREDIT'); // CREDIT, DEBIT, INTERNAL
+            const [subMode, setSubMode] = useState('VA_VA'); // VA_VA, DDA_VA
+            const [direction, setDirection] = useState('DDA_TO_VA'); // DDA_TO_VA, VA_TO_DDA for Funding/Sweep
+            
+            const [formData, setFormData] = useState({ 
+                sourceId: '', // For Internal
+                destId: '',   // For Internal
+                vaId: '',     // For Credit/Debit/DDA_OP
+                amount: '', 
+                reference: '', 
+                beneficiary: '' 
+            });
+
+            // Reusable update helpers
+            const updateVaAndAncestors = (list, targetId, amount) => {
+                const ancestors = getPathToRoot(targetId, list);
+                return list.map(v => {
+                    const isAncestorOrSelf = ancestors.some(a => a.id === v.id);
+                    return isAncestorOrSelf ? { ...v, balance: v.balance + amount } : v;
+                });
+            };
 
             const handleSubmit = (e) => {
                 e.preventDefault();
                 const amountNum = parseInt(formData.amount.replace(/[^0-9]/g, ''));
-                if (!formData.vaId || !amountNum) return notify('Invalid Data', 'error');
-                
-                const targetVa = vas.find(v => v.id === formData.vaId);
-                
-                // Logic check Balance for Outgoing
-                if (mode === 'DEBIT' && (targetVa.balance < amountNum || corporate.ddaAccounts[0].balance < amountNum)) return notify('Insufficient Balance', 'error');
-                
-                // --- ROLL-UP LOGIC START ---
-                // Find all ancestors to update balance
-                const ancestors = getPathToRoot(formData.vaId, vas);
-                const signedAmount = mode === 'CREDIT' ? amountNum : -amountNum;
-                
-                // Update balance for Target VA AND all Ancestors
-                const updatedVas = vas.map(v => {
-                    const isAncestorOrSelf = ancestors.some(a => a.id === v.id);
-                    if (isAncestorOrSelf) {
-                        return { ...v, balance: v.balance + signedAmount };
-                    }
-                    return v;
-                });
-                // --- ROLL-UP LOGIC END ---
+                if (!amountNum) return notify('Invalid Amount', 'error');
 
-                // Update DDA
-                if (mode === 'DEBIT') corporate.ddaAccounts[0].balance -= amountNum; else corporate.ddaAccounts[0].balance += amountNum;
+                let updatedVas = [...vas];
+                let newTx = null;
+
+                if (mode === 'CREDIT' || mode === 'DEBIT') {
+                    if (!formData.vaId) return notify('Select VA', 'error');
+                    const targetVa = vas.find(v => v.id === formData.vaId);
+                    
+                    if (mode === 'DEBIT' && (targetVa.balance < amountNum || corporate.ddaAccounts[0].balance < amountNum)) return notify('Insufficient Balance', 'error');
+                    
+                    const signedAmount = mode === 'CREDIT' ? amountNum : -amountNum;
+                    updatedVas = updateVaAndAncestors(updatedVas, formData.vaId, signedAmount);
+                    
+                    if (mode === 'DEBIT') corporate.ddaAccounts[0].balance -= amountNum; 
+                    else corporate.ddaAccounts[0].balance += amountNum;
+
+                    newTx = { id: 'TX'+generateId(), date: new Date().toISOString(), type: mode, vaId: formData.vaId, vaCode: targetVa.code, amount: amountNum, reference: formData.reference };
+                
+                } else if (mode === 'INTERNAL') {
+                    if (subMode === 'VA_VA') {
+                        if (!formData.sourceId || !formData.destId) return notify('Select Source and Dest VA', 'error');
+                        if (formData.sourceId === formData.destId) return notify('Source must differ from Dest', 'error');
+                        
+                        const srcVa = vas.find(v => v.id === formData.sourceId);
+                        const destVa = vas.find(v => v.id === formData.destId);
+                        
+                        if (srcVa.balance < amountNum) return notify('Source VA Insufficient Balance', 'error');
+
+                        // 1. Debit Source
+                        updatedVas = updateVaAndAncestors(updatedVas, formData.sourceId, -amountNum);
+                        // 2. Credit Dest (using the already updated list)
+                        updatedVas = updateVaAndAncestors(updatedVas, formData.destId, amountNum);
+
+                        newTx = { id: 'TX'+generateId(), date: new Date().toISOString(), type: 'INTERNAL', vaId: formData.destId, vaCode: `${srcVa.code} -> ${destVa.code}`, amount: amountNum, reference: formData.reference || 'Internal Transfer' };
+                    
+                    } else if (subMode === 'DDA_VA') {
+                        if (direction === 'DDA_TO_VA') {
+                            if (!formData.destId) return notify('Select Target VA', 'error');
+                            updatedVas = updateVaAndAncestors(updatedVas, formData.destId, amountNum);
+                            newTx = { id: 'TX'+generateId(), date: new Date().toISOString(), type: 'FUNDING', vaId: formData.destId, vaCode: "DDA -> VA", amount: amountNum, reference: formData.reference || 'Allocation' };
+                        
+                        } else {
+                            if (!formData.sourceId) return notify('Select Source VA', 'error');
+                            const srcVa = vas.find(v => v.id === formData.sourceId);
+                            if (srcVa.balance < amountNum) return notify('VA Insufficient Balance', 'error');
+                            updatedVas = updateVaAndAncestors(updatedVas, formData.sourceId, -amountNum);
+                            newTx = { id: 'TX'+generateId(), date: new Date().toISOString(), type: 'SWEEP', vaId: formData.sourceId, vaCode: "VA -> DDA", amount: amountNum, reference: formData.reference || 'Sweep' };
+                        }
+                    }
+                }
                 
                 setVas(updatedVas);
-                // Record Tx only for the Target VA
-                setTxs([{ id: 'TX'+generateId(), date: new Date().toISOString(), type: mode, vaId: formData.vaId, vaCode: targetVa.code, amount: amountNum, reference: formData.reference }, ...txs]);
-                
-                notify('Transaction Success'); setFormData({ vaId: '', amount: '', reference: '', beneficiary: '' });
+                if(newTx) setTxs([newTx, ...txs]);
+                notify('Transaction Success'); 
+                setFormData({ ...formData, amount: '', reference: '' });
             };
 
             const resolveRef = () => {
@@ -580,22 +712,74 @@
                 <div className="space-y-6">
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                         <div className="bg-white p-4 md:p-6 rounded-lg shadow-sm border border-gray-200">
-                            <div className="flex border-b mb-4">
-                                <button onClick={() => setMode('CREDIT')} className={`flex-1 py-3 text-xs md:text-sm font-bold ${mode === 'CREDIT' ? 'text-bankb-primary border-b-2 border-bankb-primary bg-green-50' : 'text-gray-500'}`}>{t('transactions', 'incoming')}</button>
-                                <button onClick={() => setMode('DEBIT')} className={`flex-1 py-3 text-xs md:text-sm font-bold ${mode === 'DEBIT' ? 'text-bankb-red border-b-2 border-bankb-red bg-red-50' : 'text-gray-500'}`}>{t('transactions', 'outgoing')}</button>
+                            {/* Main Tabs - 3 Columns Grid */}
+                            <div className="grid grid-cols-3 gap-1 mb-4 p-1 bg-gray-100 rounded-lg">
+                                <button onClick={() => setMode('CREDIT')} className={`py-2.5 text-xs md:text-sm font-bold rounded-md transition-all ${mode === 'CREDIT' ? 'bg-white shadow text-bankb-primary' : 'text-gray-500 hover:bg-gray-200'}`}>{t('transactions', 'incoming')}</button>
+                                <button onClick={() => setMode('DEBIT')} className={`py-2.5 text-xs md:text-sm font-bold rounded-md transition-all ${mode === 'DEBIT' ? 'bg-white shadow text-bankb-red' : 'text-gray-500 hover:bg-gray-200'}`}>{t('transactions', 'outgoing')}</button>
+                                <button onClick={() => setMode('INTERNAL')} className={`py-2.5 text-xs md:text-sm font-bold rounded-md transition-all ${mode === 'INTERNAL' ? 'bg-white shadow text-blue-600' : 'text-gray-500 hover:bg-gray-200'}`}>{t('transactions', 'internal')}</button>
                             </div>
+
                             <form onSubmit={handleSubmit} className="space-y-4">
-                                {mode === 'CREDIT' && <div className="flex gap-2 items-end"><InputGroup label={t('transactions', 'routing_content')} value={formData.reference} onChange={e => setFormData({...formData, reference: e.target.value})} /><button type="button" onClick={resolveRef} className="mb-0.5 p-2.5 bg-gray-100 border border-gray-300 rounded"><IconWrapper name="Search" /></button></div>}
-                                <div className="flex flex-col gap-1 w-full"><label className="text-xs font-bold text-gray-500 uppercase">{t('transactions', 'va_label')}</label><select value={formData.vaId} onChange={e => setFormData({...formData, vaId: e.target.value})} className="border border-gray-300 p-2.5 rounded text-sm bg-white"><option value="">-- Select --</option>{vas.filter(v => v.status === 'ACTIVE').map(v => <option key={v.id} value={v.id}>{v.code} - {v.name}</option>)}</select></div>
-                                <InputGroup label={t('transactions', 'amount_label')} value={formData.amount} onChange={e => setFormData({...formData, amount: e.target.value})} type="number" />
-                                {mode === 'DEBIT' && <InputGroup label={t('transactions', 'payment_content')} value={formData.reference} onChange={e => setFormData({...formData, reference: e.target.value})} />}
-                                <button type="submit" className={`w-full py-2.5 text-white font-bold rounded shadow-sm ${mode === 'CREDIT' ? 'bg-bankb-primary' : 'bg-bankb-red'}`}>{mode === 'CREDIT' ? t('transactions', 'btn_credit') : t('transactions', 'btn_debit')}</button>
+                                {/* STANDARD IN/OUT FORM */}
+                                {(mode === 'CREDIT' || mode === 'DEBIT') && (
+                                    <div className="animate-bounce-in">
+                                        {mode === 'CREDIT' && <div className="flex gap-2 items-end"><InputGroup label={t('transactions', 'routing_content')} value={formData.reference} onChange={e => setFormData({...formData, reference: e.target.value})} /><button type="button" onClick={resolveRef} className="mb-0.5 p-2.5 bg-gray-100 border border-gray-300 rounded"><IconWrapper name="Search" /></button></div>}
+                                        <div className="flex flex-col gap-1 w-full"><label className="text-xs font-bold text-gray-500 uppercase">{t('transactions', 'va_label')}</label><select value={formData.vaId} onChange={e => setFormData({...formData, vaId: e.target.value})} className="border border-gray-300 p-2.5 rounded text-sm bg-white"><option value="">-- Select --</option>{vas.filter(v => v.status === 'ACTIVE').map(v => <option key={v.id} value={v.id}>{v.code} - {v.name}</option>)}</select></div>
+                                        <InputGroup label={t('transactions', 'amount_label')} value={formData.amount} onChange={e => setFormData({...formData, amount: e.target.value})} type="number" />
+                                        {mode === 'DEBIT' && <InputGroup label={t('transactions', 'payment_content')} value={formData.reference} onChange={e => setFormData({...formData, reference: e.target.value})} />}
+                                        <button type="submit" className={`w-full py-2.5 text-white font-bold rounded shadow-sm ${mode === 'CREDIT' ? 'bg-bankb-primary' : 'bg-bankb-red'}`}>{mode === 'CREDIT' ? t('transactions', 'btn_credit') : t('transactions', 'btn_debit')}</button>
+                                    </div>
+                                )}
+
+                                {/* INTERNAL TRANSFER FORM */}
+                                {mode === 'INTERNAL' && (
+                                    <div className="animate-bounce-in">
+                                        <div className="flex gap-2 mb-4">
+                                            <button type="button" onClick={() => setSubMode('VA_VA')} className={`flex-1 py-1.5 text-xs font-bold rounded border ${subMode === 'VA_VA' ? 'bg-blue-50 border-blue-200 text-blue-700' : 'border-gray-200 text-gray-500'}`}>{t('transactions', 'mode_vava')}</button>
+                                            <button type="button" onClick={() => setSubMode('DDA_VA')} className={`flex-1 py-1.5 text-xs font-bold rounded border ${subMode === 'DDA_VA' ? 'bg-blue-50 border-blue-200 text-blue-700' : 'border-gray-200 text-gray-500'}`}>{t('transactions', 'mode_ddava')}</button>
+                                        </div>
+
+                                        {/* VA to VA */}
+                                        {subMode === 'VA_VA' && (
+                                            <>
+                                                <div className="flex flex-col gap-1 w-full"><label className="text-xs font-bold text-gray-500 uppercase">{t('transactions', 'source_va')}</label><select value={formData.sourceId} onChange={e => setFormData({...formData, sourceId: e.target.value})} className="border border-gray-300 p-2.5 rounded text-sm bg-white"><option value="">-- Select Source --</option>{vas.filter(v => v.status === 'ACTIVE').map(v => <option key={v.id} value={v.id}>{v.code} - {v.balance.toLocaleString()}</option>)}</select></div>
+                                                <div className="flex justify-center"><IconWrapper name="ArrowRightLeft" className="text-gray-400 rotate-90" /></div>
+                                                <div className="flex flex-col gap-1 w-full"><label className="text-xs font-bold text-gray-500 uppercase">{t('transactions', 'dest_va')}</label><select value={formData.destId} onChange={e => setFormData({...formData, destId: e.target.value})} className="border border-gray-300 p-2.5 rounded text-sm bg-white"><option value="">-- Select Dest --</option>{vas.filter(v => v.status === 'ACTIVE' && v.id !== formData.sourceId).map(v => <option key={v.id} value={v.id}>{v.code} - {v.name}</option>)}</select></div>
+                                            </>
+                                        )}
+
+                                        {/* DDA <-> VA */}
+                                        {subMode === 'DDA_VA' && (
+                                            <>
+                                                <div className="flex flex-col gap-1 w-full"><label className="text-xs font-bold text-gray-500 uppercase">{t('transactions', 'direction')}</label><select value={direction} onChange={e => setDirection(e.target.value)} className="border border-gray-300 p-2.5 rounded text-sm bg-white font-bold text-blue-700"><option value="DDA_TO_VA">{t('transactions', 'dir_fund')}</option><option value="VA_TO_DDA">{t('transactions', 'dir_sweep')}</option></select></div>
+                                                
+                                                {direction === 'DDA_TO_VA' ? (
+                                                    <>
+                                                        <div className="flex flex-col gap-1 w-full"><label className="text-xs font-bold text-gray-500 uppercase">{t('transactions', 'source_dda')}</label><select className="border border-gray-300 p-2.5 rounded text-sm bg-gray-100" disabled><option>{corporate.ddaAccounts[0].accountNo}</option></select></div>
+                                                        <div className="flex justify-center text-green-600"><IconWrapper name="Repeat" className="rotate-90" /></div>
+                                                        <div className="flex flex-col gap-1 w-full"><label className="text-xs font-bold text-gray-500 uppercase">{t('transactions', 'dest_va')}</label><select value={formData.destId} onChange={e => setFormData({...formData, destId: e.target.value})} className="border border-gray-300 p-2.5 rounded text-sm bg-white"><option value="">-- Select Dest --</option>{vas.filter(v => v.status === 'ACTIVE').map(v => <option key={v.id} value={v.id}>{v.code} - {v.name}</option>)}</select></div>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <div className="flex flex-col gap-1 w-full"><label className="text-xs font-bold text-gray-500 uppercase">{t('transactions', 'source_va')}</label><select value={formData.sourceId} onChange={e => setFormData({...formData, sourceId: e.target.value})} className="border border-gray-300 p-2.5 rounded text-sm bg-white"><option value="">-- Select Source --</option>{vas.filter(v => v.status === 'ACTIVE').map(v => <option key={v.id} value={v.id}>{v.code} - {v.balance.toLocaleString()}</option>)}</select></div>
+                                                        <div className="flex justify-center text-red-500"><IconWrapper name="Repeat" className="rotate-90" /></div>
+                                                        <div className="flex flex-col gap-1 w-full"><label className="text-xs font-bold text-gray-500 uppercase">{t('transactions', 'dest_dda')}</label><select className="border border-gray-300 p-2.5 rounded text-sm bg-gray-100" disabled><option>{corporate.ddaAccounts[0].accountNo}</option></select></div>
+                                                    </>
+                                                )}
+                                            </>
+                                        )}
+
+                                        <InputGroup label={t('transactions', 'amount_label')} value={formData.amount} onChange={e => setFormData({...formData, amount: e.target.value})} type="number" />
+                                        <InputGroup label={t('transactions', 'payment_content')} value={formData.reference} onChange={e => setFormData({...formData, reference: e.target.value})} />
+                                        <button type="submit" className="w-full py-2.5 text-white font-bold rounded shadow-sm bg-blue-600 hover:bg-blue-700">{t('transactions', 'btn_transfer')}</button>
+                                    </div>
+                                )}
                             </form>
                         </div>
                         <div className="col-span-2 bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden flex flex-col">
                             <div className="p-4 border-b bg-gray-50 flex items-center gap-2"><IconWrapper name="FileBarChart" className="text-indigo-600" /><h3 className="font-bold text-gray-700">{t('transactions', 'history_title')}</h3></div>
                             <div className="flex-1 overflow-auto">
-                                <table className="w-full text-sm text-left min-w-[500px]"><thead className="bg-white text-gray-500 sticky top-0 border-b"><tr><th className="p-3">{t('transactions', 'table_time')}</th><th className="p-3">{t('transactions', 'table_type')}</th><th className="p-3">VA</th><th className="p-3">{t('transactions', 'table_content')}</th><th className="p-3 text-right">{t('transactions', 'amount_label')}</th></tr></thead><tbody>{txs.map(tx => <tr key={tx.id} className="border-b"><td className="p-3 text-xs">{formatDate(tx.date)}</td><td className="p-3 font-bold text-xs">{tx.type}</td><td className="p-3 font-medium">{tx.vaCode}</td><td className="p-3 text-xs truncate max-w-[100px] md:max-w-[150px]">{tx.reference}</td><td className={`p-3 text-right font-bold ${tx.type === 'CREDIT' ? 'text-bankb-primary' : 'text-bankb-red'}`}>{tx.type === 'CREDIT' ? '+' : '-'}{tx.amount.toLocaleString()}</td></tr>)}</tbody></table>
+                                <table className="w-full text-sm text-left min-w-[500px]"><thead className="bg-white text-gray-500 sticky top-0 border-b"><tr><th className="p-3">{t('transactions', 'table_time')}</th><th className="p-3">{t('transactions', 'table_type')}</th><th className="p-3">VA Code</th><th className="p-3">{t('transactions', 'table_content')}</th><th className="p-3 text-right">{t('transactions', 'amount_label')}</th></tr></thead><tbody>{txs.map(tx => <tr key={tx.id} className="border-b"><td className="p-3 text-xs">{formatDate(tx.date)}</td><td className="p-3 font-bold text-xs">{tx.type}</td><td className="p-3 font-medium">{tx.vaCode}</td><td className="p-3 text-xs truncate max-w-[100px] md:max-w-[150px]">{tx.reference}</td><td className={`p-3 text-right font-bold ${tx.type === 'CREDIT' || tx.type === 'FUNDING' ? 'text-green-600' : (tx.type === 'INTERNAL' ? 'text-blue-600' : 'text-red-600')}`}>{tx.type === 'CREDIT' || tx.type === 'FUNDING' ? '+' : '-'}{tx.amount.toLocaleString()}</td></tr>)}</tbody></table>
                             </div>
                         </div>
                     </div>
