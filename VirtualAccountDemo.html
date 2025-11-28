@@ -21,11 +21,11 @@
             }
         }
     </script>
-    <!-- React & ReactDOM -->
-    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <!-- React & ReactDOM (Switched to cdnjs for better stability) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
     <!-- Babel for JSX -->
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
     <!-- Google Font: Inter -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
@@ -42,6 +42,9 @@
     <div id="root"></div>
 
     <script type="text/babel">
+        // Ensure React and ReactDOM are available
+        const React = window.React;
+        const ReactDOM = window.ReactDOM;
         const { useState, useEffect, useMemo } = React;
         
         // --- TRANSLATION RESOURCES ---
@@ -159,7 +162,7 @@
                     title: "Hướng Dẫn Sử Dụng & Quy Trình",
                     intro_text: "Virtual account là giải pháp được xây dựng trên lớp Deposit Business Logic do BIDV viết thêm phủ ra ngoài phân hệ deposit cốt lõi trong core để xử lý các yêu cầu nghiệp vụ mới của tiền gửi, tránh ảnh hưởng đến hiệu năng và logic xử lý của core banking.",
                     glossary_title: "Giải Thích Thuật Ngữ",
-                    guide_title: "Quy Trình Xử Lý Giao Dịch",
+                    guide_title: "Quy Trình Xử Lý Giao Dịch Chi Tiết",
                     tech_title: "Cơ Chế Quản Lý Số Dư Kép",
                     terms: {
                         RealBalance: "Số dư thực (Own Balance). Số tiền thực tế nằm tại chính tài khoản VA đó, không bao gồm tiền của các tài khoản con.",
@@ -170,21 +173,66 @@
                     },
                     processes: [
                         {
-                            title: "1. Nguyên tắc cập nhật số dư (Balance Update Logic)",
+                            title: "1. Quy trình Onboarding (Thiết lập ban đầu)",
                             steps: [
-                                "Khi có giao dịch Ghi Có (Credit) vào VA A số tiền X đồng:",
-                                "Bước 1: Tăng 'Số dư thực' (Real Balance) của VA A thêm X.",
-                                "Bước 2: Tăng 'Số dư cộng dồn' (Roll-up Balance) của VA A thêm X.",
-                                "Bước 3: Tăng 'Số dư cộng dồn' của tất cả các VA cha (Ancestors) của A thêm X.",
-                                "Lưu ý: Số dư thực của các VA cha KHÔNG thay đổi."
+                                "Bước 1 (Tại Quầy/Core): Mở mã CIF khách hàng doanh nghiệp và Tài khoản thanh toán (DDA) thực.",
+                                "Bước 2 (Trên VA System - Menu 'Hồ Sơ Doanh Nghiệp'): Tạo hồ sơ doanh nghiệp mới, nhập CIF.",
+                                "Bước 3: Liên kết (Link) các tài khoản DDA thực vào hệ thống VA để làm tài khoản Master (Tài khoản tổng).",
+                                "Bước 4: Phân quyền user quản trị và phê duyệt hạn mức (nếu có)."
                             ]
                         },
                         {
-                            title: "2. Giao Dịch Chi Tiền (Outgoing POBO)",
+                            title: "2. Quy trình Quản lý Cây Thư mục VA (VA Lifecycle)",
                             steps: [
-                                "Kiểm tra số dư: Hệ thống thường kiểm tra 'Số dư thực' của VA để đảm bảo chi đúng nguồn tiền.",
-                                "Tuy nhiên, một số mô hình tập trung vốn cho phép chi từ 'Số dư cộng dồn' (dùng tiền của con để chi bởi cha).",
-                                "Trong demo này: Chúng ta kiểm tra 'Số dư thực'."
+                                "Bước 1 (Menu 'Quản Lý VA'): Tạo VA Gốc (Root) gắn với DDA Master.",
+                                "Bước 2: Tạo các VA cấp con (Level 1, Level 2...) theo cơ cấu tổ chức (Phòng ban, Dự án, Chi nhánh).",
+                                "Bước 3: Thiết lập Metadata cho từng VA (Mã dự án, Mã hợp đồng) để phục vụ định danh sau này."
+                            ]
+                        },
+                        {
+                            title: "3. Quy trình Định danh & Routing (Smart Mapper)",
+                            steps: [
+                                "Mục đích: Giúp hệ thống tự động nhận diện tiền vào VA nào dựa trên nội dung chuyển khoản.",
+                                "Bước 1 (Menu 'Định Danh & Routing'): Chọn loại định danh (Mã số thuế, Số hợp đồng, Mã căn hộ...).",
+                                "Bước 2: Nhập giá trị định danh (VD: HD-001) và chọn VA đích (VD: VA_Project_A).",
+                                "Bước 3: Lưu quy tắc. Từ giờ, mọi món tiền vào DDA mẹ có nội dung chứa 'HD-001' sẽ tự động ghi có cho VA_Project_A."
+                            ]
+                        },
+                        {
+                            title: "4. Quy trình Giao dịch Tiền vào (Incoming Credit)",
+                            steps: [
+                                "Luồng tiền: Khách hàng chuyển tiền -> DDA Mẹ (Core) -> VA System.",
+                                "Bước 1: Core Banking ghi có vào DDA Mẹ.",
+                                "Bước 2: VA System nhận webhook/message từ Core.",
+                                "Bước 3: Routing Engine phân tích nội dung -> Tìm thấy Rule đã map ở Mục 3.",
+                                "Bước 4: Ghi tăng 'Số dư thực' (Real Balance) tại VA đích.",
+                                "Bước 5: Ghi tăng 'Số dư cộng dồn' (Roll-up Balance) cho VA đích và toàn bộ VA cha."
+                            ]
+                        },
+                        {
+                            title: "5. Quy trình Chi hộ (Outgoing POBO)",
+                            steps: [
+                                "Luồng tiền: User lập lệnh từ VA -> Hệ thống trừ tiền DDA Mẹ -> Người thụ hưởng.",
+                                "Bước 1 (Menu 'Chi Hộ'): Nhập thông tin thụ hưởng và số tiền.",
+                                "Bước 2: Hệ thống kiểm tra 'Số dư thực' (Real Balance) của VA. Nếu đủ -> Tiếp tục.",
+                                "Bước 3: Gửi lệnh Debit DDA Mẹ xuống Core Banking.",
+                                "Bước 4: Nếu Core thành công -> Ghi giảm (Debit) số dư VA (cả Real và Roll-up)."
+                            ]
+                        },
+                        {
+                            title: "6. Quy trình Điều chuyển & Cấp vốn (Internal & Fund Mgt)",
+                            steps: [
+                                "Điều chuyển nội bộ (VA <-> VA): Chuyển tiền ảo giữa các VA. Chỉ thay đổi số dư VA, không sinh giao dịch trên DDA mẹ.",
+                                "Cấp vốn (DDA -> VA): Phân bổ hạn mức từ Quỹ chung (DDA) xuống VA con để chi tiêu.",
+                                "Thu vốn (VA -> DDA): Gom tiền từ VA con về Quỹ chung (Sweep)."
+                            ]
+                        },
+                        {
+                            title: "7. Báo cáo & Đối soát (Reconciliation)",
+                            steps: [
+                                "Báo cáo Sao kê (Statement): Liệt kê chi tiết giao dịch của từng VA (giống tài khoản thật).",
+                                "Báo cáo Tổng hợp (Summary): Xem tổng số dư Roll-up theo từng cấp.",
+                                "Đối soát cuối ngày: Tổng số dư Real của tất cả VA con phải bằng (=) Số dư thực tế trên DDA Mẹ tại Core."
                             ]
                         }
                     ]
@@ -401,7 +449,7 @@
             return descendants;
         };
 
-        // --- MOCK INITIAL DATA (Updated with Real & Rollup Balance) ---
+        // --- MOCK INITIAL DATA ---
         const initialCorporate = {
             id: 'CORP001',
             cif: 'CIF888999',
@@ -413,9 +461,6 @@
             ]
         };
 
-        // Logic: 
-        // Block 1 (4B) + Block 2 (6B) = Proj A (10B Rollup). Proj A Real = 0.
-        // Proj A (10B Rollup) + Root Real (15B) = Root Rollup (25B).
         const initialVAs = [
             { id: 'VA_ROOT', code: 'VA000', name: 'TK Tổng Tập Đoàn', parentId: null, level: 0, realBalance: 15000000000, rollupBalance: 25000000000, status: 'ACTIVE', ddaId: 'DDA001', metadata: {} },
             { id: 'VA_PROJ_A', code: 'VA001', name: 'DA Cao tốc Bắc Nam - CP1', parentId: 'VA_ROOT', level: 1, realBalance: 0, rollupBalance: 10000000000, status: 'ACTIVE', ddaId: 'DDA001', metadata: { project_code: 'PJ-BN-01' } },
