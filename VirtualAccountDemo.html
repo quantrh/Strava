@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BankB Ebank | Virtual Account Management</title>
+    <title>BankB Ebank | Virtual Account Management v2</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -48,10 +48,10 @@
         const resources = {
             vi: {
                 app_name: "BankB Ebank",
-                app_name_full: "BankB Ebank | Virtual Account",
+                app_name_full: "BankB Ebank | Virtual Account v2",
                 subtitle: "QL Tài khoản định danh",
                 welcome: "Xin chào",
-                reset_demo: "Reset",
+                reset_demo: "Reset Dữ Liệu",
                 menu: {
                     dashboard: "Tổng Quan",
                     onboarding: "Hồ Sơ Doanh Nghiệp",
@@ -66,7 +66,8 @@
                 },
                 dashboard: {
                     title: "Dashboard Tổng Quan",
-                    total_shadow: "Tổng Số Dư Ảo",
+                    total_real: "Tổng Số Dư Thực (Real)",
+                    total_rollup: "Tổng Số Dư Roll-up (Root)",
                     active_vas: "VA Hoạt động",
                     tx_today: "Giao dịch hôm nay",
                     dda_info: "Tài khoản thực (DDA)",
@@ -86,11 +87,12 @@
                     save: "Lưu"
                 },
                 lifecycle: {
-                    title: "Cây Phân Cấp VA",
+                    title: "Cây Phân Cấp VA & Số Dư",
                     add_btn: "Thêm VA",
                     table_code: "Mã VA",
                     table_name: "Tên TK",
-                    table_balance: "Số Dư (Roll-up)",
+                    table_real_bal: "Số Dư Thực (Own)",
+                    table_rollup_bal: "Số Dư Cộng Dồn (Roll-up)",
                     table_status: "TT",
                     table_dda: "DDA Liên Kết",
                     table_meta: "Metadata",
@@ -121,7 +123,7 @@
                     title_outgoing: "Giao Dịch Chi Hộ (POBO)",
                     title_internal: "Điều Chuyển Nội Bộ / Cấp Vốn",
                     routing_content: "Nội dung GD (Reference)",
-                    va_label: "Tài Khoản Ảo (Đích)",
+                    va_label: "Tài Khoản Ảo",
                     amount_label: "Số Tiền",
                     beneficiary_label: "Thụ Hưởng",
                     payment_content: "Nội dung chi",
@@ -140,7 +142,8 @@
                     dest_dda: "DDA Đích",
                     direction: "Hướng Điều Chuyển",
                     dir_fund: "Cấp Vốn (DDA → VA)",
-                    dir_sweep: "Thu Hồi (VA → DDA)"
+                    dir_sweep: "Thu Hồi (VA → DDA)",
+                    bal_hint: "Dư thực: "
                 },
                 reports: {
                     summary_title: "Báo Cáo Tổng Hợp",
@@ -154,41 +157,34 @@
                 },
                 guide: {
                     title: "Hướng Dẫn Sử Dụng & Quy Trình",
+                    intro_text: "Virtual account là giải pháp được xây dựng trên lớp Deposit Business Logic do BIDV viết thêm phủ ra ngoài phân hệ deposit cốt lõi trong core để xử lý các yêu cầu nghiệp vụ mới của tiền gửi, tránh ảnh hưởng đến hiệu năng và logic xử lý của core banking.",
                     glossary_title: "Giải Thích Thuật Ngữ",
                     guide_title: "Quy Trình Xử Lý Giao Dịch",
-                    tech_title: "Giải Pháp Định Tuyến & Ghi Có (Technical Solution)",
+                    tech_title: "Cơ Chế Quản Lý Số Dư Kép",
                     terms: {
-                        VA: "Virtual Account (Tài khoản ảo/định danh). Công cụ để phân loại và định danh dòng tiền, không phải tài khoản thực tại Core Banking.",
-                        DDA: "Demand Deposit Account (Tài khoản thanh toán). Tài khoản thực của doanh nghiệp tại ngân hàng, nơi chứa tiền thực tế.",
-                        Shadow: "Shadow Posting (Ghi sổ cái ảo). Cơ chế ghi nhận bút toán song song tại hệ thống VA mà không ảnh hưởng trực tiếp ngay lập tức đến DDA (đối với giao dịch nội bộ VA).",
-                        POBO: "Payments On Behalf Of (Chi hộ). Chi tiền từ VA. Hệ thống kiểm tra số dư VA trước khi trừ tiền thật tại DDA.",
-                        Rollup: "Cơ chế cộng dồn số dư. Số dư VA cha = Tổng số dư các VA con + Số dư riêng của nó.",
+                        RealBalance: "Số dư thực (Own Balance). Số tiền thực tế nằm tại chính tài khoản VA đó, không bao gồm tiền của các tài khoản con.",
+                        RollupBalance: "Số dư cộng dồn (Roll-up Balance). Tổng tiền của chính VA đó + Tổng số dư Roll-up của tất cả các VA con trực thuộc. Dùng để quản lý hạn mức tổng.",
+                        VA: "Virtual Account (Tài khoản ảo/định danh). Công cụ để phân loại và định danh dòng tiền.",
+                        DDA: "Demand Deposit Account (Tài khoản thanh toán). Tài khoản thực của doanh nghiệp tại ngân hàng.",
+                        Shadow: "Shadow Posting (Ghi sổ cái ảo). Cơ chế ghi nhận bút toán song song.",
                     },
                     processes: [
                         {
-                            title: "1. Giao Dịch Nạp Tiền (Incoming Credit: DDA Khách Hàng -> VA Doanh Nghiệp)",
+                            title: "1. Nguyên tắc cập nhật số dư (Balance Update Logic)",
                             steps: [
-                                "Bước 1 (Tại Core): Trích nợ (Debit) tài khoản của Khách hàng chuyển tiền.",
-                                "Bước 2 (Tại Core): Ghi có (Credit) vào Tài khoản thực (Master DDA) của Doanh nghiệp.",
-                                "Bước 3 (Tại VA System): Hệ thống quét giao dịch Ghi có tại Master DDA -> Phân tích nội dung chuyển tiền (Dựa trên Mã định danh đã cấu hình).",
-                                "Bước 4 (Shadow Posting): Ghi tăng (Credit) số dư ảo cho VA tương ứng và cập nhật số dư cộng dồn cho các cấp cha."
+                                "Khi có giao dịch Ghi Có (Credit) vào VA A số tiền X đồng:",
+                                "Bước 1: Tăng 'Số dư thực' (Real Balance) của VA A thêm X.",
+                                "Bước 2: Tăng 'Số dư cộng dồn' (Roll-up Balance) của VA A thêm X.",
+                                "Bước 3: Tăng 'Số dư cộng dồn' của tất cả các VA cha (Ancestors) của A thêm X.",
+                                "Lưu ý: Số dư thực của các VA cha KHÔNG thay đổi."
                             ]
                         },
                         {
-                            title: "2. Giao Dịch Chi Tiền (Outgoing POBO: VA Doanh Nghiệp -> Đối Tác)",
+                            title: "2. Giao Dịch Chi Tiền (Outgoing POBO)",
                             steps: [
-                                "Bước 1 (Tại VA System): Người dùng lập lệnh chi từ VA. Hệ thống kiểm tra: (1) Số dư VA có đủ không? (2) Số dư thực DDA có đủ không?",
-                                "Bước 2 (Gửi lệnh): Nếu đủ điều kiện, gửi lệnh Debit Master DDA xuống Core Banking.",
-                                "Bước 3 (Tại Core): Trích nợ Master DDA -> Ghi có cho tài khoản Đối tác.",
-                                "Bước 4 (Shadow Posting): Sau khi Core báo thành công, hệ thống VA ghi giảm (Debit) số dư ảo của VA."
-                            ]
-                        },
-                        {
-                            title: "3. Điều Chuyển Nội Bộ (Internal Transfer: VA A -> VA B)",
-                            steps: [
-                                "Bước 1: Kiểm tra số dư VA A (Nguồn).",
-                                "Bước 2 (Shadow Posting): Ghi giảm (Debit) số dư VA A -> Ghi tăng (Credit) số dư VA B.",
-                                "Lưu ý: Không phát sinh giao dịch trên tài khoản thực (Master DDA) vì tiền vẫn nằm trong cùng một tài khoản tổng của doanh nghiệp."
+                                "Kiểm tra số dư: Hệ thống thường kiểm tra 'Số dư thực' của VA để đảm bảo chi đúng nguồn tiền.",
+                                "Tuy nhiên, một số mô hình tập trung vốn cho phép chi từ 'Số dư cộng dồn' (dùng tiền của con để chi bởi cha).",
+                                "Trong demo này: Chúng ta kiểm tra 'Số dư thực'."
                             ]
                         }
                     ]
@@ -196,10 +192,10 @@
             },
             en: {
                 app_name: "BankB Ebank",
-                app_name_full: "BankB Ebank | Virtual Account",
+                app_name_full: "BankB Ebank | Virtual Account v2",
                 subtitle: "Virtual Account System",
                 welcome: "Hi",
-                reset_demo: "Reset",
+                reset_demo: "Reset Data",
                 menu: {
                     dashboard: "Dashboard",
                     onboarding: "Corp Profile",
@@ -214,7 +210,8 @@
                 },
                 dashboard: {
                     title: "Dashboard",
-                    total_shadow: "Total Shadow Bal",
+                    total_real: "Total Real Bal",
+                    total_rollup: "Total Roll-up Bal",
                     active_vas: "Active VAs",
                     tx_today: "Tx Today",
                     dda_info: "Real Account (DDA)",
@@ -234,11 +231,12 @@
                     save: "Save"
                 },
                 lifecycle: {
-                    title: "VA Hierarchy",
+                    title: "VA Hierarchy & Balances",
                     add_btn: "Add VA",
                     table_code: "Code",
                     table_name: "Name",
-                    table_balance: "Balance (Roll-up)",
+                    table_real_bal: "Real Balance",
+                    table_rollup_bal: "Roll-up Balance",
                     table_status: "Sts",
                     table_dda: "Linked DDA",
                     table_meta: "Meta",
@@ -288,7 +286,8 @@
                     dest_dda: "Dest DDA",
                     direction: "Direction",
                     dir_fund: "Allocation (DDA -> VA)",
-                    dir_sweep: "Sweep (VA -> DDA)"
+                    dir_sweep: "Sweep (VA -> DDA)",
+                    bal_hint: "Real: "
                 },
                 reports: {
                     summary_title: "Summary Rpt",
@@ -302,40 +301,33 @@
                 },
                 guide: {
                     title: "User Guide & Process",
+                    intro_text: "Virtual Account is a solution built on the Deposit Business Logic layer developed by BIDV, overlaying the core deposit module to handle new deposit business requirements, avoiding impacts on the performance and processing logic of the core banking system.",
                     glossary_title: "Glossary",
                     guide_title: "Transaction Logic Flows",
-                    tech_title: "Routing Solution (Technical)",
+                    tech_title: "Dual Balance Mechanism",
                     terms: {
+                        RealBalance: "Real Balance (Own Funds). Funds sitting directly in this VA, excluding children.",
+                        RollupBalance: "Roll-up Balance. Sum of Own Balance + All Children's Roll-up Balances.",
                         VA: "Virtual Account. Sub-account for tracking.",
                         DDA: "Real checking account.",
-                        Shadow: "Virtual bookkeeping.",
-                        POBO: "Payments On Behalf Of.",
-                        Rollup: "Balance Aggregation."
+                        Shadow: "Virtual bookkeeping."
                     },
                     processes: [
                         {
-                            title: "1. Incoming Credit Flow (Customer -> Corp VA)",
+                            title: "1. Balance Update Logic",
                             steps: [
-                                "Step 1 (Core): Debit Payer's Account.",
-                                "Step 2 (Core): Credit Corporate Master DDA.",
-                                "Step 3 (VA System): Detect Credit on Master DDA -> Resolve Target VA via Routing Rules.",
-                                "Step 4 (Shadow): Credit Target VA Shadow Balance & Roll-up to parents."
+                                "When Credit VA A with amount X:",
+                                "Step 1: Increase VA A 'Real Balance' by X.",
+                                "Step 2: Increase VA A 'Roll-up Balance' by X.",
+                                "Step 3: Increase 'Roll-up Balance' of all Ancestors of A by X.",
+                                "Note: Ancestors' Real Balance does NOT change."
                             ]
                         },
                         {
-                            title: "2. Outgoing POBO Flow (Corp VA -> Partner)",
+                            title: "2. Outgoing POBO",
                             steps: [
-                                "Step 1 (VA System): Initiate Payment. Check VA Balance AND Master DDA Balance.",
-                                "Step 2 (Core): Debit Master DDA -> Credit Partner Account.",
-                                "Step 3 (Shadow): Debit Target VA Shadow Balance."
-                            ]
-                        },
-                        {
-                            title: "3. Internal Transfer (VA -> VA)",
-                            steps: [
-                                "Step 1: Check Source VA Balance.",
-                                "Step 2 (Shadow): Debit Source VA -> Credit Destination VA.",
-                                "Note: No transaction on Master DDA."
+                                "System checks 'Real Balance' of the specific VA.",
+                                "Funds are deducted from Real Balance of VA, and Roll-up Balance of VA + Ancestors."
                             ]
                         }
                     ]
@@ -368,7 +360,8 @@
             ChevronRight: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"/></svg>,
             ArrowDownRight: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m7 7 10 10"/><path d="M17 7v10H7"/></svg>,
             ArrowUpRight: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M7 17 17 7"/><path d="M7 7h10v10"/></svg>,
-            Edit: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>
+            Edit: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>,
+            Layers: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
         };
 
         const IconWrapper = ({ name, size = 18, className = "" }) => {
@@ -408,7 +401,7 @@
             return descendants;
         };
 
-        // --- MOCK INITIAL DATA ---
+        // --- MOCK INITIAL DATA (Updated with Real & Rollup Balance) ---
         const initialCorporate = {
             id: 'CORP001',
             cif: 'CIF888999',
@@ -420,11 +413,14 @@
             ]
         };
 
+        // Logic: 
+        // Block 1 (4B) + Block 2 (6B) = Proj A (10B Rollup). Proj A Real = 0.
+        // Proj A (10B Rollup) + Root Real (15B) = Root Rollup (25B).
         const initialVAs = [
-            { id: 'VA_ROOT', code: 'VA000', name: 'TK Tổng Tập Đoàn', parentId: null, level: 0, balance: 25000000000, status: 'ACTIVE', ddaId: 'DDA001', metadata: {} },
-            { id: 'VA_PROJ_A', code: 'VA001', name: 'DA Cao tốc Bắc Nam - CP1', parentId: 'VA_ROOT', level: 1, balance: 10000000000, status: 'ACTIVE', ddaId: 'DDA001', metadata: { project_code: 'PJ-BN-01' } },
-            { id: 'VA_BLOCK_1', code: 'VA001-B1', name: 'Gói thầu XL01 - Licochu', parentId: 'VA_PROJ_A', level: 2, balance: 4000000000, status: 'ACTIVE', ddaId: 'DDA001', metadata: { contractor: 'Licochu' } },
-            { id: 'VA_BLOCK_2', code: 'VA001-B2', name: 'Gói thầu XL02 - Cầu Hưng Hà', parentId: 'VA_PROJ_A', level: 2, balance: 6000000000, status: 'ACTIVE', ddaId: 'DDA001', metadata: { contractor: 'Cienco' } }
+            { id: 'VA_ROOT', code: 'VA000', name: 'TK Tổng Tập Đoàn', parentId: null, level: 0, realBalance: 15000000000, rollupBalance: 25000000000, status: 'ACTIVE', ddaId: 'DDA001', metadata: {} },
+            { id: 'VA_PROJ_A', code: 'VA001', name: 'DA Cao tốc Bắc Nam - CP1', parentId: 'VA_ROOT', level: 1, realBalance: 0, rollupBalance: 10000000000, status: 'ACTIVE', ddaId: 'DDA001', metadata: { project_code: 'PJ-BN-01' } },
+            { id: 'VA_BLOCK_1', code: 'VA001-B1', name: 'Gói thầu XL01 - Licochu', parentId: 'VA_PROJ_A', level: 2, realBalance: 4000000000, rollupBalance: 4000000000, status: 'ACTIVE', ddaId: 'DDA001', metadata: { contractor: 'Licochu' } },
+            { id: 'VA_BLOCK_2', code: 'VA001-B2', name: 'Gói thầu XL02 - Cầu Hưng Hà', parentId: 'VA_PROJ_A', level: 2, realBalance: 6000000000, rollupBalance: 6000000000, status: 'ACTIVE', ddaId: 'DDA001', metadata: { contractor: 'Cienco' } }
         ];
 
         const initialTx = [
@@ -441,19 +437,19 @@
             const [activeTab, setActiveTab] = useState('DASHBOARD');
             const [lang, setLang] = useState('vi'); 
             const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-            const [txMenuOpen, setTxMenuOpen] = useState(true); // Default open for UX
+            const [txMenuOpen, setTxMenuOpen] = useState(true); 
             
-            // Global State
-            const [corporate, setCorporate] = useState(() => loadState('BANKB_CORP', initialCorporate));
-            const [virtualAccounts, setVirtualAccounts] = useState(() => loadState('BANKB_VAS', initialVAs));
-            const [transactions, setTransactions] = useState(() => loadState('BANKB_TXS', initialTx));
-            const [identifiers, setIdentifiers] = useState(() => loadState('BANKB_IDS', initialIdentifiers));
+            // Global State with version key to reset old data if needed
+            const [corporate, setCorporate] = useState(() => loadState('BANKB_CORP_V2', initialCorporate));
+            const [virtualAccounts, setVirtualAccounts] = useState(() => loadState('BANKB_VAS_V2', initialVAs));
+            const [transactions, setTransactions] = useState(() => loadState('BANKB_TXS_V2', initialTx));
+            const [identifiers, setIdentifiers] = useState(() => loadState('BANKB_IDS_V2', initialIdentifiers));
             const [notifications, setNotifications] = useState([]);
 
-            useEffect(() => saveState('BANKB_CORP', corporate), [corporate]);
-            useEffect(() => saveState('BANKB_VAS', virtualAccounts), [virtualAccounts]);
-            useEffect(() => saveState('BANKB_TXS', transactions), [transactions]);
-            useEffect(() => saveState('BANKB_IDS', identifiers), [identifiers]);
+            useEffect(() => saveState('BANKB_CORP_V2', corporate), [corporate]);
+            useEffect(() => saveState('BANKB_VAS_V2', virtualAccounts), [virtualAccounts]);
+            useEffect(() => saveState('BANKB_TXS_V2', transactions), [transactions]);
+            useEffect(() => saveState('BANKB_IDS_V2', identifiers), [identifiers]);
 
             const notify = (msg, type = 'info') => {
                 const id = generateId();
@@ -572,18 +568,51 @@
             </button>
         );
 
+        // --- STATCARD COMPONENT (FIXED: Defined ONLY HERE) ---
+        const StatCard = ({ title, value, icon, color, bgColor }) => (
+            <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 flex items-start justify-between hover:shadow-md transition-shadow h-full">
+                <div className="flex-1 min-w-0 pr-2">
+                    <p className="text-xs font-bold text-gray-500 uppercase mb-1 truncate" title={title}>{title}</p>
+                    <div className="text-lg md:text-xl font-bold text-gray-800 break-words leading-tight">
+                        {value}
+                    </div>
+                </div>
+                <div className={`p-3 rounded-full shrink-0 ${bgColor} ${color}`}>
+                    <IconWrapper name={icon} size={20} />
+                </div>
+            </div>
+        );
+
         const Dashboard = ({ corporate, vas, txs, t }) => {
-            const totalBalance = vas ? vas.reduce((sum, v) => sum + v.balance, 0) : 0;
+            // Total Real Balance: Sum of realBalance of ALL VAs (Since realBalance is exclusive)
+            const totalReal = vas ? vas.reduce((sum, v) => sum + (v.realBalance || 0), 0) : 0;
+            // Total Rollup: Should equal Total Real if data is consistent.
+            // But usually we display Root's Rollup. Assuming single root for demo, or sum of roots.
+            const roots = vas.filter(v => !v.parentId);
+            const totalRollup = roots.reduce((sum, v) => sum + (v.rollupBalance || 0), 0);
+            
             const activeVAs = vas ? vas.filter(v => v.status === 'ACTIVE').length : 0;
             const txToday = txs ? txs.length : 0;
+            
+            // Helper để format tiền tệ đẹp hơn
+            const formatMoney = (amount) => (
+                <span>
+                    {amount.toLocaleString()} <span className="text-sm font-normal text-gray-500">VND</span>
+                </span>
+            );
+
             return (
                 <div className="space-y-4 md:space-y-6">
                     <h2 className="text-xl md:text-2xl font-bold text-gray-800">{t('dashboard', 'title')}</h2>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
-                        <StatCard title={t('dashboard', 'total_shadow')} value={totalBalance.toLocaleString() + ' VND'} icon="Wallet" color="text-emerald-600" bgColor="bg-emerald-100" />
+                    
+                    {/* Cập nhật Grid: sm:grid-cols-2 (2 cột) để rộng rãi hơn, lg:grid-cols-4 (4 cột) trên màn hình to */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <StatCard title={t('dashboard', 'total_real')} value={formatMoney(totalReal)} icon="Wallet" color="text-emerald-600" bgColor="bg-emerald-100" />
+                        <StatCard title={t('dashboard', 'total_rollup')} value={formatMoney(totalRollup)} icon="Layers" color="text-indigo-600" bgColor="bg-indigo-100" />
                         <StatCard title={t('dashboard', 'active_vas')} value={activeVAs} icon="CheckCircle" color="text-blue-600" bgColor="bg-blue-100" />
                         <StatCard title={t('dashboard', 'tx_today')} value={txToday} icon="Activity" color="text-purple-600" bgColor="bg-purple-100" />
                     </div>
+
                     <div className="bg-white p-4 md:p-6 rounded-lg shadow-sm border border-gray-200">
                         <h3 className="font-semibold mb-4 text-bankb-primary flex items-center gap-2 text-sm md:text-base"><IconWrapper name="Building2" size={20} /> {t('dashboard', 'dda_info')}</h3>
                         <div className="overflow-x-auto">
@@ -597,8 +626,6 @@
             );
         };
 
-        const StatCard = ({ title, value, icon, color, bgColor }) => (<div className="bg-white p-4 md:p-6 rounded-lg shadow-sm border border-gray-200 flex items-center justify-between hover:shadow-md transition-shadow"><div><p className="text-xs md:text-sm text-gray-500 font-medium mb-1">{title}</p><p className="text-xl md:text-2xl font-bold text-gray-800">{value}</p></div><div className={`p-3 md:p-4 rounded-full ${bgColor} ${color}`}><IconWrapper name={icon} size={24} /></div></div>);
-
         const UserGuide = ({ t, lang }) => {
             const terms = resources[lang].guide.terms;
             const processes = resources[lang].guide.processes || [];
@@ -606,31 +633,28 @@
                 <div className="space-y-6 md:space-y-8 pb-10">
                     <h2 className="text-xl md:text-2xl font-bold text-gray-800">{t('guide', 'title')}</h2>
                     
+                    {/* New Intro Section */}
+                    <div className="bg-blue-50 border-l-4 border-blue-500 p-4 rounded text-sm md:text-base text-gray-700 italic">
+                        {t('guide', 'intro_text')}
+                    </div>
+                    
                     {/* 1. Routing Solution */}
                     <div className="bg-white p-4 md:p-6 rounded-lg shadow-sm border border-gray-200">
                         <h3 className="text-base md:text-lg font-bold mb-4 text-bankb-primary flex items-center gap-2">
                             <IconWrapper name="GitFork" /> {t('guide', 'tech_title')}
                         </h3>
                         <div className="space-y-4 text-sm text-gray-700 leading-relaxed">
-                            <p className="font-bold">Vấn đề:</p>
-                            <p>Khi khách hàng chuyển tiền từ ngân hàng khác vào tài khoản VA tại BankB, ngân hàng gửi đi thường không hỗ trợ nhập số tài khoản VA (do VA không tồn tại trên hệ thống thanh toán liên ngân hàng Napas/CITAD), mà chỉ cho phép nhập số tài khoản thực (DDA) và nội dung chuyển tiền.</p>
+                            <p className="font-bold">Tại sao cần 2 loại số dư?</p>
+                            <p>Trong quản lý dòng tiền tập trung, doanh nghiệp cần biết tiền đang nằm thực tế ở đâu (Real Balance) và tổng nguồn lực mà một đơn vị cấp cao có quyền điều phối (Roll-up Balance).</p>
                             
-                            <p className="font-bold mt-4">Giải pháp tổng thể (Payment Reference Parsing):</p>
-                            <ul className="list-disc pl-5 space-y-1">
-                                <li>Ngân hàng nhận (BankB) sẽ nhận giao dịch vào DDA thực theo chuẩn thanh toán.</li>
-                                <li>Hệ thống VA Engine sẽ đọc trường <strong>Nội dung chuyển khoản (Payment Reference)</strong>.</li>
-                                <li>Chạy qua <strong>VA Routing Engine</strong> để so khớp và tìm ra VA đích.</li>
-                                <li>Nếu tìm thấy -> Ghi Shadow Posting cho VA. Nếu không -> Đẩy vào hàng đợi xử lý thủ công (Unmapped Queue).</li>
-                            </ul>
-
                             <div className="grid md:grid-cols-2 gap-4 mt-4">
-                                <div className="p-3 bg-gray-50 rounded border border-gray-200">
-                                    <span className="font-bold text-bankb-primary block mb-2">1. Embedding (Nhúng mã)</span>
-                                    <p className="text-xs text-gray-600">Doanh nghiệp yêu cầu người chuyển tiền nhập mã định danh vào nội dung. Ví dụ: "Thanh toan HD <strong>HHD:53219</strong>"</p>
+                                <div className="p-3 bg-emerald-50 rounded border border-emerald-100">
+                                    <span className="font-bold text-emerald-800 block mb-2">1. Số dư thực (Real Balance)</span>
+                                    <p className="text-xs text-gray-600">Là số tiền thực sự được ghi nhận tại tài khoản VA đó. Khi sao kê tài khoản VA, đây là số dư hiển thị.</p>
                                 </div>
-                                <div className="p-3 bg-gray-50 rounded border border-gray-200">
-                                    <span className="font-bold text-bankb-primary block mb-2">2. Virtual Identifiers</span>
-                                    <p className="text-xs text-gray-600">Mỗi VA được gán nhiều mã định danh: Mã hộ dân, Mã dự án, Mã hợp đồng, Mã hóa đơn...</p>
+                                <div className="p-3 bg-indigo-50 rounded border border-indigo-100">
+                                    <span className="font-bold text-indigo-800 block mb-2">2. Số dư cộng dồn (Roll-up Balance)</span>
+                                    <p className="text-xs text-gray-600">Là tổng số dư của VA đó cộng với tất cả các VA con cháu. Dùng cho mục đích báo cáo quản trị tổng hợp.</p>
                                 </div>
                             </div>
                         </div>
@@ -713,7 +737,19 @@
                     const parent = vas.find(v => v.id === formData.parentId);
                     const code = parent ? parent.code + '-' + generateId().substring(0,3).toUpperCase() : 'VA000';
                     const level = parent ? parent.level + 1 : 0;
-                    const createdVA = { id: 'VA_' + generateId(), code, name: formData.name, parentId: formData.parentId, level, balance: 0, status: 'ACTIVE', ddaId: formData.ddaId, metadata: { ...formData.metadata } };
+                    // Initialize both balances to 0 for new VA
+                    const createdVA = { 
+                        id: 'VA_' + generateId(), 
+                        code, 
+                        name: formData.name, 
+                        parentId: formData.parentId, 
+                        level, 
+                        realBalance: 0, 
+                        rollupBalance: 0, 
+                        status: 'ACTIVE', 
+                        ddaId: formData.ddaId, 
+                        metadata: { ...formData.metadata } 
+                    };
                     setVas([...vas, createdVA]);
                     notify(`Created ${code}`);
                 }
@@ -727,7 +763,17 @@
                         <tr className="hover:bg-gray-50 group border-b border-gray-100 text-xs md:text-sm transition-colors">
                             <td className="p-2 md:p-3 pl-2 md:pl-4"><div style={{ marginLeft: depth * (window.innerWidth < 768 ? 10 : 24) + 'px' }} className="flex items-center gap-1 md:gap-2">{depth > 0 && <span className="text-gray-300 font-light">└</span>}<span className="font-mono text-[10px] md:text-xs bg-blue-50 text-blue-700 px-1 md:px-2 py-0.5 md:py-1 rounded border border-blue-100 truncate">{node.code}</span></div></td>
                             <td className="p-2 md:p-3 font-medium text-gray-800 truncate max-w-[100px] md:max-w-none">{node.name}</td>
-                            <td className="p-2 md:p-3 text-right font-bold text-bankb-primary">{node.balance.toLocaleString()}</td>
+                            
+                            {/* REAL BALANCE COLUMN */}
+                            <td className="p-2 md:p-3 text-right font-bold text-emerald-600 bg-emerald-50/30">
+                                {node.realBalance?.toLocaleString()}
+                            </td>
+                            
+                            {/* ROLLUP BALANCE COLUMN */}
+                            <td className="p-2 md:p-3 text-right font-bold text-indigo-600">
+                                {node.rollupBalance?.toLocaleString()}
+                            </td>
+
                             <td className="p-2 md:p-3 hidden md:table-cell"><span className={`px-2 py-1 rounded-full text-xs font-bold ${node.status === 'ACTIVE' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>{node.status}</span></td>
                             <td className="p-2 md:p-3 text-xs text-gray-500 hidden lg:table-cell">{ddaInfo ? ddaInfo.accountNo : node.ddaId}</td>
                             <td className="p-2 md:p-3 text-xs text-gray-500 hidden lg:table-cell">{Object.entries(node.metadata).filter(([_,v])=>v).map(([k,v]) => <div key={k} className="truncate max-w-[120px]"><span className="font-semibold">{k}:</span> {v}</div>)}</td>
@@ -739,7 +785,28 @@
             }
             
             return (
-                <div className="space-y-4"><div className="flex justify-between items-end"><h2 className="text-lg md:text-xl font-bold text-gray-800 flex items-center gap-2"><IconWrapper name="GitFork" className="text-purple-600" />{t('lifecycle', 'title')}</h2><button onClick={() => handleOpenModal()} className="bg-bankb-primary text-white px-3 py-1.5 md:px-4 md:py-2 rounded shadow flex items-center gap-2 text-xs md:text-sm font-medium"><IconWrapper name="Plus" size={16} /> {t('lifecycle', 'add_btn')}</button></div><div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden"><div className="overflow-x-auto"><table className="w-full min-w-[350px]"><thead className="bg-gray-50 text-gray-500 text-xs uppercase font-bold tracking-wider"><tr><th className="p-2 md:p-3 text-left w-1/4">{t('lifecycle', 'table_code')}</th><th className="p-2 md:p-3 text-left w-1/4">{t('lifecycle', 'table_name')}</th><th className="p-2 md:p-3 text-right">{t('lifecycle', 'table_balance')}</th><th className="p-2 md:p-3 text-left hidden md:table-cell">{t('lifecycle', 'table_status')}</th><th className="p-2 md:p-3 text-left hidden lg:table-cell">{t('lifecycle', 'table_dda')}</th><th className="p-2 md:p-3 text-left hidden lg:table-cell">{t('lifecycle', 'table_meta')}</th><th className="p-2 md:p-3"></th></tr></thead><tbody>{treeData.map(node => <VARow key={node.id} node={node} depth={0} />)}</tbody></table></div></div>{showModal && (<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 backdrop-blur-sm p-4"><div className="bg-white p-4 md:p-6 rounded-lg w-full max-w-md shadow-2xl animate-bounce-in"><h3 className="text-lg font-bold mb-4 border-b pb-2 text-bankb-primary">{editingVA ? t('lifecycle', 'modal_title_edit') : t('lifecycle', 'modal_title_create')}</h3><form onSubmit={handleSubmit} className="space-y-4"><InputGroup label={t('lifecycle', 'table_name')} value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} /><div className="flex flex-col gap-1 w-full"><label className="text-xs font-bold text-gray-500 uppercase">{t('lifecycle', 'modal_parent')}</label><select value={formData.parentId} onChange={e => setFormData({...formData, parentId: e.target.value})} className="border border-gray-300 p-2 rounded text-sm bg-white focus:ring-1 focus:ring-bankb-primary outline-none"><option value="">-- Select --</option>{vas.filter(v => v.status !== 'CLOSED' && v.id !== (editingVA?.id)).map(v => <option key={v.id} value={v.id}>{'--'.repeat(v.level)} {v.name} ({v.code})</option>)}</select></div><div className="flex flex-col gap-1 w-full"><label className="text-xs font-bold text-gray-500 uppercase">{t('lifecycle', 'modal_dda')}</label><select value={formData.ddaId} onChange={e => setFormData({...formData, ddaId: e.target.value})} className="border border-gray-300 p-2 rounded text-sm bg-white focus:ring-1 focus:ring-bankb-primary outline-none"><option value="">-- Select DDA --</option>{corporate.ddaAccounts.map(dda => <option key={dda.id} value={dda.id}>{dda.accountNo} - {dda.balance.toLocaleString()} {dda.currency}</option>)}</select></div><div className="border-t pt-2 mt-2"><p className="text-xs font-bold text-gray-500 mb-2">{t('lifecycle', 'modal_meta_title')}</p><div className="grid grid-cols-2 gap-2"><InputGroup label="Project" value={formData.metadata.project_code} onChange={e => setFormData({...formData, metadata: {...formData.metadata, project_code: e.target.value}})} /><InputGroup label="Household" value={formData.metadata.household_id} onChange={e => setFormData({...formData, metadata: {...formData.metadata, household_id: e.target.value}})} /></div></div><div className="flex justify-end gap-2 mt-4 pt-4 border-t"><button type="button" onClick={() => setShowModal(false)} className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded">{t('lifecycle', 'btn_cancel')}</button><button type="submit" className="px-4 py-2 text-sm bg-bankb-primary text-white rounded hover:bg-teal-700 shadow-sm">{editingVA ? t('lifecycle', 'btn_update') : t('lifecycle', 'btn_create')}</button></div></form></div></div>)}</div>
+                <div className="space-y-4">
+                    <div className="flex justify-between items-end"><h2 className="text-lg md:text-xl font-bold text-gray-800 flex items-center gap-2"><IconWrapper name="GitFork" className="text-purple-600" />{t('lifecycle', 'title')}</h2><button onClick={() => handleOpenModal()} className="bg-bankb-primary text-white px-3 py-1.5 md:px-4 md:py-2 rounded shadow flex items-center gap-2 text-xs md:text-sm font-medium"><IconWrapper name="Plus" size={16} /> {t('lifecycle', 'add_btn')}</button></div>
+                    <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+                        <div className="overflow-x-auto">
+                            <table className="w-full min-w-[350px]">
+                                <thead className="bg-gray-50 text-gray-500 text-xs uppercase font-bold tracking-wider">
+                                    <tr>
+                                        <th className="p-2 md:p-3 text-left w-1/5">{t('lifecycle', 'table_code')}</th>
+                                        <th className="p-2 md:p-3 text-left w-1/5">{t('lifecycle', 'table_name')}</th>
+                                        <th className="p-2 md:p-3 text-right text-emerald-700 bg-emerald-100/50">{t('lifecycle', 'table_real_bal')}</th>
+                                        <th className="p-2 md:p-3 text-right text-indigo-700">{t('lifecycle', 'table_rollup_bal')}</th>
+                                        <th className="p-2 md:p-3 text-left hidden md:table-cell">{t('lifecycle', 'table_status')}</th>
+                                        <th className="p-2 md:p-3 text-left hidden lg:table-cell">{t('lifecycle', 'table_dda')}</th>
+                                        <th className="p-2 md:p-3 text-left hidden lg:table-cell">{t('lifecycle', 'table_meta')}</th>
+                                        <th className="p-2 md:p-3"></th>
+                                    </tr>
+                                </thead>
+                                <tbody>{treeData.map(node => <VARow key={node.id} node={node} depth={0} />)}</tbody>
+                            </table>
+                        </div>
+                    </div>
+                    {showModal && (<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 backdrop-blur-sm p-4"><div className="bg-white p-4 md:p-6 rounded-lg w-full max-w-md shadow-2xl animate-bounce-in"><h3 className="text-lg font-bold mb-4 border-b pb-2 text-bankb-primary">{editingVA ? t('lifecycle', 'modal_title_edit') : t('lifecycle', 'modal_title_create')}</h3><form onSubmit={handleSubmit} className="space-y-4"><InputGroup label={t('lifecycle', 'table_name')} value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} /><div className="flex flex-col gap-1 w-full"><label className="text-xs font-bold text-gray-500 uppercase">{t('lifecycle', 'modal_parent')}</label><select value={formData.parentId} onChange={e => setFormData({...formData, parentId: e.target.value})} className="border border-gray-300 p-2 rounded text-sm bg-white focus:ring-1 focus:ring-bankb-primary outline-none"><option value="">-- Select --</option>{vas.filter(v => v.status !== 'CLOSED' && v.id !== (editingVA?.id)).map(v => <option key={v.id} value={v.id}>{'--'.repeat(v.level)} {v.name} ({v.code})</option>)}</select></div><div className="flex flex-col gap-1 w-full"><label className="text-xs font-bold text-gray-500 uppercase">{t('lifecycle', 'modal_dda')}</label><select value={formData.ddaId} onChange={e => setFormData({...formData, ddaId: e.target.value})} className="border border-gray-300 p-2 rounded text-sm bg-white focus:ring-1 focus:ring-bankb-primary outline-none"><option value="">-- Select DDA --</option>{corporate.ddaAccounts.map(dda => <option key={dda.id} value={dda.id}>{dda.accountNo} - {dda.balance.toLocaleString()} {dda.currency}</option>)}</select></div><div className="border-t pt-2 mt-2"><p className="text-xs font-bold text-gray-500 mb-2">{t('lifecycle', 'modal_meta_title')}</p><div className="grid grid-cols-2 gap-2"><InputGroup label="Project" value={formData.metadata.project_code} onChange={e => setFormData({...formData, metadata: {...formData.metadata, project_code: e.target.value}})} /><InputGroup label="Household" value={formData.metadata.household_id} onChange={e => setFormData({...formData, metadata: {...formData.metadata, household_id: e.target.value}})} /></div></div><div className="flex justify-end gap-2 mt-4 pt-4 border-t"><button type="button" onClick={() => setShowModal(false)} className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded">{t('lifecycle', 'btn_cancel')}</button><button type="submit" className="px-4 py-2 text-sm bg-bankb-primary text-white rounded hover:bg-teal-700 shadow-sm">{editingVA ? t('lifecycle', 'btn_update') : t('lifecycle', 'btn_create')}</button></div></form></div></div>)}</div>
             );
         };
 
@@ -780,11 +847,20 @@
                 sourceId: '', destId: '', vaId: '', amount: '', reference: '', beneficiary: '' 
             });
 
-            const updateVaAndAncestors = (list, targetId, amount) => {
+            // UPDATED LOGIC: Update Real Balance for Target, and Rollup Balance for Target + Ancestors
+            const updateBalances = (list, targetId, amount) => {
                 const ancestors = getPathToRoot(targetId, list);
                 return list.map(v => {
-                    const isAncestorOrSelf = ancestors.some(a => a.id === v.id);
-                    return isAncestorOrSelf ? { ...v, balance: v.balance + amount } : v;
+                    let newV = { ...v };
+                    // 1. Update Real Balance ONLY if it matches the target
+                    if (v.id === targetId) {
+                        newV.realBalance = (newV.realBalance || 0) + amount;
+                    }
+                    // 2. Update Rollup Balance for Target AND Ancestors
+                    if (ancestors.some(a => a.id === v.id)) {
+                        newV.rollupBalance = (newV.rollupBalance || 0) + amount;
+                    }
+                    return newV;
                 });
             };
 
@@ -800,10 +876,11 @@
                     if (!formData.vaId) return notify('Select VA', 'error');
                     const targetVa = vas.find(v => v.id === formData.vaId);
                     
-                    if (mode === 'DEBIT' && (targetVa.balance < amountNum || corporate.ddaAccounts[0].balance < amountNum)) return notify('Insufficient Balance', 'error');
+                    // DEBIT Check: Use REAL BALANCE
+                    if (mode === 'DEBIT' && (targetVa.realBalance < amountNum)) return notify('Insufficient Real Balance', 'error');
                     
                     const signedAmount = mode === 'CREDIT' ? amountNum : -amountNum;
-                    updatedVas = updateVaAndAncestors(updatedVas, formData.vaId, signedAmount);
+                    updatedVas = updateBalances(updatedVas, formData.vaId, signedAmount);
                     
                     if (mode === 'DEBIT') corporate.ddaAccounts[0].balance -= amountNum; 
                     else corporate.ddaAccounts[0].balance += amountNum;
@@ -818,24 +895,24 @@
                         const srcVa = vas.find(v => v.id === formData.sourceId);
                         const destVa = vas.find(v => v.id === formData.destId);
                         
-                        if (srcVa.balance < amountNum) return notify('Source VA Insufficient Balance', 'error');
+                        if (srcVa.realBalance < amountNum) return notify('Source VA Insufficient Real Balance', 'error');
 
-                        updatedVas = updateVaAndAncestors(updatedVas, formData.sourceId, -amountNum);
-                        updatedVas = updateVaAndAncestors(updatedVas, formData.destId, amountNum);
+                        updatedVas = updateBalances(updatedVas, formData.sourceId, -amountNum);
+                        updatedVas = updateBalances(updatedVas, formData.destId, amountNum);
 
                         newTx = { id: 'TX'+generateId(), date: new Date().toISOString(), type: 'INTERNAL', vaId: formData.destId, vaCode: `${srcVa.code} -> ${destVa.code}`, amount: amountNum, reference: formData.reference || 'Internal Transfer' };
                     
                     } else if (subMode === 'DDA_VA') {
                         if (direction === 'DDA_TO_VA') {
                             if (!formData.destId) return notify('Select Target VA', 'error');
-                            updatedVas = updateVaAndAncestors(updatedVas, formData.destId, amountNum);
+                            updatedVas = updateBalances(updatedVas, formData.destId, amountNum);
                             newTx = { id: 'TX'+generateId(), date: new Date().toISOString(), type: 'FUNDING', vaId: formData.destId, vaCode: "DDA -> VA", amount: amountNum, reference: formData.reference || 'Allocation' };
                         
                         } else {
                             if (!formData.sourceId) return notify('Select Source VA', 'error');
                             const srcVa = vas.find(v => v.id === formData.sourceId);
-                            if (srcVa.balance < amountNum) return notify('VA Insufficient Balance', 'error');
-                            updatedVas = updateVaAndAncestors(updatedVas, formData.sourceId, -amountNum);
+                            if (srcVa.realBalance < amountNum) return notify('VA Insufficient Real Balance', 'error');
+                            updatedVas = updateBalances(updatedVas, formData.sourceId, -amountNum);
                             newTx = { id: 'TX'+generateId(), date: new Date().toISOString(), type: 'SWEEP', vaId: formData.sourceId, vaCode: "VA -> DDA", amount: amountNum, reference: formData.reference || 'Sweep' };
                         }
                     }
@@ -852,6 +929,12 @@
                 if(found) { setFormData(p => ({...p, vaId: found.vaId})); notify('Routing Found!'); } else notify('No Route Found');
             };
 
+            const renderVAOption = (v) => (
+                <option key={v.id} value={v.id}>
+                    {v.code} - {v.name} (Real: {v.realBalance?.toLocaleString()} | Rollup: {v.rollupBalance?.toLocaleString()})
+                </option>
+            );
+
             return (
                 <div className="space-y-6">
                     <div className="flex flex-col gap-6">
@@ -866,7 +949,7 @@
                                 {(mode === 'CREDIT' || mode === 'DEBIT') && (
                                     <div className="animate-bounce-in">
                                         {mode === 'CREDIT' && <div className="flex gap-2 items-end"><InputGroup label={t('transactions', 'routing_content')} value={formData.reference} onChange={e => setFormData({...formData, reference: e.target.value})} /><button type="button" onClick={resolveRef} className="mb-0.5 p-2.5 bg-gray-100 border border-gray-300 rounded"><IconWrapper name="Search" /></button></div>}
-                                        <div className="flex flex-col gap-1 w-full"><label className="text-xs font-bold text-gray-500 uppercase">{t('transactions', 'va_label')}</label><select value={formData.vaId} onChange={e => setFormData({...formData, vaId: e.target.value})} className="border border-gray-300 p-2.5 rounded text-sm bg-white"><option value="">-- Select --</option>{vas.filter(v => v.status === 'ACTIVE').map(v => <option key={v.id} value={v.id}>{v.code} - {v.name}</option>)}</select></div>
+                                        <div className="flex flex-col gap-1 w-full"><label className="text-xs font-bold text-gray-500 uppercase">{t('transactions', 'va_label')}</label><select value={formData.vaId} onChange={e => setFormData({...formData, vaId: e.target.value})} className="border border-gray-300 p-2.5 rounded text-sm bg-white"><option value="">-- Select --</option>{vas.filter(v => v.status === 'ACTIVE').map(renderVAOption)}</select></div>
                                         <InputGroup label={t('transactions', 'amount_label')} value={formData.amount} onChange={e => setFormData({...formData, amount: e.target.value})} type="number" />
                                         {mode === 'DEBIT' && <InputGroup label={t('transactions', 'payment_content')} value={formData.reference} onChange={e => setFormData({...formData, reference: e.target.value})} />}
                                         <button type="submit" className={`w-full py-2.5 text-white font-bold rounded shadow-sm ${mode === 'CREDIT' ? 'bg-bankb-primary' : 'bg-bankb-red'}`}>{mode === 'CREDIT' ? t('transactions', 'btn_credit') : t('transactions', 'btn_debit')}</button>
@@ -882,9 +965,9 @@
 
                                         {subMode === 'VA_VA' && (
                                             <>
-                                                <div className="flex flex-col gap-1 w-full"><label className="text-xs font-bold text-gray-500 uppercase">{t('transactions', 'source_va')}</label><select value={formData.sourceId} onChange={e => setFormData({...formData, sourceId: e.target.value})} className="border border-gray-300 p-2.5 rounded text-sm bg-white"><option value="">-- Select Source --</option>{vas.filter(v => v.status === 'ACTIVE').map(v => <option key={v.id} value={v.id}>{v.code} - {v.balance.toLocaleString()}</option>)}</select></div>
+                                                <div className="flex flex-col gap-1 w-full"><label className="text-xs font-bold text-gray-500 uppercase">{t('transactions', 'source_va')}</label><select value={formData.sourceId} onChange={e => setFormData({...formData, sourceId: e.target.value})} className="border border-gray-300 p-2.5 rounded text-sm bg-white"><option value="">-- Select Source --</option>{vas.filter(v => v.status === 'ACTIVE').map(renderVAOption)}</select></div>
                                                 <div className="flex justify-center"><IconWrapper name="ArrowRightLeft" className="text-gray-400 rotate-90" /></div>
-                                                <div className="flex flex-col gap-1 w-full"><label className="text-xs font-bold text-gray-500 uppercase">{t('transactions', 'dest_va')}</label><select value={formData.destId} onChange={e => setFormData({...formData, destId: e.target.value})} className="border border-gray-300 p-2.5 rounded text-sm bg-white"><option value="">-- Select Dest --</option>{vas.filter(v => v.status === 'ACTIVE' && v.id !== formData.sourceId).map(v => <option key={v.id} value={v.id}>{v.code} - {v.name}</option>)}</select></div>
+                                                <div className="flex flex-col gap-1 w-full"><label className="text-xs font-bold text-gray-500 uppercase">{t('transactions', 'dest_va')}</label><select value={formData.destId} onChange={e => setFormData({...formData, destId: e.target.value})} className="border border-gray-300 p-2.5 rounded text-sm bg-white"><option value="">-- Select Dest --</option>{vas.filter(v => v.status === 'ACTIVE' && v.id !== formData.sourceId).map(renderVAOption)}</select></div>
                                             </>
                                         )}
 
@@ -896,11 +979,11 @@
                                                     <>
                                                         <div className="flex flex-col gap-1 w-full"><label className="text-xs font-bold text-gray-500 uppercase">{t('transactions', 'source_dda')}</label><select className="border border-gray-300 p-2.5 rounded text-sm bg-gray-100" disabled><option>{corporate.ddaAccounts[0].accountNo}</option></select></div>
                                                         <div className="flex justify-center text-green-600"><IconWrapper name="Repeat" className="rotate-90" /></div>
-                                                        <div className="flex flex-col gap-1 w-full"><label className="text-xs font-bold text-gray-500 uppercase">{t('transactions', 'dest_va')}</label><select value={formData.destId} onChange={e => setFormData({...formData, destId: e.target.value})} className="border border-gray-300 p-2.5 rounded text-sm bg-white"><option value="">-- Select Dest --</option>{vas.filter(v => v.status === 'ACTIVE').map(v => <option key={v.id} value={v.id}>{v.code} - {v.name}</option>)}</select></div>
+                                                        <div className="flex flex-col gap-1 w-full"><label className="text-xs font-bold text-gray-500 uppercase">{t('transactions', 'dest_va')}</label><select value={formData.destId} onChange={e => setFormData({...formData, destId: e.target.value})} className="border border-gray-300 p-2.5 rounded text-sm bg-white"><option value="">-- Select Dest --</option>{vas.filter(v => v.status === 'ACTIVE').map(renderVAOption)}</select></div>
                                                     </>
                                                 ) : (
                                                     <>
-                                                        <div className="flex flex-col gap-1 w-full"><label className="text-xs font-bold text-gray-500 uppercase">{t('transactions', 'source_va')}</label><select value={formData.sourceId} onChange={e => setFormData({...formData, sourceId: e.target.value})} className="border border-gray-300 p-2.5 rounded text-sm bg-white"><option value="">-- Select Source --</option>{vas.filter(v => v.status === 'ACTIVE').map(v => <option key={v.id} value={v.id}>{v.code} - {v.balance.toLocaleString()}</option>)}</select></div>
+                                                        <div className="flex flex-col gap-1 w-full"><label className="text-xs font-bold text-gray-500 uppercase">{t('transactions', 'source_va')}</label><select value={formData.sourceId} onChange={e => setFormData({...formData, sourceId: e.target.value})} className="border border-gray-300 p-2.5 rounded text-sm bg-white"><option value="">-- Select Source --</option>{vas.filter(v => v.status === 'ACTIVE').map(renderVAOption)}</select></div>
                                                         <div className="flex justify-center text-red-500"><IconWrapper name="Repeat" className="rotate-90" /></div>
                                                         <div className="flex flex-col gap-1 w-full"><label className="text-xs font-bold text-gray-500 uppercase">{t('transactions', 'dest_dda')}</label><select className="border border-gray-300 p-2.5 rounded text-sm bg-gray-100" disabled><option>{corporate.ddaAccounts[0].accountNo}</option></select></div>
                                                     </>
@@ -930,8 +1013,14 @@
             const [selectedVa, setSelectedVa] = useState('');
             const [includeChild, setIncludeChild] = useState(false);
 
+            // Updated stats to sum Real Balance per level
             const stats = useMemo(() => {
-                const l = {}; vas.forEach(v => { if(!l[v.level]) l[v.level] = {c:0,b:0}; l[v.level].c++; l[v.level].b+=v.balance; });
+                const l = {}; 
+                vas.forEach(v => { 
+                    if(!l[v.level]) l[v.level] = {c:0,b:0}; 
+                    l[v.level].c++; 
+                    l[v.level].b += (v.realBalance || 0); 
+                });
                 return l;
             }, [vas]);
 
@@ -950,7 +1039,7 @@
                     {/* Summary Stats */}
                     <div className="bg-white p-4 md:p-6 rounded-lg shadow-sm border border-gray-200">
                         <h2 className="text-lg md:text-xl font-bold text-gray-800 mb-4 flex items-center gap-2"><IconWrapper name="Activity" className="text-bankb-primary" />{t('reports', 'summary_title')}</h2>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">{Object.entries(stats).map(([l, d]) => <div key={l} className="bg-gray-50 p-4 rounded border"><p className="text-xs font-bold text-gray-500">{t('reports', 'level')} {l}</p><p className="text-xl md:text-2xl font-bold text-bankb-primary">{d.b.toLocaleString()}</p></div>)}</div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">{Object.entries(stats).map(([l, d]) => <div key={l} className="bg-gray-50 p-4 rounded border"><p className="text-xs font-bold text-gray-500">{t('reports', 'level')} {l}</p><p className="text-xl md:text-2xl font-bold text-emerald-600">{d.b.toLocaleString()}</p><p className="text-xs text-gray-400 mt-1">Total Real Bal</p></div>)}</div>
                     </div>
 
                     {/* Statement Lookup */}
