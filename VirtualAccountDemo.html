@@ -164,6 +164,44 @@
                     glossary_title: "Giải Thích Thuật Ngữ",
                     guide_title: "Quy Trình Xử Lý Giao Dịch Chi Tiết",
                     tech_title: "Cơ Chế Quản Lý Số Dư Kép",
+                    dual_balance: {
+                        why_title: "Tại sao cần 2 loại số dư?",
+                        why_desc: "Trong quản lý dòng tiền tập trung, doanh nghiệp cần biết tiền đang nằm thực tế ở đâu (Real Balance) và tổng nguồn lực mà một đơn vị cấp cao có quyền điều phối (Roll-up Balance).",
+                        real_title: "1. Số dư thực (Real Balance)",
+                        real_desc: "Là số tiền thực sự được ghi nhận tại tài khoản VA đó. Khi sao kê tài khoản VA, đây là số dư hiển thị.",
+                        rollup_title: "2. Số dư cộng dồn (Roll-up Balance)",
+                        rollup_desc: "Là tổng số dư của VA đó cộng với tất cả các VA con cháu. Dùng cho mục đích báo cáo quản trị tổng hợp."
+                    },
+                    legacy_process: {
+                        title: "BÁO CÁO TÓM TẮT: QUY TRÌNH THANH TOÁN LIÊN NGÂN HÀNG 247 (VA & ALIAS)",
+                        def_title: "1. ĐỊNH NGHĨA VÀ PHẠM VI",
+                        def_intro: "Trước khi đi vào quy trình, cần phân biệt rõ hai đối tượng tài khoản được xử lý:",
+                        def_items: [
+                            { term: "Alias (Bí danh)", desc: "Là dãy số/chữ được chủ tài khoản dùng thay thế cho số tài khoản thực trong giao dịch.", sub: "Đặc điểm: Chỉ đóng vai trò 'mặt nạ' định danh. Giao dịch chuyển đến Alias là giao dịch chuyển tiền thông thường, không có quy trình xử lý gạch nợ phía sau." },
+                            { term: "Virtual Account (VA - Tài khoản ảo)", desc: "Là tài khoản quản trị logic (không tồn tại vật lý trong Core Banking) được tạo bởi hệ thống VA Engine.", sub: "Mục đích: Phân loại và theo dõi dòng tiền chi tiết theo từng thực thể con (dự án, hợp đồng, hộ kinh doanh...).\nCơ chế: VA được liên kết với một Tài khoản thực (Real Account). Giao dịch được ghi nhận qua cơ chế shadow posting, sử dụng bộ định danh ảo để tự động định tuyến, phục vụ đối soát và phân tích dòng tiền chuyên sâu." }
+                        ],
+                        flow_title: "2. QUY TRÌNH XỬ LÝ (HIGH-LEVEL)",
+                        flow_intro: "Hệ thống xử lý tự động qua 2 giai đoạn: Vấn tin (Kiểm tra) và Hạch toán (Ghi nợ/có).",
+                        phases: [
+                            {
+                                name: "GIAI ĐOẠN 1: VẤN TIN & TRA CỨU (Trước khi chuyển)",
+                                purpose: "Mục đích: Từ thông tin đầu vào, hệ thống tự động nhận diện đích đến thực sự.",
+                                steps: [
+                                    "Bước 1: Tiếp nhận & Phân loại: Hệ thống 247 nhận yêu cầu và tự động phân loại định dạng tài khoản đích là Alias hay VA.",
+                                    "Bước 2: Truy xuất dữ liệu (Mapping):\n- Với Alias: Hệ thống tra cứu ra Tên và Số tài khoản gốc (DDA) tương ứng.\n- Với VA: Hệ thống kết nối VA Engine/Đối tác để lấy thông tin khoản nợ, tên khách hàng và kiểm tra tính hợp lệ của mã định danh ảo.",
+                                    "Bước 3: Phản hồi: Trả về tên người thụ hưởng chính xác cho người chuyển xác nhận."
+                                ]
+                            },
+                            {
+                                name: "GIAI ĐOẠN 2: HẠCH TOÁN & XỬ LÝ GIAO DỊCH (Thực hiện chuyển)",
+                                purpose: "Mục đích: Ghi nhận dòng tiền và xử lý nghiệp vụ sau giao dịch (nếu có).",
+                                steps: [
+                                    "Bước 4: Định tuyến dòng tiền:\n- Với Alias: Tiền được chuyển trực tiếp vào Tài khoản thanh toán gốc của khách hàng.\n- Với VA: Tiền được chuyển vào Tài khoản thực (Real Account) của Nhà cung cấp/Doanh nghiệp (tài khoản mẹ quản lý các VA).",
+                                    "Bước 5: Xử lý hậu kiểm (Khác biệt chính):\n- Luồng Alias: Kết thúc giao dịch (Thành công).\n- Luồng VA: Sau khi tiền vào tài khoản thực, hệ thống kích hoạt quy trình Gạch nợ/Ghi nhận doanh số cho mã VA (thực thể con) tương ứng thông qua cơ chế shadow posting để phục vụ báo cáo."
+                                ]
+                            }
+                        ]
+                    },
                     terms: {
                         RealBalance: "Số dư thực (Own Balance). Số tiền thực tế nằm tại chính tài khoản VA đó, không bao gồm tiền của các tài khoản con.",
                         RollupBalance: "Số dư cộng dồn (Roll-up Balance). Tổng tiền của chính VA đó + Tổng số dư Roll-up của tất cả các VA con trực thuộc. Dùng để quản lý hạn mức tổng.",
@@ -249,7 +287,7 @@
                     onboarding: "Corp Profile",
                     lifecycle: "VA Management",
                     identifiers: "Routing",
-                    transactions_group: "Transactions",
+                    transactions_group: "Shadow Transactions",
                     tx_incoming: "Incoming Funds",
                     tx_outgoing: "Outgoing Payment",
                     tx_internal: "Internal Transfer",
@@ -353,6 +391,44 @@
                     glossary_title: "Glossary",
                     guide_title: "Transaction Logic Flows",
                     tech_title: "Dual Balance Mechanism",
+                    dual_balance: {
+                        why_title: "Why 2 types of balances?",
+                        why_desc: "In centralized cash flow management, businesses need to know where the money actually sits (Real Balance) and the total resources a higher-level unit can coordinate (Roll-up Balance).",
+                        real_title: "1. Real Balance",
+                        real_desc: "The actual amount recorded in that VA account. This is the balance shown on the VA statement.",
+                        rollup_title: "2. Roll-up Balance",
+                        rollup_desc: "The total balance of that VA plus all its descendant VAs. Used for consolidated management reporting purposes."
+                    },
+                    legacy_process: {
+                        title: "SUMMARY REPORT: INTERBANK 247 PAYMENT PROCESS (VA & ALIAS)",
+                        def_title: "1. DEFINITION AND SCOPE",
+                        def_intro: "Before entering the process, it is necessary to clearly distinguish between two types of accounts handled:",
+                        def_items: [
+                            { term: "Alias", desc: "A sequence of numbers/letters used by the account holder to replace the real account number in transactions.", sub: "Characteristics: Acts only as an identification 'mask'. Transactions to Alias are regular transfers, with no backend debt clearing process." },
+                            { term: "Virtual Account (VA)", desc: "A logical management account (physically non-existent in Core Banking) created by the VA Engine system.", sub: "Purpose: Classify and track detailed cash flow by sub-entity (project, contract, household business...).\nMechanism: VA is linked to a Real Account. Transactions are recorded via shadow posting mechanism, using virtual identifiers for automatic routing, serving reconciliation and in-depth cash flow analysis." }
+                        ],
+                        flow_title: "2. PROCESSING FLOW (HIGH-LEVEL)",
+                        flow_intro: "The system processes automatically through 2 phases: Inquiry (Check) and Posting (Debit/Credit).",
+                        phases: [
+                            {
+                                name: "PHASE 1: INQUIRY & LOOKUP (Before Transfer)",
+                                purpose: "Purpose: From input info, automatically identify the true destination.",
+                                steps: [
+                                    "Step 1: Reception & Classification: 247 System receives request and classifies target account format as Alias or VA.",
+                                    "Step 2: Data Retrieval (Mapping):\n- For Alias: System looks up Name and corresponding Real Account Number (DDA).\n- For VA: System connects to VA Engine/Partner to fetch debt info, customer name and validate virtual identifier.",
+                                    "Step 3: Response: Return accurate beneficiary name for sender confirmation."
+                                ]
+                            },
+                            {
+                                name: "PHASE 2: POSTING & TRANSACTION PROCESSING (Execute Transfer)",
+                                purpose: "Purpose: Record cash flow and process post-transaction business logic (if any).",
+                                steps: [
+                                    "Step 4: Cash Flow Routing:\n- For Alias: Money transferred directly to customer's Real Payment Account.\n- For VA: Money transferred to Real Account of Provider/Enterprise (master account managing VAs).",
+                                    "Step 5: Post-Check Processing (Key Difference):\n- Alias Flow: Transaction ends (Success).\n- VA Flow: After money enters real account, system triggers Debt Clearing/Revenue Recognition process for corresponding VA code (sub-entity) via shadow posting mechanism for reporting."
+                                ]
+                            }
+                        ]
+                    },
                     terms: {
                         RealBalance: "Real Balance (Own Funds). Funds sitting directly in this VA, excluding children.",
                         RollupBalance: "Roll-up Balance. Sum of Own Balance + All Children's Roll-up Balances.",
@@ -362,20 +438,66 @@
                     },
                     processes: [
                         {
-                            title: "1. Balance Update Logic",
+                            title: "1. Onboarding Process (Initial Setup)",
                             steps: [
-                                "When Credit VA A with amount X:",
-                                "Step 1: Increase VA A 'Real Balance' by X.",
-                                "Step 2: Increase VA A 'Roll-up Balance' by X.",
-                                "Step 3: Increase 'Roll-up Balance' of all Ancestors of A by X.",
-                                "Note: Ancestors' Real Balance does NOT change."
+                                "Step 1 (At Counter/Core): Open CIF and Real Payment Account (DDA).",
+                                "Step 2 (On VA System - Menu 'Corp Profile'): Create new corporate profile, input CIF.",
+                                "Step 3: Link Real DDAs to the VA system to act as Master Accounts.",
+                                "Step 4: Assign user roles and approve limits (if any)."
                             ]
                         },
                         {
-                            title: "2. Outgoing POBO",
+                            title: "2. VA Hierarchy Management (VA Lifecycle)",
                             steps: [
-                                "System checks 'Real Balance' of the specific VA.",
-                                "Funds are deducted from Real Balance of VA, and Roll-up Balance of VA + Ancestors."
+                                "Step 1 (Menu 'VA Management'): Create Root VA linked to Master DDA.",
+                                "Step 2: Create Child VAs (Level 1, Level 2...) based on organizational structure (Dept, Project, Branch).",
+                                "Step 3: Set Metadata for each VA (Project Code, Contract No.) for identification purposes."
+                            ]
+                        },
+                        {
+                            title: "3. Identifier & Routing (Smart Mapper)",
+                            steps: [
+                                "Purpose: Helps the system automatically identify target VA based on transfer content.",
+                                "Step 1 (Menu 'Routing'): Select Identifier Type (Tax Code, Contract No, Apt Code...).",
+                                "Step 2: Input identifier value (e.g., HD-001) and select Target VA (e.g., VA_Project_A).",
+                                "Step 3: Save Rule. From now on, incoming funds with 'HD-001' in content will auto-credit VA_Project_A."
+                            ]
+                        },
+                        {
+                            title: "4. Incoming Credit Flow",
+                            steps: [
+                                "Flow: Customer -> Master DDA (Core) -> VA System.",
+                                "Step 1: Core Banking credits Master DDA.",
+                                "Step 2: VA System receives webhook/message from Core.",
+                                "Step 3: Routing Engine analyzes content -> Finds mapped Rule from Step 3.",
+                                "Step 4: Credit 'Real Balance' at Target VA.",
+                                "Step 5: Credit 'Roll-up Balance' for Target VA and all Ancestor VAs."
+                            ]
+                        },
+                        {
+                            title: "5. Outgoing POBO Flow",
+                            steps: [
+                                "Flow: User initiates -> System debits Master DDA -> Beneficiary.",
+                                "Step 1 (Menu 'Outgoing Payment'): Input beneficiary details and amount.",
+                                "Step 2: System checks 'Real Balance' of the VA. If sufficient -> Proceed.",
+                                "Step 3: Send Debit command for Master DDA to Core Banking.",
+                                "Step 4: If Core success -> Debit VA balance (both Real and Roll-up)."
+                            ]
+                        },
+                        {
+                            title: "6. Internal Transfer & Funding Flow",
+                            steps: [
+                                "Internal (VA <-> VA): Virtual transfer between VAs. Only changes VA balances, no transaction on Master DDA.",
+                                "Allocation (DDA -> VA): Distribute limit from Common Fund (DDA) to Child VAs for spending.",
+                                "Sweep (VA -> DDA): Collect funds from Child VAs back to Common Fund."
+                            ]
+                        },
+                        {
+                            title: "7. Reconciliation & Reporting",
+                            steps: [
+                                "Statement Report: Lists detailed transactions for each VA (similar to real account statement).",
+                                "Summary Report: View total Roll-up balances by level.",
+                                "End-of-Day Rec: Sum of Real Balances of all Child VAs must equal (=) Actual Balance on Master DDA at Core."
                             ]
                         }
                     ]
@@ -674,14 +796,61 @@
         const UserGuide = ({ t, lang }) => {
             const terms = resources[lang].guide.terms;
             const processes = resources[lang].guide.processes || [];
+            const legacy = resources[lang].guide.legacy_process; // NEW
+            const dualBal = resources[lang].guide.dual_balance; // NEW
+
             return (
                 <div className="space-y-6 md:space-y-8 pb-10">
                     <h2 className="text-xl md:text-2xl font-bold text-gray-800">{t('guide', 'title')}</h2>
                     
-                    {/* New Intro Section */}
+                    {/* Intro Section */}
                     <div className="bg-blue-50 border-l-4 border-blue-500 p-4 rounded text-sm md:text-base text-gray-700 italic">
                         {t('guide', 'intro_text')}
                     </div>
+
+                    {/* NEW SECTION: Existing Processes (Legacy/247) */}
+                    {legacy && (
+                        <div className="bg-white p-4 md:p-6 rounded-lg shadow-sm border border-gray-200 border-l-4 border-l-purple-500">
+                            <h3 className="text-base md:text-lg font-bold mb-4 text-purple-700 flex items-center gap-2">
+                                <IconWrapper name="Repeat" /> {legacy.title}
+                            </h3>
+                            <div className="space-y-6 text-sm text-gray-700">
+                                {/* 1. Definition */}
+                                <div>
+                                    <h4 className="font-bold text-gray-800 mb-2 uppercase border-b pb-1">{legacy.def_title}</h4>
+                                    <p className="mb-2 italic">{legacy.def_intro}</p>
+                                    <div className="space-y-3 pl-2">
+                                        {legacy.def_items.map((item, i) => (
+                                            <div key={i} className="bg-gray-50 p-3 rounded border border-gray-100">
+                                                <div className="font-bold text-bankb-primary mb-1">{item.term}</div>
+                                                <div className="mb-1">{item.desc}</div>
+                                                <div className="text-xs text-gray-500 italic pl-2 border-l-2 border-gray-300">{item.sub}</div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* 2. Flow */}
+                                <div>
+                                    <h4 className="font-bold text-gray-800 mb-2 uppercase border-b pb-1">{legacy.flow_title}</h4>
+                                    <p className="mb-4 italic">{legacy.flow_intro}</p>
+                                    <div className="space-y-4">
+                                        {legacy.phases.map((phase, i) => (
+                                            <div key={i} className="border border-gray-200 rounded p-3">
+                                                <div className="font-bold text-blue-700 mb-1">{phase.name}</div>
+                                                <div className="text-xs italic text-gray-500 mb-2">{phase.purpose}</div>
+                                                <ul className="list-disc pl-5 space-y-1">
+                                                    {phase.steps.map((step, k) => (
+                                                        <li key={k} className="whitespace-pre-line">{step}</li>
+                                                    ))}
+                                                </ul>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
                     
                     {/* 1. Routing Solution */}
                     <div className="bg-white p-4 md:p-6 rounded-lg shadow-sm border border-gray-200">
@@ -689,17 +858,17 @@
                             <IconWrapper name="GitFork" /> {t('guide', 'tech_title')}
                         </h3>
                         <div className="space-y-4 text-sm text-gray-700 leading-relaxed">
-                            <p className="font-bold">Tại sao cần 2 loại số dư?</p>
-                            <p>Trong quản lý dòng tiền tập trung, doanh nghiệp cần biết tiền đang nằm thực tế ở đâu (Real Balance) và tổng nguồn lực mà một đơn vị cấp cao có quyền điều phối (Roll-up Balance).</p>
+                            <p className="font-bold">{dualBal.why_title}</p>
+                            <p>{dualBal.why_desc}</p>
                             
                             <div className="grid md:grid-cols-2 gap-4 mt-4">
                                 <div className="p-3 bg-emerald-50 rounded border border-emerald-100">
-                                    <span className="font-bold text-emerald-800 block mb-2">1. Số dư thực (Real Balance)</span>
-                                    <p className="text-xs text-gray-600">Là số tiền thực sự được ghi nhận tại tài khoản VA đó. Khi sao kê tài khoản VA, đây là số dư hiển thị.</p>
+                                    <span className="font-bold text-emerald-800 block mb-2">{dualBal.real_title}</span>
+                                    <p className="text-xs text-gray-600">{dualBal.real_desc}</p>
                                 </div>
                                 <div className="p-3 bg-indigo-50 rounded border border-indigo-100">
-                                    <span className="font-bold text-indigo-800 block mb-2">2. Số dư cộng dồn (Roll-up Balance)</span>
-                                    <p className="text-xs text-gray-600">Là tổng số dư của VA đó cộng với tất cả các VA con cháu. Dùng cho mục đích báo cáo quản trị tổng hợp.</p>
+                                    <span className="font-bold text-indigo-800 block mb-2">{dualBal.rollup_title}</span>
+                                    <p className="text-xs text-gray-600">{dualBal.rollup_desc}</p>
                                 </div>
                             </div>
                         </div>
