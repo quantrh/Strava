@@ -57,7 +57,7 @@
             margin-bottom: 1rem;
         }
 
-        .hidden { display: none; }
+        .hidden { display: none !important; }
     </style>
 </head>
 <body class="p-6 md:p-10 max-w-6xl mx-auto">
@@ -769,6 +769,42 @@
             </div>
         </div>
     </div>
+    
+    <!-- SCRIPT CHUYỂN NGÔN NGỮ (ĐÃ CHUYỂN XUỐNG CUỐI BODY) -->
+    <script>
+        // Hàm chuyển đổi ngôn ngữ
+        function setLanguage(lang) {
+            const vi = document.getElementById('content-vi');
+            const en = document.getElementById('content-en');
+            
+            // Bảo vệ nếu phần tử chưa load
+            if (!vi || !en) {
+                console.warn("Elements not found, retrying...");
+                return;
+            }
 
+            if (lang === 'en') {
+                vi.classList.add('hidden');
+                en.classList.remove('hidden');
+            } else {
+                vi.classList.remove('hidden');
+                en.classList.add('hidden');
+            }
+        }
+
+        // 1. Kiểm tra URL Param khi load
+        const urlParams = new URLSearchParams(window.location.search);
+        const initialLang = urlParams.get('lang') || 'vi';
+        
+        // Chạy ngay lập tức vì script đang ở cuối body (DOM đã sẵn sàng)
+        setLanguage(initialLang);
+
+        // 2. Lắng nghe message từ App cha
+        window.addEventListener('message', function(event) {
+            if (event.data && event.data.type === 'SET_LANG') {
+                setLanguage(event.data.lang);
+            }
+        });
+    </script>
 </body>
 </html>
