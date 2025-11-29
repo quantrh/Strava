@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BankB Ebank | Virtual Account Management v2.1</title>
+    <title>BankB Ebank | Virtual Account Management v2.2</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -51,7 +51,7 @@
         const resources = {
             vi: {
                 app_name: "BankB Ebank",
-                app_name_full: "BankB Ebank | Virtual Account v2.1",
+                app_name_full: "BankB Ebank | Virtual Account v2.2",
                 subtitle: "QL Tài khoản định danh",
                 welcome: "Xin chào",
                 reset_demo: "Reset Dữ Liệu",
@@ -61,9 +61,11 @@
                     lifecycle: "Quản Lý VA (N Cấp)",
                     identifiers: "Định Danh & Routing",
                     transactions_group: "Giao dịch VA",
-                    tx_incoming: "Nạp tiền vào VA",
-                    tx_outgoing: "Chi tiền từ VA",
+                    tx_incoming: "Bổ sung GD thu VA", 
+                    tx_outgoing: "Bổ sung GD chi VA", 
                     tx_internal: "Điều Chuyển (Internal)",
+                    tx_transfer_out: "Chuyển khoản từ VA", 
+                    tx_dda: "Giao dịch DDA (Tại Quầy)", 
                     reports: "Báo Cáo",
                     reconciliation: "Đối Soát & Xử Lý", 
                     guide: "Hướng Dẫn & Quy Trình"
@@ -141,34 +143,46 @@
                     action_delete: "Xóa"
                 },
                 transactions: {
-                    title_incoming: "Giao Dịch Nạp Tiền Vào VA",
-                    title_outgoing: "Giao Dịch Chi Tiền Từ VA",
+                    title_incoming: "Bổ sung Giao Dịch Thu (Shadow Credit)",
+                    title_outgoing: "Bổ sung Giao Dịch Chi (Shadow Debit)",
                     title_internal: "Điều Chuyển Nội Bộ / Cấp Vốn",
-                    desc_incoming: "Bổ sung giao dịch thu (Shadow Credit).",
-                    desc_outgoing: "Bổ sung giao dịch chi (Shadow Debit).",
+                    title_transfer_out: "Chuyển Khoản Từ VA (Bank Transfer)",
+                    title_dda: "Giao Dịch Tại Quầy (DDA Counter Tx)",
+                    desc_incoming: "Màn hình bổ sung các giao dịch thu của tài khoản VA (shadow posting) còn thiếu hoặc chưa tự động map.",
+                    desc_outgoing: "Màn hình bổ sung các giao dịch chi từ tài khoản VA (shadow posting) còn thiếu.",
                     desc_internal: "Điều chuyển tiền giữa các VA.",
+                    desc_transfer_out: "Đây là màn hình chuyển tiền từ tài khoản Virtual Account sang một tài khoản DDA của khách hàng khác ở ngân hàng này hoặc ngân hàng khác",
+                    desc_dda: "Demo quy trình xử lý giao dịch tại quầy theo 2 Option: VA-first hoặc DDA-first.",
                     routing_content: "Nội dung GD (Reference)",
-                    va_label: "Tài Khoản Ảo",
+                    va_label: "Tài Khoản Ảo (VA)",
+                    dda_label: "Tài Khoản Gốc (DDA)",
                     amount_label: "Số Tiền",
-                    beneficiary_label: "Thụ Hưởng",
-                    payment_content: "Nội dung chi",
+                    beneficiary_label: "Tài khoản thụ hưởng (DDA)",
+                    bank_label: "Ngân hàng thụ hưởng",
+                    payment_content: "Nội dung chuyển tiền",
                     btn_credit: "Ghi Có (Shadow Credit)",
-                    btn_debit: "Lập Lệnh Chi (POBO)",
-                    btn_transfer: "Thực Hiện Điều Chuyển",
+                    btn_debit: "Ghi Nợ (Shadow Debit)",
+                    btn_transfer: "Thực Hiện Chuyển Khoản",
+                    btn_dda_submit: "Thực Hiện Giao Dịch Quầy",
                     history_title: "Lịch sử Giao dịch",
                     table_time: "TG",
                     table_type: "Loại",
                     table_content: "Nội dung",
                     mode_vava: "Nội bộ (VA ↔ VA)",
                     mode_ddava: "Cấp/Thu Vốn (DDA ↔ VA)",
-                    source_va: "VA Nguồn (Chuyển đi)",
-                    dest_va: "VA Đích (Nhận tiền)",
-                    source_dda: "DDA Nguồn (Tài khoản thực)",
-                    dest_dda: "DDA Đích",
+                    source_va: "VA Nguồn",
+                    dest_va: "VA Đích",
                     direction: "Hướng Điều Chuyển",
                     dir_fund: "Cấp Vốn (DDA → VA)",
                     dir_sweep: "Thu Hồi (VA → DDA)",
-                    bal_hint: "Dư thực: "
+                    opt1_label: "Option 1: Dùng số VA",
+                    opt2_label: "Option 2: Dùng số DDA",
+                    opt1_hint: "Khách hàng nhập trực tiếp số VA. Hệ thống validate VA trước khi hạch toán DDA.",
+                    opt2_hint: "Khách hàng nhập số DDA. Hệ thống hạch toán DDA trước, sau đó tìm VA qua nội dung (Remark).",
+                    remark_label: "Ghi chú/Nội dung (Chứa mã định danh)",
+                    result_success_va: "Thành công: Đã ghi có DDA và VA.",
+                    result_success_dda_only: "Thành công: Đã ghi có DDA. (Chưa tìm thấy VA, chờ xử lý thủ công)",
+                    check_va: "Kiểm tra VA"
                 },
                 reports: {
                     summary_title: "Báo Cáo Tổng Hợp",
@@ -182,49 +196,42 @@
                 },
                 guide: {
                     title: "Hướng Dẫn & Quy Trình",
-                    intro_text: "Phiên bản v2.1 bổ sung chức năng Đối soát (Reconciliation) để phát hiện và xử lý chênh lệch số dư.",
+                    intro_text: "Virtual account là giải pháp được xây dựng trên lớp Deposit Business Logic do BIDV viết thêm phủ ra ngoài phân hệ deposit cốt lõi trong core để xử lý các yêu cầu nghiệp vụ mới của tiền gửi, tránh ảnh hưởng đến hiệu năng và logic xử lý của core banking",
                     glossary_title: "Giải Thích Thuật Ngữ",
                     guide_title: "Quy Trình Xử Lý Giao Dịch Chi Tiết",
                     tech_title: "Cơ Chế Quản Lý Số Dư Kép",
                     dual_balance: {
                         why_title: "Tại sao cần 2 loại số dư?",
-                        why_desc: "Quản lý dòng tiền tập trung yêu cầu tách biệt tiền thực (Real) và quyền hạn (Roll-up).",
+                        why_desc: "Trong quản lý dòng tiền tập trung, doanh nghiệp cần biết tiền đang nằm thực tế ở đâu (Real Balance) và tổng nguồn lực mà một đơn vị cấp cao có quyền điều phối (Roll-up Balance).",
                         real_title: "1. Số dư thực (Real Balance)",
-                        real_desc: "Số dư hiển thị khi sao kê.",
+                        real_desc: "Là số tiền thực sự được ghi nhận tại tài khoản VA đó. Khi sao kê tài khoản VA, đây là số dư hiển thị.",
                         rollup_title: "2. Số dư cộng dồn (Roll-up Balance)",
-                        rollup_desc: "Tổng nguồn lực quản trị."
+                        rollup_desc: "Là tổng số dư của VA đó cộng với tất cả các VA con cháu. Dùng cho mục đích báo cáo quản trị tổng hợp."
                     },
                     legacy_process: {
-                        title: "BÁO CÁO TÓM TẮT: QUY TRÌNH THANH TOÁN LIÊN NGÂN HÀNG 247 (VA & ALIAS)",
-                        def_title: "1. ĐỊNH NGHĨA VÀ PHẠM VI",
-                        def_intro: "Trước khi đi vào quy trình, cần phân biệt rõ hai đối tượng tài khoản được xử lý:",
-                        def_items: [
-                            { term: "Alias (Bí danh)", desc: "Là dãy số/chữ được chủ tài khoản dùng thay thế cho số tài khoản thực trong giao dịch.", sub: "Đặc điểm: Chỉ đóng vai trò 'mặt nạ' định danh. Giao dịch chuyển đến Alias là giao dịch chuyển tiền thông thường, không có quy trình xử lý gạch nợ phía sau." },
-                            { term: "Virtual Account (VA - Tài khoản ảo)", desc: "Là tài khoản quản trị logic (không tồn tại vật lý trong Core Banking) được tạo bởi hệ thống VA Engine.", sub: "Mục đích: Phân loại và theo dõi dòng tiền chi tiết theo từng thực thể con (dự án, hợp đồng, hộ kinh doanh...).\nCơ chế: VA được liên kết với một Tài khoản thực (Real Account). Giao dịch được ghi nhận qua cơ chế shadow posting, sử dụng bộ định danh ảo để tự động định tuyến, phục vụ đối soát và phân tích dòng tiền chuyên sâu." }
-                        ],
-                        flow_title: "2. QUY TRÌNH XỬ LÝ VIRTUAL ACCOUNT HIỆN TẠI",
+                        title: "2. QUY TRÌNH XỬ LÝ VIRTUAL ACCOUNT HIỆN TẠI",
                         flow_intro: "Quy trình này chia làm 2 giai đoạn chính: Giai đoạn Vấn tin (Kiểm tra thông tin) và Giai đoạn Hạch toán (Thực hiện giao dịch). Dưới đây là mô tả chi tiết theo luồng đi của dữ liệu:",
                         phases: [
                             {
                                 name: "GIAI ĐOẠN 1: VẤN TIN (Kiểm tra thông tin người thụ hưởng)",
                                 purpose: "Mục đích: Xác thực thông tin tài khoản đích và số tiền trước khi chuyển.",
                                 steps: [
-                                    "Bước 1: Khởi tạo:\nKhách hàng tại Ngân hàng ngoài (NH chuyển) bắt đầu thực hiện giao dịch chuyển tiền 247. Họ nhập thông tin tài khoản thụ hưởng và yêu cầu vấn tin.",
-                                    "Bước 2: Kiểm tra định dạng (Tại Chương trình 247):\nHệ thống tiếp nhận yêu cầu và kiểm tra định dạng tài khoản hưởng.\n- Nếu là tài khoản thường -> Chuyển luồng Core Banking.\n- Nếu là VA/Alias -> Chuyển sang hệ thống Paygate.",
-                                    "Bước 3: Xử lý tại Paygate:\nPaygate kiểm tra loại tài khoản và bóc tách thông tin.\n- Nếu là VA: Gửi yêu cầu sang NCCDV/Kho dữ liệu lấy thông tin cước.\n- Nếu là Alias: Phản hồi tên và số DDA liên kết.",
+                                    "Bước 1: Khởi tạo: Khách hàng tại Ngân hàng ngoài (NH chuyển) bắt đầu thực hiện giao dịch chuyển tiền 247. Họ nhập thông tin tài khoản thụ hưởng và yêu cầu vấn tin.",
+                                    "Bước 2: Kiểm tra định dạng (Tại Chương trình 247): Hệ thống tiếp nhận yêu cầu và kiểm tra định dạng tài khoản hưởng.\n- Nếu là tài khoản thường -> Chuyển luồng Core Banking.\n- Nếu là VA/Alias -> Chuyển sang hệ thống Paygate.",
+                                    "Bước 3: Xử lý tại Paygate: Paygate kiểm tra loại tài khoản và bóc tách thông tin.\n- Nếu là VA: Gửi yêu cầu sang NCCDV/Kho dữ liệu lấy thông tin cước.\n- Nếu là Alias: Phản hồi tên và số DDA liên kết.",
                                     "Bước 4: Tổng hợp thông tin (Tại Chương trình 247):\n- Gọi Core Banking truy vấn trạng thái DDA liên kết.\n- Lưu thông tin tạm thời (Cache): Tên người hưởng, số tiền, Billid (với VA)...",
-                                    "Bước 5: Phản hồi khách hàng:\nKết quả được gửi trả về Ngân hàng ngoài để khách hàng kiểm tra."
+                                    "Bước 5: Phản hồi khách hàng: Kết quả được gửi trả về Ngân hàng ngoài để khách hàng kiểm tra."
                                 ]
                             },
                             {
                                 name: "GIAI ĐOẠN 2: HẠCH TOÁN (Thực hiện chuyển tiền)",
                                 purpose: "Mục đích: Ghi nhận dòng tiền và gạch nợ.",
                                 steps: [
-                                    "Bước 1: Xác nhận giao dịch:\nKhách hàng xác nhận. Yêu cầu hạch toán được gửi đi.",
-                                    "Bước 2: Định tuyến lại (Tại Chương trình 247):\nKiểm tra lại định dạng. Nếu là VA/Alias -> Lấy lại thông tin Cache từ bước Vấn tin.",
+                                    "Bước 1: Xác nhận giao dịch: Khách hàng xác nhận. Yêu cầu hạch toán được gửi đi.",
+                                    "Bước 2: Định tuyến lại (Tại Chương trình 247): Kiểm tra lại định dạng. Nếu là VA/Alias -> Lấy lại thông tin Cache từ bước Vấn tin.",
                                     "Bước 3: Xử lý Hạch toán:\n- Nhánh Alias: Gửi lệnh vào Core để ghi CÓ trực tiếp vào DDA khách hàng.\n- Nhánh VA: Kiểm tra tham số (số tiền, nợ cước) -> Gửi lệnh ghi CÓ vào tài khoản chuyên thu của NCC tại Core.",
                                     "Bước 4: Gạch nợ và Hoàn tất:\n- Sau khi Core trả kết quả thành công:\n- Với VA: Hệ thống gửi yêu cầu sang NCCDV/Kho dữ liệu để Gạch nợ hóa đơn.\n- Ghi nhận thành công.",
-                                    "Bước 5: Kết thúc:\nGửi kết quả cuối cùng về Ngân hàng ngoài."
+                                    "Bước 5: Kết thúc: Gửi kết quả cuối cùng về Ngân hàng ngoài."
                                 ]
                             }
                         ],
@@ -232,7 +239,7 @@
                     },
                     new_feature_process: {
                         title: "3. TÍNH NĂNG VÀ QUY TRÌNH VIRTUAL ACCOUNT MỚI",
-                        intro: "I. MÔ HÌNH 2 LỰA CHỌN GIAO DỊCH CHO DỊCH VỤ VIRTUAL ACCOUNT.\nKhi khách hàng đăng ký sử dụng VA, ngân hàng cung cấp hai lựa chọn giao dịch:",
+                        intro: "I. MÔ HÌNH 2 LỰA CHỌN GIAO DỊCH CHO DỊCH VỤ VIRTUAL ACCOUNT\nKhi khách hàng đăng ký sử dụng VA, ngân hàng cung cấp hai lựa chọn giao dịch:",
                         options: [
                             {
                                 name: "OPTION 1 – Giao dịch trực tiếp bằng số VA (Virtual Account)",
@@ -245,15 +252,15 @@
                                 suitable_for: "GPMB, thu ngân sách, dự án Nhà nước. Doanh nghiệp có yêu cầu quản lý dòng tiền chặt chẽ.",
                                 flow_title: "Luồng xử lý Option 1 (VA-first)",
                                 steps: [
-                                    "Bước 1 – Kênh nhận giao dịch: Khách hàng nhập số VA (thay vì số DDA), số tiền và nội dung.",
-                                    "Bước 2 – Kiểm tra VA: Hệ thống kiểm tra VA (tồn tại, hoạt động, hiệu lực, kênh...). Nếu không hợp lệ → báo lỗi ngay.",
-                                    "Bước 3 – Hạch toán thật vào DDA: Nếu VA hợp lệ, xác định TK gốc và ghi có. Nếu lỗi → dừng.",
-                                    "Bước 4 – Ghi sổ cho VA (shadow posting): Tạo bút toán ảo, cập nhật số dư VA và Roll-up."
+                                    "B1: Khách hàng nhập số VA (thay vì số DDA), số tiền và nội dung.",
+                                    "B2: Hệ thống kiểm tra VA (tồn tại, hoạt động, hiệu lực, kênh...). Nếu không hợp lệ → báo lỗi ngay.",
+                                    "B3: Nếu VA hợp lệ, xác định TK gốc và ghi có. Nếu lỗi → dừng.",
+                                    "B4: Tạo bút toán ảo cho VA, cập nhật số dư VA và Roll-up."
                                 ]
                             },
                             {
                                 name: "OPTION 2 – Giao dịch bằng số DDA, VA xử lý sau dựa trên nội dung giao dịch (DDA-first)",
-                                desc: "Khách hàng không nhập số VA, chỉ nhập số DDA như bình thường. Thông tin nhận diện VA sẽ nằm trong ghi chú/remark. Hệ thống chỉ thực hiện “VA hạch toán ảo” sau khi DDA đã nhận tiền.",
+                                desc: "Khách hàng không nhập số VA, chỉ nhập số DDA như bình thường. Thông tin nhận diện VA sẽ nằm trong ghi chú/remark hoặc theo mẫu doanh nghiệp đã đăng ký. Hệ thống chỉ thực hiện “VA hạch toán ảo” sau khi DDA đã nhận tiền.",
                                 benefits: [
                                     "Không làm thay đổi thói quen doanh nghiệp.",
                                     "Vẫn giữ nguyên các luồng chuyển khoản liên ngân hàng.",
@@ -261,11 +268,11 @@
                                 ],
                                 flow_title: "Luồng xử lý Option 2 (DDA-first)",
                                 steps: [
-                                    "Bước 1 – Kênh nhận giao dịch: Khách hàng chuyển tiền vào số DDA (có/không ghi chú).",
-                                    "Bước 2 – Hạch toán thật vào DDA: Ghi có DDA như thường. Nếu lỗi → dừng.",
-                                    "Bước 3 – Kiểm tra DDA có đăng ký dịch vụ VA hay không: Nếu có → tiếp tục, không → xong.",
-                                    "Bước 4 – Xác định khoản tiền này thuộc VA nào: Đọc nội dung (mã hộ, hđ...), tìm VA. (4A: Tìm được -> B5; 4B: Không tìm được -> Chưa nhận diện; 4C: Nhiều VA -> Quy tắc ưu tiên).",
-                                    "Bước 5 – Ghi sổ cho VA (shadow posting): Tạo bút toán ảo, cập nhật số dư, ghi lịch sử truy vết."
+                                    "B1: Khách hàng chuyển tiền vào số DDA, có hoặc không có ghi chú nhận diện.",
+                                    "B2: Khoản tiền được ghi có vào DDA như một giao dịch thông thường. Nếu lỗi -> dừng.",
+                                    "B3: Kiểm tra DDA có đăng ký dịch vụ VA hay không: Nếu có → tiếp tục, không → xong.",
+                                    "B4: Đọc nội dung giao dịch (ghi chú), áp dụng quy tắc. (4A: Tìm được -> B5; 4B: Không tìm được -> Danh sách chưa nhận diện; 4C: Nhiều VA -> Quy tắc ưu tiên).",
+                                    "B5: Tạo bút toán ảo vào VA tìm được, cập nhật số dư VA và Roll-up. Ghi lại lịch sử truy vết."
                                 ]
                             }
                         ],
@@ -283,10 +290,11 @@
                         }
                     },
                     terms: {
-                        RealBalance: "Số dư thực (Own Balance).",
-                        RollupBalance: "Số dư cộng dồn (Roll-up Balance).",
-                        VA: "Virtual Account.",
-                        Reconciliation: "Đối soát. Quá trình so sánh số dư tổng hợp của VA với DDA Master."
+                        RealBalance: "Số dư thực (Own Balance). Số tiền thực tế nằm tại chính tài khoản VA đó, không bao gồm tiền của các tài khoản con.",
+                        RollupBalance: "Số dư cộng dồn (Roll-up Balance). Tổng tiền của chính VA đó + Tổng số dư Roll-up của tất cả các VA con trực thuộc. Dùng để quản lý hạn mức tổng.",
+                        VA: "Virtual Account (Tài khoản ảo/định danh)là tài khoản phụ gắn với tài khoản thanh toán chính, dùng để định danh và phân loại giao dịch theo từng mục đích hoặc từng đơn vị. Có hai loại:Light VA: chỉ nhận diện giao dịch, không số dư, không hạch toán. Full VA: có số dư nội bộ, hạn mức và quản lý như sub-account. Tên VA có thể theo dự án/hợp đồng/đơn vị, nhưng không phải tài khoản pháp lý; mọi nghĩa vụ vẫn thuộc tài khoản chính. VA giúp doanh nghiệp tự động hóa đối soát và tập trung hóa dòng tiền",
+                        DDA: "Demand Deposit Account (Tài khoản thanh toán). Tài khoản thực của doanh nghiệp tại ngân hàng.",
+                        "Giao dịch gốc và giao dịch shadow": "Giao dịch gốc là giao dịch nợ, có ghi nhận vào tài khoản DDA, giao dịch Shadow là giao dịch phụ được ghi nhận thêm vào các tài khoản VA chi tiết có liên kết với tài khoản DDA để phục vụ mục đính định tuyến giao dịch, quản lý dòng tiền và lên báo cáo"
                     },
                     processes: [
                         {
@@ -357,7 +365,7 @@
             },
             en: {
                 app_name: "BankB Ebank",
-                app_name_full: "BankB Ebank | Virtual Account v2.1",
+                app_name_full: "BankB Ebank | Virtual Account v2.2",
                 subtitle: "Virtual Account System",
                 welcome: "Hi",
                 reset_demo: "Reset Data",
@@ -367,9 +375,11 @@
                     lifecycle: "VA Management",
                     identifiers: "Routing",
                     transactions_group: "Shadow Transactions",
-                    tx_incoming: "Funds Top-up to VA",
-                    tx_outgoing: "Payout from VA",
+                    tx_incoming: "Add Incoming VA Tx", 
+                    tx_outgoing: "Add Outgoing VA Tx", 
                     tx_internal: "Internal Transfer",
+                    tx_transfer_out: "Transfer from VA", 
+                    tx_dda: "DDA Transaction (Counter)", 
                     reports: "Reports",
                     reconciliation: "Reconciliation",
                     guide: "Guide & Process"
@@ -447,20 +457,27 @@
                     action_delete: "Del"
                 },
                 transactions: {
-                    title_incoming: "Funds Top-up to VA Transaction",
-                    title_outgoing: "Payout from VA Transaction",
+                    title_incoming: "Add Incoming VA Transaction",
+                    title_outgoing: "Add Outgoing VA Transaction",
                     title_internal: "Internal / Allocation",
-                    desc_incoming: "Add missing incoming transactions (shadow posting).",
+                    title_transfer_out: "Transfer from VA (Bank Transfer)",
+                    title_dda: "Counter Transaction (DDA)",
+                    desc_incoming: "Add missing incoming transactions (shadow posting) that were not automatically mapped.",
                     desc_outgoing: "Add missing outgoing transactions (shadow posting).",
                     desc_internal: "Transfer funds between VAs.",
+                    desc_transfer_out: "This is a screen to transfer funds from a Virtual Account to a DDA account of another customer at this bank or another bank",
+                    desc_dda: "Demo counter transaction processing via 2 Options: VA-first or DDA-first.",
                     routing_content: "Routing Ref",
-                    va_label: "Target VA",
+                    va_label: "Virtual Account (VA)",
+                    dda_label: "Real Account (DDA)",
                     amount_label: "Amount",
-                    beneficiary_label: "Bene",
+                    beneficiary_label: "Beneficiary Account (DDA)",
+                    bank_label: "Beneficiary Bank",
                     payment_content: "Desc",
                     btn_credit: "Credit",
                     btn_debit: "Debit",
                     btn_transfer: "Execute Transfer",
+                    btn_dda_submit: "Execute Counter Tx",
                     history_title: "History",
                     table_time: "Time",
                     table_type: "Type",
@@ -469,12 +486,17 @@
                     mode_ddava: "DDA <-> VA",
                     source_va: "Source VA",
                     dest_va: "Dest VA",
-                    source_dda: "Source DDA",
-                    dest_dda: "Dest DDA",
                     direction: "Direction",
                     dir_fund: "Allocation (DDA -> VA)",
                     dir_sweep: "Sweep (VA -> DDA)",
-                    bal_hint: "Real: "
+                    opt1_label: "Option 1: Use VA Number",
+                    opt2_label: "Option 2: Use DDA Number",
+                    opt1_hint: "Customer inputs VA number. System validates VA before posting to DDA.",
+                    opt2_hint: "Customer inputs DDA number. System credits DDA first, then finds VA via Remark.",
+                    remark_label: "Remark/Content (Contains Identifier)",
+                    result_success_va: "Success: Credited DDA and VA.",
+                    result_success_dda_only: "Success: Credited DDA only. (VA not found, pending manual fix)",
+                    check_va: "Validate VA"
                 },
                 reports: {
                     summary_title: "Summary Rpt",
@@ -488,178 +510,110 @@
                 },
                 guide: {
                     title: "User Guide & Process",
-                    intro_text: "Version v2.1 adds Reconciliation features to detect and handle balance discrepancies.",
+                    intro_text: "Version v2.2 updates DDA counter transaction processes with 2 Models (Option 1 & 2).",
                     glossary_title: "Glossary",
-                    guide_title: "Transaction Logic Flows",
+                    guide_title: "Detailed Transaction Processes",
                     tech_title: "Dual Balance Mechanism",
                     dual_balance: {
-                        why_title: "Why 2 types of balances?",
-                        why_desc: "Separate Real Balance (actual) and Roll-up Balance (authority).",
+                        why_title: "Why do we need 2 types of balances?",
+                        why_desc: "In centralized cash flow management, businesses need to know where money is actually located (Real Balance) and the total resources a higher-level unit can coordinate (Roll-up Balance).",
                         real_title: "1. Real Balance",
-                        real_desc: "Shown on statement.",
+                        real_desc: "The actual amount recorded in that VA. This is the balance shown on VA statements.",
                         rollup_title: "2. Roll-up Balance",
-                        rollup_desc: "Total resources."
+                        rollup_desc: "The total balance of that VA plus all descendant VAs. Used for consolidated management reporting."
                     },
                     legacy_process: { 
-                        title: "SUMMARY REPORT: INTERBANK 247 PAYMENT PROCESS (VA & ALIAS)",
-                        def_title: "1. DEFINITION AND SCOPE",
-                        def_intro: "Before entering the process, it is necessary to clearly distinguish between two types of accounts handled:",
+                        title: "2. CURRENT VIRTUAL ACCOUNT PROCESSING FLOW (LEGACY 247)",
+                        def_title: "1. DEFINITION",
+                        def_intro: "Alias vs VA.",
                         def_items: [
-                            { term: "Alias", desc: "A sequence of numbers/letters used by the account holder to replace the real account number in transactions.", sub: "Characteristics: Acts only as an identification 'mask'. Transactions to Alias are regular transfers, with no backend debt clearing process." },
-                            { term: "Virtual Account (VA)", desc: "A logical management account (physically non-existent in Core Banking) created by the VA Engine system.", sub: "Purpose: Classify and track detailed cash flow by sub-entity (project, contract, household business...).\nMechanism: VA is linked to a Real Account. Transactions are recorded via shadow posting mechanism, using virtual identifiers for automatic routing, serving reconciliation and in-depth cash flow analysis." }
+                            { term: "Alias", desc: "Mask for real account.", sub: "" },
+                            { term: "Virtual Account", desc: "Logical sub-account with shadow ledger." }
                         ],
-                        flow_title: "2. CURRENT VIRTUAL ACCOUNT PROCESSING FLOW",
-                        flow_intro: "This process is divided into 2 main phases: Inquiry Phase and Posting Phase. Below is the detailed data flow description:",
+                        flow_title: "2. CURRENT PROCESS",
+                        flow_intro: "Divided into 2 phases: Inquiry and Posting.",
                         phases: [
                             {
                                 name: "PHASE 1: INQUIRY (Beneficiary Verification)",
                                 purpose: "Purpose: Validate destination account info before transfer.",
                                 steps: [
-                                    "Step 1: Initialization:\nCustomer at Sender Bank inputs info and requests inquiry.",
-                                    "Step 2: Format Check (at 247 System):\nSystem receives request and checks target account format.\n- If Regular Account -> To Core Banking.\n- If VA/Alias -> To Paygate.",
-                                    "Step 3: Paygate Processing:\nChecks account type and parses info.\n- If VA: Requests SP for bill info.\n- If Alias: Retrieves linked DDA number.",
-                                    "Step 4: Aggregation (at 247 System):\n- Calls Core Banking to check linked DDA status.\n- Caches info (Beneficiary Name, Amount, Billid...).",
-                                    "Step 5: Response:\nReturn beneficiary name to customer."
+                                    "Step 1: Initialization: Customer at Sender Bank inputs info and requests inquiry.",
+                                    "Step 2: Format Check (at 247 System): System receives request and checks target account format.\n- If Regular Account -> To Core Banking.\n- If VA/Alias -> To Paygate.",
+                                    "Step 3: Paygate Processing: Checks account type and parses info.\n- If VA: Requests SP for bill info.\n- If Alias: Retrieves linked DDA number.",
+                                    "Step 4: Aggregation (at 247 System): Calls Core Banking to check linked DDA status & caches info.",
+                                    "Step 5: Response: Return beneficiary name to customer."
                                 ]
                             },
                             {
                                 name: "PHASE 2: POSTING (Execute Transfer)",
                                 purpose: "Purpose: Record funds and clear debt.",
                                 steps: [
-                                    "Step 1: Confirmation:\nCustomer confirms. Posting request is sent.",
-                                    "Step 2: Re-routing (at 247 System):\nChecks format again. If VA/Alias -> Retrieves cached info from Inquiry step.",
-                                    "Step 3: Posting Processing:\n- Alias Branch: Sends command to Core to Credit Customer DDA directly.\n- VA Branch: Checks params (amount match, min-max) -> Sends command to Credit Provider's Collection Account at Core.",
-                                    "Step 4: Debt Clearing & Completion:\n- After Core returns success:\n- For VA: System sends request to SP to Clear Bill Debt.\n- Record success.",
-                                    "Step 5: End:\nSend final result to Sender Bank."
+                                    "Step 1: Confirmation: Customer confirms. Posting request is sent.",
+                                    "Step 2: Re-routing (at 247 System): Checks format again. If VA/Alias -> Retrieves cached info.",
+                                    "Step 3: Posting Processing:\n- Alias Branch: Sends command to Core to Credit Customer DDA directly.\n- VA Branch: Checks params -> Sends command to Credit Provider's Collection Account at Core.",
+                                    "Step 4: Debt Clearing & Completion: After Core returns success -> System sends request to SP to Clear Bill Debt -> Record success.",
+                                    "Step 5: End: Send final result to Sender Bank."
                                 ]
                             }
                         ],
-                        summary: "Systems Summary:\n- Sender Bank: Transaction initiator.\n- 247 System: Main coordinator/Router.\n- Paygate: Logic gateway for VA/Alias.\n- Core Banking: Core accounting system.\n- Service Provider (SP): Stores bill information."
+                        summary: "Systems Summary: Sender Bank -> 247 System -> Paygate -> Core Banking -> Service Provider."
                     },
-                    // NEW FEATURE SECTION (TRANSLATED)
                     new_feature_process: {
-                        title: "3. NEW VIRTUAL ACCOUNT FEATURES & PROCESS",
+                        title: "3. NEW VIRTUAL ACCOUNT FEATURES & PROCESS (COUNTER/DDA)",
                         intro: "I. TWO TRANSACTION MODELS FOR VIRTUAL ACCOUNT SERVICE\nWhen customers register for VA, the bank provides two transaction options:",
                         options: [
                             {
-                                name: "OPTION 1 – Transaction directly via VA Number (Virtual Account)",
-                                desc: "Customer inputs VA number when performing transaction. System validates VA first, if valid, allows actual posting to Real Account (DDA).",
+                                name: "OPTION 1 – Transaction via VA Number (VA-first)",
+                                desc: "Customer inputs VA number. System validates VA before crediting Real Account (DDA).",
                                 benefits: [
-                                    "If VA is wrong → transaction rejected immediately.",
-                                    "All incoming funds definitely belong to the correct VA.",
-                                    "Real Account (DDA) only receives valid funds from VAs."
+                                    "Rejects invalid VA immediately.",
+                                    "Ensures correct routing.",
+                                    "Clean DDA ledger."
                                 ],
-                                suitable_for: "Land clearance, budget collection, State projects. Enterprises requiring strict cash flow management.",
-                                flow_title: "Option 1 Processing Flow (VA-first)",
-                                steps: [
-                                    "Step 1 – Channel: Customer inputs VA number (instead of DDA), amount and content.",
-                                    "Step 2 – Validate VA: System checks existence, status, validity, channel permission, linked DDA. If invalid → error immediately.",
-                                    "Step 3 – Posting to DDA: If VA valid, identify DDA and credit real funds. If fail → stop.",
-                                    "Step 4 – Shadow Posting: System receives success signal, creates virtual entry for VA, updates VA balance and Roll-up balance."
-                                ]
+                                suitable_for: "State budget, strict cash flow control.",
+                                flow_title: "Option 1 Flow (VA-first)",
+                                steps: ["Input VA", "Validate VA", "Credit DDA", "Shadow Post to VA"]
                             },
                             {
-                                name: "OPTION 2 – Transaction via DDA Number, VA processed later based on content (DDA-first)",
-                                desc: "Customer inputs DDA number as usual. VA identification info lies in remark/note. System performs 'VA shadow posting' only after DDA receives funds.",
+                                name: "OPTION 2 – Transaction via DDA Number (DDA-first)",
+                                desc: "Customer inputs DDA number. VA logic is applied after DDA is credited based on remarks.",
                                 benefits: [
-                                    "No change in enterprise habit.",
-                                    "Keep existing interbank transfer flows.",
-                                    "Leverage VA for automated allocation later."
+                                    "No behavior change.",
+                                    "Standard interbank flow.",
+                                    "Post-processing allocation."
                                 ],
-                                flow_title: "Option 2 Processing Flow (DDA-first)",
-                                steps: [
-                                    "Step 1 – Channel: Customer transfers to DDA (with/without remark).",
-                                    "Step 2 – Posting to DDA: Credit DDA as normal transaction. If fail → stop.",
-                                    "Step 3 – Check DDA Registration: Check if DDA uses VA service. If no → finish. If yes → next step.",
-                                    "Step 4 – Identify VA: Parse content, apply rules (contract no, project code...). (4A: Found VA -> Step 5; 4B: Not found -> Unidentified list; 4C: Multiple VAs -> Priority rules).",
-                                    "Step 5 – Shadow Posting: Create virtual entry for found VA, update balance, log trace."
-                                ]
+                                flow_title: "Option 2 Flow (DDA-first)",
+                                steps: ["Input DDA", "Credit DDA", "Check VA Registry", "Identify VA from Remark", "Shadow Post to VA"]
                             }
                         ],
-                        comparison_title: "III. Brief Comparison",
+                        comparison_title: "III. Comparison",
                         comparison_table: {
-                            headers: ["Content", "Option 1 – Use VA", "Option 2 – Use DDA & remark"],
+                            headers: ["Content", "Option 1 (VA)", "Option 2 (DDA)"],
                             rows: [
-                                ["Input Method", "Input VA Number", "Input DDA Number"],
-                                ["Validation", "Validate before posting", "Validate after DDA credited"],
-                                ["Accuracy", "Very High", "Depends on remark & rules"],
-                                ["Risk of missing VA", "None", "Yes (moved to pending list)"],
-                                ["Suitable for", "State budget, strict control", "Normal business, interbank usage"],
-                                ["System Compatibility", "Need channel UI update", "Keep current UI"]
+                                ["Input", "VA Number", "DDA Number"],
+                                ["Validation", "Pre-posting", "Post-posting"],
+                                ["Accuracy", "High", "Dependent on Remark"],
+                                ["Risk", "None", "Found in Pending List"],
+                                ["Suitable for", "Strict control", "Normal business"],
+                                ["System", "UI Update Needed", "Keep Current UI"]
                             ]
                         }
                     },
                     terms: {
-                        RealBalance: "Real Balance (Own Funds). Funds sitting directly in this VA, excluding children.",
-                        RollupBalance: "Roll-up Balance. Sum of Own Balance + All Children's Roll-up Balances.",
-                        VA: "Virtual Account. Sub-account for tracking.",
-                        DDA: "Real checking account.",
-                        Reconciliation: "Comparing aggregated VA balances vs Master DDA."
+                        RealBalance: "Real Balance (Own Balance). The actual amount sitting in that specific VA account, excluding funds from child accounts.",
+                        RollupBalance: "Roll-up Balance. The sum of funds in that VA + The total Roll-up balance of all direct child VAs. Used for managing total limits.",
+                        VA: "Virtual Account. A tool for classifying and identifying cash flow.",
+                        DDA: "Demand Deposit Account (Payment Account). The actual corporate account at the bank.",
+                        "Original Transaction and Shadow Transaction": "Original transaction is a debit/credit recorded on the DDA. Shadow transaction is a supplementary entry recorded on detailed VAs linked to the DDA for routing, cash flow management, and reporting purposes."
                     },
                     processes: [
-                        {
-                            title: "1. Onboarding Process (Initial Setup)",
-                            steps: [
-                                "Step 1 (At Counter/Core): Open CIF and Real Payment Account (DDA).",
-                                "Step 2 (On VA System - Menu 'Corp Profile'): Create new corporate profile, input CIF.",
-                                "Step 3: Link Real DDAs to the VA system to act as Master Accounts.",
-                                "Step 4: Assign user roles and approve limits (if any)."
-                            ]
-                        },
-                        {
-                            title: "2. VA Hierarchy Management (VA Lifecycle)",
-                            steps: [
-                                "Step 1 (Menu 'VA Management'): Create Root VA linked to Master DDA.",
-                                "Step 2: Create Child VAs (Level 1, Level 2...) based on organizational structure (Dept, Project, Branch).",
-                                "Step 3: Set Metadata for each VA (Project Code, Contract No.) for identification purposes."
-                            ]
-                        },
-                        {
-                            title: "3. Identifier & Routing (Smart Mapper)",
-                            steps: [
-                                "Purpose: Helps the system automatically identify target VA based on transfer content.",
-                                "Step 1 (Menu 'Routing'): Select Identifier Type (Tax Code, Contract No, Apt Code...).",
-                                "Step 2: Input identifier value (e.g., HD-001) and select Target VA (e.g., VA_Project_A).",
-                                "Step 3: Save Rule. From now on, incoming funds with 'HD-001' in content will auto-credit VA_Project_A."
-                            ]
-                        },
-                        {
-                            title: "4. Incoming Credit Flow",
-                            steps: [
-                                "Flow: Customer -> Master DDA (Core) -> VA System.",
-                                "Step 1: Core Banking credits Master DDA.",
-                                "Step 2: VA System receives webhook/message from Core.",
-                                "Step 3: Routing Engine analyzes content -> Finds mapped Rule from Step 3.",
-                                "Step 4: Credit 'Real Balance' at Target VA.",
-                                "Step 5: Credit 'Roll-up Balance' for Target VA and all Ancestor VAs."
-                            ]
-                        },
-                        {
-                            title: "5. Outgoing POBO Flow",
-                            steps: [
-                                "Flow: User initiates -> System debits Master DDA -> Beneficiary.",
-                                "Step 1 (Menu 'Outgoing Payment'): Input beneficiary details and amount.",
-                                "Step 2: System checks 'Real Balance' of the VA. If sufficient -> Proceed.",
-                                "Step 3: Send Debit command for Master DDA to Core Banking.",
-                                "Step 4: If Core success -> Debit VA balance (both Real and Roll-up)."
-                            ]
-                        },
-                        {
-                            title: "6. Internal Transfer & Funding Flow",
-                            steps: [
-                                "Internal (VA <-> VA): Virtual transfer between VAs. Only changes VA balances, no transaction on Master DDA.",
-                                "Allocation (DDA -> VA): Distribute limit from Common Fund (DDA) to Child VAs for spending.",
-                                "Sweep (VA -> DDA): Collect funds from Child VAs back to Common Fund."
-                            ]
-                        },
-                        {
-                            title: "7. Reconciliation & Reporting",
-                            steps: [
-                                "Statement Report: Lists detailed transactions for each VA (similar to real account statement).",
-                                "Summary Report: View total Roll-up balances by level.",
-                                "End-of-Day Rec: Sum of Real Balances of all Child VAs must equal (=) Actual Balance on Master DDA at Core."
-                            ]
-                        }
+                        { title: "1. Onboarding", steps: ["Open CIF/DDA", "Create Profile", "Link DDA"] },
+                        { title: "2. Lifecycle", steps: ["Create Root", "Create Child", "Set Meta"] },
+                        { title: "3. Routing", steps: ["Select Type", "Input Value", "Map VA"] },
+                        { title: "4. Incoming", steps: ["Core credits DDA", "VA receives msg", "Routing", "Credit VA"] },
+                        { title: "5. Payout", steps: ["Create Order", "Check VA Bal", "Debit DDA", "Debit VA"] },
+                        { title: "6. Internal", steps: ["Internal", "Allocation", "Sweep"] },
+                        { title: "7. Reports", steps: ["Statement", "Summary", "EOD Rec"] }
                     ]
                 }
             }
@@ -694,7 +648,9 @@
             Layers: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>,
             Scale: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="m2 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="M7 21h10"/><path d="M12 3v18"/><path d="M3 7h2c2 0 5-1 7-2 2 1 5 2 7 2h2"/></svg>,
             AlertTriangle: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>,
-            Zap: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+            Zap: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>,
+            Monitor: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="20" height="14" x="2" y="3" rx="2"/><line x1="8" x2="16" y1="21" y2="21"/><line x1="12" x2="12" y1="17" y2="21"/></svg>,
+            Send: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>
         };
 
         const IconWrapper = ({ name, size = 18, className = "" }) => {
@@ -711,7 +667,6 @@
         };
         const saveState = (key, value) => localStorage.setItem(key, JSON.stringify(value));
 
-        // Helper: Get path to root (Ancestors + Self)
         const getPathToRoot = (vaId, allVas) => {
             const path = [];
             let current = allVas.find(v => v.id === vaId);
@@ -723,7 +678,6 @@
             return path;
         };
 
-        // Helper: Get all descendants
         const getDescendants = (vaId, allVas) => {
             let descendants = [];
             const directChildren = allVas.filter(v => v.parentId === vaId);
@@ -741,7 +695,7 @@
             name: 'TỔNG CÔNG TY XÂY DỰNG ĐS',
             segment: 'CORPORATE',
             ddaAccounts: [
-                { id: 'DDA001', accountNo: '11110000123456', balance: 25000000000, currency: 'VND' }, // Matches Sum of VAs initially
+                { id: 'DDA001', accountNo: '11110000123456', balance: 25000000000, currency: 'VND' },
                 { id: 'DDA002', accountNo: '22220000987654', balance: 15000000000, currency: 'VND' }
             ]
         };
@@ -769,7 +723,6 @@
             const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
             const [txMenuOpen, setTxMenuOpen] = useState(true); 
             
-            // Global State with version key to reset old data if needed
             const [corporate, setCorporate] = useState(() => loadState('BANKB_CORP_V2.1', initialCorporate));
             const [virtualAccounts, setVirtualAccounts] = useState(() => loadState('BANKB_VAS_V2.1', initialVAs));
             const [transactions, setTransactions] = useState(() => loadState('BANKB_TXS_V2.1', initialTx));
@@ -811,7 +764,9 @@
                     case 'TRANSACTIONS_INCOMING': return <TransactionHub mode="CREDIT" vas={virtualAccounts} setVas={setVirtualAccounts} txs={transactions} setTxs={setTransactions} corporate={corporate} notify={notify} identifiers={identifiers} t={t} />;
                     case 'TRANSACTIONS_OUTGOING': return <TransactionHub mode="DEBIT" vas={virtualAccounts} setVas={setVirtualAccounts} txs={transactions} setTxs={setTransactions} corporate={corporate} notify={notify} identifiers={identifiers} t={t} />;
                     case 'TRANSACTIONS_INTERNAL': return <TransactionHub mode="INTERNAL" vas={virtualAccounts} setVas={setVirtualAccounts} txs={transactions} setTxs={setTransactions} corporate={corporate} notify={notify} identifiers={identifiers} t={t} />;
-                    
+                    case 'TRANSACTIONS_DDA': return <DDATransactionScreen vas={virtualAccounts} setVas={setVirtualAccounts} txs={transactions} setTxs={setTransactions} corporate={corporate} setCorporate={setCorporate} identifiers={identifiers} notify={notify} t={t} />;
+                    case 'TRANSACTIONS_TRANSFER_OUT': return <TransferFromVAScreen vas={virtualAccounts} setVas={setVirtualAccounts} txs={transactions} setTxs={setTransactions} corporate={corporate} notify={notify} t={t} />;
+
                     case 'IDENTIFIERS': return <IdentifierManager identifiers={identifiers} setIdentifiers={setIdentifiers} vas={virtualAccounts} notify={notify} t={t} />;
                     case 'REPORTS': return <Reporting vas={virtualAccounts} txs={transactions} t={t} />;
                     case 'RECONCILIATION': return <Reconciliation corporate={corporate} setCorporate={setCorporate} vas={virtualAccounts} setVas={setVirtualAccounts} notify={notify} t={t} />;
@@ -868,6 +823,8 @@
                                             <NavSubButton active={activeTab === 'TRANSACTIONS_INCOMING'} onClick={() => handleTabChange('TRANSACTIONS_INCOMING')} label={t('menu', 'tx_incoming')} icon="ArrowDownRight" />
                                             <NavSubButton active={activeTab === 'TRANSACTIONS_OUTGOING'} onClick={() => handleTabChange('TRANSACTIONS_OUTGOING')} label={t('menu', 'tx_outgoing')} icon="ArrowUpRight" />
                                             <NavSubButton active={activeTab === 'TRANSACTIONS_INTERNAL'} onClick={() => handleTabChange('TRANSACTIONS_INTERNAL')} label={t('menu', 'tx_internal')} icon="Repeat" />
+                                            <NavSubButton active={activeTab === 'TRANSACTIONS_TRANSFER_OUT'} onClick={() => handleTabChange('TRANSACTIONS_TRANSFER_OUT')} label={t('menu', 'tx_transfer_out')} icon="Send" />
+                                            <NavSubButton active={activeTab === 'TRANSACTIONS_DDA'} onClick={() => handleTabChange('TRANSACTIONS_DDA')} label={t('menu', 'tx_dda')} icon="Monitor" />
                                         </div>
                                     )}
                                 </div>
@@ -891,6 +848,8 @@
             );
         };
 
+        // --- COMPONENTS ---
+        
         const NavButton = ({ active, onClick, icon, label, color }) => (
             <button onClick={onClick} className={`flex items-center gap-3 px-6 py-3.5 text-sm font-medium transition-all w-full text-left border-l-4 ${active ? 'bg-green-50 text-bankb-primary border-bankb-primary' : 'text-gray-600 hover:bg-gray-50 border-transparent'}`}><IconWrapper name={icon} size={20} className={active ? 'text-bankb-primary' : color} />{label}</button>
         );
@@ -940,6 +899,353 @@
                                 <tbody>{corporate?.ddaAccounts.map(dda => <tr key={dda.id} className="border-b last:border-0 hover:bg-gray-50 transition-colors"><td className="px-3 py-2 md:px-4 md:py-3 font-medium text-gray-800">{dda.accountNo}</td><td className="px-3 py-2 md:px-4 md:py-3 text-gray-500">{corporate.cif}</td><td className="px-3 py-2 md:px-4 md:py-3 font-bold text-bankb-primary">{dda.balance.toLocaleString()} {dda.currency}</td><td className="px-3 py-2 md:px-4 md:py-3"><span className="px-2 py-1 bg-green-100 text-green-800 rounded text-xs font-semibold">ACTIVE</span></td></tr>)}</tbody>
                             </table>
                         </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const DDATransactionScreen = ({ vas, setVas, txs, setTxs, corporate, setCorporate, identifiers, notify, t }) => {
+            const [option, setOption] = useState('OPTION_1'); // OPTION_1 (VA), OPTION_2 (DDA)
+            const [formData, setFormData] = useState({ 
+                amount: '', 
+                vaCode: '', 
+                ddaNumber: '', 
+                remark: '', 
+                validationMsg: null
+            });
+
+            const updateBalances = (list, targetId, amount) => {
+                const ancestors = getPathToRoot(targetId, list);
+                return list.map(v => {
+                    let newV = { ...v };
+                    if (v.id === targetId) newV.realBalance = (newV.realBalance || 0) + amount;
+                    if (ancestors.some(a => a.id === v.id)) newV.rollupBalance = (newV.rollupBalance || 0) + amount;
+                    return newV;
+                });
+            };
+
+            const validateVA = () => {
+                const found = vas.find(v => v.code === formData.vaCode && v.status === 'ACTIVE');
+                if (found) {
+                    setFormData(prev => ({ ...prev, validationMsg: { type: 'success', text: `VA Valid: ${found.name} (Linked DDA: ${corporate.ddaAccounts.find(d => d.id === found.ddaId)?.accountNo})` } }));
+                    return found;
+                } else {
+                    setFormData(prev => ({ ...prev, validationMsg: { type: 'error', text: 'VA Not Found or Inactive' } }));
+                    return null;
+                }
+            };
+
+            const handleSubmit = (e) => {
+                e.preventDefault();
+                const amountNum = parseInt(formData.amount.replace(/[^0-9]/g, ''));
+                if (!amountNum) return notify('Invalid Amount', 'error');
+
+                if (option === 'OPTION_1') {
+                    const targetVa = validateVA();
+                    if (!targetVa) return notify('Invalid VA', 'error');
+
+                    const newDdas = corporate.ddaAccounts.map(d => d.id === targetVa.ddaId ? { ...d, balance: d.balance + amountNum } : d);
+                    setCorporate({ ...corporate, ddaAccounts: newDdas });
+
+                    const updatedVas = updateBalances(vas, targetVa.id, amountNum);
+                    setVas(updatedVas);
+
+                    const newTx = { id: 'TX'+generateId(), date: new Date().toISOString(), type: 'CREDIT', vaId: targetVa.id, vaCode: targetVa.code, amount: amountNum, reference: `Counter Deposit (Opt1): ${formData.remark}` };
+                    setTxs([newTx, ...txs]);
+                    
+                    notify(t('transactions', 'result_success_va'));
+                } else {
+                    const targetDDA = corporate.ddaAccounts.find(d => d.accountNo === formData.ddaNumber);
+                    if (!targetDDA) return notify('DDA Not Found', 'error');
+
+                    const newDdas = corporate.ddaAccounts.map(d => d.id === targetDDA.id ? { ...d, balance: d.balance + amountNum } : d);
+                    setCorporate({ ...corporate, ddaAccounts: newDdas });
+
+                    const rule = identifiers.find(i => formData.remark.includes(i.value));
+                    
+                    if (rule) {
+                        const targetVa = vas.find(v => v.id === rule.vaId);
+                        if (targetVa && targetVa.ddaId === targetDDA.id) {
+                             const updatedVas = updateBalances(vas, targetVa.id, amountNum);
+                             setVas(updatedVas);
+                             const newTx = { id: 'TX'+generateId(), date: new Date().toISOString(), type: 'CREDIT', vaId: targetVa.id, vaCode: targetVa.code, amount: amountNum, reference: `Counter Deposit (Opt2-Mapped): ${formData.remark}` };
+                             setTxs([newTx, ...txs]);
+                             notify(t('transactions', 'result_success_va'));
+                        } else {
+                             notify(t('transactions', 'result_success_dda_only'), 'warning');
+                        }
+                    } else {
+                        notify(t('transactions', 'result_success_dda_only'), 'warning');
+                    }
+                }
+                setFormData({ amount: '', vaCode: '', ddaNumber: '', remark: '', validationMsg: null });
+            };
+
+            return (
+                <div className="bg-white p-4 md:p-6 rounded-lg shadow-sm border border-gray-200">
+                    <h2 className="text-lg font-bold mb-4 text-bankb-primary flex items-center gap-2"><IconWrapper name="Monitor"/> {t('transactions', 'title_dda')}</h2>
+                    <p className="text-sm text-gray-600 mb-6 italic">{t('transactions', 'desc_dda')}</p>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="space-y-4">
+                            <div className={`p-4 rounded border-2 cursor-pointer transition-all ${option === 'OPTION_1' ? 'border-bankb-primary bg-green-50' : 'border-gray-200 hover:border-gray-300'}`} onClick={() => setOption('OPTION_1')}>
+                                <div className="flex items-center gap-2 mb-2"><input type="radio" checked={option === 'OPTION_1'} readOnly className="w-4 h-4 text-bankb-primary"/> <span className="font-bold">{t('transactions', 'opt1_label')}</span></div>
+                                <p className="text-xs text-gray-500 pl-6">{t('transactions', 'opt1_hint')}</p>
+                            </div>
+                            <div className={`p-4 rounded border-2 cursor-pointer transition-all ${option === 'OPTION_2' ? 'border-bankb-primary bg-green-50' : 'border-gray-200 hover:border-gray-300'}`} onClick={() => setOption('OPTION_2')}>
+                                <div className="flex items-center gap-2 mb-2"><input type="radio" checked={option === 'OPTION_2'} readOnly className="w-4 h-4 text-bankb-primary"/> <span className="font-bold">{t('transactions', 'opt2_label')}</span></div>
+                                <p className="text-xs text-gray-500 pl-6">{t('transactions', 'opt2_hint')}</p>
+                            </div>
+                        </div>
+
+                        <form onSubmit={handleSubmit} className="space-y-4 bg-gray-50 p-4 rounded border border-gray-200">
+                            {option === 'OPTION_1' ? (
+                                <div>
+                                    <div className="flex gap-2 items-end">
+                                        <InputGroup label={t('transactions', 'va_label')} value={formData.vaCode} onChange={e => setFormData({...formData, vaCode: e.target.value})} />
+                                        <button type="button" onClick={validateVA} className="mb-0.5 px-3 py-2.5 bg-blue-600 text-white rounded text-xs font-bold whitespace-nowrap">{t('transactions', 'check_va')}</button>
+                                    </div>
+                                    {formData.validationMsg && <p className={`text-xs mt-1 ${formData.validationMsg.type === 'error' ? 'text-red-500' : 'text-green-600 font-bold'}`}>{formData.validationMsg.text}</p>}
+                                </div>
+                            ) : (
+                                <InputGroup label={t('transactions', 'dda_label')} value={formData.ddaNumber} onChange={e => setFormData({...formData, ddaNumber: e.target.value})} />
+                            )}
+                            
+                            <InputGroup label={t('transactions', 'amount_label')} value={formData.amount} onChange={e => setFormData({...formData, amount: e.target.value})} type="number" />
+                            <InputGroup label={t('transactions', 'remark_label')} value={formData.remark} onChange={e => setFormData({...formData, remark: e.target.value})} />
+                            
+                            <button type="submit" className="w-full py-3 bg-bankb-primary text-white font-bold rounded shadow-sm hover:bg-teal-700 transition-colors">
+                                {t('transactions', 'btn_dda_submit')}
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            );
+        };
+
+        const TransferFromVAScreen = ({ vas, setVas, txs, setTxs, corporate, notify, t }) => {
+            const [formData, setFormData] = useState({ sourceVaId: '', beneAccount: '', beneBank: '', amount: '', content: '' });
+
+            const handleSubmit = (e) => {
+                e.preventDefault();
+                const amountNum = parseInt(formData.amount.replace(/[^0-9]/g, ''));
+                if (!amountNum || !formData.sourceVaId) return notify('Invalid Data', 'error');
+
+                const sourceVa = vas.find(v => v.id === formData.sourceVaId);
+                if (sourceVa.realBalance < amountNum) return notify('Insufficient Balance', 'error');
+
+                const ancestors = getPathToRoot(sourceVa.id, vas);
+                const updatedVas = vas.map(v => {
+                    let newV = { ...v };
+                    if (v.id === sourceVa.id) newV.realBalance -= amountNum;
+                    if (ancestors.some(a => a.id === v.id)) newV.rollupBalance -= amountNum;
+                    return newV;
+                });
+                setVas(updatedVas);
+
+                corporate.ddaAccounts[0].balance -= amountNum;
+
+                const newTx = { id: 'TX'+generateId(), date: new Date().toISOString(), type: 'DEBIT', vaId: sourceVa.id, vaCode: sourceVa.code, amount: amountNum, reference: `Transfer to ${formData.beneAccount}: ${formData.content}` };
+                setTxs([newTx, ...txs]);
+
+                notify('Transfer Successful');
+                setFormData({ sourceVaId: '', beneAccount: '', beneBank: '', amount: '', content: '' });
+            };
+
+            return (
+                <div className="bg-white p-4 md:p-6 rounded-lg shadow-sm border border-gray-200 max-w-2xl mx-auto">
+                    <h2 className="text-lg font-bold mb-4 text-bankb-primary flex items-center gap-2"><IconWrapper name="Send"/> {t('transactions', 'title_transfer_out')}</h2>
+                    <div className="bg-blue-50 border-l-4 border-blue-500 p-4 mb-6 text-sm text-gray-700 italic">
+                        {t('transactions', 'desc_transfer_out')}
+                    </div>
+                    <form onSubmit={handleSubmit} className="space-y-4">
+                        <div className="flex flex-col gap-1 w-full"><label className="text-xs font-bold text-gray-500 uppercase">{t('transactions', 'va_label')} (Source)</label><select value={formData.sourceVaId} onChange={e => setFormData({...formData, sourceVaId: e.target.value})} className="border border-gray-300 p-2.5 rounded text-sm bg-white"><option value="">-- Select Source VA --</option>{vas.filter(v => v.status === 'ACTIVE').map(v => <option key={v.id} value={v.id}>{v.code} - {v.name} (Bal: {v.realBalance.toLocaleString()})</option>)}</select></div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <InputGroup label={t('transactions', 'bank_label')} value={formData.beneBank} onChange={e => setFormData({...formData, beneBank: e.target.value})} />
+                            <InputGroup label={t('transactions', 'beneficiary_label')} value={formData.beneAccount} onChange={e => setFormData({...formData, beneAccount: e.target.value})} />
+                        </div>
+                        <InputGroup label={t('transactions', 'amount_label')} value={formData.amount} onChange={e => setFormData({...formData, amount: e.target.value})} type="number" />
+                        <InputGroup label={t('transactions', 'payment_content')} value={formData.content} onChange={e => setFormData({...formData, content: e.target.value})} />
+                        <button type="submit" className="w-full py-3 bg-bankb-red text-white font-bold rounded shadow-sm hover:bg-red-700 transition-colors">{t('transactions', 'btn_transfer')}</button>
+                    </form>
+                </div>
+            );
+        };
+
+        const TransactionHub = ({ vas, setVas, txs, setTxs, corporate, notify, identifiers, t, mode }) => {
+            const [subMode, setSubMode] = useState('VA_VA'); 
+            const [direction, setDirection] = useState('DDA_TO_VA'); 
+            const [formData, setFormData] = useState({ sourceId: '', destId: '', vaId: '', amount: '', reference: '', beneficiary: '' });
+
+            const updateBalances = (list, targetId, amount) => {
+                const ancestors = getPathToRoot(targetId, list);
+                return list.map(v => {
+                    let newV = { ...v };
+                    if (v.id === targetId) newV.realBalance = (newV.realBalance || 0) + amount;
+                    if (ancestors.some(a => a.id === v.id)) newV.rollupBalance = (newV.rollupBalance || 0) + amount;
+                    return newV;
+                });
+            };
+
+            const handleSubmit = (e) => {
+                e.preventDefault();
+                const amountNum = parseInt(formData.amount.replace(/[^0-9]/g, ''));
+                if (!amountNum) return notify('Invalid Amount', 'error');
+
+                let updatedVas = [...vas];
+                let newTx = null;
+
+                if (mode === 'CREDIT' || mode === 'DEBIT') {
+                    if (!formData.vaId) return notify('Select VA', 'error');
+                    const targetVa = vas.find(v => v.id === formData.vaId);
+                    if (mode === 'DEBIT' && (targetVa.realBalance < amountNum)) return notify('Insufficient Real Balance', 'error');
+                    
+                    const signedAmount = mode === 'CREDIT' ? amountNum : -amountNum;
+                    updatedVas = updateBalances(updatedVas, formData.vaId, signedAmount);
+                    if (mode === 'DEBIT') corporate.ddaAccounts[0].balance -= amountNum; 
+                    else corporate.ddaAccounts[0].balance += amountNum;
+
+                    newTx = { id: 'TX'+generateId(), date: new Date().toISOString(), type: mode, vaId: formData.vaId, vaCode: targetVa.code, amount: amountNum, reference: formData.reference };
+                
+                } else if (mode === 'INTERNAL') {
+                    if (subMode === 'VA_VA') {
+                        if (!formData.sourceId || !formData.destId) return notify('Select Source and Dest VA', 'error');
+                        if (formData.sourceId === formData.destId) return notify('Source must differ from Dest', 'error');
+                        const srcVa = vas.find(v => v.id === formData.sourceId);
+                        const destVa = vas.find(v => v.id === formData.destId);
+                        if (srcVa.realBalance < amountNum) return notify('Source VA Insufficient Real Balance', 'error');
+
+                        updatedVas = updateBalances(updatedVas, formData.sourceId, -amountNum);
+                        updatedVas = updateBalances(updatedVas, formData.destId, amountNum);
+                        newTx = { id: 'TX'+generateId(), date: new Date().toISOString(), type: 'INTERNAL', vaId: formData.destId, vaCode: `${srcVa.code} -> ${destVa.code}`, amount: amountNum, reference: formData.reference || 'Internal Transfer' };
+                    
+                    } else if (subMode === 'DDA_VA') {
+                        if (direction === 'DDA_TO_VA') {
+                            if (!formData.destId) return notify('Select Target VA', 'error');
+                            updatedVas = updateBalances(updatedVas, formData.destId, amountNum);
+                            newTx = { id: 'TX'+generateId(), date: new Date().toISOString(), type: 'FUNDING', vaId: formData.destId, vaCode: "DDA -> VA", amount: amountNum, reference: formData.reference || 'Allocation' };
+                        
+                        } else {
+                            if (!formData.sourceId) return notify('Select Source VA', 'error');
+                            const srcVa = vas.find(v => v.id === formData.sourceId);
+                            if (srcVa.realBalance < amountNum) return notify('VA Insufficient Real Balance', 'error');
+                            updatedVas = updateBalances(updatedVas, formData.sourceId, -amountNum);
+                            newTx = { id: 'TX'+generateId(), date: new Date().toISOString(), type: 'SWEEP', vaId: formData.sourceId, vaCode: "VA -> DDA", amount: amountNum, reference: formData.reference || 'Sweep' };
+                        }
+                    }
+                }
+                
+                setVas(updatedVas);
+                if(newTx) setTxs([newTx, ...txs]);
+                notify('Transaction Success'); 
+                setFormData({ ...formData, amount: '', reference: '' });
+            };
+
+            const resolveRef = () => {
+                const found = identifiers.find(i => formData.reference.includes(i.value));
+                if(found) { setFormData(p => ({...p, vaId: found.vaId})); notify('Routing Found!'); } else notify('No Route Found');
+            };
+
+            const renderVAOption = (v) => <option key={v.id} value={v.id}>{v.code} - {v.name} (Real: {v.realBalance?.toLocaleString()})</option>;
+
+            return (
+                <div className="space-y-6">
+                    <div className="flex flex-col gap-6">
+                        <div className="bg-white p-4 md:p-6 rounded-lg shadow-sm border border-gray-200">
+                            <h2 className="text-lg font-bold mb-4 text-bankb-primary pb-2 border-b">
+                                {mode === 'CREDIT' && t('transactions', 'title_incoming')}
+                                {mode === 'DEBIT' && t('transactions', 'title_outgoing')}
+                                {mode === 'INTERNAL' && t('transactions', 'title_internal')}
+                            </h2>
+                            <div className="bg-blue-50 border-l-4 border-blue-500 p-4 mb-4 text-sm text-gray-700 italic">
+                                {mode === 'CREDIT' && t('transactions', 'desc_incoming')}
+                                {mode === 'DEBIT' && t('transactions', 'desc_outgoing')}
+                                {mode === 'INTERNAL' && t('transactions', 'desc_internal')}
+                            </div>
+                            <form onSubmit={handleSubmit} className="space-y-4">
+                                {(mode === 'CREDIT' || mode === 'DEBIT') && (
+                                    <div className="animate-bounce-in">
+                                        {mode === 'CREDIT' && <div className="flex gap-2 items-end"><InputGroup label={t('transactions', 'routing_content')} value={formData.reference} onChange={e => setFormData({...formData, reference: e.target.value})} /><button type="button" onClick={resolveRef} className="mb-0.5 p-2.5 bg-gray-100 border border-gray-300 rounded"><IconWrapper name="Search" /></button></div>}
+                                        <div className="flex flex-col gap-1 w-full"><label className="text-xs font-bold text-gray-500 uppercase">{t('transactions', 'va_label')}</label><select value={formData.vaId} onChange={e => setFormData({...formData, vaId: e.target.value})} className="border border-gray-300 p-2.5 rounded text-sm bg-white"><option value="">-- Select --</option>{vas.filter(v => v.status === 'ACTIVE').map(renderVAOption)}</select></div>
+                                        <InputGroup label={t('transactions', 'amount_label')} value={formData.amount} onChange={e => setFormData({...formData, amount: e.target.value})} type="number" />
+                                        {mode === 'DEBIT' && <InputGroup label={t('transactions', 'payment_content')} value={formData.reference} onChange={e => setFormData({...formData, reference: e.target.value})} />}
+                                        <button type="submit" className={`w-full py-2.5 text-white font-bold rounded shadow-sm ${mode === 'CREDIT' ? 'bg-bankb-primary' : 'bg-bankb-red'}`}>{mode === 'CREDIT' ? t('transactions', 'btn_credit') : t('transactions', 'btn_debit')}</button>
+                                    </div>
+                                )}
+                                {mode === 'INTERNAL' && (
+                                    <div className="animate-bounce-in">
+                                        <div className="flex gap-2 mb-4">
+                                            <button type="button" onClick={() => setSubMode('VA_VA')} className={`flex-1 py-1.5 text-xs font-bold rounded border ${subMode === 'VA_VA' ? 'bg-blue-50 border-blue-200 text-blue-700' : 'border-gray-200 text-gray-500'}`}>{t('transactions', 'mode_vava')}</button>
+                                            <button type="button" onClick={() => setSubMode('DDA_VA')} className={`flex-1 py-1.5 text-xs font-bold rounded border ${subMode === 'DDA_VA' ? 'bg-blue-50 border-blue-200 text-blue-700' : 'border-gray-200 text-gray-500'}`}>{t('transactions', 'mode_ddava')}</button>
+                                        </div>
+                                        
+                                        {/* Simplified Conditional Rendering to Fix SyntaxError */}
+                                        {subMode === 'VA_VA' ? (
+                                            <>
+                                                <div className="flex flex-col gap-1 w-full"><label className="text-xs font-bold text-gray-500 uppercase">{t('transactions', 'source_va')}</label><select value={formData.sourceId} onChange={e => setFormData({...formData, sourceId: e.target.value})} className="border border-gray-300 p-2.5 rounded text-sm bg-white"><option value="">-- Select Source --</option>{vas.filter(v => v.status === 'ACTIVE').map(renderVAOption)}</select></div>
+                                                <div className="flex justify-center"><IconWrapper name="ArrowRightLeft" className="text-gray-400 rotate-90" /></div>
+                                                <div className="flex flex-col gap-1 w-full"><label className="text-xs font-bold text-gray-500 uppercase">{t('transactions', 'dest_va')}</label><select value={formData.destId} onChange={e => setFormData({...formData, destId: e.target.value})} className="border border-gray-300 p-2.5 rounded text-sm bg-white"><option value="">-- Select Dest --</option>{vas.filter(v => v.status === 'ACTIVE' && v.id !== formData.sourceId).map(renderVAOption)}</select></div>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <div className="flex flex-col gap-1 w-full"><label className="text-xs font-bold text-gray-500 uppercase">{t('transactions', 'direction')}</label><select value={direction} onChange={e => setDirection(e.target.value)} className="border border-gray-300 p-2.5 rounded text-sm bg-white font-bold text-blue-700"><option value="DDA_TO_VA">{t('transactions', 'dir_fund')}</option><option value="VA_TO_DDA">{t('transactions', 'dir_sweep')}</option></select></div>
+                                                {direction === 'DDA_TO_VA' ? (
+                                                    <>
+                                                        <div className="flex flex-col gap-1 w-full"><label className="text-xs font-bold text-gray-500 uppercase">{t('transactions', 'source_dda')}</label><select className="border border-gray-300 p-2.5 rounded text-sm bg-gray-100" disabled><option>{corporate.ddaAccounts[0].accountNo}</option></select></div>
+                                                        <div className="flex justify-center text-green-600"><IconWrapper name="Repeat" className="rotate-90" /></div>
+                                                        <div className="flex flex-col gap-1 w-full"><label className="text-xs font-bold text-gray-500 uppercase">{t('transactions', 'dest_va')}</label><select value={formData.destId} onChange={e => setFormData({...formData, destId: e.target.value})} className="border border-gray-300 p-2.5 rounded text-sm bg-white"><option value="">-- Select Dest --</option>{vas.filter(v => v.status === 'ACTIVE').map(renderVAOption)}</select></div>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <div className="flex flex-col gap-1 w-full"><label className="text-xs font-bold text-gray-500 uppercase">{t('transactions', 'source_va')}</label><select value={formData.sourceId} onChange={e => setFormData({...formData, sourceId: e.target.value})} className="border border-gray-300 p-2.5 rounded text-sm bg-white"><option value="">-- Select Source --</option>{vas.filter(v => v.status === 'ACTIVE').map(renderVAOption)}</select></div>
+                                                        <div className="flex justify-center text-red-500"><IconWrapper name="Repeat" className="rotate-90" /></div>
+                                                        <div className="flex flex-col gap-1 w-full"><label className="text-xs font-bold text-gray-500 uppercase">{t('transactions', 'dest_dda')}</label><select className="border border-gray-300 p-2.5 rounded text-sm bg-gray-100" disabled><option>{corporate.ddaAccounts[0].accountNo}</option></select></div>
+                                                    </>
+                                                )}
+                                            </>
+                                        )}
+
+                                        <InputGroup label={t('transactions', 'amount_label')} value={formData.amount} onChange={e => setFormData({...formData, amount: e.target.value})} type="number" />
+                                        <InputGroup label={t('transactions', 'payment_content')} value={formData.reference} onChange={e => setFormData({...formData, reference: e.target.value})} />
+                                        <button type="submit" className="w-full py-2.5 text-white font-bold rounded shadow-sm bg-blue-600 hover:bg-blue-700">{t('transactions', 'btn_transfer')}</button>
+                                    </div>
+                                )}
+                            </form>
+                        </div>
+                        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden flex flex-col">
+                            <div className="p-4 border-b bg-gray-50 flex items-center gap-2"><IconWrapper name="FileBarChart" className="text-indigo-600" /><h3 className="font-bold text-gray-700">{t('transactions', 'history_title')}</h3></div>
+                            <div className="flex-1 overflow-auto">
+                                <table className="w-full text-sm text-left min-w-[500px]"><thead className="bg-white text-gray-500 sticky top-0 border-b"><tr><th className="p-3">{t('transactions', 'table_time')}</th><th className="p-3">{t('transactions', 'table_type')}</th><th className="p-3">VA Code</th><th className="p-3">{t('transactions', 'table_content')}</th><th className="p-3 text-right">{t('transactions', 'amount_label')}</th></tr></thead><tbody>{txs.map(tx => <tr key={tx.id} className="border-b"><td className="p-3 text-xs">{formatDate(tx.date)}</td><td className="p-3 font-bold text-xs">{tx.type}</td><td className="p-3 font-medium">{tx.vaCode}</td><td className="p-3 text-xs truncate max-w-[100px] md:max-w-[150px]">{tx.reference}</td><td className={`p-3 text-right font-bold ${tx.type === 'CREDIT' || tx.type === 'FUNDING' ? 'text-green-600' : (tx.type === 'INTERNAL' ? 'text-blue-600' : 'text-red-600')}`}>{tx.type === 'CREDIT' || tx.type === 'FUNDING' ? '+' : '-'}{tx.amount.toLocaleString()}</td></tr>)}</tbody></table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const Reporting = ({ vas, txs, t }) => {
+            const [selectedVa, setSelectedVa] = useState('');
+            const [includeChild, setIncludeChild] = useState(false);
+            const stats = useMemo(() => {
+                const l = {}; vas.forEach(v => { if(!l[v.level]) l[v.level] = {c:0,b:0}; l[v.level].c++; l[v.level].b += (v.realBalance || 0); }); return l;
+            }, [vas]);
+            const filteredTxs = useMemo(() => {
+                if (!selectedVa) return [];
+                let targetIds = [selectedVa];
+                if (includeChild) targetIds = [...targetIds, ...getDescendants(selectedVa, vas).map(d => d.id)];
+                return txs.filter(tx => targetIds.includes(tx.vaId));
+            }, [selectedVa, includeChild, txs, vas]);
+
+            return (
+                <div className="space-y-8">
+                    <div className="bg-white p-4 md:p-6 rounded-lg shadow-sm border border-gray-200">
+                        <h2 className="text-lg md:text-xl font-bold text-gray-800 mb-4 flex items-center gap-2"><IconWrapper name="Activity" className="text-bankb-primary" />{t('reports', 'summary_title')}</h2>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">{Object.entries(stats).map(([l, d]) => <div key={l} className="bg-gray-50 p-4 rounded border"><p className="text-xs font-bold text-gray-500">{t('reports', 'level')} {l}</p><p className="text-xl md:text-2xl font-bold text-emerald-600">{d.b.toLocaleString()}</p><p className="text-xs text-gray-400 mt-1">Total Real Bal</p></div>)}</div>
+                    </div>
+                    <div className="bg-white p-4 md:p-6 rounded-lg shadow-sm border border-gray-200">
+                        <h2 className="text-lg md:text-xl font-bold text-gray-800 mb-4">{t('reports', 'statement_title')}</h2>
+                        <div className="flex flex-col md:flex-row gap-4 mb-6 bg-gray-50 p-4 rounded"><div className="flex-1"><label className="block text-xs font-bold text-gray-500 uppercase mb-1">{t('reports', 'select_va')}</label><select value={selectedVa} onChange={e => setSelectedVa(e.target.value)} className="w-full border p-2 rounded text-sm"><option value="">-- Select --</option>{vas.map(v => <option key={v.id} value={v.id}>{v.code} - {v.name}</option>)}</select></div><div className="flex items-center pt-5"><label className="flex items-center gap-2 cursor-pointer select-none"><input type="checkbox" checked={includeChild} onChange={e => setIncludeChild(e.target.checked)} className="w-4 h-4 text-bankb-primary rounded focus:ring-bankb-primary" /><span className="text-sm font-medium text-gray-700">{t('reports', 'include_child')}</span></label></div></div>
+                        <div className="overflow-x-auto"><table className="w-full text-sm min-w-[600px]"><thead className="bg-gray-100 border-b font-semibold"><tr><th className="p-3">{t('transactions', 'table_time')}</th><th className="p-3">{t('transactions', 'table_type')}</th><th className="p-3">VA Code</th><th className="p-3">{t('transactions', 'table_content')}</th><th className="p-3 text-right">{t('transactions', 'amount_label')}</th></tr></thead><tbody>{filteredTxs.length > 0 ? filteredTxs.map(tx => <tr key={tx.id} className="border-b hover:bg-gray-50"><td className="p-3 text-xs">{formatDate(tx.date)}</td><td className="p-3 font-bold text-xs">{tx.type}</td><td className="p-3 font-mono text-xs">{tx.vaCode}</td><td className="p-3">{tx.reference}</td><td className={`p-3 text-right font-bold ${tx.type === 'CREDIT' || tx.type === 'FUNDING' ? 'text-green-600' : (tx.type === 'INTERNAL' ? 'text-blue-600' : 'text-red-600')}`}>{tx.type === 'CREDIT' || tx.type === 'FUNDING' ? '+' : '-'}{tx.amount.toLocaleString()}</td></tr>) : <tr><td colSpan="5" className="p-6 text-center text-gray-400 italic">{t('reports', 'no_tx')}</td></tr>}</tbody></table></div>
                     </div>
                 </div>
             );
@@ -1076,6 +1382,142 @@
             );
         };
 
+        const UserGuide = ({ t, lang }) => {
+            const terms = resources[lang].guide.terms;
+            const processes = resources[lang].guide.processes || [];
+            const legacy = resources[lang].guide.legacy_process; 
+            const dualBal = resources[lang].guide.dual_balance;
+            const newFeature = resources[lang].guide.new_feature_process; 
+
+            return (
+                <div className="space-y-6 md:space-y-8 pb-10">
+                    <h2 className="text-xl md:text-2xl font-bold text-gray-800">{t('guide', 'title')}</h2>
+                    <div className="bg-blue-50 border-l-4 border-blue-500 p-4 rounded text-sm md:text-base text-gray-700 italic">{t('guide', 'intro_text')}</div>
+                    
+                    <div className="bg-white p-4 md:p-6 rounded-lg shadow-sm border border-gray-200">
+                        <h3 className="text-base md:text-lg font-bold mb-4 text-bankb-primary flex items-center gap-2"><IconWrapper name="BookOpen" /> {t('guide', 'glossary_title')}</h3>
+                        <div className="grid gap-3 md:gap-4 grid-cols-1 md:grid-cols-2">{Object.entries(terms).map(([key, desc]) => <div key={key} className="p-3 md:p-4 bg-gray-50 rounded border border-gray-100"><span className="font-bold text-blue-700 block mb-1 text-sm md:text-base">{key}</span><p className="text-xs md:text-sm text-gray-600 leading-relaxed">{desc}</p></div>)}</div>
+                    </div>
+
+                    <div className="bg-white p-4 md:p-6 rounded-lg shadow-sm border border-gray-200">
+                        <h3 className="text-base md:text-lg font-bold mb-4 text-bankb-primary flex items-center gap-2">
+                            <IconWrapper name="GitFork" /> {t('guide', 'tech_title')}
+                        </h3>
+                        <div className="space-y-4 text-sm text-gray-700 leading-relaxed">
+                            <p className="font-bold">{dualBal.why_title}</p>
+                            <p>{dualBal.why_desc}</p>
+                            <div className="grid md:grid-cols-2 gap-4 mt-4">
+                                <div className="p-3 bg-emerald-50 rounded border border-emerald-100">
+                                    <span className="font-bold text-emerald-800 block mb-2">{dualBal.real_title}</span>
+                                    <p className="text-xs text-gray-600">{dualBal.real_desc}</p>
+                                </div>
+                                <div className="p-3 bg-indigo-50 rounded border border-indigo-100">
+                                    <span className="font-bold text-indigo-800 block mb-2">{dualBal.rollup_title}</span>
+                                    <p className="text-xs text-gray-600">{dualBal.rollup_desc}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {legacy && (
+                        <div className="bg-white p-4 md:p-6 rounded-lg shadow-sm border border-gray-200 border-l-4 border-l-purple-500">
+                            <h3 className="text-base md:text-lg font-bold mb-4 text-purple-700 flex items-center gap-2">
+                                <IconWrapper name="Repeat" /> {legacy.flow_title}
+                            </h3>
+                            <div className="space-y-6 text-sm text-gray-700">
+                                <p className="italic">{legacy.flow_intro}</p>
+                                <div>
+                                    <div className="space-y-4">
+                                        {legacy.phases.map((phase, i) => (
+                                            <div key={i} className="border border-gray-200 rounded p-3">
+                                                <div className="font-bold text-blue-700 mb-1">{phase.name}</div>
+                                                <div className="text-xs italic text-gray-500 mb-2">{phase.purpose}</div>
+                                                <ul className="list-none pl-2 space-y-2">
+                                                    {phase.steps.map((step, k) => (
+                                                        <li key={k} className="whitespace-pre-line text-xs bg-gray-50 p-2 rounded border border-gray-100">{step}</li>
+                                                    ))}
+                                                </ul>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                                <div className="bg-gray-100 p-3 rounded text-xs border border-gray-300 whitespace-pre-line">
+                                    <strong>{legacy.summary.split(':')[0]}:</strong>
+                                    {legacy.summary.substring(legacy.summary.indexOf(':') + 1)}
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {newFeature && (
+                        <div className="bg-white p-4 md:p-6 rounded-lg shadow-sm border border-gray-200 border-l-4 border-l-teal-500">
+                            <h3 className="text-base md:text-lg font-bold mb-4 text-teal-700 flex items-center gap-2">
+                                <IconWrapper name="Zap" /> {newFeature.title}
+                            </h3>
+                            <p className="mb-4 text-sm font-semibold text-gray-800 whitespace-pre-line">{newFeature.intro}</p>
+                            
+                            <div className="space-y-6">
+                                {newFeature.options.map((opt, idx) => (
+                                    <div key={idx} className="bg-gray-50 p-4 rounded border border-gray-200">
+                                        <h4 className="font-bold text-bankb-primary text-sm md:text-base mb-2">{opt.name}</h4>
+                                        <p className="text-sm text-gray-700 mb-2 italic">{opt.desc}</p>
+                                        <ul className="list-disc pl-5 text-sm text-gray-600 mb-3 space-y-1">
+                                            {opt.benefits.map((b, i) => <li key={i}>{b}</li>)}
+                                        </ul>
+                                        <p className="text-sm text-gray-700 mb-3"><span className="font-bold">Phù hợp:</span> {opt.suitable_for}</p>
+                                        
+                                        <div className="bg-white p-3 rounded border border-gray-100">
+                                            <span className="font-bold text-xs uppercase text-gray-500 block mb-2">{opt.flow_title}</span>
+                                            <div className="space-y-2">
+                                                {opt.steps.map((s, i) => (
+                                                    <div key={i} className="text-xs md:text-sm flex gap-2">
+                                                        <span className="font-bold text-teal-600 min-w-[50px]">B{i+1}:</span>
+                                                        <span>{s}</span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+
+                            <div className="mt-6 overflow-x-auto">
+                                <h4 className="font-bold text-gray-800 mb-2 text-sm md:text-base">{newFeature.comparison_title}</h4>
+                                <table className="w-full text-xs md:text-sm text-left border-collapse min-w-[600px]">
+                                    <thead>
+                                        <tr className="bg-teal-50 text-teal-800">
+                                            {newFeature.comparison_table.headers.map((h, i) => <th key={i} className="p-2 border border-teal-100">{h}</th>)}
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {newFeature.comparison_table.rows.map((row, i) => (
+                                            <tr key={i} className="border-b">
+                                                {row.map((c, j) => <td key={j} className="p-2 border border-gray-100">{c}</td>)}
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    )}
+
+                     <div className="bg-white p-4 md:p-6 rounded-lg shadow-sm border border-gray-200">
+                         <h3 className="text-base md:text-lg font-bold mb-4 md:mb-6 text-gray-700 flex items-center gap-2"><IconWrapper name="Activity" className="text-orange-500" />{t('guide', 'guide_title')}</h3>
+                         <div className="space-y-6">
+                            {processes.map((proc, index) => (
+                                <div key={index} className="border-l-4 border-bankb-primary pl-4">
+                                    <h4 className="font-bold text-gray-800 mb-2 text-sm md:text-base">{proc.title}</h4>
+                                    <ul className="list-none space-y-2">
+                                        {proc.steps.map((step, idx) => <li key={idx} className="text-xs md:text-sm text-gray-600 flex gap-2"><span className="text-bankb-primary font-bold min-w-[10px]">•</span><span>{step}</span></li>)}
+                                    </ul>
+                                </div>
+                            ))}
+                         </div>
+                    </div>
+                </div>
+            );
+        };
+
         const CorporateOnboarding = ({ corporate, setCorporate, notify, t }) => {
             const [isEditing, setIsEditing] = useState(false);
             const [formData, setFormData] = useState(corporate);
@@ -1202,297 +1644,6 @@
 
             return (
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6"><div className="col-span-1 bg-white p-4 md:p-6 rounded-lg shadow-sm border border-gray-200 h-fit"><h3 className="font-bold text-gray-800 mb-4 flex items-center gap-2"><IconWrapper name="Tag" className="text-orange-500" /> {t('identifiers', 'map_title')}</h3><div className="space-y-4"><InputGroup label={t('identifiers', 'type_label')} type="select" value={formData.type} onChange={e => setFormData({...formData, type: e.target.value})} options={['TAX_CODE', 'CONTRACT_NO', 'INVOICE_NO']} /><InputGroup label={t('identifiers', 'value_label')} value={formData.value} onChange={e => setFormData({...formData, value: e.target.value})} /><div className="flex flex-col gap-1 w-full"><label className="text-xs font-bold text-gray-500 uppercase">{t('identifiers', 'target_va_label')}</label><select value={formData.vaId} onChange={e => setFormData({...formData, vaId: e.target.value})} className="border p-2 rounded text-sm bg-white border-gray-300 outline-none"><option value="">-- Select VA --</option>{vas.filter(v => v.status === 'ACTIVE').map(v => <option key={v.id} value={v.id}>{v.code} - {v.name}</option>)}</select></div><button onClick={handleSubmit} className="w-full py-2 bg-bankb-primary text-white rounded text-sm font-bold shadow-sm">{editingId ? t('identifiers', 'btn_update') : t('identifiers', 'btn_add')}</button>{editingId && <button onClick={() => {setEditingId(null); setFormData({ type: 'TAX_CODE', value: '', vaId: '' })}} className="w-full py-2 text-gray-500 text-xs underline">Cancel Edit</button>}</div></div><div className="col-span-2 bg-white rounded-lg shadow-sm overflow-hidden border border-gray-200"><div className="p-4 border-b bg-gray-50 flex justify-between items-center"><h3 className="font-bold text-gray-700">{t('identifiers', 'list_title')}</h3><span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded font-semibold border border-blue-200 hidden md:inline">Exact Match</span></div><div className="overflow-x-auto"><table className="w-full text-sm text-left min-w-[400px]"><thead className="bg-white text-gray-500 border-b"><tr><th className="p-3">{t('identifiers', 'type_label')}</th><th className="p-3">{t('identifiers', 'value_label')}</th><th className="p-3">VA</th><th className="p-3">{t('identifiers', 'table_action')}</th></tr></thead><tbody>{identifiers.map(i => <tr key={i.id} className="border-b"><td className="p-3 font-mono text-xs">{i.type}</td><td className="p-3 font-bold">{i.value}</td><td className="p-3 text-bankb-primary">{vas.find(v=>v.id===i.vaId)?.code}</td><td className="p-3 flex gap-2"><button onClick={() => handleEdit(i)} className="text-blue-500 hover:underline">{t('identifiers', 'action_edit')}</button><button onClick={() => setIdentifiers(identifiers.filter(x => x.id !== i.id))} className="text-red-500 hover:underline">{t('identifiers', 'action_delete')}</button></td></tr>)}</tbody></table></div></div></div>
-            );
-        };
-
-        const TransactionHub = ({ vas, setVas, txs, setTxs, corporate, notify, identifiers, t, mode }) => {
-            const [subMode, setSubMode] = useState('VA_VA'); 
-            const [direction, setDirection] = useState('DDA_TO_VA'); 
-            const [formData, setFormData] = useState({ sourceId: '', destId: '', vaId: '', amount: '', reference: '', beneficiary: '' });
-
-            const updateBalances = (list, targetId, amount) => {
-                const ancestors = getPathToRoot(targetId, list);
-                return list.map(v => {
-                    let newV = { ...v };
-                    if (v.id === targetId) newV.realBalance = (newV.realBalance || 0) + amount;
-                    if (ancestors.some(a => a.id === v.id)) newV.rollupBalance = (newV.rollupBalance || 0) + amount;
-                    return newV;
-                });
-            };
-
-            const handleSubmit = (e) => {
-                e.preventDefault();
-                const amountNum = parseInt(formData.amount.replace(/[^0-9]/g, ''));
-                if (!amountNum) return notify('Invalid Amount', 'error');
-
-                let updatedVas = [...vas];
-                let newTx = null;
-
-                if (mode === 'CREDIT' || mode === 'DEBIT') {
-                    if (!formData.vaId) return notify('Select VA', 'error');
-                    const targetVa = vas.find(v => v.id === formData.vaId);
-                    if (mode === 'DEBIT' && (targetVa.realBalance < amountNum)) return notify('Insufficient Real Balance', 'error');
-                    
-                    const signedAmount = mode === 'CREDIT' ? amountNum : -amountNum;
-                    updatedVas = updateBalances(updatedVas, formData.vaId, signedAmount);
-                    if (mode === 'DEBIT') corporate.ddaAccounts[0].balance -= amountNum; 
-                    else corporate.ddaAccounts[0].balance += amountNum;
-
-                    newTx = { id: 'TX'+generateId(), date: new Date().toISOString(), type: mode, vaId: formData.vaId, vaCode: targetVa.code, amount: amountNum, reference: formData.reference };
-                
-                } else if (mode === 'INTERNAL') {
-                    if (subMode === 'VA_VA') {
-                        if (!formData.sourceId || !formData.destId) return notify('Select Source and Dest VA', 'error');
-                        if (formData.sourceId === formData.destId) return notify('Source must differ from Dest', 'error');
-                        const srcVa = vas.find(v => v.id === formData.sourceId);
-                        const destVa = vas.find(v => v.id === formData.destId);
-                        if (srcVa.realBalance < amountNum) return notify('Source VA Insufficient Real Balance', 'error');
-
-                        updatedVas = updateBalances(updatedVas, formData.sourceId, -amountNum);
-                        updatedVas = updateBalances(updatedVas, formData.destId, amountNum);
-                        newTx = { id: 'TX'+generateId(), date: new Date().toISOString(), type: 'INTERNAL', vaId: formData.destId, vaCode: `${srcVa.code} -> ${destVa.code}`, amount: amountNum, reference: formData.reference || 'Internal Transfer' };
-                    
-                    } else if (subMode === 'DDA_VA') {
-                        if (direction === 'DDA_TO_VA') {
-                            if (!formData.destId) return notify('Select Target VA', 'error');
-                            updatedVas = updateBalances(updatedVas, formData.destId, amountNum);
-                            newTx = { id: 'TX'+generateId(), date: new Date().toISOString(), type: 'FUNDING', vaId: formData.destId, vaCode: "DDA -> VA", amount: amountNum, reference: formData.reference || 'Allocation' };
-                        
-                        } else {
-                            if (!formData.sourceId) return notify('Select Source VA', 'error');
-                            const srcVa = vas.find(v => v.id === formData.sourceId);
-                            if (srcVa.realBalance < amountNum) return notify('VA Insufficient Real Balance', 'error');
-                            updatedVas = updateBalances(updatedVas, formData.sourceId, -amountNum);
-                            newTx = { id: 'TX'+generateId(), date: new Date().toISOString(), type: 'SWEEP', vaId: formData.sourceId, vaCode: "VA -> DDA", amount: amountNum, reference: formData.reference || 'Sweep' };
-                        }
-                    }
-                }
-                
-                setVas(updatedVas);
-                if(newTx) setTxs([newTx, ...txs]);
-                notify('Transaction Success'); 
-                setFormData({ ...formData, amount: '', reference: '' });
-            };
-
-            const resolveRef = () => {
-                const found = identifiers.find(i => formData.reference.includes(i.value));
-                if(found) { setFormData(p => ({...p, vaId: found.vaId})); notify('Routing Found!'); } else notify('No Route Found');
-            };
-
-            const renderVAOption = (v) => <option key={v.id} value={v.id}>{v.code} - {v.name} (Real: {v.realBalance?.toLocaleString()})</option>;
-
-            return (
-                <div className="space-y-6">
-                    <div className="flex flex-col gap-6">
-                        <div className="bg-white p-4 md:p-6 rounded-lg shadow-sm border border-gray-200">
-                            <h2 className="text-lg font-bold mb-4 text-bankb-primary pb-2 border-b">
-                                {mode === 'CREDIT' && t('transactions', 'title_incoming')}
-                                {mode === 'DEBIT' && t('transactions', 'title_outgoing')}
-                                {mode === 'INTERNAL' && t('transactions', 'title_internal')}
-                            </h2>
-                            <div className="bg-blue-50 border-l-4 border-blue-500 p-4 mb-4 text-sm text-gray-700 italic">
-                                {mode === 'CREDIT' && t('transactions', 'desc_incoming')}
-                                {mode === 'DEBIT' && t('transactions', 'desc_outgoing')}
-                                {mode === 'INTERNAL' && t('transactions', 'desc_internal')}
-                            </div>
-                            <form onSubmit={handleSubmit} className="space-y-4">
-                                {(mode === 'CREDIT' || mode === 'DEBIT') && (
-                                    <div className="animate-bounce-in">
-                                        {mode === 'CREDIT' && <div className="flex gap-2 items-end"><InputGroup label={t('transactions', 'routing_content')} value={formData.reference} onChange={e => setFormData({...formData, reference: e.target.value})} /><button type="button" onClick={resolveRef} className="mb-0.5 p-2.5 bg-gray-100 border border-gray-300 rounded"><IconWrapper name="Search" /></button></div>}
-                                        <div className="flex flex-col gap-1 w-full"><label className="text-xs font-bold text-gray-500 uppercase">{t('transactions', 'va_label')}</label><select value={formData.vaId} onChange={e => setFormData({...formData, vaId: e.target.value})} className="border border-gray-300 p-2.5 rounded text-sm bg-white"><option value="">-- Select --</option>{vas.filter(v => v.status === 'ACTIVE').map(renderVAOption)}</select></div>
-                                        <InputGroup label={t('transactions', 'amount_label')} value={formData.amount} onChange={e => setFormData({...formData, amount: e.target.value})} type="number" />
-                                        {mode === 'DEBIT' && <InputGroup label={t('transactions', 'payment_content')} value={formData.reference} onChange={e => setFormData({...formData, reference: e.target.value})} />}
-                                        <button type="submit" className={`w-full py-2.5 text-white font-bold rounded shadow-sm ${mode === 'CREDIT' ? 'bg-bankb-primary' : 'bg-bankb-red'}`}>{mode === 'CREDIT' ? t('transactions', 'btn_credit') : t('transactions', 'btn_debit')}</button>
-                                    </div>
-                                )}
-                                {mode === 'INTERNAL' && (
-                                    <div className="animate-bounce-in">
-                                        <div className="flex gap-2 mb-4">
-                                            <button type="button" onClick={() => setSubMode('VA_VA')} className={`flex-1 py-1.5 text-xs font-bold rounded border ${subMode === 'VA_VA' ? 'bg-blue-50 border-blue-200 text-blue-700' : 'border-gray-200 text-gray-500'}`}>{t('transactions', 'mode_vava')}</button>
-                                            <button type="button" onClick={() => setSubMode('DDA_VA')} className={`flex-1 py-1.5 text-xs font-bold rounded border ${subMode === 'DDA_VA' ? 'bg-blue-50 border-blue-200 text-blue-700' : 'border-gray-200 text-gray-500'}`}>{t('transactions', 'mode_ddava')}</button>
-                                        </div>
-                                        {subMode === 'VA_VA' && (<><div className="flex flex-col gap-1 w-full"><label className="text-xs font-bold text-gray-500 uppercase">{t('transactions', 'source_va')}</label><select value={formData.sourceId} onChange={e => setFormData({...formData, sourceId: e.target.value})} className="border border-gray-300 p-2.5 rounded text-sm bg-white"><option value="">-- Select Source --</option>{vas.filter(v => v.status === 'ACTIVE').map(renderVAOption)}</select></div><div className="flex justify-center"><IconWrapper name="ArrowRightLeft" className="text-gray-400 rotate-90" /></div><div className="flex flex-col gap-1 w-full"><label className="text-xs font-bold text-gray-500 uppercase">{t('transactions', 'dest_va')}</label><select value={formData.destId} onChange={e => setFormData({...formData, destId: e.target.value})} className="border border-gray-300 p-2.5 rounded text-sm bg-white"><option value="">-- Select Dest --</option>{vas.filter(v => v.status === 'ACTIVE' && v.id !== formData.sourceId).map(renderVAOption)}</select></div></>)}
-                                        {subMode === 'DDA_VA' && (<><div className="flex flex-col gap-1 w-full"><label className="text-xs font-bold text-gray-500 uppercase">{t('transactions', 'direction')}</label><select value={direction} onChange={e => setDirection(e.target.value)} className="border border-gray-300 p-2.5 rounded text-sm bg-white font-bold text-blue-700"><option value="DDA_TO_VA">{t('transactions', 'dir_fund')}</option><option value="VA_TO_DDA">{t('transactions', 'dir_sweep')}</option></select></div>{direction === 'DDA_TO_VA' ? (<><div className="flex flex-col gap-1 w-full"><label className="text-xs font-bold text-gray-500 uppercase">{t('transactions', 'source_dda')}</label><select className="border border-gray-300 p-2.5 rounded text-sm bg-gray-100" disabled><option>{corporate.ddaAccounts[0].accountNo}</option></select></div><div className="flex justify-center text-green-600"><IconWrapper name="Repeat" className="rotate-90" /></div><div className="flex flex-col gap-1 w-full"><label className="text-xs font-bold text-gray-500 uppercase">{t('transactions', 'dest_va')}</label><select value={formData.destId} onChange={e => setFormData({...formData, destId: e.target.value})} className="border border-gray-300 p-2.5 rounded text-sm bg-white"><option value="">-- Select Dest --</option>{vas.filter(v => v.status === 'ACTIVE').map(renderVAOption)}</select></div></>) : (<><div className="flex flex-col gap-1 w-full"><label className="text-xs font-bold text-gray-500 uppercase">{t('transactions', 'source_va')}</label><select value={formData.sourceId} onChange={e => setFormData({...formData, sourceId: e.target.value})} className="border border-gray-300 p-2.5 rounded text-sm bg-white"><option value="">-- Select Source --</option>{vas.filter(v => v.status === 'ACTIVE').map(renderVAOption)}</select></div><div className="flex justify-center text-red-500"><IconWrapper name="Repeat" className="rotate-90" /></div><div className="flex flex-col gap-1 w-full"><label className="text-xs font-bold text-gray-500 uppercase">{t('transactions', 'dest_dda')}</label><select className="border border-gray-300 p-2.5 rounded text-sm bg-gray-100" disabled><option>{corporate.ddaAccounts[0].accountNo}</option></select></div></>)}</>)}
-                                        <InputGroup label={t('transactions', 'amount_label')} value={formData.amount} onChange={e => setFormData({...formData, amount: e.target.value})} type="number" />
-                                        <InputGroup label={t('transactions', 'payment_content')} value={formData.reference} onChange={e => setFormData({...formData, reference: e.target.value})} />
-                                        <button type="submit" className="w-full py-2.5 text-white font-bold rounded shadow-sm bg-blue-600 hover:bg-blue-700">{t('transactions', 'btn_transfer')}</button>
-                                    </div>
-                                )}
-                            </form>
-                        </div>
-                        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden flex flex-col">
-                            <div className="p-4 border-b bg-gray-50 flex items-center gap-2"><IconWrapper name="FileBarChart" className="text-indigo-600" /><h3 className="font-bold text-gray-700">{t('transactions', 'history_title')}</h3></div>
-                            <div className="flex-1 overflow-auto">
-                                <table className="w-full text-sm text-left min-w-[500px]"><thead className="bg-white text-gray-500 sticky top-0 border-b"><tr><th className="p-3">{t('transactions', 'table_time')}</th><th className="p-3">{t('transactions', 'table_type')}</th><th className="p-3">VA Code</th><th className="p-3">{t('transactions', 'table_content')}</th><th className="p-3 text-right">{t('transactions', 'amount_label')}</th></tr></thead><tbody>{txs.map(tx => <tr key={tx.id} className="border-b"><td className="p-3 text-xs">{formatDate(tx.date)}</td><td className="p-3 font-bold text-xs">{tx.type}</td><td className="p-3 font-medium">{tx.vaCode}</td><td className="p-3 text-xs truncate max-w-[100px] md:max-w-[150px]">{tx.reference}</td><td className={`p-3 text-right font-bold ${tx.type === 'CREDIT' || tx.type === 'FUNDING' ? 'text-green-600' : (tx.type === 'INTERNAL' ? 'text-blue-600' : 'text-red-600')}`}>{tx.type === 'CREDIT' || tx.type === 'FUNDING' ? '+' : '-'}{tx.amount.toLocaleString()}</td></tr>)}</tbody></table>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            );
-        };
-
-        const Reporting = ({ vas, txs, t }) => {
-            const [selectedVa, setSelectedVa] = useState('');
-            const [includeChild, setIncludeChild] = useState(false);
-            const stats = useMemo(() => {
-                const l = {}; vas.forEach(v => { if(!l[v.level]) l[v.level] = {c:0,b:0}; l[v.level].c++; l[v.level].b += (v.realBalance || 0); }); return l;
-            }, [vas]);
-            const filteredTxs = useMemo(() => {
-                if (!selectedVa) return [];
-                let targetIds = [selectedVa];
-                if (includeChild) targetIds = [...targetIds, ...getDescendants(selectedVa, vas).map(d => d.id)];
-                return txs.filter(tx => targetIds.includes(tx.vaId));
-            }, [selectedVa, includeChild, txs, vas]);
-
-            return (
-                <div className="space-y-8">
-                    <div className="bg-white p-4 md:p-6 rounded-lg shadow-sm border border-gray-200">
-                        <h2 className="text-lg md:text-xl font-bold text-gray-800 mb-4 flex items-center gap-2"><IconWrapper name="Activity" className="text-bankb-primary" />{t('reports', 'summary_title')}</h2>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">{Object.entries(stats).map(([l, d]) => <div key={l} className="bg-gray-50 p-4 rounded border"><p className="text-xs font-bold text-gray-500">{t('reports', 'level')} {l}</p><p className="text-xl md:text-2xl font-bold text-emerald-600">{d.b.toLocaleString()}</p><p className="text-xs text-gray-400 mt-1">Total Real Bal</p></div>)}</div>
-                    </div>
-                    <div className="bg-white p-4 md:p-6 rounded-lg shadow-sm border border-gray-200">
-                        <h2 className="text-lg md:text-xl font-bold text-gray-800 mb-4">{t('reports', 'statement_title')}</h2>
-                        <div className="flex flex-col md:flex-row gap-4 mb-6 bg-gray-50 p-4 rounded"><div className="flex-1"><label className="block text-xs font-bold text-gray-500 uppercase mb-1">{t('reports', 'select_va')}</label><select value={selectedVa} onChange={e => setSelectedVa(e.target.value)} className="w-full border p-2 rounded text-sm"><option value="">-- Select --</option>{vas.map(v => <option key={v.id} value={v.id}>{v.code} - {v.name}</option>)}</select></div><div className="flex items-center pt-5"><label className="flex items-center gap-2 cursor-pointer select-none"><input type="checkbox" checked={includeChild} onChange={e => setIncludeChild(e.target.checked)} className="w-4 h-4 text-bankb-primary rounded focus:ring-bankb-primary" /><span className="text-sm font-medium text-gray-700">{t('reports', 'include_child')}</span></label></div></div>
-                        <div className="overflow-x-auto"><table className="w-full text-sm min-w-[600px]"><thead className="bg-gray-100 border-b font-semibold"><tr><th className="p-3">{t('transactions', 'table_time')}</th><th className="p-3">{t('transactions', 'table_type')}</th><th className="p-3">VA Code</th><th className="p-3">{t('transactions', 'table_content')}</th><th className="p-3 text-right">{t('transactions', 'amount_label')}</th></tr></thead><tbody>{filteredTxs.length > 0 ? filteredTxs.map(tx => <tr key={tx.id} className="border-b hover:bg-gray-50"><td className="p-3 text-xs">{formatDate(tx.date)}</td><td className="p-3 font-bold text-xs">{tx.type}</td><td className="p-3 font-mono text-xs">{tx.vaCode}</td><td className="p-3">{tx.reference}</td><td className={`p-3 text-right font-bold ${tx.type === 'CREDIT' || tx.type === 'FUNDING' ? 'text-green-600' : (tx.type === 'INTERNAL' ? 'text-blue-600' : 'text-red-600')}`}>{tx.type === 'CREDIT' || tx.type === 'FUNDING' ? '+' : '-'}{tx.amount.toLocaleString()}</td></tr>) : <tr><td colSpan="5" className="p-6 text-center text-gray-400 italic">{t('reports', 'no_tx')}</td></tr>}</tbody></table></div>
-                    </div>
-                </div>
-            );
-        };
-
-        const UserGuide = ({ t, lang }) => {
-            const terms = resources[lang].guide.terms;
-            const processes = resources[lang].guide.processes || [];
-            const legacy = resources[lang].guide.legacy_process; 
-            const dualBal = resources[lang].guide.dual_balance;
-            const newFeature = resources[lang].guide.new_feature_process; // NEW
-
-            return (
-                <div className="space-y-6 md:space-y-8 pb-10">
-                    <h2 className="text-xl md:text-2xl font-bold text-gray-800">{t('guide', 'title')}</h2>
-                    <div className="bg-blue-50 border-l-4 border-blue-500 p-4 rounded text-sm md:text-base text-gray-700 italic">{t('guide', 'intro_text')}</div>
-                    
-                    <div className="bg-white p-4 md:p-6 rounded-lg shadow-sm border border-gray-200">
-                        <h3 className="text-base md:text-lg font-bold mb-4 text-bankb-primary flex items-center gap-2"><IconWrapper name="BookOpen" /> {t('guide', 'glossary_title')}</h3>
-                        <div className="grid gap-3 md:gap-4 grid-cols-1 md:grid-cols-2">{Object.entries(terms).map(([key, desc]) => <div key={key} className="p-3 md:p-4 bg-gray-50 rounded border border-gray-100"><span className="font-bold text-blue-700 block mb-1 text-sm md:text-base">{key}</span><p className="text-xs md:text-sm text-gray-600 leading-relaxed">{desc}</p></div>)}</div>
-                    </div>
-
-                    <div className="bg-white p-4 md:p-6 rounded-lg shadow-sm border border-gray-200">
-                        <h3 className="text-base md:text-lg font-bold mb-4 text-bankb-primary flex items-center gap-2">
-                            <IconWrapper name="GitFork" /> {t('guide', 'tech_title')}
-                        </h3>
-                        <div className="space-y-4 text-sm text-gray-700 leading-relaxed">
-                            <p className="font-bold">{dualBal.why_title}</p>
-                            <p>{dualBal.why_desc}</p>
-                            <div className="grid md:grid-cols-2 gap-4 mt-4">
-                                <div className="p-3 bg-emerald-50 rounded border border-emerald-100">
-                                    <span className="font-bold text-emerald-800 block mb-2">{dualBal.real_title}</span>
-                                    <p className="text-xs text-gray-600">{dualBal.real_desc}</p>
-                                </div>
-                                <div className="p-3 bg-indigo-50 rounded border border-indigo-100">
-                                    <span className="font-bold text-indigo-800 block mb-2">{dualBal.rollup_title}</span>
-                                    <p className="text-xs text-gray-600">{dualBal.rollup_desc}</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    {legacy && (
-                        <div className="bg-white p-4 md:p-6 rounded-lg shadow-sm border border-gray-200 border-l-4 border-l-purple-500">
-                            <h3 className="text-base md:text-lg font-bold mb-4 text-purple-700 flex items-center gap-2">
-                                <IconWrapper name="Repeat" /> {legacy.flow_title}
-                            </h3>
-                            <div className="space-y-6 text-sm text-gray-700">
-                                <p className="italic">{legacy.flow_intro}</p>
-                                <div>
-                                    <div className="space-y-4">
-                                        {legacy.phases.map((phase, i) => (
-                                            <div key={i} className="border border-gray-200 rounded p-3">
-                                                <div className="font-bold text-blue-700 mb-1">{phase.name}</div>
-                                                <div className="text-xs italic text-gray-500 mb-2">{phase.purpose}</div>
-                                                <ul className="list-none pl-2 space-y-2">
-                                                    {phase.steps.map((step, k) => (
-                                                        <li key={k} className="whitespace-pre-line text-xs bg-gray-50 p-2 rounded border border-gray-100">{step}</li>
-                                                    ))}
-                                                </ul>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                                <div className="bg-gray-100 p-3 rounded text-xs border border-gray-300 whitespace-pre-line">
-                                    <strong>{legacy.summary.split(':')[0]}:</strong>
-                                    {legacy.summary.substring(legacy.summary.indexOf(':') + 1)}
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* NEW FEATURE SECTION */}
-                    {newFeature && (
-                        <div className="bg-white p-4 md:p-6 rounded-lg shadow-sm border border-gray-200 border-l-4 border-l-teal-500">
-                            <h3 className="text-base md:text-lg font-bold mb-4 text-teal-700 flex items-center gap-2">
-                                <IconWrapper name="Zap" /> {newFeature.title}
-                            </h3>
-                            <p className="mb-4 text-sm font-semibold text-gray-800 whitespace-pre-line">{newFeature.intro}</p>
-                            
-                            <div className="space-y-6">
-                                {newFeature.options.map((opt, idx) => (
-                                    <div key={idx} className="bg-gray-50 p-4 rounded border border-gray-200">
-                                        <h4 className="font-bold text-bankb-primary text-sm md:text-base mb-2">{opt.name}</h4>
-                                        <p className="text-sm text-gray-700 mb-2 italic">{opt.desc}</p>
-                                        <ul className="list-disc pl-5 text-sm text-gray-600 mb-3 space-y-1">
-                                            {opt.benefits.map((b, i) => <li key={i}>{b}</li>)}
-                                        </ul>
-                                        <p className="text-sm text-gray-700 mb-3"><span className="font-bold">Phù hợp:</span> {opt.suitable_for}</p>
-                                        
-                                        <div className="bg-white p-3 rounded border border-gray-100">
-                                            <span className="font-bold text-xs uppercase text-gray-500 block mb-2">{opt.flow_title}</span>
-                                            <div className="space-y-2">
-                                                {opt.steps.map((s, i) => (
-                                                    <div key={i} className="text-xs md:text-sm flex gap-2">
-                                                        <span className="font-bold text-teal-600 min-w-[50px]">B{i+1}:</span>
-                                                        <span>{s}</span>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-
-                            <div className="mt-6 overflow-x-auto">
-                                <h4 className="font-bold text-gray-800 mb-2 text-sm md:text-base">{newFeature.comparison_title}</h4>
-                                <table className="w-full text-xs md:text-sm text-left border-collapse min-w-[600px]">
-                                    <thead>
-                                        <tr className="bg-teal-50 text-teal-800">
-                                            {newFeature.comparison_table.headers.map((h, i) => <th key={i} className="p-2 border border-teal-100">{h}</th>)}
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {newFeature.comparison_table.rows.map((row, i) => (
-                                            <tr key={i} className="border-b">
-                                                {row.map((c, j) => <td key={j} className="p-2 border border-gray-100">{c}</td>)}
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    )}
-
-                     <div className="bg-white p-4 md:p-6 rounded-lg shadow-sm border border-gray-200">
-                         <h3 className="text-base md:text-lg font-bold mb-4 md:mb-6 text-gray-700 flex items-center gap-2"><IconWrapper name="Activity" className="text-orange-500" />{t('guide', 'guide_title')}</h3>
-                         <div className="space-y-6">
-                            {processes.map((proc, index) => (
-                                <div key={index} className="border-l-4 border-bankb-primary pl-4">
-                                    <h4 className="font-bold text-gray-800 mb-2 text-sm md:text-base">{proc.title}</h4>
-                                    <ul className="list-none space-y-2">
-                                        {proc.steps.map((step, idx) => <li key={idx} className="text-xs md:text-sm text-gray-600 flex gap-2"><span className="text-bankb-primary font-bold min-w-[10px]">•</span><span>{step}</span></li>)}
-                                    </ul>
-                                </div>
-                            ))}
-                         </div>
-                    </div>
-                </div>
             );
         };
 
