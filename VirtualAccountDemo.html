@@ -183,27 +183,33 @@
                             { term: "Alias (Bí danh)", desc: "Là dãy số/chữ được chủ tài khoản dùng thay thế cho số tài khoản thực trong giao dịch.", sub: "Đặc điểm: Chỉ đóng vai trò 'mặt nạ' định danh. Giao dịch chuyển đến Alias là giao dịch chuyển tiền thông thường, không có quy trình xử lý gạch nợ phía sau." },
                             { term: "Virtual Account (VA - Tài khoản ảo)", desc: "Là tài khoản quản trị logic (không tồn tại vật lý trong Core Banking) được tạo bởi hệ thống VA Engine.", sub: "Mục đích: Phân loại và theo dõi dòng tiền chi tiết theo từng thực thể con (dự án, hợp đồng, hộ kinh doanh...).\nCơ chế: VA được liên kết với một Tài khoản thực (Real Account). Giao dịch được ghi nhận qua cơ chế shadow posting, sử dụng bộ định danh ảo để tự động định tuyến, phục vụ đối soát và phân tích dòng tiền chuyên sâu." }
                         ],
-                        flow_title: "2. QUY TRÌNH XỬ LÝ (HIGH-LEVEL)",
-                        flow_intro: "Hệ thống xử lý tự động qua 2 giai đoạn: Vấn tin (Kiểm tra) và Hạch toán (Ghi nợ/có).",
+                        flow_title: "2. QUY TRÌNH XỬ LÝ VA HIỆN TẠI",
+                        flow_intro: "Quy trình này chia làm 2 giai đoạn chính: Giai đoạn Vấn tin (Kiểm tra thông tin) và Giai đoạn Hạch toán (Thực hiện giao dịch). Dưới đây là mô tả chi tiết theo luồng đi của dữ liệu:",
                         phases: [
                             {
-                                name: "GIAI ĐOẠN 1: VẤN TIN & TRA CỨU (Trước khi chuyển)",
-                                purpose: "Mục đích: Từ thông tin đầu vào, hệ thống tự động nhận diện đích đến thực sự.",
+                                name: "GIAI ĐOẠN 1: VẤN TIN (Kiểm tra thông tin người thụ hưởng)",
+                                purpose: "Mục đích: Xác thực thông tin tài khoản đích và số tiền trước khi chuyển.",
                                 steps: [
-                                    "Bước 1: Tiếp nhận & Phân loại: Hệ thống 247 nhận yêu cầu và tự động phân loại định dạng tài khoản đích là Alias hay VA.",
-                                    "Bước 2: Truy xuất dữ liệu (Mapping):\n- Với Alias: Hệ thống tra cứu ra Tên và Số tài khoản gốc (DDA) tương ứng.\n- Với VA: Hệ thống kết nối VA Engine/Đối tác để lấy thông tin khoản nợ, tên khách hàng và kiểm tra tính hợp lệ của mã định danh ảo.",
-                                    "Bước 3: Phản hồi: Trả về tên người thụ hưởng chính xác cho người chuyển xác nhận."
+                                    "Bước 1: Khởi tạo:\nKhách hàng tại Ngân hàng ngoài (NH chuyển) bắt đầu thực hiện giao dịch chuyển tiền 247. Họ nhập thông tin tài khoản thụ hưởng và yêu cầu vấn tin.",
+                                    "Bước 2: Kiểm tra định dạng (Tại Chương trình 247):\nHệ thống tiếp nhận yêu cầu và kiểm tra định dạng tài khoản hưởng.\n- Nếu là tài khoản thường -> Chuyển luồng Core Banking.\n- Nếu là VA/Alias -> Chuyển sang hệ thống Paygate.",
+                                    "Bước 3: Xử lý tại Paygate:\nPaygate kiểm tra loại tài khoản và bóc tách thông tin.\n- Nếu là VA: Gửi yêu cầu sang NCCDV/Kho dữ liệu lấy thông tin cước.\n- Nếu là Alias: Phản hồi tên và số DDA liên kết.",
+                                    "Bước 4: Tổng hợp thông tin (Tại Chương trình 247):\n- Gọi Core Banking truy vấn trạng thái DDA liên kết.\n- Lưu thông tin tạm thời (Cache): Tên người hưởng, số tiền, Billid (với VA)...",
+                                    "Bước 5: Phản hồi khách hàng:\nKết quả được gửi trả về Ngân hàng ngoài để khách hàng kiểm tra."
                                 ]
                             },
                             {
-                                name: "GIAI ĐOẠN 2: HẠCH TOÁN & XỬ LÝ GIAO DỊCH (Thực hiện chuyển)",
-                                purpose: "Mục đích: Ghi nhận dòng tiền và xử lý nghiệp vụ sau giao dịch (nếu có).",
+                                name: "GIAI ĐOẠN 2: HẠCH TOÁN (Thực hiện chuyển tiền)",
+                                purpose: "Mục đích: Ghi nhận dòng tiền và gạch nợ.",
                                 steps: [
-                                    "Bước 4: Định tuyến dòng tiền:\n- Với Alias: Tiền được chuyển trực tiếp vào Tài khoản thanh toán gốc của khách hàng.\n- Với VA: Tiền được chuyển vào Tài khoản thực (Real Account) của Nhà cung cấp/Doanh nghiệp (tài khoản mẹ quản lý các VA).",
-                                    "Bước 5: Xử lý hậu kiểm (Khác biệt chính):\n- Luồng Alias: Kết thúc giao dịch (Thành công).\n- Luồng VA: Sau khi tiền vào tài khoản thực, hệ thống kích hoạt quy trình Gạch nợ/Ghi nhận doanh số cho mã VA (thực thể con) tương ứng thông qua cơ chế shadow posting để phục vụ báo cáo."
+                                    "Bước 1: Xác nhận giao dịch:\nKhách hàng xác nhận. Yêu cầu hạch toán được gửi đi.",
+                                    "Bước 2: Định tuyến lại (Tại Chương trình 247):\nKiểm tra lại định dạng. Nếu là VA/Alias -> Lấy lại thông tin Cache từ bước Vấn tin.",
+                                    "Bước 3: Xử lý Hạch toán:\n- Nhánh Alias: Gửi lệnh vào Core để ghi CÓ trực tiếp vào DDA khách hàng.\n- Nhánh VA: Kiểm tra tham số (số tiền, nợ cước) -> Gửi lệnh ghi CÓ vào tài khoản chuyên thu của NCC tại Core.",
+                                    "Bước 4: Gạch nợ và Hoàn tất:\n- Sau khi Core trả kết quả thành công:\n- Với VA: Hệ thống gửi yêu cầu sang NCCDV/Kho dữ liệu để Gạch nợ hóa đơn.\n- Ghi nhận thành công.",
+                                    "Bước 5: Kết thúc:\nGửi kết quả cuối cùng về Ngân hàng ngoài."
                                 ]
                             }
-                        ]
+                        ],
+                        summary: "Tóm tắt các hệ thống tham gia:\n- Ngân hàng ngoài: Nơi khởi tạo giao dịch.\n- Chương trình 247: Bộ điều phối chính, quyết định luồng đi (Router).\n- Paygate: Cổng xử lý logic cho VA/Alias, giao tiếp với đối tác.\n- Core Banking: Hệ thống lõi quản lý tài khoản tiền và hạch toán.\n- NCCDV/Kho dữ liệu: Hệ thống của đơn vị cung cấp dịch vụ lưu trữ hóa đơn."
                     },
                     terms: {
                         RealBalance: "Số dư thực (Own Balance). Số tiền thực tế nằm tại chính tài khoản VA đó, không bao gồm tiền của các tài khoản con.",
@@ -413,27 +419,33 @@
                             { term: "Alias", desc: "A sequence of numbers/letters used by the account holder to replace the real account number in transactions.", sub: "Characteristics: Acts only as an identification 'mask'. Transactions to Alias are regular transfers, with no backend debt clearing process." },
                             { term: "Virtual Account (VA)", desc: "A logical management account (physically non-existent in Core Banking) created by the VA Engine system.", sub: "Purpose: Classify and track detailed cash flow by sub-entity (project, contract, household business...).\nMechanism: VA is linked to a Real Account. Transactions are recorded via shadow posting mechanism, using virtual identifiers for automatic routing, serving reconciliation and in-depth cash flow analysis." }
                         ],
-                        flow_title: "2. PROCESSING FLOW (HIGH-LEVEL)",
-                        flow_intro: "The system processes automatically through 2 phases: Inquiry (Check) and Posting (Debit/Credit).",
+                        flow_title: "2. CURRENT VA PROCESSING FLOW",
+                        flow_intro: "This process is divided into 2 main phases: Inquiry Phase and Posting Phase. Below is the detailed data flow description:",
                         phases: [
                             {
-                                name: "PHASE 1: INQUIRY & LOOKUP (Before Transfer)",
-                                purpose: "Purpose: From input info, automatically identify the true destination.",
+                                name: "PHASE 1: INQUIRY (Beneficiary Verification)",
+                                purpose: "Purpose: Validate destination account info before transfer.",
                                 steps: [
-                                    "Step 1: Reception & Classification: 247 System receives request and classifies target account format as Alias or VA.",
-                                    "Step 2: Data Retrieval (Mapping):\n- For Alias: System looks up Name and corresponding Real Account Number (DDA).\n- For VA: System connects to VA Engine/Partner to fetch debt info, customer name and validate virtual identifier.",
-                                    "Step 3: Response: Return accurate beneficiary name for sender confirmation."
+                                    "Step 1: Initialization:\nCustomer at Sender Bank inputs info and requests inquiry.",
+                                    "Step 2: Format Check (at 247 System):\nSystem receives request and checks target account format.\n- If Regular Account -> To Core Banking.\n- If VA/Alias -> To Paygate.",
+                                    "Step 3: Paygate Processing:\nChecks account type and parses info.\n- If VA: Requests SP for bill info.\n- If Alias: Retrieves linked DDA number.",
+                                    "Step 4: Aggregation (at 247 System):\n- Calls Core Banking to check linked DDA status.\n- Caches info (Beneficiary Name, Amount, Billid...).",
+                                    "Step 5: Response:\nReturn beneficiary name to customer."
                                 ]
                             },
                             {
-                                name: "PHASE 2: POSTING & TRANSACTION PROCESSING (Execute Transfer)",
-                                purpose: "Purpose: Record cash flow and process post-transaction business logic (if any).",
+                                name: "PHASE 2: POSTING (Execute Transfer)",
+                                purpose: "Purpose: Record funds and clear debt.",
                                 steps: [
-                                    "Step 4: Cash Flow Routing:\n- For Alias: Money transferred directly to customer's Real Payment Account.\n- For VA: Money transferred to Real Account of Provider/Enterprise (master account managing VAs).",
-                                    "Step 5: Post-Check Processing (Key Difference):\n- Alias Flow: Transaction ends (Success).\n- VA Flow: After money enters real account, system triggers Debt Clearing/Revenue Recognition process for corresponding VA code (sub-entity) via shadow posting mechanism for reporting."
+                                    "Step 1: Confirmation:\nCustomer confirms. Posting request is sent.",
+                                    "Step 2: Re-routing (at 247 System):\nChecks format again. If VA/Alias -> Retrieves cached info from Inquiry step.",
+                                    "Step 3: Posting Processing:\n- Alias Branch: Sends command to Core to Credit Customer DDA directly.\n- VA Branch: Checks params (amount match, min-max) -> Sends command to Credit Provider's Collection Account at Core.",
+                                    "Step 4: Debt Clearing & Completion:\n- After Core returns success:\n- For VA: System sends request to SP to Clear Bill Debt.\n- Record success.",
+                                    "Step 5: End:\nSend final result to Sender Bank."
                                 ]
                             }
-                        ]
+                        ],
+                        summary: "Systems Summary:\n- Sender Bank: Transaction initiator.\n- 247 System: Main coordinator/Router.\n- Paygate: Logic gateway for VA/Alias.\n- Core Banking: Core accounting system.\n- Service Provider (SP): Stores bill information."
                     },
                     terms: {
                         RealBalance: "Real Balance (Own Funds). Funds sitting directly in this VA, excluding children.",
@@ -814,50 +826,12 @@
                         {t('guide', 'intro_text')}
                     </div>
 
-                    {/* NEW SECTION: Existing Processes (Legacy/247) */}
-                    {legacy && (
-                        <div className="bg-white p-4 md:p-6 rounded-lg shadow-sm border border-gray-200 border-l-4 border-l-purple-500">
-                            <h3 className="text-base md:text-lg font-bold mb-4 text-purple-700 flex items-center gap-2">
-                                <IconWrapper name="Repeat" /> {legacy.title}
-                            </h3>
-                            <div className="space-y-6 text-sm text-gray-700">
-                                {/* 1. Definition */}
-                                <div>
-                                    <h4 className="font-bold text-gray-800 mb-2 uppercase border-b pb-1">{legacy.def_title}</h4>
-                                    <p className="mb-2 italic">{legacy.def_intro}</p>
-                                    <div className="space-y-3 pl-2">
-                                        {legacy.def_items.map((item, i) => (
-                                            <div key={i} className="bg-gray-50 p-3 rounded border border-gray-100">
-                                                <div className="font-bold text-bankb-primary mb-1">{item.term}</div>
-                                                <div className="mb-1">{item.desc}</div>
-                                                <div className="text-xs text-gray-500 italic pl-2 border-l-2 border-gray-300">{item.sub}</div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
+                    {/* 2. Glossary */}
+                    <div className="bg-white p-4 md:p-6 rounded-lg shadow-sm border border-gray-200">
+                        <h3 className="text-base md:text-lg font-bold mb-4 text-bankb-primary flex items-center gap-2"><IconWrapper name="BookOpen" /> {t('guide', 'glossary_title')}</h3>
+                        <div className="grid gap-3 md:gap-4 grid-cols-1 md:grid-cols-2">{Object.entries(terms).map(([key, desc]) => <div key={key} className="p-3 md:p-4 bg-gray-50 rounded border border-gray-100"><span className="font-bold text-blue-700 block mb-1 text-sm md:text-base">{key}</span><p className="text-xs md:text-sm text-gray-600 leading-relaxed">{desc}</p></div>)}</div>
+                    </div>
 
-                                {/* 2. Flow */}
-                                <div>
-                                    <h4 className="font-bold text-gray-800 mb-2 uppercase border-b pb-1">{legacy.flow_title}</h4>
-                                    <p className="mb-4 italic">{legacy.flow_intro}</p>
-                                    <div className="space-y-4">
-                                        {legacy.phases.map((phase, i) => (
-                                            <div key={i} className="border border-gray-200 rounded p-3">
-                                                <div className="font-bold text-blue-700 mb-1">{phase.name}</div>
-                                                <div className="text-xs italic text-gray-500 mb-2">{phase.purpose}</div>
-                                                <ul className="list-disc pl-5 space-y-1">
-                                                    {phase.steps.map((step, k) => (
-                                                        <li key={k} className="whitespace-pre-line">{step}</li>
-                                                    ))}
-                                                </ul>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    )}
-                    
                     {/* 1. Routing Solution */}
                     <div className="bg-white p-4 md:p-6 rounded-lg shadow-sm border border-gray-200">
                         <h3 className="text-base md:text-lg font-bold mb-4 text-bankb-primary flex items-center gap-2">
@@ -880,11 +854,41 @@
                         </div>
                     </div>
 
-                    {/* 2. Glossary */}
-                    <div className="bg-white p-4 md:p-6 rounded-lg shadow-sm border border-gray-200">
-                        <h3 className="text-base md:text-lg font-bold mb-4 text-bankb-primary flex items-center gap-2"><IconWrapper name="BookOpen" /> {t('guide', 'glossary_title')}</h3>
-                        <div className="grid gap-3 md:gap-4 grid-cols-1 md:grid-cols-2">{Object.entries(terms).map(([key, desc]) => <div key={key} className="p-3 md:p-4 bg-gray-50 rounded border border-gray-100"><span className="font-bold text-blue-700 block mb-1 text-sm md:text-base">{key}</span><p className="text-xs md:text-sm text-gray-600 leading-relaxed">{desc}</p></div>)}</div>
-                    </div>
+                    {/* NEW SECTION: Existing Processes (Legacy/247) */}
+                    {legacy && (
+                        <div className="bg-white p-4 md:p-6 rounded-lg shadow-sm border border-gray-200 border-l-4 border-l-purple-500">
+                            <h3 className="text-base md:text-lg font-bold mb-4 text-purple-700 flex items-center gap-2">
+                                <IconWrapper name="Repeat" /> {legacy.flow_title}
+                            </h3>
+                            <div className="space-y-6 text-sm text-gray-700">
+                                {/* Flow Intro */}
+                                <p className="italic">{legacy.flow_intro}</p>
+
+                                {/* 2. Flow */}
+                                <div>
+                                    <div className="space-y-4">
+                                        {legacy.phases.map((phase, i) => (
+                                            <div key={i} className="border border-gray-200 rounded p-3">
+                                                <div className="font-bold text-blue-700 mb-1">{phase.name}</div>
+                                                <div className="text-xs italic text-gray-500 mb-2">{phase.purpose}</div>
+                                                <ul className="list-none pl-2 space-y-2">
+                                                    {phase.steps.map((step, k) => (
+                                                        <li key={k} className="whitespace-pre-line text-xs bg-gray-50 p-2 rounded border border-gray-100">{step}</li>
+                                                    ))}
+                                                </ul>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* Summary */}
+                                <div className="bg-gray-100 p-3 rounded text-xs border border-gray-300 whitespace-pre-line">
+                                    <strong>{legacy.summary.split(':')[0]}:</strong>
+                                    {legacy.summary.substring(legacy.summary.indexOf(':') + 1)}
+                                </div>
+                            </div>
+                        </div>
+                    )}
 
                     {/* 3. Processes */}
                     <div className="bg-white p-4 md:p-6 rounded-lg shadow-sm border border-gray-200">
