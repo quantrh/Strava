@@ -68,7 +68,8 @@
                     tx_dda: "Giao dịch DDA (Tại Quầy)", 
                     reports: "Báo Cáo",
                     reconciliation: "Đối Soát & Xử Lý", 
-                    guide: "Hướng Dẫn & Quy Trình"
+                    guide: "Hướng Dẫn & Quy Trình",
+					architecture: "Kiến trúc giải pháp"
                 },
                 dashboard: {
                     title: "Dashboard Tổng Quan",
@@ -218,7 +219,8 @@
                     tx_dda: "DDA Transaction (Counter)", 
                     reports: "Reports",
                     reconciliation: "Reconciliation",
-                    guide: "Guide & Process"
+                    guide: "Guide & Process",
+					architecture: "Solution Architecture"
                 },
                 dashboard: {
                     title: "Dashboard",
@@ -381,7 +383,8 @@
             AlertTriangle: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>,
             Zap: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>,
             Monitor: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="20" height="14" x="2" y="3" rx="2"/><line x1="8" x2="16" y1="21" y2="21"/><line x1="12" x2="12" y1="17" y2="21"/></svg>,
-            Send: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>
+            Send: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>,
+			Share2: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" x2="15.42" y1="13.51" y2="17.49"/><line x1="15.41" x2="8.59" y1="6.51" y2="10.49"/></svg>
         };
 
         const IconWrapper = ({ name, size = 18, className = "" }) => {
@@ -503,6 +506,7 @@
                     case 'RECONCILIATION': return <Reconciliation corporate={corporate} setCorporate={setCorporate} vas={virtualAccounts} setVas={setVirtualAccounts} notify={notify} t={t} />;
                     // UserGuide component mới: Sử dụng iframe
                     case 'GUIDE': return <UserGuide t={t} lang={lang} />;
+					case 'ARCHITECTURE': return <SolutionArchitecture t={t} lang={lang} />; // <--- THÊM DÒNG NÀY
                     default: return <Dashboard corporate={corporate} vas={virtualAccounts} txs={transactions} t={t} />;
                 }
             };
@@ -566,6 +570,7 @@
                                 <NavButton active={activeTab === 'RECONCILIATION'} onClick={() => handleTabChange('RECONCILIATION')} icon="Scale" label={t('menu', 'reconciliation')} color="text-rose-600" />
                                 
                                 <div className="mt-4 pt-4 border-t border-gray-100"><NavButton active={activeTab === 'GUIDE'} onClick={() => handleTabChange('GUIDE')} icon="BookOpen" label={t('menu', 'guide')} color="text-gray-600" /></div>
+								<NavButton active={activeTab === 'ARCHITECTURE'} onClick={() => handleTabChange('ARCHITECTURE')} icon="Share2" label={t('menu', 'architecture')} color="text-cyan-600" />
                                 <div className="md:hidden p-4"><button onClick={handleResetData} className="w-full flex justify-center items-center gap-1 px-3 py-2 bg-red-100 text-red-800 rounded text-sm transition-colors border border-red-200"><IconWrapper name="Trash2" size={16} /> {resources[lang].reset_demo}</button></div>
                             </div>
                             <div className="p-4 text-[10px] text-gray-400 text-center border-t">© 2024 BankB Ebank<br/>Bản quyền Trương Hồng Quân</div>
@@ -1139,8 +1144,31 @@
                 </div>
             );
         };
+		
+		// --- COMPONENT MỚI: KIẾN TRÚC GIẢI PHÁP ---
+	const SolutionArchitecture = ({ t, lang }) => {
+    const iframeRef = React.useRef(null);
 
-        const CorporateOnboarding = ({ corporate, setCorporate, notify, t }) => {
+    // Gửi message xuống iframe khi ngôn ngữ thay đổi (tương tự UserGuide)
+    useEffect(() => {
+        if(iframeRef.current) {
+            iframeRef.current.contentWindow.postMessage({ type: 'SET_LANG', lang: lang }, '*');
+        }
+    }, [lang]);
+
+    return (
+        <div className="h-full w-full bg-white rounded-lg shadow-sm overflow-hidden border border-gray-200">
+            <iframe
+                ref={iframeRef}
+                src={`Architec.html?lang=${lang}`} 
+                className="w-full h-full border-0 min-h-[80vh]"
+                title="Solution Architecture"
+            />
+        </div>
+		);
+	};
+    
+    const CorporateOnboarding = ({ corporate, setCorporate, notify, t }) => {
             const [isEditing, setIsEditing] = useState(false);
             const [formData, setFormData] = useState(corporate);
             const handleSave = () => { setCorporate(formData); setIsEditing(false); notify('Success'); };
