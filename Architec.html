@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kiến Trúc Tổng Thể Hệ Thống Virtual Account (VA)</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f7f7f7; color: #1f2937; line-height: 1.6; }
+        .container { max-width: 1000px; margin: 0 auto; padding: 20px; background-color: #ffffff; box-shadow: 0 0 20px rgba(0, 0, 0, 0.05); }
+
+        /* Custom Header Styles */
+        .main-header { 
+            color: #047857; 
+            font-weight: 800; 
+            text-transform: uppercase; 
+            font-size: 1.75rem; 
+            display: flex; 
+            align-items: center; 
+            gap: 0.75rem; 
+            margin-top: 0.5rem; 
+            margin-bottom: 1.5rem; 
+            border-bottom: 4px solid #10b981; 
+            padding-bottom: 1rem;
+        }
+        
+        .sub-header {
+            font-size: 1.35rem; 
+            font-weight: 700; 
+            color: #1f2937; 
+            margin-top: 2.5rem; 
+            margin-bottom: 1rem; 
+            border-left: 5px solid #3b82f6; 
+            padding-left: 0.75rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .section-header {
+            font-size: 1.15rem; 
+            font-weight: 600; 
+            color: #374151; 
+            margin-top: 1.5rem; 
+            margin-bottom: 0.5rem; 
+            padding-bottom: 0.25rem;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .placeholder-box {
+            background-color: #f3f4f6;
+            border: 2px dashed #9ca3af;
+            min-height: 200px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            flex-direction: column;
+            border-radius: 0.5rem;
+            margin-top: 1rem;
+            margin-bottom: 1.5rem;
+            padding: 1rem;
+        }
+
+        .placeholder-label {
+            font-weight: 600;
+            color: #4b5563;
+            margin-bottom: 0.5rem;
+        }
+
+        .summary-block {
+            background-color: #ecfdf5;
+            border: 2px solid #10b981;
+            padding: 1.5rem;
+            border-radius: 0.75rem;
+            margin-bottom: 2rem;
+        }
+
+        .summary-title {
+            color: #047857;
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin-bottom: 0.75rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px dashed #6ee7b7;
+        }
+
+        .group-title {
+            color: #1d4ed8;
+            font-weight: 700;
+            margin-top: 1rem;
+            margin-bottom: 0.5rem;
+            font-size: 1.1rem;
+        }
+
+        .diagram-list li {
+            margin-left: 1.5rem;
+            list-style: disc;
+            margin-top: 0.25rem;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+
+    <header class="text-center py-6">
+        <h1 class="main-header justify-center">Thiết Kế Kiến Trúc Hệ Thống Virtual Account</h1>
+    </header>
+
+    <!-- KHỐI NỘI DUNG TỔNG HỢP THEO YÊU CẦU CỦA USER -->
+    <div class="summary-block">
+        <div class="summary-title">TỔNG HỢP KIẾN THỨC VỀ 12 SƠ ĐỒ KIẾN TRÚC & QUY TRÌNH</div>
+        <p class="text-gray-700 mb-4">
+            Toàn bộ 12 sơ đồ được chia thành <strong>2 nhóm lớn</strong> theo mục đích:
+        </p>
+        
+        <div class="group-title text-indigo-700">I. Nhóm 1 – Sơ đồ Tổng Thể (Macro Architecture)</div>
+        <p class="text-sm text-gray-600 italic">Gồm 4 sơ đồ: Sơ đồ #1, #2, #10, #11</p>
+        <div class="text-gray-700">
+            <p class="font-medium mt-2">1. Mục đích của nhóm</p>
+            <ul class="diagram-list">
+                <li>Trình bày bức tranh tổng thể hệ thống (landscape)</li>
+                <li>Thể hiện ranh giới giữa Core Banking và Deposit Core Hub</li>
+                <li>Là cơ sở để Hội đồng Kiến trúc và Ban Lãnh đạo phê duyệt hướng thiết kế</li>
+                <li>Giúp tất cả đội kỹ thuật (Core, Integration, Digital Channels, BA/Dev/QA) hiểu cách hệ thống vận hành ở mức kiến trúc</li>
+            </ul>
+            <p class="font-medium mt-2">2. Danh sách sơ đồ trong nhóm</p>
+            <ul class="diagram-list">
+                <li><span class="font-semibold text-green-700">Sơ đồ số 1 – Overall System Landscape / Core Banking Super Layer:</span> Giới thiệu BIG PICTURE toàn hệ thống. Các lớp: Channels → API Gateway → Routing Hub → Deposit Core Hub → Core Banking → Data Layer. Chỉ rõ VA thuộc lớp nào và Core làm nhiệm vụ gì. Must-have.</li>
+                <li><span class="font-semibold text-green-700">Sơ đồ số 2 – Logical Architecture (Deposit Core Hub + VA):</span> Mô tả các module chính: Routing Hub, VA Engine, DDA Handler, Interest Engine. Ranh giới logic giữa lớp Hub và Core. Giải thích trách nhiệm từng thành phần. Must-have.</li>
+                <li><span class="font-semibold text-green-700">Sơ đồ số 10 – Data Model VA (ERD):</span> ERD tổng quan: VA, VA Ledger, VA Balance, Hierarchy, Enrollment, Identifier… Cho thấy cách dữ liệu VA được tổ chức. Must-have.</li>
+                <li><span class="font-semibold text-green-700">Sơ đồ số 11 – Logical ERD Chi tiết:</span> Phiên bản chi tiết chuyên sâu hơn của ERD tổng quan (Sơ đồ #10). Thể hiện đầy đủ quan hệ giữa các bảng, các module logic. Rất hữu ích cho đội Data, BA, và Dev. Should-have.</li>
+            </ul>
+            <p class="font-medium mt-2">3. Nội dung chính nhóm 1</p>
+            <ul class="diagram-list">
+                <li>Kiến trúc nhiều lớp (multi-tier)</li>
+                <li>Phân rã chức năng VA và Deposit Core Hub</li>
+                <li>Tách biệt ledger thật và ledger ảo</li>
+                <li>Quan hệ dữ liệu, mapping DDA – VA</li>
+                <li>Cách hệ thống tích hợp qua API Gateway + Event Bus</li>
+            </ul>
+        </div>
+
+        <div class="group-title text-indigo-700">II. Nhóm 2 – Sơ đồ Kiến trúc Logic & Luồng Xử lý Nghiệp vụ</div>
+        <p class="text-sm text-gray-600 italic">Gồm 8 sơ đồ: #3 → #9 + #12 (Trong đó, #7, #8, #9 là Sequence Diagram)</p>
+        <div class="text-gray-700">
+            <p class="font-medium mt-2">1. Mục đích của nhóm</p>
+            <ul class="diagram-list">
+                <li>Mô tả chi tiết từng luồng nghiệp vụ mà Virtual Account phải hỗ trợ</li>
+                <li>Thể hiện tương tác giữa system components</li>
+                <li>Giúp đội BA/Dev/QA xây dựng, test, và báo cáo hệ thống</li>
+                <li>Đảm bảo các case nghiệp vụ đáp ứng chuẩn quốc tế về VA</li>
+            </ul>
+            <p class="font-medium mt-2">2. Danh sách sơ đồ trong nhóm</p>
+            <ul class="diagram-list">
+                <li><span class="font-semibold text-red-700">Sơ đồ số 3 – VA-first Incoming Flow:</span> Luồng khi khách hàng nhập số VA trực tiếp. Routing → Validate VA → Core hạch toán → Event → Shadow Posting. Chuẩn quốc tế, đảm bảo không lạc VA. Must-have.</li>
+                <li><span class="font-semibold text-red-700">Sơ đồ số 4 – DDA-first Incoming Flow:</span> Khi khách hàng chỉ nhập số DDA + remark. Core ghi có trước → Routing Hub tìm VA → VA ghi shadow. Hỗ trợ kênh liên ngân hàng không hỗ trợ VA. Must-have.</li>
+                <li><span class="font-semibold text-red-700">Sơ đồ số 5 – Outgoing từ VA:</span> VA kiểm soát số dư → Shadow Debit → Core Debit DDA → Confirm. Phù hợp POBO, chi hộ, chuyển khoản từ VA. Must-have.</li>
+                <li><span class="font-semibold text-red-700">Sơ đồ số 6 – Interest Allocation Flow:</span> Core tính lãi trên DDA → Routing Hub → VA Alloc Engine → Shadow Posting. Hỗ trợ mô hình chia lãi theo dự án/hộ gia đình/đơn vị. Should-have (nhưng quan trọng).</li>
+                <li><span class="font-semibold text-red-700">Sơ đồ số 7 – Sequence VA-first:</span> Sequence Diagram mô tả tuần tự tương tác (của Sơ đồ #3). Phục vụ Dev/QA xây dựng API & xử lý lỗi. Should-have.</li>
+                <li><span class="font-semibold text-red-700">Sơ đồ số 8 – Sequence Outgoing VA:</span> Toàn bộ logic chi từ VA theo dòng tuần tự (của Sơ đồ #5). Giúp đội kỹ thuật kiểm soát pending/confirmed debit. Should-have.</li>
+                <li><span class="font-semibold text-red-700">Sơ đồ số 9 – Sequence Interest Allocation:</span> Chi tiết tính toán và phân bổ lãi (của Sơ đồ #6). Hỗ trợ kiểm toán, reconciliation. Should-have.</li>
+                <li><span class="font-semibold text-red-700">Sơ đồ số 12 – Integration & Deployment Architecture:</span> Mô tả triển khai thực tế: container, scaling, HA/DR. Quan trọng cho DevOps, hạ tầng. Must-have.</li>
+            </ul>
+        </div>
+    </div>
+    <!-- KẾT THÚC KHỐI NỘI DUNG TỔNG HỢP -->
+
+
+    <!-- I. NHÓM SƠ ĐỒ TỔNG THỂ (MACRO ARCHITECTURE) -->
+    <h2 class="sub-header">
+        <i data-lucide="layout-grid" class="w-6 h-6 text-blue-500"></i>
+        I. Nhóm 1 – Sơ đồ Tổng Thể (Macro Architecture)
+    </h2>
+    <p class="pl-2 text-gray-700 italic">Các sơ đồ này trình bày bức tranh tổng thể hệ thống, kiến trúc logic và lớp dữ liệu (Sơ đồ #1, #2, #10, #11).</p>
+
+    <!-- Sơ đồ số 1: Overall System Landscape / Core Banking Super Layer -->
+    <div class="section-header">1. Sơ đồ số 1 – Overall System Landscape / Core Banking Super Layer</div>
+    <div class="placeholder-box">
+        <p class="placeholder-label">Sơ đồ 1/12: Overall System Landscape / Core Banking Super Layer</p>
+        <span class="text-sm text-gray-500">
+            <code class="bg-white p-1 rounded font-mono text-sm border border-gray-300">./Picture/Sodo_1_Overall_System_Landscape.png</code>
+        </span>
+        <p class="text-xs mt-2 text-red-600">Placeholder. Vui lòng đặt ảnh thực tế (Sơ đồ số 1) vào thư mục 'Picture'.</p>
+    </div>
+    
+    <!-- START UPDATED CONTENT FOR SECTION 1 -->
+    <div class="mt-8 space-y-8">
+        
+        <!-- MỤC TIÊU KIẾN TRÚC -->
+        <div class="bg-blue-50 p-6 rounded-lg border-l-4 border-blue-600 shadow-sm">
+            <h3 class="text-xl font-bold text-blue-800 uppercase mb-3 flex items-center gap-2">
+                <i data-lucide="target" class="w-6 h-6"></i> Mục tiêu kiến trúc
+            </h3>
+            <p class="mb-4 text-gray-800">
+                Mô hình <span class="font-bold text-blue-700">“Core Banking Super Layer”</span> giúp ngân hàng tách biệt lớp lõi kế toán với các lớp dịch vụ bám theo, tạo điều kiện phát triển sản phẩm mới nhanh chóng mà không tác động trực tiếp vào Core. Kiến trúc này nhằm:
+            </p>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div class="flex items-start gap-2">
+                    <i data-lucide="shield-check" class="w-5 h-5 text-blue-600 mt-1 flex-shrink-0"></i>
+                    <span class="text-gray-700 font-medium">Bảo vệ Core Banking khỏi tải lớn và rủi ro thay đổi</span>
+                </div>
+                <div class="flex items-start gap-2">
+                    <i data-lucide="settings-2" class="w-5 h-5 text-blue-600 mt-1 flex-shrink-0"></i>
+                    <span class="text-gray-700 font-medium">Chuẩn hóa điểm giao tiếp giữa kênh – hệ thống – Core</span>
+                </div>
+                <div class="flex items-start gap-2">
+                    <i data-lucide="zap" class="w-5 h-5 text-blue-600 mt-1 flex-shrink-0"></i>
+                    <span class="text-gray-700 font-medium">Tăng tốc đổi mới sản phẩm (Virtual Account, Alias Account, Fee Engine…)</span>
+                </div>
+                <div class="flex items-start gap-2">
+                    <i data-lucide="trending-up" class="w-5 h-5 text-blue-600 mt-1 flex-shrink-0"></i>
+                    <span class="text-gray-700 font-medium">Nâng cao trải nghiệm doanh nghiệp và khả năng cạnh tranh</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- CÁC LỚP CHÍNH CỦA KIẾN TRÚC -->
+        <div>
+            <h3 class="text-xl font-bold text-gray-800 mb-4 border-b-2 border-gray-200 pb-2">Các lớp chính của kiến trúc</h3>
+            <div class="space-y-3">
+                
+                <!-- Layer: Channel -->
+                <div class="bg-white border border-gray-200 rounded-md p-4 flex flex-col md:flex-row gap-4 hover:shadow-md transition">
+                    <div class="md:w-1/4">
+                        <span class="inline-block px-3 py-1 rounded-full text-sm font-bold bg-gray-100 text-gray-700">Channel Layer</span>
+                        <div class="font-bold text-lg text-gray-900">Lớp Kênh</div>
+                    </div>
+                    <div class="md:w-3/4 text-gray-600 border-l md:border-gray-100 pl-0 md:pl-4">
+                        <p class="mb-1">Bao gồm iBank, H2H, Mobile, Teller, kênh liên ngân hàng…</p>
+                        <p class="text-sm italic text-gray-500">→ Gửi mọi giao dịch thông qua API Gateway, không kết nối trực tiếp Core.</p>
+                    </div>
+                </div>
+
+                <!-- Layer: API Gateway -->
+                <div class="bg-white border border-gray-200 rounded-md p-4 flex flex-col md:flex-row gap-4 hover:shadow-md transition">
+                    <div class="md:w-1/4">
+                        <span class="inline-block px-3 py-1 rounded-full text-sm font-bold bg-gray-100 text-gray-700">Integration</span>
+                        <div class="font-bold text-lg text-gray-900">API Gateway / ESB</div>
+                    </div>
+                    <div class="md:w-3/4 text-gray-600 border-l md:border-gray-100 pl-0 md:pl-4">
+                        <p class="mb-1">Thực hiện điều phối, xác thực, bảo vệ Core khỏi truy cập trực tiếp.</p>
+                        <p class="text-sm font-semibold text-blue-600">→ Là “cửa duy nhất” của toàn bộ giao dịch tiền gửi.</p>
+                    </div>
+                </div>
+
+                <!-- Layer: Deposit Core Hub (SUPER LAYER) -->
+                <div class="bg-indigo-50 border-2 border-indigo-200 rounded-lg p-5 flex flex-col gap-4 shadow-sm relative overflow-hidden">
+                    <div class="absolute top-0 right-0 bg-indigo-500 text-white text-xs font-bold px-2 py-1 rounded-bl">SUPER LAYER</div>
+                    <div class="flex flex-col md:flex-row gap-4">
+                        <div class="md:w-1/4">
+                            <span class="inline-block px-3 py-1 rounded-full text-sm font-bold bg-indigo-100 text-indigo-800">Core Hub</span>
+                            <div class="font-bold text-xl text-indigo-900 mt-1">Deposit Core Hub</div>
+                            <p class="text-sm text-indigo-700 mt-2">Đây là lớp trọng yếu, nằm giữa kênh và Core.</p>
+                        </div>
+                        <div class="md:w-3/4 border-l-2 border-indigo-200 pl-0 md:pl-4">
+                            <p class="font-semibold text-indigo-900 mb-2">Chức năng chính:</p>
+                            <ul class="space-y-2 text-gray-700">
+                                <li class="flex items-start gap-2"><div class="w-1.5 h-1.5 rounded-full bg-indigo-500 mt-2"></div><span><strong>Routing Hub:</strong> Điều phối các luồng nộp – chi – VA-first – DDA-first</span></li>
+                                <li class="flex items-start gap-2"><div class="w-1.5 h-1.5 rounded-full bg-indigo-500 mt-2"></div><span><strong>VA Engine:</strong> Quản lý Virtual Account, shadow posting, số dư real/roll-up</span></li>
+                                <li class="flex items-start gap-2"><div class="w-1.5 h-1.5 rounded-full bg-indigo-500 mt-2"></div><span><strong>Interest Allocation:</strong> Phân bổ lãi từ DDA xuống VA</span></li>
+                                <li class="flex items-start gap-2"><div class="w-1.5 h-1.5 rounded-full bg-indigo-500 mt-2"></div><span><strong>DDA Handler:</strong> Xử lý các giao dịch ghi vào DDA theo logic mở rộng</span></li>
+                            </ul>
+                            <p class="mt-3 text-sm font-medium text-indigo-800 bg-indigo-100 p-2 rounded">→ Cho phép phát triển tính năng mới mà không sửa Core, giảm rủi ro và tăng tốc triển khai.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Layer: Core Banking -->
+                <div class="bg-slate-50 border border-slate-300 rounded-md p-4 flex flex-col md:flex-row gap-4">
+                    <div class="md:w-1/4">
+                        <span class="inline-block px-3 py-1 rounded-full text-sm font-bold bg-slate-200 text-slate-700">Backend</span>
+                        <div class="font-bold text-lg text-slate-900">Core Banking Layer</div>
+                    </div>
+                    <div class="md:w-3/4 text-gray-600 border-l md:border-gray-200 pl-0 md:pl-4">
+                        <p class="mb-2 italic">Core chỉ làm đúng nhiệm vụ kế toán và hạch toán thật:</p>
+                        <div class="grid grid-cols-2 gap-2 text-sm">
+                            <div class="flex items-center gap-1"><i data-lucide="check" class="w-4 h-4 text-slate-500"></i> Ghi Có/Ghi Nợ DDA</div>
+                            <div class="flex items-center gap-1"><i data-lucide="check" class="w-4 h-4 text-slate-500"></i> Tính lãi thật</div>
+                            <div class="flex items-center gap-1"><i data-lucide="check" class="w-4 h-4 text-slate-500"></i> Phát sự kiện (posting)</div>
+                            <div class="flex items-center gap-1"><i data-lucide="check" class="w-4 h-4 text-slate-500"></i> Bảo đảm toàn vẹn sổ cái</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Layer: Support (Event Bus & Data) -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2">
+                    <div class="bg-orange-50 border border-orange-200 rounded p-3">
+                        <div class="font-bold text-orange-800 mb-1 flex items-center gap-2"><i data-lucide="activity" class="w-4 h-4"></i> Event Bus</div>
+                        <p class="text-sm text-gray-700">Cung cấp cơ chế bất đồng bộ để đồng bộ giao dịch giữa Core và Super Layer.</p>
+                        <p class="text-xs text-orange-600 mt-1 font-semibold">→ Tăng tính mở rộng, giảm nghẽn.</p>
+                    </div>
+                    <div class="bg-cyan-50 border border-cyan-200 rounded p-3">
+                        <div class="font-bold text-cyan-800 mb-1 flex items-center gap-2"><i data-lucide="database" class="w-4 h-4"></i> Data Layer</div>
+                        <ul class="text-sm text-gray-700 space-y-1">
+                            <li><strong>Core DB:</strong> DDA ledger – sổ cái chuẩn kiểm toán</li>
+                            <li><strong>VA DB:</strong> VA ledger (shadow), registry, mapping</li>
+                        </ul>
+                        <p class="text-xs text-cyan-600 mt-1 font-semibold">→ Tách biệt để Core ổn định, VA linh hoạt.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- LỢI ÍCH TỔNG THỂ -->
+        <div>
+            <h3 class="text-xl font-bold text-emerald-800 mb-4 flex items-center gap-2 border-b-2 border-emerald-100 pb-2">
+                <i data-lucide="thumbs-up" class="w-6 h-6"></i> Lợi ích tổng thể cho ngân hàng
+            </h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div class="bg-white p-4 rounded-lg shadow-sm border-t-4 border-emerald-500">
+                    <h4 class="font-bold text-gray-800 mb-2">Bảo vệ Core – Giảm rủi ro</h4>
+                    <p class="text-sm text-gray-600">Core ít thay đổi, tránh ảnh hưởng nâng cấp và rủi ro lỗi hệ thống.</p>
+                </div>
+                <div class="bg-white p-4 rounded-lg shadow-sm border-t-4 border-emerald-500">
+                    <h4 class="font-bold text-gray-800 mb-2">Nền tảng mở cho SP mới</h4>
+                    <p class="text-sm text-gray-600">Virtual Account, Alias, Fee Engine… triển khai nhanh, không chạm Core.</p>
+                </div>
+                <div class="bg-white p-4 rounded-lg shadow-sm border-t-4 border-emerald-500">
+                    <h4 class="font-bold text-gray-800 mb-2">Tăng hiệu năng & mở rộng</h4>
+                    <p class="text-sm text-gray-600">Super Layer xử lý nghiệp vụ số lượng lớn, Core tập trung vào ledger → hiệu suất tốt hơn.</p>
+                </div>
+                <div class="bg-white p-4 rounded-lg shadow-sm border-t-4 border-emerald-500">
+                    <h4 class="font-bold text-gray-800 mb-2">Chuẩn hóa tích hợp đa kênh</h4>
+                    <p class="text-sm text-gray-600">Giao dịch đi theo luồng thống nhất, dễ vận hành và kiểm soát.</p>
+                </div>
+                <div class="bg-white p-4 rounded-lg shadow-sm border-t-4 border-emerald-500 lg:col-span-2">
+                    <h4 class="font-bold text-gray-800 mb-2">Nâng cấp mô hình công nghệ</h4>
+                    <p class="text-sm text-gray-600">Tiệm cận kiến trúc ngân hàng quốc tế: tách lớp, event-driven, microservices.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- KẾT LUẬN ĐỊNH HƯỚNG -->
+        <div class="bg-gray-800 text-white rounded-lg p-6 shadow-lg">
+            <h3 class="text-xl font-bold mb-3 flex items-center gap-2 text-yellow-400">
+                <i data-lucide="flag" class="w-6 h-6"></i> Kết luận định hướng
+            </h3>
+            <p class="mb-4 text-gray-300">
+                Kiến trúc Core Banking Super Layer không chỉ giải quyết nhu cầu hiện tại (Virtual Account, Cash Management) mà còn là nền tảng lâu dài cho chiến lược chuyển đổi số, giúp BIDV:
+            </p>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                <div class="bg-gray-700 p-3 rounded text-center border border-gray-600">
+                    <div class="font-bold text-white">Giảm phụ thuộc</div>
+                    <div class="text-xs text-gray-400">vào nhà cung cấp Core</div>
+                </div>
+                <div class="bg-gray-700 p-3 rounded text-center border border-gray-600">
+                    <div class="font-bold text-white">Chủ động mở rộng</div>
+                    <div class="text-xs text-gray-400">sản phẩm theo thị trường</div>
+                </div>
+                <div class="bg-gray-700 p-3 rounded text-center border border-gray-600">
+                    <div class="font-bold text-white">Ổn định vận hành</div>
+                    <div class="text-xs text-gray-400">cấp độ hệ thống trọng yếu</div>
+                </div>
+            </div>
+            <p class="text-sm text-gray-400 italic text-center border-t border-gray-700 pt-3">
+                "Đây là mô hình phù hợp cho các ngân hàng muốn phát triển mạnh dịch vụ giao dịch doanh nghiệp và mở rộng nền tảng ngân hàng số"
+            </p>
+        </div>
+
+    </div>
+    <!-- END UPDATED CONTENT FOR SECTION 1 -->
+
+
+    <!-- Sơ đồ số 2: Logical Architecture (Deposit Core Hub + VA) -->
+    <div class="section-header">2. Sơ đồ số 2 – Logical Architecture (Deposit Core Hub + VA)</div>
+    <div class="placeholder-box">
+        <p class="placeholder-label">Sơ đồ 2/12: Logical Architecture (Deposit Core Hub + VA)</p>
+        <span class="text-sm text-gray-500">
+            <code class="bg-white p-1 rounded font-mono text-sm border border-gray-300">./Picture/Sodo_2_Logical_Architecture.png</code>
+        </span>
+        <p class="text-xs mt-2 text-red-600">Placeholder. Vui lòng đặt ảnh thực tế (Sơ đồ số 2) vào thư mục 'Picture'.</p>
+    </div>
+    
+    <!-- START UPDATED CONTENT FOR SECTION 2 -->
+    <div class="mt-6 space-y-6">
+        <!-- Intro -->
+        <div class="bg-gray-50 p-4 rounded-lg border-l-4 border-indigo-500 text-gray-700">
+            <p>Sơ đồ mô tả kiến trúc logic của lớp <span class="font-bold text-indigo-700">Deposit Core Hub</span> – một “lớp siêu nghiệp vụ” được xây dựng bao quanh phân hệ Tiền gửi (Deposit Module) của Core Banking, cho phép BIDV phát triển nhanh các sản phẩm thu – chi hiện đại, đặc biệt là <span class="font-bold">Virtual Account (VA)</span>, mà không phải chỉnh sửa Core.</p>
+        </div>
+
+        <h3 class="font-bold text-xl text-gray-800 border-b border-gray-200 pb-2">4 Khối Năng Lực Chính</h3>
+
+        <!-- 1. Routing Hub -->
+        <div class="bg-white border border-gray-200 rounded-lg p-5 shadow-sm hover:shadow-md transition">
+            <div class="flex items-center gap-3 mb-3">
+                <div class="bg-purple-100 p-2 rounded-full text-purple-600"><i data-lucide="route" class="w-6 h-6"></i></div>
+                <h4 class="text-lg font-bold text-purple-900">Routing Hub – Bộ não điều hướng & kiểm soát</h4>
+            </div>
+            <p class="text-gray-600 mb-3 italic">Đóng vai trò điểm trung gian bắt buộc cho mọi giao dịch thu – chi sử dụng VA.</p>
+            <ul class="space-y-2 text-sm text-gray-700">
+                <li class="flex gap-2"><i data-lucide="check-circle" class="w-4 h-4 text-purple-500 mt-1 flex-shrink-0"></i> <span>Kiểm tra loại giao dịch: <span class="font-medium">VA-first</span> hay <span class="font-medium">DDA-first</span>.</span></li>
+                <li class="flex gap-2"><i data-lucide="check-circle" class="w-4 h-4 text-purple-500 mt-1 flex-shrink-0"></i> <span>Gọi VA Engine để xác thực số VA trước khi gửi hạch toán sang Core.</span></li>
+                <li class="flex gap-2"><i data-lucide="check-circle" class="w-4 h-4 text-purple-500 mt-1 flex-shrink-0"></i> <span>Xác định tài khoản DDA thực tương ứng (Mapped DDA).</span></li>
+                <li class="flex gap-2"><i data-lucide="check-circle" class="w-4 h-4 text-purple-500 mt-1 flex-shrink-0"></i> <span>Tiếp nhận sự kiện từ Core để chuyển tiếp cho VA Engine cập nhật ledger ảo.</span></li>
+            </ul>
+            <div class="mt-3 text-sm font-medium text-purple-800 bg-purple-50 p-2 rounded border border-purple-100">
+                → Giúp tách nghiệp vụ mở rộng khỏi Core, đồng thời đảm bảo luồng xử lý thống nhất cho toàn bộ kênh giao dịch.
+            </div>
+        </div>
+
+        <!-- 2. VA Engine -->
+        <div class="bg-white border border-gray-200 rounded-lg p-5 shadow-sm hover:shadow-md transition">
+            <div class="flex items-center gap-3 mb-4">
+                <div class="bg-blue-100 p-2 rounded-full text-blue-600"><i data-lucide="cpu" class="w-6 h-6"></i></div>
+                <h4 class="text-lg font-bold text-blue-900">Virtual Account Engine – Trái tim nghiệp vụ VA</h4>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="bg-blue-50 p-3 rounded border border-blue-100">
+                    <div class="font-bold text-blue-800 text-sm mb-1">VA Incoming Service</div>
+                    <p class="text-xs text-gray-600">Tiếp nhận giao dịch đầu vào, xác thực VA, tìm kiếm Mapped DDA, trả kết quả cho Routing Hub.</p>
+                </div>
+                <div class="bg-blue-50 p-3 rounded border border-blue-100">
+                    <div class="font-bold text-blue-800 text-sm mb-1">VA Outgoing Service</div>
+                    <p class="text-xs text-gray-600">Xử lý lệnh chi, kiểm tra số dư real/roll-up, ghi shadow debit, và gọi Core để trích nợ thật DDA.</p>
+                </div>
+                <div class="bg-blue-50 p-3 rounded border border-blue-100">
+                    <div class="font-bold text-blue-800 text-sm mb-1">Shadow Posting Engine</div>
+                    <p class="text-xs text-gray-600">Tạo bút toán ảo; cập nhật số dư VA và số dư roll-up theo cây VA nhiều cấp (3–5 cấp).</p>
+                </div>
+                <div class="bg-blue-50 p-3 rounded border border-blue-100">
+                    <div class="font-bold text-blue-800 text-sm mb-1">VA Balance Engine</div>
+                    <p class="text-xs text-gray-600">Tính toán số dư tức thời, đồng bộ với Ledger ảo và sự kiện từ Core.</p>
+                </div>
+            </div>
+            <p class="mt-4 text-sm text-blue-800 font-medium px-2">→ VA Engine hoạt động độc lập với Core, giúp BIDV linh hoạt mở rộng tính năng mà không ảnh hưởng đến hệ lõi.</p>
+        </div>
+
+        <!-- 3 & 4: Core & Data (Split Columns) -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Core Banking -->
+            <div class="bg-slate-50 border border-slate-200 rounded-lg p-4 h-full">
+                <div class="flex items-center gap-2 mb-2 text-slate-800 font-bold">
+                    <i data-lucide="server" class="w-5 h-5"></i> Core Banking Layer
+                </div>
+                <p class="text-xs text-slate-500 mb-2 uppercase font-bold tracking-wide border-b border-slate-200 pb-1">Nơi ghi nhận bút toán thật</p>
+                <ul class="text-sm text-gray-700 space-y-2 mb-3">
+                    <li class="flex items-start gap-2"><span class="w-1.5 h-1.5 rounded-full bg-slate-400 mt-1.5"></span> <span><strong>Deposit Module:</strong> hạch toán thực trên tài khoản DDA.</span></li>
+                    <li class="flex items-start gap-2"><span class="w-1.5 h-1.5 rounded-full bg-slate-400 mt-1.5"></span> <span><strong>Event Bus:</strong> phát tín hiệu “Credit/Debit Notification” mỗi khi Core hoàn tất giao dịch.</span></li>
+                </ul>
+                <div class="text-xs italic text-slate-600 bg-white p-2 rounded border border-slate-100">
+                    Core chỉ thực hiện nhiệm vụ kế toán; mọi logic điều phối, mapping, đối soát và xử lý ảo đều nằm ở Deposit Core Hub.
+                </div>
+            </div>
+
+            <!-- Data Layer -->
+            <div class="bg-cyan-50 border border-cyan-200 rounded-lg p-4 h-full">
+                <div class="flex items-center gap-2 mb-2 text-cyan-800 font-bold">
+                    <i data-lucide="database" class="w-5 h-5"></i> Data Layer
+                </div>
+                <p class="text-xs text-cyan-600 mb-2 uppercase font-bold tracking-wide border-b border-cyan-200 pb-1">Phân tách ledger thật và ảo</p>
+                <ul class="text-sm text-gray-700 space-y-2 mb-3">
+                    <li class="flex items-start gap-2"><span class="w-1.5 h-1.5 rounded-full bg-cyan-400 mt-1.5"></span> <span><strong>Core Ledger:</strong> số dư và giao dịch thật của DDA.</span></li>
+                    <li class="flex items-start gap-2"><span class="w-1.5 h-1.5 rounded-full bg-cyan-400 mt-1.5"></span> <span><strong>VA Ledger (Shadow):</strong> bút toán ảo cho từng VA và từng level trong hệ thống.</span></li>
+                </ul>
+                <div class="text-xs italic text-cyan-700 bg-white p-2 rounded border border-cyan-100">
+                    Cách tách biệt này giúp VA mở rộng linh hoạt, không gây rủi ro cho Core Banking.
+                </div>
+            </div>
+        </div>
+
+        <!-- Summary Value -->
+        <div class="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-lg p-5 shadow-sm">
+            <h4 class="text-green-800 font-bold text-lg mb-3 flex items-center gap-2">
+                <i data-lucide="gem" class="w-5 h-5"></i> Tóm lược giá trị kiến trúc
+            </h4>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm text-gray-700">
+                <div class="flex gap-2 items-start"><i data-lucide="check" class="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5"></i> <span>Tách biệt nghiệp vụ khỏi Core, giảm tải và giảm thay đổi cho hệ lõi.</span></div>
+                <div class="flex gap-2 items-start"><i data-lucide="check" class="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5"></i> <span>Hỗ trợ hai mô hình giao dịch: VA-first và DDA-first.</span></div>
+                <div class="flex gap-2 items-start"><i data-lucide="check" class="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5"></i> <span>Đảm bảo vận hành real-time, minh bạch và dễ kiểm soát.</span></div>
+                <div class="flex gap-2 items-start"><i data-lucide="check" class="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5"></i> <span>Tạo nền tảng cho nhiều sản phẩm mới: thu hộ/chi hộ, pooling, quản lý dòng tiền.</span></div>
+            </div>
+            <div class="mt-4 pt-3 border-t border-green-200 text-center text-green-900 font-bold italic text-sm">
+                "Đây là kiến trúc đột phá, giúp BIDV hiện đại hóa phân hệ tiền gửi và sẵn sàng cho chiến lược ngân hàng giao dịch số."
+            </div>
+        </div>
+    </div>
+    <!-- END UPDATED CONTENT FOR SECTION 2 -->
+
+    <!-- Sơ đồ số 10: Data Model VA (ERD) -->
+    <div class="section-header">3. Sơ đồ số 10 – Data Model VA (ERD)</div>
+    <div class="placeholder-box">
+        <p class="placeholder-label">Sơ đồ 10/12: Data Model VA (ERD) & Data Flow</p>
+        <span class="text-sm text-gray-500">
+            <code class="bg-white p-1 rounded font-mono text-sm border border-gray-300">./Picture/Sodo_10_Data_Model_VA_ERD.png</code>
+        </span>
+        <p class="text-xs mt-2 text-red-600">Placeholder. Vui lòng đặt ảnh thực tế (Sơ đồ #10) vào thư mục 'Picture'.</p>
+    </div>
+    <div class="space-y-4 text-gray-700 mt-4 p-4 border border-gray-200 rounded-lg bg-gray-50">
+        <p class="font-bold text-lg text-blue-800">Kiến trúc Tách bạch Dữ liệu (Decoupled Data Layer)</p>
+        <p>Kiến trúc dữ liệu được thiết kế tách biệt hoàn toàn. Sơ đồ này cho thấy cấu trúc ERD tổng quan, bao gồm các bảng VA, VA Ledger, VA Balance, Hierarchy, và các quan hệ với DDA.</p>
+        <ul class="list-disc ml-8 space-y-1">
+            <li><span class="font-bold">Core Banking DB:</span> Chứa <span class="text-green-700 font-bold">DDA ledger (sổ cái thật)</span>, là nguồn dữ liệu chuẩn mực duy nhất để kiểm toán.</li>
+            <li><span class="font-bold">VA DB:</span> Chứa <span class="text-green-700 font-bold">VA ledger (sổ cái ảo)</span>, registry, mapping (ánh xạ VA-DDA), và các quy tắc nghiệp vụ (rules). Tối ưu cho tốc độ tra cứu.</li>
+            <li><span class="font-bold">Reporting DB / Data Mart:</span> Dữ liệu tổng hợp từ cả Core và VA để phục vụ các báo cáo quản trị (BI) mà không ảnh hưởng đến hiệu năng giao dịch.</li>
+        </ul>
+    </div>
+
+    <!-- Sơ đồ số 11: Deployment Architecture (Kết hợp với ERD chi tiết theo yêu cầu) -->
+    <div class="section-header">4. Sơ đồ số 11 – Deployment Architecture</div>
+    <div class="placeholder-box">
+        <p class="placeholder-label">Sơ đồ 11/12: Deployment Architecture</p>
+        <span class="text-sm text-gray-500">
+            <code class="bg-white p-1 rounded font-mono text-sm border border-gray-300">./Picture/Sodo_11_Deployment_Architecture.png</code>
+        </span>
+        <p class="text-xs mt-2 text-red-600">Placeholder. Vui lòng đặt ảnh thực tế (Sơ đồ #11) vào thư mục 'Picture'.</p>
+    </div>
+    <div class="space-y-4 text-gray-700 mt-4 p-4 border border-gray-200 rounded-lg bg-gray-50">
+        <p class="font-bold text-lg text-blue-800">Mô hình Triển khai Hiện đại (Deployment & Integration)</p>
+        <p>Deposit Core Hub (Super Layer) được triển khai trên nền tảng hiện đại, tách biệt với môi trường Core Banking truyền thống. Sơ đồ này mô tả chi tiết cách hệ thống được triển khai và vận hành.</p>
+        <ul class="list-disc ml-8 space-y-1">
+            <li><span class="font-bold">Containerized:</span> Sử dụng Docker/Kubernetes cho VA Engine & Routing Hub.</li>
+            <li><span class="font-bold">Scaling độc lập:</span> Khả năng mở rộng (Scaling) độc lập theo từng microservice (Incoming Flow, Outgoing Flow, Lookup Services...).</li>
+            <li><span class="font-bold">Zero-downtime deployment:</span> Áp dụng phương pháp Rolling Update hoặc Blue/Green.</li>
+            <li><span class="font-bold">HA & DR:</span> Triển khai theo mô hình Multinode Cluster (High Availability) và đồng bộ với DR Site (Disaster Recovery).</li>
+        </ul>
+    </div>
+
+    <!-- Sơ đồ số 12: Integration Architecture (Kết hợp với Deployment Architecture theo yêu cầu) -->
+    <div class="section-header">5. Sơ đồ số 12 – Integration & Deployment Architecture (Cơ chế Tích hợp)</div>
+    <div class="placeholder-box">
+        <p class="placeholder-label">Sơ đồ 12/12: Integration Architecture</p>
+        <span class="text-sm text-gray-500">
+            <code class="bg-white p-1 rounded font-mono text-sm border border-gray-300">./Picture/Sodo_12_Integration_Architecture.png</code>
+        </span>
+        <p class="text-xs mt-2 text-red-600">Placeholder. Vui lòng đặt ảnh thực tế (Sơ đồ #12) vào thư mục 'Picture'.</p>
+    </div>
+    <div class="space-y-4 text-gray-700 mt-4 p-4 border border-gray-200 rounded-lg bg-gray-50">
+        <p class="font-bold text-lg text-blue-800">Cơ chế Tích hợp Bất Đồng Bộ (Event-Driven)</p>
+        <p>Kiến trúc tích hợp Event-Driven (dựa trên Event Bus như Kafka) là mấu chốt để đạt được hiệu năng và tính ổn định, giảm độ phụ thuộc đồng bộ giữa hai hệ thống Core và Super Layer.</p>
+        <ul class="list-disc ml-8 space-y-1">
+            <li><span class="font-bold">Core to Super Layer:</span> Core Banking phát các sự kiện (posting, interest) lên Event Bus sau khi hoàn thành hạch toán sổ cái thật (DDA).</li>
+            <li><span class="font-bold">Super Layer Listener:</span> VA Engine lắng nghe sự kiện. Chỉ khi nhận được sự kiện xác nhận Ghi Có/Ghi Nợ thành công từ Core, VA Engine mới tiến hành Ghi Có/Ghi Nợ vào <span class="text-indigo-700 font-semibold">VA Ledger (sổ cái ảo)</span>.</li>
+            <li><span class="font-bold">Đảm bảo:</span> Cơ chế <span class="font-semibold text-red-700">at-least-once delivery</span> và retry để duy trì tính toàn vẹn của giao dịch.</li>
+        </ul>
+    </div>
+
+
+    <!-- II. NHÓM SƠ ĐỒ KIẾN TRÚC LOGIC & LUỒNG XỬ LÝ NGHIỆP VỤ -->
+    <h2 class="sub-header">
+        <i data-lucide="trello" class="w-6 h-6 text-indigo-500"></i>
+        II. Nhóm 2 – Sơ đồ Kiến trúc Logic & Luồng Xử lý Nghiệp vụ
+    </h2>
+    <p class="pl-2 text-gray-700 italic">Các sơ đồ này mô tả chi tiết từng luồng nghiệp vụ, bao gồm luồng giao dịch, quản lý VA và đối chiếu (Sơ đồ #3 $\to$ #9).</p>
+
+    <!-- Sơ đồ số 3: VA Query/Lookup Flow -->
+    <div class="section-header">6. Sơ đồ số 3 – VA Query/Lookup Flow</div>
+    <p class="text-gray-700 italic">Quy trình tra cứu thông tin và số dư VA từ các kênh Digital Channels.</p>
+    <div class="placeholder-box">
+        <p class="placeholder-label">Sơ đồ 3/12: VA Query/Lookup Flow</p>
+        <span class="text-sm text-gray-500">
+            <code class="bg-white p-1 rounded font-mono text-sm border border-gray-300">./Picture/Sodo_3_VA_Query_Lookup_Flow.png</code>
+        </span>
+        <p class="text-xs mt-2 text-red-600">Placeholder. Vui lòng đặt ảnh thực tế (Sơ đồ #3) vào thư mục 'Picture'.</p>
+    </div>
+    <div class="space-y-4 text-gray-700 mt-4 p-4 border border-gray-200 rounded-lg bg-gray-50">
+        <p class="font-bold text-lg text-blue-800">Tra cứu Số dư từ VA DB</p>
+        <p>Để đảm bảo hiệu năng, các yêu cầu tra cứu số dư và thông tin VA (lookup) được xử lý hoàn toàn tại Super Layer:</p>
+        <ul class="list-disc ml-8 space-y-1">
+            <li><span class="font-bold">VA Engine (Lookup):</span> Nhận yêu cầu và truy vấn trực tiếp vào <span class="text-indigo-700 font-semibold">VA DB</span> (nơi lưu trữ VA Ledger và số dư ảo).</li>
+            <li><span class="font-bold">Phản hồi tức thì:</span> Kết quả được trả về nhanh chóng từ VA DB, tránh việc truy vấn Core Banking liên tục, tăng cường trải nghiệm người dùng (UX).</li>
+        </ul>
+    </div>
+
+    <!-- Sơ đồ số 4: VA-first Incoming Flow (Credit to VA) -->
+    <div class="section-header">7. Sơ đồ số 4 – VA-first Incoming Flow (Credit to VA)</div>
+    <p class="text-gray-700 italic">Quy trình xử lý giao dịch ghi Có vào VA khi VA được định danh trực tiếp.</p>
+    <div class="placeholder-box">
+        <p class="placeholder-label">Sơ đồ 4/12: VA-first Incoming Flow (Credit to VA)</p>
+        <span class="text-sm text-gray-500">
+            <code class="bg-white p-1 rounded font-mono text-sm border border-gray-300">./Picture/Sodo_4_VA_first_Incoming_Transaction_Flow.png</code>
+        </span>
+        <p class="text-xs mt-2 text-red-600">Placeholder. Vui lòng đặt ảnh thực tế (Sơ đồ #4) vào thư mục 'Picture'.</p>
+    </div>
+    <div class="space-y-4 text-gray-700 mt-4 p-4 border border-gray-200 rounded-lg bg-gray-50">
+        <p class="font-bold text-lg text-blue-800">Quy trình Giao dịch Ghi Có VA-first</p>
+        <p>Đây là luồng chuẩn quốc tế khi VA được sử dụng làm tài khoản đích:</p>
+        <ul class="list-disc ml-8 space-y-1">
+            <li><span class="font-bold">1. Routing & Mapping:</span> Routing Hub nhận dạng tài khoản VA và ánh xạ về DDA thật tương ứng tại Core.</li>
+            <li><span class="font-bold">2. Core Posting:</span> Thực hiện giao dịch <span class="text-green-700 font-semibold">Ghi Có (Credit)</span> vào tài khoản DDA thật tại Core Banking.</li>
+            <li><span class="font-bold">3. Event & Shadow Posting:</span> Core phát sự kiện. VA Engine lắng nghe và Ghi Có vào <span class="text-indigo-700 font-semibold">VA Ledger (sổ cái ảo)</span>.</li>
+        </ul>
+    </div>
+
+    <!-- Sơ đồ số 5: Outgoing từ VA -->
+    <div class="section-header">8. Sơ đồ số 5 – Outgoing từ VA (Debit from VA)</div>
+    <p class="text-gray-700 italic">Quy trình xử lý giao dịch ghi Nợ từ VA, đảm bảo kiểm tra số dư VA trước khi Debit Core.</p>
+    <div class="placeholder-box">
+        <p class="placeholder-label">Sơ đồ 5/12: Outgoing Transaction Flow (Debit from VA)</p>
+        <span class="text-sm text-gray-500">
+            <code class="bg-white p-1 rounded font-mono text-sm border border-gray-300">./Picture/Sodo_5_Outgoing_Transaction_Flow.png</code>
+        </span>
+        <p class="text-xs mt-2 text-red-600">Placeholder. Vui lòng đặt ảnh thực tế (Sơ đồ #5) vào thư mục 'Picture'.</p>
+    </div>
+    <div class="space-y-4 text-gray-700 mt-4 p-4 border border-gray-200 rounded-lg bg-gray-50">
+        <p class="font-bold text-lg text-blue-800">Quy tắc VA-first cho Ghi Nợ</p>
+        <p>Giao dịch Ghi Nợ phải tuân theo quy tắc VA-first để đảm bảo VA không bị âm sổ ảo và DDA thật có đủ số dư:</p>
+        <ul class="list-disc ml-8 space-y-1">
+            <li><span class="font-bold">1. VA Engine Validation:</span> VA Engine kiểm tra <span class="text-red-700 font-semibold">Số Dư Khả Dụng</span> của VA trong sổ cái ảo. Nếu không đủ, giao dịch bị từ chối ngay.</li>
+            <li><span class="font-bold">2. Core Posting:</span> Nếu đủ, Core Banking thực hiện giao dịch <span class="text-red-700 font-semibold">Ghi Nợ (Debit)</span> vào tài khoản DDA thật.</li>
+            <li><span class="font-bold">3. Event & Shadow Posting:</span> Core phát sự kiện. VA Engine Ghi Nợ vào <span class="text-indigo-700 font-semibold">VA Ledger (sổ cái ảo)</span>.</li>
+        </ul>
+    </div>
+
+    <!-- Sơ đồ số 6: Interest Allocation Flow -->
+    <div class="section-header">9. Sơ đồ số 6 – Interest Allocation Flow</div>
+    <p class="text-gray-700 italic">Mô tả luồng tính toán và phân bổ lãi/phí từ DDA xuống VA.</p>
+    <div class="placeholder-box">
+        <p class="placeholder-label">Sơ đồ 6/12: Interest Allocation Flow</p>
+        <span class="text-sm text-gray-500">
+            <code class="bg-white p-1 rounded font-mono text-sm border border-gray-300">./Picture/Sodo_6_Interest_Allocation_Flow.png</code>
+        </span>
+        <p class="text-xs mt-2 text-red-600">Placeholder. Vui lòng đặt ảnh thực tế (Sơ đồ #6) vào thư mục 'Picture'.</p>
+    </div>
+    <div class="space-y-4 text-gray-700 mt-4 p-4 border border-gray-200 rounded-lg bg-gray-50">
+        <p class="font-bold text-lg text-blue-800">Phân bổ Lãi/Phí</p>
+        <ul class="list-disc ml-8 space-y-1">
+            <li><span class="font-bold">1. Core Banking:</span> Tính lãi và hạch toán lãi/phí vào tài khoản <span class="text-green-700 font-semibold">DDA thật</span>, sau đó phát sự kiện (interest/fee event).</li>
+            <li><span class="font-bold">2. VA Engine (Interest Allocation):</span> Lắng nghe sự kiện. Thực hiện logic nghiệp vụ để phân bổ số lãi/phí nhận được từ DDA thật xuống từng VA Con (dựa trên tỷ lệ số dư trung bình).</li>
+            <li><span class="font-bold">3. Ghi sổ ảo:</span> Ghi Có (lãi) hoặc Ghi Nợ (phí) vào <span class="text-indigo-700 font-semibold">VA Ledger</span> của từng VA Con.</li>
+        </ul>
+    </div>
+
+    <!-- Sơ đồ số 7: Sequence VA-first (Sử dụng nội dung Reconciliation Mechanism) -->
+    <div class="section-header">10. Sơ đồ số 7 – Reconciliation Mechanism (Cơ chế Đối chiếu)</div>
+    <p class="text-gray-700 italic">Cơ chế đối chiếu giữa sổ cái ảo (VA Ledger) và sổ cái thật (Core Banking Ledger/DDA) (là cơ sở để kiểm toán luồng VA-first).</p>
+    <div class="placeholder-box">
+        <p class="placeholder-label">Sơ đồ 7/12: Reconciliation Mechanism</p>
+        <span class="text-sm text-gray-500">
+            <code class="bg-white p-1 rounded font-mono text-sm border border-gray-300">./Picture/Sodo_7_Reconciliation_Mechanism.png</code>
+        </span>
+        <p class="text-xs mt-2 text-red-600">Placeholder. Vui lòng đặt ảnh thực tế (Sơ đồ #7) vào thư mục 'Picture'.</p>
+    </div>
+    <div class="space-y-4 text-gray-700 mt-4 p-4 border border-gray-200 rounded-lg bg-gray-50">
+        <p class="font-bold text-lg text-blue-800">Đảm bảo Đồng bộ Sổ cái</p>
+        <p>Vì giao dịch được xử lý bất đồng bộ, một cơ chế đối chiếu tự động là bắt buộc.</p>
+        <ul class="list-disc ml-8 space-y-1">
+            <li><span class="font-bold">1. Đối chiếu theo Sự kiện:</span> Mỗi sự kiện từ Core Banking (Ghi Có/Ghi Nợ DDA) phải có một bản ghi tương ứng trong VA Ledger.</li>
+            <li><span class="font-bold">2. Đối chiếu Định kỳ (EOD):</span> Xác nhận <span class="text-red-700 font-semibold">Tổng Số dư Thực của tất cả VA Con = Số dư DDA Thực tế tại Core</span>.</li>
+            <li><span class="font-bold">3. Xử lý Chênh lệch:</span> Tự động phát cảnh báo và kích hoạt quy trình điều chỉnh nếu chênh lệch xảy ra.</li>
+        </ul>
+    </div>
+
+    <!-- Sơ đồ số 8: VA Lifecycle -->
+    <div class="section-header">11. Sơ đồ số 8 – VA Lifecycle (Vòng đời VA)</div>
+    <p class="text-gray-700 italic">Mô tả vòng đời của một tài khoản VA, từ khởi tạo đến đóng (là cơ sở cho Sequence Outgoing VA).</p>
+    <div class="placeholder-box">
+        <p class="placeholder-label">Sơ đồ 8/12: VA Lifecycle</p>
+        <span class="text-sm text-gray-500">
+            <code class="bg-white p-1 rounded font-mono text-sm border border-gray-300">./Picture/Sodo_8_VA_Lifecycle.png</code>
+        </span>
+        <p class="text-xs mt-2 text-red-600">Placeholder. Vui lòng đặt ảnh thực tế (Sơ đồ #8) vào thư mục 'Picture'.</p>
+    </div>
+    <div class="space-y-4 text-gray-700 mt-4 p-4 border border-gray-200 rounded-lg bg-gray-50">
+        <p class="font-bold text-lg text-blue-800">Các Trạng thái và Chuyển đổi Trạng thái VA</p>
+        <ul class="list-disc ml-8 space-y-1">
+            <li><span class="font-bold text-green-700">Created (Khởi tạo):</span> VA được tạo nhưng chưa kích hoạt.</li>
+            <li><span class="font-bold text-green-700">Active (Hoạt động):</span> Sẵn sàng cho giao dịch Ghi Có/Ghi Nợ.</li>
+            <li><span class="font-bold text-red-700">Inactive/Frozen (Tạm khóa):</span> VA bị tạm khóa (có thể cho Ghi Có, không cho Ghi Nợ).</li>
+            <li><span class="font-bold text-red-700">Closed (Đã đóng):</span> VA đã bị đóng vĩnh viễn, không thể giao dịch.</li>
+        </ul>
+    </div>
+    
+    <!-- Sơ đồ số 9: VA Hierarchy & Management -->
+    <div class="section-header">12. Sơ đồ số 9 – VA Hierarchy & Management (Cấu trúc Phân cấp)</div>
+    <p class="text-gray-700 italic">Mô tả cấu trúc quản lý VA mẹ/con (Mother/Child VA) (là cơ sở cho Sequence Interest Allocation).</p>
+    <div class="placeholder-box">
+        <p class="placeholder-label">Sơ đồ 9/12: VA Hierarchy & Management</p>
+        <span class="text-sm text-gray-500">
+            <code class="bg-white p-1 rounded font-mono text-sm border border-gray-300">./Picture/Sodo_9_VA_Hierarchy_Management.png</code>
+        </span>
+        <p class="text-xs mt-2 text-red-600">Placeholder. Vui lòng đặt ảnh thực tế (Sơ đồ #9) vào thư mục 'Picture'.</p>
+    </div>
+    <div class="space-y-4 text-gray-700 mt-4 p-4 border border-gray-200 rounded-lg bg-gray-50">
+        <p class="font-bold text-lg text-blue-800">Cấu trúc VA Mẹ/Con</p>
+        <p>VA Engine hỗ trợ mô hình VA có cấu trúc phân cấp để quản lý dòng tiền theo trung tâm chi phí/đơn vị thành viên (VA Con) dựa trên một tài khoản Core Banking thật duy nhất (VA Mẹ).</p>
+        <ul class="list-disc ml-8 space-y-1">
+            <li><span class="font-bold">VA Mẹ (Mother VA):</span> Ánh xạ trực tiếp tới một tài khoản DDA tại Core Banking. Giữ sổ cái thật.</li>
+            <li><span class="font-bold">VA Con (Child VA):</span> Có sổ cái ảo (shadow ledger) trong VA DB.</li>
+            <li><span class="font-bold text-red-700">Quy tắc then chốt:</span> Tổng số dư thực (Real Balance) của tất cả VA Con phải bằng (=) Số dư thực tế (Actual Balance) của tài khoản DDA tại Core.</li>
+        </ul>
+    </div>
+
+    
+    <footer class="text-center mt-10 pt-4 border-t border-gray-200 text-gray-500 text-sm">
+        Tài liệu Kiến trúc Hệ thống Virtual Account.
+        <script>
+            // Initialize Lucide Icons
+            lucide.createIcons();
+        </script>
+    </footer>
+
+</div>
+
+</body>
+</html>
