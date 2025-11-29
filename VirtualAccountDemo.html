@@ -42,12 +42,12 @@
     <div id="root"></div>
 
     <script type="text/babel">
-        // Ensure React and ReactDOM are available
         const React = window.React;
         const ReactDOM = window.ReactDOM;
-        const { useState, useEffect, useMemo } = React;
+        const { useState, useEffect, useMemo, useRef } = React;
         
         // --- TRANSLATION RESOURCES ---
+        // Đã tách nội dung Guide dài dòng ra khỏi đây để code gọn hơn
         const resources = {
             vi: {
                 app_name: "BankB Ebank",
@@ -195,172 +195,8 @@
                     no_tx: "Không có giao dịch nào trong kỳ."
                 },
                 guide: {
-                    title: "Hướng Dẫn & Quy Trình",
-                    intro_text: "Virtual account là giải pháp được xây dựng trên lớp Deposit Business Logic do BIDV viết thêm phủ ra ngoài phân hệ deposit cốt lõi trong core để xử lý các yêu cầu nghiệp vụ mới của tiền gửi, tránh ảnh hưởng đến hiệu năng và logic xử lý của core banking",
-                    glossary_title: "Giải Thích Thuật Ngữ",
-                    guide_title: "Quy Trình Xử Lý Giao Dịch Chi Tiết",
-                    tech_title: "Cơ Chế Quản Lý Số Dư Kép",
-                    dual_balance: {
-                        why_title: "Tại sao cần 2 loại số dư?",
-                        why_desc: "Trong quản lý dòng tiền tập trung, doanh nghiệp cần biết tiền đang nằm thực tế ở đâu (Real Balance) và tổng nguồn lực mà một đơn vị cấp cao có quyền điều phối (Roll-up Balance).",
-                        real_title: "1. Số dư thực (Real Balance)",
-                        real_desc: "Là số tiền thực sự được ghi nhận tại tài khoản VA đó. Khi sao kê tài khoản VA, đây là số dư hiển thị.",
-                        rollup_title: "2. Số dư cộng dồn (Roll-up Balance)",
-                        rollup_desc: "Là tổng số dư của VA đó cộng với tất cả các VA con cháu. Dùng cho mục đích báo cáo quản trị tổng hợp."
-                    },
-                    legacy_process: {
-                        title: "2. QUY TRÌNH XỬ LÝ VIRTUAL ACCOUNT HIỆN TẠI",
-                        flow_intro: "Quy trình này chia làm 2 giai đoạn chính: Giai đoạn Vấn tin (Kiểm tra thông tin) và Giai đoạn Hạch toán (Thực hiện giao dịch). Dưới đây là mô tả chi tiết theo luồng đi của dữ liệu:",
-                        phases: [
-                            {
-                                name: "GIAI ĐOẠN 1: VẤN TIN (Kiểm tra thông tin người thụ hưởng)",
-                                purpose: "Mục đích: Xác thực thông tin tài khoản đích và số tiền trước khi chuyển.",
-                                steps: [
-                                    "Bước 1: Khởi tạo: Khách hàng tại Ngân hàng ngoài (NH chuyển) bắt đầu thực hiện giao dịch chuyển tiền 247. Họ nhập thông tin tài khoản thụ hưởng và yêu cầu vấn tin.",
-                                    "Bước 2: Kiểm tra định dạng (Tại Chương trình 247): Hệ thống tiếp nhận yêu cầu và kiểm tra định dạng tài khoản hưởng.\n- Nếu là tài khoản thường -> Chuyển luồng Core Banking.\n- Nếu là VA/Alias -> Chuyển sang hệ thống Paygate.",
-                                    "Bước 3: Xử lý tại Paygate: Paygate kiểm tra loại tài khoản và bóc tách thông tin.\n- Nếu là VA: Gửi yêu cầu sang NCCDV/Kho dữ liệu lấy thông tin cước.\n- Nếu là Alias: Phản hồi tên và số DDA liên kết.",
-                                    "Bước 4: Tổng hợp thông tin (Tại Chương trình 247):\n- Gọi Core Banking truy vấn trạng thái DDA liên kết.\n- Lưu thông tin tạm thời (Cache): Tên người hưởng, số tiền, Billid (với VA)...",
-                                    "Bước 5: Phản hồi khách hàng: Kết quả được gửi trả về Ngân hàng ngoài để khách hàng kiểm tra."
-                                ]
-                            },
-                            {
-                                name: "GIAI ĐOẠN 2: HẠCH TOÁN (Thực hiện chuyển tiền)",
-                                purpose: "Mục đích: Ghi nhận dòng tiền và gạch nợ.",
-                                steps: [
-                                    "Bước 1: Xác nhận giao dịch: Khách hàng xác nhận. Yêu cầu hạch toán được gửi đi.",
-                                    "Bước 2: Định tuyến lại (Tại Chương trình 247): Kiểm tra lại định dạng. Nếu là VA/Alias -> Lấy lại thông tin Cache từ bước Vấn tin.",
-                                    "Bước 3: Xử lý Hạch toán:\n- Nhánh Alias: Gửi lệnh vào Core để ghi CÓ trực tiếp vào DDA khách hàng.\n- Nhánh VA: Kiểm tra tham số (số tiền, nợ cước) -> Gửi lệnh ghi CÓ vào tài khoản chuyên thu của NCC tại Core.",
-                                    "Bước 4: Gạch nợ và Hoàn tất:\n- Sau khi Core trả kết quả thành công:\n- Với VA: Hệ thống gửi yêu cầu sang NCCDV/Kho dữ liệu để Gạch nợ hóa đơn.\n- Ghi nhận thành công.",
-                                    "Bước 5: Kết thúc: Gửi kết quả cuối cùng về Ngân hàng ngoài."
-                                ]
-                            }
-                        ],
-                        summary: "Tóm tắt các hệ thống tham gia:\n- Ngân hàng ngoài: Nơi khởi tạo giao dịch.\n- Chương trình 247: Bộ điều phối chính, quyết định luồng đi (Router).\n- Paygate: Cổng xử lý logic cho VA/Alias, giao tiếp với đối tác.\n- Core Banking: Hệ thống lõi quản lý tài khoản tiền và hạch toán.\n- NCCDV/Kho dữ liệu: Hệ thống của đơn vị cung cấp dịch vụ lưu trữ hóa đơn."
-                    },
-                    new_feature_process: {
-                        title: "3. TÍNH NĂNG VÀ QUY TRÌNH VIRTUAL ACCOUNT MỚI",
-                        intro: "I. MÔ HÌNH 2 LỰA CHỌN GIAO DỊCH CHO DỊCH VỤ VIRTUAL ACCOUNT\nKhi khách hàng đăng ký sử dụng VA, ngân hàng cung cấp hai lựa chọn giao dịch:",
-                        options: [
-                            {
-                                name: "OPTION 1 – Giao dịch trực tiếp bằng số VA (Virtual Account)",
-                                desc: "Khách hàng nhập số VA khi thực hiện giao dịch. Hệ thống sẽ kiểm tra VA trước, nếu hợp lệ mới cho phép thực hiện hạch toán thật vào tài khoản gốc (DDA).",
-                                benefits: [
-                                    "Nếu VA sai → giao dịch bị từ chối ngay.",
-                                    "Mọi khoản tiền vào đều chắc chắn thuộc đúng VA.",
-                                    "Tài khoản gốc (DDA) chỉ nhận các khoản tiền hợp lệ từ VA."
-                                ],
-                                suitable_for: "GPMB, thu ngân sách, dự án Nhà nước. Doanh nghiệp có yêu cầu quản lý dòng tiền chặt chẽ.",
-                                flow_title: "Luồng xử lý Option 1 (VA-first)",
-                                steps: [
-                                    "B1: Khách hàng nhập số VA (thay vì số DDA), số tiền và nội dung.",
-                                    "B2: Hệ thống kiểm tra VA (tồn tại, hoạt động, hiệu lực, kênh...). Nếu không hợp lệ → báo lỗi ngay.",
-                                    "B3: Nếu VA hợp lệ, xác định TK gốc và ghi có. Nếu lỗi → dừng.",
-                                    "B4: Tạo bút toán ảo cho VA, cập nhật số dư VA và Roll-up."
-                                ]
-                            },
-                            {
-                                name: "OPTION 2 – Giao dịch bằng số DDA, VA xử lý sau dựa trên nội dung giao dịch (DDA-first)",
-                                desc: "Khách hàng không nhập số VA, chỉ nhập số DDA như bình thường. Thông tin nhận diện VA sẽ nằm trong ghi chú/remark hoặc theo mẫu doanh nghiệp đã đăng ký. Hệ thống chỉ thực hiện “VA hạch toán ảo” sau khi DDA đã nhận tiền.",
-                                benefits: [
-                                    "Không làm thay đổi thói quen doanh nghiệp.",
-                                    "Vẫn giữ nguyên các luồng chuyển khoản liên ngân hàng.",
-                                    "Tận dụng VA để tự động phân bổ giao dịch sau này."
-                                ],
-                                flow_title: "Luồng xử lý Option 2 (DDA-first)",
-                                steps: [
-                                    "B1: Khách hàng chuyển tiền vào số DDA, có hoặc không có ghi chú nhận diện.",
-                                    "B2: Khoản tiền được ghi có vào DDA như một giao dịch thông thường. Nếu lỗi -> dừng.",
-                                    "B3: Kiểm tra DDA có đăng ký dịch vụ VA hay không: Nếu có → tiếp tục, không → xong.",
-                                    "B4: Đọc nội dung giao dịch (ghi chú), áp dụng quy tắc. (4A: Tìm được -> B5; 4B: Không tìm được -> Danh sách chưa nhận diện; 4C: Nhiều VA -> Quy tắc ưu tiên).",
-                                    "B5: Tạo bút toán ảo vào VA tìm được, cập nhật số dư VA và Roll-up. Ghi lại lịch sử truy vết."
-                                ]
-                            }
-                        ],
-                        comparison_title: "III. Sơ đồ so sánh ngắn gọn hai lựa chọn",
-                        comparison_table: {
-                            headers: ["Nội dung", "Option 1 – Dùng VA", "Option 2 – Dùng DDA & remark"],
-                            rows: [
-                                ["Cách khách hàng nhập", "Nhập số VA", "Nhập số DDA"],
-                                ["Kiểm tra VA", "Kiểm tra trước khi hạch toán", "Kiểm tra sau khi DDA nhận tiền"],
-                                ["Đảm bảo đúng VA", "Rất cao", "Phụ thuộc vào ghi chú & quy tắc"],
-                                ["Rủi ro không tìm được VA", "Không có", "Có (được đưa vào danh sách chờ xử lý)"],
-                                ["Phù hợp cho", "Thu ngân sách, GPMB, kiểm soát chặt", "Doanh nghiệp quen dùng DDA, GD liên ngân hàng"],
-                                ["Độ tương thích hệ thống", "Cần chỉnh giao diện kênh", "Hoàn toàn giữ nguyên giao diện hiện tại"]
-                            ]
-                        }
-                    },
-                    terms: {
-                        RealBalance: "Số dư thực (Own Balance). Số tiền thực tế nằm tại chính tài khoản VA đó, không bao gồm tiền của các tài khoản con.",
-                        RollupBalance: "Số dư cộng dồn (Roll-up Balance). Tổng tiền của chính VA đó + Tổng số dư Roll-up của tất cả các VA con trực thuộc. Dùng để quản lý hạn mức tổng.",
-                        VA: "Virtual Account (Tài khoản ảo/định danh)là tài khoản phụ gắn với tài khoản thanh toán chính, dùng để định danh và phân loại giao dịch theo từng mục đích hoặc từng đơn vị. Có hai loại:Light VA: chỉ nhận diện giao dịch, không số dư, không hạch toán. Full VA: có số dư nội bộ, hạn mức và quản lý như sub-account. Tên VA có thể theo dự án/hợp đồng/đơn vị, nhưng không phải tài khoản pháp lý; mọi nghĩa vụ vẫn thuộc tài khoản chính. VA giúp doanh nghiệp tự động hóa đối soát và tập trung hóa dòng tiền",
-                        DDA: "Demand Deposit Account (Tài khoản thanh toán). Tài khoản thực của doanh nghiệp tại ngân hàng.",
-                        "Giao dịch gốc và giao dịch shadow": "Giao dịch gốc là giao dịch nợ, có ghi nhận vào tài khoản DDA, giao dịch Shadow là giao dịch phụ được ghi nhận thêm vào các tài khoản VA chi tiết có liên kết với tài khoản DDA để phục vụ mục đính định tuyến giao dịch, quản lý dòng tiền và lên báo cáo"
-                    },
-                    processes: [
-                        {
-                            title: "1. Quy trình Onboarding (Thiết lập ban đầu)",
-                            steps: [
-                                "Bước 1 (Tại Quầy/Core): Mở mã CIF khách hàng doanh nghiệp và Tài khoản thanh toán (DDA) thực.",
-                                "Bước 2 (Trên VA System - Menu 'Hồ Sơ Doanh Nghiệp'): Tạo hồ sơ doanh nghiệp mới, nhập CIF.",
-                                "Bước 3: Liên kết (Link) các tài khoản DDA thực vào hệ thống VA để làm tài khoản Master (Tài khoản tổng).",
-                                "Bước 4: Phân quyền user quản trị và phê duyệt hạn mức (nếu có)."
-                            ]
-                        },
-                        {
-                            title: "2. Quy trình Quản lý Cây Thư mục VA (VA Lifecycle)",
-                            steps: [
-                                "Bước 1 (Menu 'Quản Lý VA'): Tạo VA Gốc (Root) gắn với DDA Master.",
-                                "Bước 2: Tạo các VA cấp con (Level 1, Level 2...) theo cơ cấu tổ chức (Phòng ban, Dự án, Chi nhánh).",
-                                "Bước 3: Thiết lập Metadata cho từng VA (Mã dự án, Mã hợp đồng) để phục vụ định danh sau này."
-                            ]
-                        },
-                        {
-                            title: "3. Quy trình Định danh & Routing (Smart Mapper)",
-                            steps: [
-                                "Mục đích: Giúp hệ thống tự động nhận diện tiền vào VA nào dựa trên nội dung chuyển khoản.",
-                                "Bước 1 (Menu 'Định Danh & Routing'): Chọn loại định danh (Mã số thuế, Số hợp đồng, Mã căn hộ...).",
-                                "Bước 2: Nhập giá trị định danh (VD: HD-001) và chọn VA đích (VD: VA_Project_A).",
-                                "Bước 3: Lưu quy tắc. Từ giờ, mọi món tiền vào DDA mẹ có nội dung chứa 'HD-001' sẽ tự động ghi có cho VA_Project_A."
-                            ]
-                        },
-                        {
-                            title: "4. Quy trình Giao dịch Tiền vào (Incoming Credit)",
-                            steps: [
-                                "Luồng tiền: Khách hàng chuyển tiền -> DDA Mẹ (Core) -> VA System.",
-                                "Bước 1: Core Banking ghi có vào DDA Mẹ.",
-                                "Bước 2: VA System nhận webhook/message từ Core.",
-                                "Bước 3: Routing Engine phân tích nội dung -> Tìm thấy Rule đã map ở Mục 3.",
-                                "Bước 4: Ghi tăng 'Số dư thực' (Real Balance) tại VA đích.",
-                                "Bước 5: Ghi tăng 'Số dư cộng dồn' (Roll-up Balance) cho VA đích và toàn bộ VA cha."
-                            ]
-                        },
-                        {
-                            title: "5. Quy trình Chi hộ (Outgoing POBO)",
-                            steps: [
-                                "Luồng tiền: User lập lệnh từ VA -> Hệ thống trừ tiền DDA Mẹ -> Người thụ hưởng.",
-                                "Bước 1 (Menu 'Chi Hộ'): Nhập thông tin thụ hưởng và số tiền.",
-                                "Bước 2: Hệ thống kiểm tra 'Số dư thực' (Real Balance) của VA. Nếu đủ -> Tiếp tục.",
-                                "Bước 3: Gửi lệnh Debit DDA Mẹ xuống Core Banking.",
-                                "Bước 4: Nếu Core thành công -> Ghi giảm (Debit) số dư VA (cả Real và Roll-up)."
-                            ]
-                        },
-                        {
-                            title: "6. Quy trình Điều chuyển & Cấp vốn (Internal & Fund Mgt)",
-                            steps: [
-                                "Điều chuyển nội bộ (VA <-> VA): Chuyển tiền ảo giữa các VA. Chỉ thay đổi số dư VA, không sinh giao dịch trên DDA mẹ.",
-                                "Cấp vốn (DDA -> VA): Phân bổ hạn mức từ Quỹ chung (DDA) xuống VA con để chi tiêu.",
-                                "Thu vốn (VA -> DDA): Gom tiền từ VA con về Quỹ chung (Sweep)."
-                            ]
-                        },
-                        {
-                            title: "7. Báo cáo & Đối soát (Reconciliation)",
-                            steps: [
-                                "Báo cáo Sao kê (Statement): Liệt kê chi tiết giao dịch của từng VA (giống tài khoản thật).",
-                                "Báo cáo Tổng hợp (Summary): Xem tổng số dư Roll-up theo từng cấp.",
-                                "Đối soát cuối ngày: Tổng số dư Real của tất cả VA con phải bằng (=) Số dư thực tế trên DDA Mẹ tại Core."
-                            ]
-                        }
-                    ]
+                    // Title giữ lại để hiển thị menu
+                    title: "Hướng Dẫn & Quy Trình"
                 }
             },
             en: {
@@ -509,112 +345,7 @@
                     no_tx: "No transactions found."
                 },
                 guide: {
-                    title: "User Guide & Process",
-                    intro_text: "Version v2.2 updates DDA counter transaction processes with 2 Models (Option 1 & 2).",
-                    glossary_title: "Glossary",
-                    guide_title: "Detailed Transaction Processes",
-                    tech_title: "Dual Balance Mechanism",
-                    dual_balance: {
-                        why_title: "Why do we need 2 types of balances?",
-                        why_desc: "In centralized cash flow management, businesses need to know where money is actually located (Real Balance) and the total resources a higher-level unit can coordinate (Roll-up Balance).",
-                        real_title: "1. Real Balance",
-                        real_desc: "The actual amount recorded in that VA. This is the balance shown on VA statements.",
-                        rollup_title: "2. Roll-up Balance",
-                        rollup_desc: "The total balance of that VA plus all descendant VAs. Used for consolidated management reporting."
-                    },
-                    legacy_process: { 
-                        title: "2. CURRENT VIRTUAL ACCOUNT PROCESSING FLOW (LEGACY 247)",
-                        def_title: "1. DEFINITION",
-                        def_intro: "Alias vs VA.",
-                        def_items: [
-                            { term: "Alias", desc: "Mask for real account.", sub: "" },
-                            { term: "Virtual Account", desc: "Logical sub-account with shadow ledger." }
-                        ],
-                        flow_title: "2. CURRENT PROCESS",
-                        flow_intro: "Divided into 2 phases: Inquiry and Posting.",
-                        phases: [
-                            {
-                                name: "PHASE 1: INQUIRY (Beneficiary Verification)",
-                                purpose: "Purpose: Validate destination account info before transfer.",
-                                steps: [
-                                    "Step 1: Initialization: Customer at Sender Bank inputs info and requests inquiry.",
-                                    "Step 2: Format Check (at 247 System): System receives request and checks target account format.\n- If Regular Account -> To Core Banking.\n- If VA/Alias -> To Paygate.",
-                                    "Step 3: Paygate Processing: Checks account type and parses info.\n- If VA: Requests SP for bill info.\n- If Alias: Retrieves linked DDA number.",
-                                    "Step 4: Aggregation (at 247 System): Calls Core Banking to check linked DDA status & caches info.",
-                                    "Step 5: Response: Return beneficiary name to customer."
-                                ]
-                            },
-                            {
-                                name: "PHASE 2: POSTING (Execute Transfer)",
-                                purpose: "Purpose: Record funds and clear debt.",
-                                steps: [
-                                    "Step 1: Confirmation: Customer confirms. Posting request is sent.",
-                                    "Step 2: Re-routing (at 247 System): Checks format again. If VA/Alias -> Retrieves cached info.",
-                                    "Step 3: Posting Processing:\n- Alias Branch: Sends command to Core to Credit Customer DDA directly.\n- VA Branch: Checks params -> Sends command to Credit Provider's Collection Account at Core.",
-                                    "Step 4: Debt Clearing & Completion: After Core returns success -> System sends request to SP to Clear Bill Debt -> Record success.",
-                                    "Step 5: End: Send final result to Sender Bank."
-                                ]
-                            }
-                        ],
-                        summary: "Systems Summary: Sender Bank -> 247 System -> Paygate -> Core Banking -> Service Provider."
-                    },
-                    new_feature_process: {
-                        title: "3. NEW VIRTUAL ACCOUNT FEATURES & PROCESS (COUNTER/DDA)",
-                        intro: "I. TWO TRANSACTION MODELS FOR VIRTUAL ACCOUNT SERVICE\nWhen customers register for VA, the bank provides two transaction options:",
-                        options: [
-                            {
-                                name: "OPTION 1 – Transaction via VA Number (VA-first)",
-                                desc: "Customer inputs VA number. System validates VA before crediting Real Account (DDA).",
-                                benefits: [
-                                    "Rejects invalid VA immediately.",
-                                    "Ensures correct routing.",
-                                    "Clean DDA ledger."
-                                ],
-                                suitable_for: "State budget, strict cash flow control.",
-                                flow_title: "Option 1 Flow (VA-first)",
-                                steps: ["Input VA", "Validate VA", "Credit DDA", "Shadow Post to VA"]
-                            },
-                            {
-                                name: "OPTION 2 – Transaction via DDA Number (DDA-first)",
-                                desc: "Customer inputs DDA number. VA logic is applied after DDA is credited based on remarks.",
-                                benefits: [
-                                    "No behavior change.",
-                                    "Standard interbank flow.",
-                                    "Post-processing allocation."
-                                ],
-                                flow_title: "Option 2 Flow (DDA-first)",
-                                steps: ["Input DDA", "Credit DDA", "Check VA Registry", "Identify VA from Remark", "Shadow Post to VA"]
-                            }
-                        ],
-                        comparison_title: "III. Comparison",
-                        comparison_table: {
-                            headers: ["Content", "Option 1 (VA)", "Option 2 (DDA)"],
-                            rows: [
-                                ["Input", "VA Number", "DDA Number"],
-                                ["Validation", "Pre-posting", "Post-posting"],
-                                ["Accuracy", "High", "Dependent on Remark"],
-                                ["Risk", "None", "Found in Pending List"],
-                                ["Suitable for", "Strict control", "Normal business"],
-                                ["System", "UI Update Needed", "Keep Current UI"]
-                            ]
-                        }
-                    },
-                    terms: {
-                        RealBalance: "Real Balance (Own Balance). The actual amount sitting in that specific VA account, excluding funds from child accounts.",
-                        RollupBalance: "Roll-up Balance. The sum of funds in that VA + The total Roll-up balance of all direct child VAs. Used for managing total limits.",
-                        VA: "Virtual Account. A tool for classifying and identifying cash flow.",
-                        DDA: "Demand Deposit Account (Payment Account). The actual corporate account at the bank.",
-                        "Original Transaction and Shadow Transaction": "Original transaction is a debit/credit recorded on the DDA. Shadow transaction is a supplementary entry recorded on detailed VAs linked to the DDA for routing, cash flow management, and reporting purposes."
-                    },
-                    processes: [
-                        { title: "1. Onboarding", steps: ["Open CIF/DDA", "Create Profile", "Link DDA"] },
-                        { title: "2. Lifecycle", steps: ["Create Root", "Create Child", "Set Meta"] },
-                        { title: "3. Routing", steps: ["Select Type", "Input Value", "Map VA"] },
-                        { title: "4. Incoming", steps: ["Core credits DDA", "VA receives msg", "Routing", "Credit VA"] },
-                        { title: "5. Payout", steps: ["Create Order", "Check VA Bal", "Debit DDA", "Debit VA"] },
-                        { title: "6. Internal", steps: ["Internal", "Allocation", "Sweep"] },
-                        { title: "7. Reports", steps: ["Statement", "Summary", "EOD Rec"] }
-                    ]
+                    title: "User Guide & Process"
                 }
             }
         };
@@ -770,6 +501,7 @@
                     case 'IDENTIFIERS': return <IdentifierManager identifiers={identifiers} setIdentifiers={setIdentifiers} vas={virtualAccounts} notify={notify} t={t} />;
                     case 'REPORTS': return <Reporting vas={virtualAccounts} txs={transactions} t={t} />;
                     case 'RECONCILIATION': return <Reconciliation corporate={corporate} setCorporate={setCorporate} vas={virtualAccounts} setVas={setVirtualAccounts} notify={notify} t={t} />;
+                    // UserGuide component mới: Sử dụng iframe
                     case 'GUIDE': return <UserGuide t={t} lang={lang} />;
                     default: return <Dashboard corporate={corporate} vas={virtualAccounts} txs={transactions} t={t} />;
                 }
@@ -873,6 +605,9 @@
                 </div>
             </div>
         );
+
+        // ... [Giữ nguyên Dashboard, DDATransactionScreen, TransferFromVAScreen, TransactionHub, Reporting, Reconciliation, CorporateOnboarding, VALifecycle, IdentifierManager, InputGroup]
+        // Vì giới hạn ký tự, tôi chỉ hiển thị phần thay đổi quan trọng nhất ở đây là UserGuide
 
         const Dashboard = ({ corporate, vas, txs, t }) => {
             const totalReal = vas ? vas.reduce((sum, v) => sum + (v.realBalance || 0), 0) : 0;
@@ -1382,138 +1117,25 @@
             );
         };
 
+        // --- COMPONENT USER GUIDE MỚI ---
         const UserGuide = ({ t, lang }) => {
-            const terms = resources[lang].guide.terms;
-            const processes = resources[lang].guide.processes || [];
-            const legacy = resources[lang].guide.legacy_process; 
-            const dualBal = resources[lang].guide.dual_balance;
-            const newFeature = resources[lang].guide.new_feature_process; 
+            const iframeRef = React.useRef(null);
+
+            // Gửi message xuống iframe khi ngôn ngữ thay đổi
+            useEffect(() => {
+                if(iframeRef.current) {
+                    iframeRef.current.contentWindow.postMessage({ type: 'SET_LANG', lang: lang }, '*');
+                }
+            }, [lang]);
 
             return (
-                <div className="space-y-6 md:space-y-8 pb-10">
-                    <h2 className="text-xl md:text-2xl font-bold text-gray-800">{t('guide', 'title')}</h2>
-                    <div className="bg-blue-50 border-l-4 border-blue-500 p-4 rounded text-sm md:text-base text-gray-700 italic">{t('guide', 'intro_text')}</div>
-                    
-                    <div className="bg-white p-4 md:p-6 rounded-lg shadow-sm border border-gray-200">
-                        <h3 className="text-base md:text-lg font-bold mb-4 text-bankb-primary flex items-center gap-2"><IconWrapper name="BookOpen" /> {t('guide', 'glossary_title')}</h3>
-                        <div className="grid gap-3 md:gap-4 grid-cols-1 md:grid-cols-2">{Object.entries(terms).map(([key, desc]) => <div key={key} className="p-3 md:p-4 bg-gray-50 rounded border border-gray-100"><span className="font-bold text-blue-700 block mb-1 text-sm md:text-base">{key}</span><p className="text-xs md:text-sm text-gray-600 leading-relaxed">{desc}</p></div>)}</div>
-                    </div>
-
-                    <div className="bg-white p-4 md:p-6 rounded-lg shadow-sm border border-gray-200">
-                        <h3 className="text-base md:text-lg font-bold mb-4 text-bankb-primary flex items-center gap-2">
-                            <IconWrapper name="GitFork" /> {t('guide', 'tech_title')}
-                        </h3>
-                        <div className="space-y-4 text-sm text-gray-700 leading-relaxed">
-                            <p className="font-bold">{dualBal.why_title}</p>
-                            <p>{dualBal.why_desc}</p>
-                            <div className="grid md:grid-cols-2 gap-4 mt-4">
-                                <div className="p-3 bg-emerald-50 rounded border border-emerald-100">
-                                    <span className="font-bold text-emerald-800 block mb-2">{dualBal.real_title}</span>
-                                    <p className="text-xs text-gray-600">{dualBal.real_desc}</p>
-                                </div>
-                                <div className="p-3 bg-indigo-50 rounded border border-indigo-100">
-                                    <span className="font-bold text-indigo-800 block mb-2">{dualBal.rollup_title}</span>
-                                    <p className="text-xs text-gray-600">{dualBal.rollup_desc}</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    {legacy && (
-                        <div className="bg-white p-4 md:p-6 rounded-lg shadow-sm border border-gray-200 border-l-4 border-l-purple-500">
-                            <h3 className="text-base md:text-lg font-bold mb-4 text-purple-700 flex items-center gap-2">
-                                <IconWrapper name="Repeat" /> {legacy.flow_title}
-                            </h3>
-                            <div className="space-y-6 text-sm text-gray-700">
-                                <p className="italic">{legacy.flow_intro}</p>
-                                <div>
-                                    <div className="space-y-4">
-                                        {legacy.phases.map((phase, i) => (
-                                            <div key={i} className="border border-gray-200 rounded p-3">
-                                                <div className="font-bold text-blue-700 mb-1">{phase.name}</div>
-                                                <div className="text-xs italic text-gray-500 mb-2">{phase.purpose}</div>
-                                                <ul className="list-none pl-2 space-y-2">
-                                                    {phase.steps.map((step, k) => (
-                                                        <li key={k} className="whitespace-pre-line text-xs bg-gray-50 p-2 rounded border border-gray-100">{step}</li>
-                                                    ))}
-                                                </ul>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                                <div className="bg-gray-100 p-3 rounded text-xs border border-gray-300 whitespace-pre-line">
-                                    <strong>{legacy.summary.split(':')[0]}:</strong>
-                                    {legacy.summary.substring(legacy.summary.indexOf(':') + 1)}
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
-                    {newFeature && (
-                        <div className="bg-white p-4 md:p-6 rounded-lg shadow-sm border border-gray-200 border-l-4 border-l-teal-500">
-                            <h3 className="text-base md:text-lg font-bold mb-4 text-teal-700 flex items-center gap-2">
-                                <IconWrapper name="Zap" /> {newFeature.title}
-                            </h3>
-                            <p className="mb-4 text-sm font-semibold text-gray-800 whitespace-pre-line">{newFeature.intro}</p>
-                            
-                            <div className="space-y-6">
-                                {newFeature.options.map((opt, idx) => (
-                                    <div key={idx} className="bg-gray-50 p-4 rounded border border-gray-200">
-                                        <h4 className="font-bold text-bankb-primary text-sm md:text-base mb-2">{opt.name}</h4>
-                                        <p className="text-sm text-gray-700 mb-2 italic">{opt.desc}</p>
-                                        <ul className="list-disc pl-5 text-sm text-gray-600 mb-3 space-y-1">
-                                            {opt.benefits.map((b, i) => <li key={i}>{b}</li>)}
-                                        </ul>
-                                        <p className="text-sm text-gray-700 mb-3"><span className="font-bold">Phù hợp:</span> {opt.suitable_for}</p>
-                                        
-                                        <div className="bg-white p-3 rounded border border-gray-100">
-                                            <span className="font-bold text-xs uppercase text-gray-500 block mb-2">{opt.flow_title}</span>
-                                            <div className="space-y-2">
-                                                {opt.steps.map((s, i) => (
-                                                    <div key={i} className="text-xs md:text-sm flex gap-2">
-                                                        <span className="font-bold text-teal-600 min-w-[50px]">B{i+1}:</span>
-                                                        <span>{s}</span>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-
-                            <div className="mt-6 overflow-x-auto">
-                                <h4 className="font-bold text-gray-800 mb-2 text-sm md:text-base">{newFeature.comparison_title}</h4>
-                                <table className="w-full text-xs md:text-sm text-left border-collapse min-w-[600px]">
-                                    <thead>
-                                        <tr className="bg-teal-50 text-teal-800">
-                                            {newFeature.comparison_table.headers.map((h, i) => <th key={i} className="p-2 border border-teal-100">{h}</th>)}
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {newFeature.comparison_table.rows.map((row, i) => (
-                                            <tr key={i} className="border-b">
-                                                {row.map((c, j) => <td key={j} className="p-2 border border-gray-100">{c}</td>)}
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    )}
-
-                     <div className="bg-white p-4 md:p-6 rounded-lg shadow-sm border border-gray-200">
-                         <h3 className="text-base md:text-lg font-bold mb-4 md:mb-6 text-gray-700 flex items-center gap-2"><IconWrapper name="Activity" className="text-orange-500" />{t('guide', 'guide_title')}</h3>
-                         <div className="space-y-6">
-                            {processes.map((proc, index) => (
-                                <div key={index} className="border-l-4 border-bankb-primary pl-4">
-                                    <h4 className="font-bold text-gray-800 mb-2 text-sm md:text-base">{proc.title}</h4>
-                                    <ul className="list-none space-y-2">
-                                        {proc.steps.map((step, idx) => <li key={idx} className="text-xs md:text-sm text-gray-600 flex gap-2"><span className="text-bankb-primary font-bold min-w-[10px]">•</span><span>{step}</span></li>)}
-                                    </ul>
-                                </div>
-                            ))}
-                         </div>
-                    </div>
+                <div className="h-full w-full bg-white rounded-lg shadow-sm overflow-hidden border border-gray-200">
+                    <iframe
+                        ref={iframeRef}
+                        src={`GuideContent.html?lang=${lang}`} // Truyền lang qua URL param để load đúng ngay từ đầu
+                        className="w-full h-full border-0 min-h-[80vh]"
+                        title="User Guide"
+                    />
                 </div>
             );
         };
