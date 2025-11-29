@@ -501,61 +501,163 @@
                         rollup_desc: "Total resources."
                     },
                     legacy_process: { 
-                        title: "INTERBANK 247 PAYMENT PROCESS",
-                        def_title: "1. DEFINITION",
-                        def_intro: "Alias vs VA.",
-                        def_items: [],
-                        flow_title: "2. PROCESS",
-                        flow_intro: "Inquiry -> Posting.",
-                        phases: [],
-                        summary: ""
-                    },
-                    // Placeholder for new feature in EN
-                    new_feature_process: {
-                        title: "3. NEW VIRTUAL ACCOUNT FEATURES & PROCESS",
-                        intro: "I. TWO TRANSACTION MODELS FOR VIRTUAL ACCOUNT SERVICE",
-                        options: [
+                        title: "SUMMARY REPORT: INTERBANK 247 PAYMENT PROCESS (VA & ALIAS)",
+                        def_title: "1. DEFINITION AND SCOPE",
+                        def_intro: "Before entering the process, it is necessary to clearly distinguish between two types of accounts handled:",
+                        def_items: [
+                            { term: "Alias", desc: "A sequence of numbers/letters used by the account holder to replace the real account number in transactions.", sub: "Characteristics: Acts only as an identification 'mask'. Transactions to Alias are regular transfers, with no backend debt clearing process." },
+                            { term: "Virtual Account (VA)", desc: "A logical management account (physically non-existent in Core Banking) created by the VA Engine system.", sub: "Purpose: Classify and track detailed cash flow by sub-entity (project, contract, household business...).\nMechanism: VA is linked to a Real Account. Transactions are recorded via shadow posting mechanism, using virtual identifiers for automatic routing, serving reconciliation and in-depth cash flow analysis." }
+                        ],
+                        flow_title: "2. CURRENT VIRTUAL ACCOUNT PROCESSING FLOW",
+                        flow_intro: "This process is divided into 2 main phases: Inquiry Phase and Posting Phase. Below is the detailed data flow description:",
+                        phases: [
                             {
-                                name: "OPTION 1 – Transaction via VA Number (VA-first)",
-                                desc: "Customer inputs VA number. System validates VA before crediting Real Account (DDA).",
-                                benefits: ["Rejects invalid VA immediately.", "Ensures correct routing.", "Clean DDA ledger."],
-                                suitable_for: "State budget, strict cash flow control.",
-                                flow_title: "Option 1 Flow (VA-first)",
-                                steps: ["Input VA", "Validate VA", "Credit DDA", "Shadow Post to VA"]
+                                name: "PHASE 1: INQUIRY (Beneficiary Verification)",
+                                purpose: "Purpose: Validate destination account info before transfer.",
+                                steps: [
+                                    "Step 1: Initialization:\nCustomer at Sender Bank inputs info and requests inquiry.",
+                                    "Step 2: Format Check (at 247 System):\nSystem receives request and checks target account format.\n- If Regular Account -> To Core Banking.\n- If VA/Alias -> To Paygate.",
+                                    "Step 3: Paygate Processing:\nChecks account type and parses info.\n- If VA: Requests SP for bill info.\n- If Alias: Retrieves linked DDA number.",
+                                    "Step 4: Aggregation (at 247 System):\n- Calls Core Banking to check linked DDA status.\n- Caches info (Beneficiary Name, Amount, Billid...).",
+                                    "Step 5: Response:\nReturn beneficiary name to customer."
+                                ]
                             },
                             {
-                                name: "OPTION 2 – Transaction via DDA Number (DDA-first)",
-                                desc: "Customer inputs DDA number. VA logic is applied after DDA is credited based on remarks.",
-                                benefits: ["No behavior change.", "Standard interbank flow.", "Post-processing allocation."],
-                                flow_title: "Option 2 Flow (DDA-first)",
-                                steps: ["Input DDA", "Credit DDA", "Check VA Registry", "Identify VA from Remark", "Shadow Post to VA"]
+                                name: "PHASE 2: POSTING (Execute Transfer)",
+                                purpose: "Purpose: Record funds and clear debt.",
+                                steps: [
+                                    "Step 1: Confirmation:\nCustomer confirms. Posting request is sent.",
+                                    "Step 2: Re-routing (at 247 System):\nChecks format again. If VA/Alias -> Retrieves cached info from Inquiry step.",
+                                    "Step 3: Posting Processing:\n- Alias Branch: Sends command to Core to Credit Customer DDA directly.\n- VA Branch: Checks params (amount match, min-max) -> Sends command to Credit Provider's Collection Account at Core.",
+                                    "Step 4: Debt Clearing & Completion:\n- After Core returns success:\n- For VA: System sends request to SP to Clear Bill Debt.\n- Record success.",
+                                    "Step 5: End:\nSend final result to Sender Bank."
+                                ]
                             }
                         ],
-                        comparison_title: "III. Comparison",
+                        summary: "Systems Summary:\n- Sender Bank: Transaction initiator.\n- 247 System: Main coordinator/Router.\n- Paygate: Logic gateway for VA/Alias.\n- Core Banking: Core accounting system.\n- Service Provider (SP): Stores bill information."
+                    },
+                    // NEW FEATURE SECTION (TRANSLATED)
+                    new_feature_process: {
+                        title: "3. NEW VIRTUAL ACCOUNT FEATURES & PROCESS",
+                        intro: "I. TWO TRANSACTION MODELS FOR VIRTUAL ACCOUNT SERVICE\nWhen customers register for VA, the bank provides two transaction options:",
+                        options: [
+                            {
+                                name: "OPTION 1 – Transaction directly via VA Number (Virtual Account)",
+                                desc: "Customer inputs VA number when performing transaction. System validates VA first, if valid, allows actual posting to Real Account (DDA).",
+                                benefits: [
+                                    "If VA is wrong → transaction rejected immediately.",
+                                    "All incoming funds definitely belong to the correct VA.",
+                                    "Real Account (DDA) only receives valid funds from VAs."
+                                ],
+                                suitable_for: "Land clearance, budget collection, State projects. Enterprises requiring strict cash flow management.",
+                                flow_title: "Option 1 Processing Flow (VA-first)",
+                                steps: [
+                                    "Step 1 – Channel: Customer inputs VA number (instead of DDA), amount and content.",
+                                    "Step 2 – Validate VA: System checks existence, status, validity, channel permission, linked DDA. If invalid → error immediately.",
+                                    "Step 3 – Posting to DDA: If VA valid, identify DDA and credit real funds. If fail → stop.",
+                                    "Step 4 – Shadow Posting: System receives success signal, creates virtual entry for VA, updates VA balance and Roll-up balance."
+                                ]
+                            },
+                            {
+                                name: "OPTION 2 – Transaction via DDA Number, VA processed later based on content (DDA-first)",
+                                desc: "Customer inputs DDA number as usual. VA identification info lies in remark/note. System performs 'VA shadow posting' only after DDA receives funds.",
+                                benefits: [
+                                    "No change in enterprise habit.",
+                                    "Keep existing interbank transfer flows.",
+                                    "Leverage VA for automated allocation later."
+                                ],
+                                flow_title: "Option 2 Processing Flow (DDA-first)",
+                                steps: [
+                                    "Step 1 – Channel: Customer transfers to DDA (with/without remark).",
+                                    "Step 2 – Posting to DDA: Credit DDA as normal transaction. If fail → stop.",
+                                    "Step 3 – Check DDA Registration: Check if DDA uses VA service. If no → finish. If yes → next step.",
+                                    "Step 4 – Identify VA: Parse content, apply rules (contract no, project code...). (4A: Found VA -> Step 5; 4B: Not found -> Unidentified list; 4C: Multiple VAs -> Priority rules).",
+                                    "Step 5 – Shadow Posting: Create virtual entry for found VA, update balance, log trace."
+                                ]
+                            }
+                        ],
+                        comparison_title: "III. Brief Comparison",
                         comparison_table: {
-                            headers: ["Content", "Option 1 (VA)", "Option 2 (DDA)"],
+                            headers: ["Content", "Option 1 – Use VA", "Option 2 – Use DDA & remark"],
                             rows: [
-                                ["Input", "VA Number", "DDA Number"],
-                                ["Validation", "Pre-posting", "Post-posting"],
-                                ["Accuracy", "High", "Dependent on Remark"]
+                                ["Input Method", "Input VA Number", "Input DDA Number"],
+                                ["Validation", "Validate before posting", "Validate after DDA credited"],
+                                ["Accuracy", "Very High", "Depends on remark & rules"],
+                                ["Risk of missing VA", "None", "Yes (moved to pending list)"],
+                                ["Suitable for", "State budget, strict control", "Normal business, interbank usage"],
+                                ["System Compatibility", "Need channel UI update", "Keep current UI"]
                             ]
                         }
                     },
                     terms: {
-                        RealBalance: "Real Balance (Own Funds).",
-                        RollupBalance: "Roll-up Balance.",
-                        VA: "Virtual Account.",
+                        RealBalance: "Real Balance (Own Funds). Funds sitting directly in this VA, excluding children.",
+                        RollupBalance: "Roll-up Balance. Sum of Own Balance + All Children's Roll-up Balances.",
+                        VA: "Virtual Account. Sub-account for tracking.",
+                        DDA: "Real checking account.",
                         Reconciliation: "Comparing aggregated VA balances vs Master DDA."
                     },
                     processes: [
                         {
-                            title: "End-of-Day Reconciliation Process",
+                            title: "1. Onboarding Process (Initial Setup)",
                             steps: [
-                                "Step 1: System fetches EOD balance of Master DDA from Core.",
-                                "Step 2: System sums 'Real Balance' of all child VAs.",
-                                "Step 3: Compare: If DDA = Sum VA => Matched.",
-                                "Step 4: If Unmatched => Check for Suspense transactions or dropped packets.",
-                                "Step 5: Execute Adjustment entry to Suspense VA to balance books."
+                                "Step 1 (At Counter/Core): Open CIF and Real Payment Account (DDA).",
+                                "Step 2 (On VA System - Menu 'Corp Profile'): Create new corporate profile, input CIF.",
+                                "Step 3: Link Real DDAs to the VA system to act as Master Accounts.",
+                                "Step 4: Assign user roles and approve limits (if any)."
+                            ]
+                        },
+                        {
+                            title: "2. VA Hierarchy Management (VA Lifecycle)",
+                            steps: [
+                                "Step 1 (Menu 'VA Management'): Create Root VA linked to Master DDA.",
+                                "Step 2: Create Child VAs (Level 1, Level 2...) based on organizational structure (Dept, Project, Branch).",
+                                "Step 3: Set Metadata for each VA (Project Code, Contract No.) for identification purposes."
+                            ]
+                        },
+                        {
+                            title: "3. Identifier & Routing (Smart Mapper)",
+                            steps: [
+                                "Purpose: Helps the system automatically identify target VA based on transfer content.",
+                                "Step 1 (Menu 'Routing'): Select Identifier Type (Tax Code, Contract No, Apt Code...).",
+                                "Step 2: Input identifier value (e.g., HD-001) and select Target VA (e.g., VA_Project_A).",
+                                "Step 3: Save Rule. From now on, incoming funds with 'HD-001' in content will auto-credit VA_Project_A."
+                            ]
+                        },
+                        {
+                            title: "4. Incoming Credit Flow",
+                            steps: [
+                                "Flow: Customer -> Master DDA (Core) -> VA System.",
+                                "Step 1: Core Banking credits Master DDA.",
+                                "Step 2: VA System receives webhook/message from Core.",
+                                "Step 3: Routing Engine analyzes content -> Finds mapped Rule from Step 3.",
+                                "Step 4: Credit 'Real Balance' at Target VA.",
+                                "Step 5: Credit 'Roll-up Balance' for Target VA and all Ancestor VAs."
+                            ]
+                        },
+                        {
+                            title: "5. Outgoing POBO Flow",
+                            steps: [
+                                "Flow: User initiates -> System debits Master DDA -> Beneficiary.",
+                                "Step 1 (Menu 'Outgoing Payment'): Input beneficiary details and amount.",
+                                "Step 2: System checks 'Real Balance' of the VA. If sufficient -> Proceed.",
+                                "Step 3: Send Debit command for Master DDA to Core Banking.",
+                                "Step 4: If Core success -> Debit VA balance (both Real and Roll-up)."
+                            ]
+                        },
+                        {
+                            title: "6. Internal Transfer & Funding Flow",
+                            steps: [
+                                "Internal (VA <-> VA): Virtual transfer between VAs. Only changes VA balances, no transaction on Master DDA.",
+                                "Allocation (DDA -> VA): Distribute limit from Common Fund (DDA) to Child VAs for spending.",
+                                "Sweep (VA -> DDA): Collect funds from Child VAs back to Common Fund."
+                            ]
+                        },
+                        {
+                            title: "7. Reconciliation & Reporting",
+                            steps: [
+                                "Statement Report: Lists detailed transactions for each VA (similar to real account statement).",
+                                "Summary Report: View total Roll-up balances by level.",
+                                "End-of-Day Rec: Sum of Real Balances of all Child VAs must equal (=) Actual Balance on Master DDA at Core."
                             ]
                         }
                     ]
