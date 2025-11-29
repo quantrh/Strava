@@ -60,9 +60,9 @@
                     onboarding: "Hồ Sơ Doanh Nghiệp",
                     lifecycle: "Quản Lý VA (N Cấp)",
                     identifiers: "Định Danh & Routing",
-                    transactions_group: "Giao Dịch & Điều Chuyển",
-                    tx_incoming: "Tiền Vào (Incoming)",
-                    tx_outgoing: "Chi Hộ (Outgoing)",
+                    transactions_group: "Giao dịch VA",
+                    tx_incoming: "Nạp tiền vào VA",
+                    tx_outgoing: "Chi tiền từ VA",
                     tx_internal: "Điều Chuyển (Internal)",
                     reports: "Báo Cáo & Đối Soát",
                     guide: "Hướng Dẫn & Quy Trình"
@@ -122,9 +122,12 @@
                     action_delete: "Xóa"
                 },
                 transactions: {
-                    title_incoming: "Giao Dịch Tiền Vào (Credit)",
-                    title_outgoing: "Giao Dịch Chi Hộ (POBO)",
+                    title_incoming: "Giao Dịch Nạp Tiền Vào VA",
+                    title_outgoing: "Giao Dịch Chi Tiền Từ VA",
                     title_internal: "Điều Chuyển Nội Bộ / Cấp Vốn",
+                    desc_incoming: "Đây là màn hình bổ sung các giao dịch thu của tài khoản VA (shadow posting) còn thiếu hoặc chưa tự động map về Virtual Account được, giao dịch gốc đã được tài khoản DDA ghi nhận.",
+                    desc_outgoing: "Đây là màn hình bổ sung các giao dịch chi từ tài khoản VA (shadow posting) còn thiếu hoặc chưa tự động map về Virtual Account được, giao dịch gốc đã được ghi nhận tại tài khoản DDA.",
+                    desc_internal: "Đây là màn hình chuyển tiền giữa các tài khoản VA, không ảnh hưởng đến số dư và giao dịch gốc tại tài khoản DDA.",
                     routing_content: "Nội dung GD (Reference)",
                     va_label: "Tài Khoản Ảo",
                     amount_label: "Số Tiền",
@@ -207,7 +210,7 @@
                         RollupBalance: "Số dư cộng dồn (Roll-up Balance). Tổng tiền của chính VA đó + Tổng số dư Roll-up của tất cả các VA con trực thuộc. Dùng để quản lý hạn mức tổng.",
                         VA: "Virtual Account (Tài khoản ảo/định danh). Công cụ để phân loại và định danh dòng tiền.",
                         DDA: "Demand Deposit Account (Tài khoản thanh toán). Tài khoản thực của doanh nghiệp tại ngân hàng.",
-                        Shadow: "Shadow Posting (Ghi sổ cái ảo). Cơ chế ghi nhận bút toán song song.",
+                        "Giao dịch gốc và giao dịch shadow": "Giao dịch gốc là giao dịch nợ, có ghi nhận vào tài khoản DDA, giao dịch Shadow là giao dịch phụ được ghi nhận thêm vào các tài khoản VA chi tiết có liên kết với tài khoản DDA để phục vụ mục đính định tuyến giao dịch, quản lý dòng tiền và lên báo cáo"
                     },
                     processes: [
                         {
@@ -288,8 +291,8 @@
                     lifecycle: "VA Management",
                     identifiers: "Routing",
                     transactions_group: "Shadow Transactions",
-                    tx_incoming: "Incoming Funds",
-                    tx_outgoing: "Outgoing Payment",
+                    tx_incoming: "Funds Top-up to VA",
+                    tx_outgoing: "Payout from VA",
                     tx_internal: "Internal Transfer",
                     reports: "Reports",
                     guide: "Guide & Process"
@@ -349,9 +352,12 @@
                     action_delete: "Del"
                 },
                 transactions: {
-                    title_incoming: "Incoming Credit (Funds In)",
-                    title_outgoing: "Outgoing Payment (POBO)",
+                    title_incoming: "Funds Top-up to VA Transaction",
+                    title_outgoing: "Payout from VA Transaction",
                     title_internal: "Internal / Allocation",
+                    desc_incoming: "This screen is used to add missing incoming transactions for VA accounts (shadow posting) or those not automatically mapped to a Virtual Account, where the original transaction has already been recorded in the DDA account.",
+                    desc_outgoing: "This screen is used to add missing outgoing transactions from VA accounts (shadow posting) or those not automatically mapped to a Virtual Account, where the original transaction has already been recorded in the DDA account.",
+                    desc_internal: "This screen is used for transferring funds between VA accounts, without affecting the balance and original transactions in the DDA account.",
                     routing_content: "Routing Ref",
                     va_label: "Target VA",
                     amount_label: "Amount",
@@ -434,7 +440,7 @@
                         RollupBalance: "Roll-up Balance. Sum of Own Balance + All Children's Roll-up Balances.",
                         VA: "Virtual Account. Sub-account for tracking.",
                         DDA: "Real checking account.",
-                        Shadow: "Virtual bookkeeping."
+                        "Original Transaction vs Shadow Transaction": "Original transaction is a debit/credit transaction recorded in the DDA account. Shadow transaction is a supplementary transaction recorded in detailed VA accounts linked to the DDA to serve transaction routing, cash flow management, and reporting purposes."
                     },
                     processes: [
                         {
@@ -1158,6 +1164,13 @@
                                 {mode === 'DEBIT' && t('transactions', 'title_outgoing')}
                                 {mode === 'INTERNAL' && t('transactions', 'title_internal')}
                             </h2>
+
+                            {/* Descriptive Note Box */}
+                            <div className="bg-blue-50 border-l-4 border-blue-500 p-4 mb-4 text-sm text-gray-700 italic">
+                                {mode === 'CREDIT' && t('transactions', 'desc_incoming')}
+                                {mode === 'DEBIT' && t('transactions', 'desc_outgoing')}
+                                {mode === 'INTERNAL' && t('transactions', 'desc_internal')}
+                            </div>
 
                             <form onSubmit={handleSubmit} className="space-y-4">
                                 {(mode === 'CREDIT' || mode === 'DEBIT') && (
