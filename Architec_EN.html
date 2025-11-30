@@ -10,8 +10,8 @@
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
     <style>
-        body { font-family: 'Inter', sans-serif; background-color: #f7f7f7; color: #1f2937; line-height: 1.6; }
-        .container { max-width: 1000px; margin: 0 auto; padding: 20px; background-color: #ffffff; box-shadow: 0 0 20px rgba(0, 0, 0, 0.05); }
+        body { font-family: 'Inter', sans-serif; background-color: #f7f7f7; color: #1f2937; line-height: 1.6; scroll-behavior: smooth; }
+        .container { max-width: 1000px; margin: 0 auto; padding: 20px; background-color: #ffffff; box-shadow: 0 0 20px rgba(0, 0, 0, 0.05); position: relative; }
 
         /* Custom Header Styles */
         .main-header { 
@@ -39,6 +39,7 @@
             display: flex;
             align-items: center;
             gap: 0.5rem;
+            scroll-margin-top: 20px;
         }
 
         .section-header {
@@ -49,6 +50,7 @@
             margin-bottom: 0.5rem; 
             padding-bottom: 0.25rem;
             border-bottom: 1px solid #e5e7eb;
+            scroll-margin-top: 20px;
         }
 
         /* Image Box Styles */
@@ -181,6 +183,89 @@
             list-style: disc;
             margin-top: 0.25rem;
         }
+
+        /* TOC Styles */
+        .toc-container {
+            background-color: #fff;
+            border: 1px solid #e5e7eb;
+            border-radius: 0.5rem;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+        }
+        .toc-title {
+            font-weight: 700;
+            font-size: 1.125rem;
+            color: #111827;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .toc-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        .toc-list li {
+            margin-bottom: 0.5rem;
+        }
+        .toc-list a {
+            text-decoration: none;
+            color: #3b82f6;
+            font-size: 0.95rem;
+            transition: color 0.2s;
+        }
+        .toc-list a:hover {
+            color: #1d4ed8;
+            text-decoration: underline;
+        }
+        .toc-sublist {
+            list-style: none;
+            padding-left: 1.5rem;
+            margin-top: 0.25rem;
+        }
+        .toc-sublist li {
+            margin-bottom: 0.25rem;
+            border-left: 2px solid #e5e7eb;
+            padding-left: 0.75rem;
+        }
+        .toc-sublist a {
+            color: #4b5563;
+            font-size: 0.9rem;
+        }
+        .toc-sublist a:hover {
+            color: #111827;
+        }
+
+        /* Scroll Top Button */
+        #scrollTopBtn {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            z-index: 99;
+            border: none;
+            outline: none;
+            background-color: #2563eb;
+            color: white;
+            cursor: pointer;
+            padding: 12px;
+            border-radius: 50%;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: all 0.3s;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(20px);
+        }
+        #scrollTopBtn:hover {
+            background-color: #1d4ed8;
+            transform: translateY(-2px);
+        }
+        #scrollTopBtn.show {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
     </style>
 </head>
 <body>
@@ -201,6 +286,35 @@
             <h1 class="main-header justify-center">Virtual Account System Architecture Design</h1>
         </header>
 
+        <!-- TABLE OF CONTENTS -->
+        <div class="toc-container">
+            <div class="toc-title"><i data-lucide="list" class="w-5 h-5"></i> Table of Contents</div>
+            <ul class="toc-list">
+                <li>
+                    <a href="#group-1">I. Group 1 – Macro Architecture Diagrams</a>
+                    <ul class="toc-sublist">
+                        <li><a href="#diag-1">1. Overall System Landscape</a></li>
+                        <li><a href="#diag-2">2. Logical Architecture</a></li>
+                        <li><a href="#diag-10">3. Data Model VA (ERD)</a></li>
+                        <li><a href="#diag-11">4. Deployment Architecture</a></li>
+                        <li><a href="#diag-12">5. Integration Architecture</a></li>
+                    </ul>
+                </li>
+                <li>
+                    <a href="#group-2">II. Group 2 – Logical Architecture & Business Process Flow Diagrams</a>
+                    <ul class="toc-sublist">
+                        <li><a href="#diag-3">6. VA-first Incoming Flow</a></li>
+                        <li><a href="#diag-4">7. DDA-first Incoming Flow</a></li>
+                        <li><a href="#diag-5">8. Outgoing from VA</a></li>
+                        <li><a href="#diag-6">9. Interest Allocation Flow</a></li>
+                        <li><a href="#diag-7">10. Reconciliation Mechanism (Seq)</a></li>
+                        <li><a href="#diag-8">11. VA Lifecycle (Seq)</a></li>
+                        <li><a href="#diag-9">12. Sequence Interest Allocation</a></li>
+                    </ul>
+                </li>
+            </ul>
+        </div>
+
         <!-- SUMMARY BLOCK -->
         <div class="summary-block">
             <div class="summary-title">KNOWLEDGE SYNTHESIS OF 12 ARCHITECTURAL DIAGRAMS & PROCESSES</div>
@@ -220,10 +334,10 @@
                 </ul>
                 <p class="font-medium mt-2">2. List of diagrams in group</p>
                 <ul class="diagram-list">
-                    <li><span class="font-semibold text-green-700">Diagram #1 – Overall System Landscape / Core Banking Super Layer:</span> Introduces the BIG PICTURE of the entire system. Layers: Channels → API Gateway → Routing Hub → Deposit Core Hub → Core Banking → Data Layer. Specifies which layer VA belongs to and what the Core does. Must-have.</li>
-                    <li><span class="font-semibold text-green-700">Diagram #2 – Logical Architecture (Deposit Core Hub + VA):</span> Describes main modules: Routing Hub, VA Engine, DDA Handler, Interest Engine. Logical boundary between Hub and Core. Explains the responsibility of each component. Must-have.</li>
-                    <li><span class="font-semibold text-green-700">Diagram #10 – Data Model VA (ERD):</span> Overview ERD: VA, VA Ledger, VA Balance, Hierarchy, Enrollment, Identifier… Shows how VA data is organized. Must-have.</li>
-                    <li><span class="font-semibold text-green-700">Diagram #11 – Detailed Logical ERD:</span> A more in-depth version of the Overview ERD (Diagram #10). Fully shows relationships between tables and logical modules. Very useful for Data, BA, and Dev teams. Should-have.</li>
+                    <li><a href="#diag-1" class="font-semibold text-green-700 hover:underline">Diagram #1 – Overall System Landscape / Core Banking Super Layer:</a> Introduces the BIG PICTURE of the entire system. Layers: Channels → API Gateway → Routing Hub → Deposit Core Hub → Core Banking → Data Layer. Specifies which layer VA belongs to and what the Core does. Must-have.</li>
+                    <li><a href="#diag-2" class="font-semibold text-green-700 hover:underline">Diagram #2 – Logical Architecture (Deposit Core Hub + VA):</a> Describes main modules: Routing Hub, VA Engine, DDA Handler, Interest Engine. Logical boundary between Hub and Core. Explains the responsibility of each component. Must-have.</li>
+                    <li><a href="#diag-10" class="font-semibold text-green-700 hover:underline">Diagram #10 – Data Model VA (ERD):</a> Overview ERD: VA, VA Ledger, VA Balance, Hierarchy, Enrollment, Identifier… Shows how VA data is organized. Must-have.</li>
+                    <li><a href="#diag-11" class="font-semibold text-green-700 hover:underline">Diagram #11 – Detailed Logical ERD:</a> A more in-depth version of the Overview ERD (Diagram #10). Fully shows relationships between tables and logical modules. Very useful for Data, BA, and Dev teams. Should-have.</li>
                 </ul>
             </div>
 
@@ -239,26 +353,26 @@
                 </ul>
                 <p class="font-medium mt-2">2. List of diagrams in group</p>
                 <ul class="diagram-list">
-                    <li><span class="font-semibold text-red-700">Diagram #3 – VA-first Incoming Flow:</span> Flow when a customer enters the VA number directly. Routing → Validate VA → Core Accounting → Event → Shadow Posting. International standard, ensures no "lost" VAs. Must-have.</li>
-                    <li><span class="font-semibold text-red-700">Diagram #4 – DDA-first Incoming Flow:</span> When a customer only enters the DDA number + remark. Core credits first → Routing Hub finds VA → VA shadow posts. Supports inter-bank channels that do not support VA directly. Must-have.</li>
-                    <li><span class="font-semibold text-red-700">Diagram #5 – Outgoing from VA:</span> VA controls balance → Shadow Debit → Core Debit DDA → Confirm. Suitable for POBO, paying on behalf, transfers from VA. Must-have.</li>
-                    <li><span class="font-semibold text-red-700">Diagram #6 – Interest Allocation Flow:</span> Core calculates interest on DDA → Routing Hub → VA Alloc Engine → Shadow Posting. Supports interest sharing models by project/household/unit. Should-have.</li>
-                    <li><span class="font-semibold text-red-700">Diagram #7 – Sequence VA-first:</span> Sequence Diagram describing sequential interaction (of Diagram #3). Serves Dev/QA for building APIs & error handling. Should-have.</li>
-                    <li><span class="font-semibold text-red-700">Diagram #8 – Sequence Outgoing VA:</span> Entire logic of spending from VA in a sequential flow (of Diagram #5). Helps technical teams control pending/confirmed debits. Should-have.</li>
-                    <li><span class="font-semibold text-red-700">Diagram #9 – Sequence Interest Allocation:</span> Details calculation and interest allocation (of Diagram #6). Supports audits and reconciliation. Should-have.</li>
-                    <li><span class="font-semibold text-red-700">Diagram #12 – Integration & Deployment Architecture:</span> Describes actual deployment: containers, scaling, HA/DR. Important for DevOps and infrastructure. Must-have.</li>
+                    <li><a href="#diag-3" class="font-semibold text-red-700 hover:underline">Diagram #3 – VA-first Incoming Flow:</a> Flow when a customer enters the VA number directly. Routing → Validate VA → Core Accounting → Event → Shadow Posting. International standard, ensures no "lost" VAs. Must-have.</li>
+                    <li><a href="#diag-4" class="font-semibold text-red-700 hover:underline">Diagram #4 – DDA-first Incoming Flow:</a> When a customer only enters the DDA number + remark. Core credits first → Routing Hub finds VA → VA shadow posts. Supports inter-bank channels that do not support VA directly. Must-have.</li>
+                    <li><a href="#diag-5" class="font-semibold text-red-700 hover:underline">Diagram #5 – Outgoing from VA:</a> VA controls balance → Shadow Debit → Core Debit DDA → Confirm. Suitable for POBO, paying on behalf, transfers from VA. Must-have.</li>
+                    <li><a href="#diag-6" class="font-semibold text-red-700 hover:underline">Diagram #6 – Interest Allocation Flow:</a> Core calculates interest on DDA → Routing Hub → VA Alloc Engine → Shadow Posting. Supports interest sharing models by project/household/unit. Should-have.</li>
+                    <li><a href="#diag-7" class="font-semibold text-red-700 hover:underline">Diagram #7 – Sequence VA-first:</a> Sequence Diagram describing sequential interaction (of Diagram #3). Serves Dev/QA for building APIs & error handling. Should-have.</li>
+                    <li><a href="#diag-8" class="font-semibold text-red-700 hover:underline">Diagram #8 – Sequence Outgoing VA:</a> Entire logic of spending from VA in a sequential flow (of Diagram #5). Helps technical teams control pending/confirmed debits. Should-have.</li>
+                    <li><a href="#diag-9" class="font-semibold text-red-700 hover:underline">Diagram #9 – Sequence Interest Allocation:</a> Details calculation and interest allocation (of Diagram #6). Supports audits and reconciliation. Should-have.</li>
+                    <li><a href="#diag-12" class="font-semibold text-red-700 hover:underline">Diagram #12 – Integration & Deployment Architecture:</a> Describes actual deployment: containers, scaling, HA/DR. Important for DevOps and infrastructure. Must-have.</li>
                 </ul>
             </div>
         </div>
 
-        <h2 class="sub-header">
+        <h2 id="group-1" class="sub-header">
             <i data-lucide="layout-grid" class="w-6 h-6 text-blue-500"></i>
             I. Group 1 – Macro Architecture Diagrams
         </h2>
         <p class="pl-2 text-gray-700 italic">These diagrams present the overall system landscape, logical architecture, and data layer (Diagrams #1, #2, #10, #11).</p>
 
         <!-- Diagram 1 -->
-        <div class="section-header">1. Diagram #1 – Overall System Landscape / Core Banking Super Layer</div>
+        <div id="diag-1" class="section-header">1. Diagram #1 – Overall System Landscape / Core Banking Super Layer</div>
         <div class="image-container">
             <img class="zoomable-image" src="./Picture/01_Overall_System_Landscape.png" alt="Overall System Landscape">
             <div class="image-caption">Diagram 1/12: Overall System Landscape / Core Banking Super Layer (Click to zoom)</div>
@@ -382,7 +496,7 @@
         </div>
 
         <!-- Diagram 2 -->
-        <div class="section-header">2. Diagram #2 – Logical Architecture (Deposit Core Hub + VA)</div>
+        <div id="diag-2" class="section-header">2. Diagram #2 – Logical Architecture (Deposit Core Hub + VA)</div>
         <div class="image-container">
             <img class="zoomable-image" src="./Picture/02_Logical_Architecture_DepositCoreHub_VA.png" alt="Logical Architecture">
             <div class="image-caption">Diagram 2/12: Logical Architecture (Deposit Core Hub + VA) (Click to zoom)</div>
@@ -448,7 +562,7 @@
         </div>
 
         <!-- Diagram 10 -->
-        <div class="section-header">3. Diagram #10 – Data Model VA (ERD)</div>
+        <div id="diag-10" class="section-header">3. Diagram #10 – Data Model VA (ERD)</div>
         <div class="image-container"><img class="zoomable-image" src="./Picture/10_Data_Model_VA_Conceptual.png" alt="Data Model VA (ERD)"><div class="image-caption">Diagram 10/12: Data Model VA (ERD) & Data Flow (Click to zoom)</div></div>
         <div class="mt-6 space-y-6">
             <!-- Intro Block -->
@@ -572,7 +686,7 @@
         </div>
 
         <!-- Diagram 11 -->
-        <div class="section-header">4. Diagram #11 – Deployment Architecture</div>
+        <div id="diag-11" class="section-header">4. Diagram #11 – Deployment Architecture</div>
         <div class="image-container"><img class="zoomable-image" src="./Picture/11_Logical_ERD_VA_Detail.png" alt="Logical ERD Detail"><div class="image-caption">Diagram 11/12: Deployment Architecture (Click to zoom)</div></div>
         <div class="space-y-4 text-gray-700 mt-4 p-4 border border-gray-200 rounded-lg bg-gray-50">
             <p class="font-bold text-lg text-blue-800">Modern Deployment Model (Deployment & Integration)</p>
@@ -586,7 +700,7 @@
         </div>
 
         <!-- Diagram 12 -->
-        <div class="section-header">5. Diagram #12 – Integration & Deployment Architecture (Integration Mechanism)</div>
+        <div id="diag-12" class="section-header">5. Diagram #12 – Integration & Deployment Architecture (Integration Mechanism)</div>
         <div class="image-container"><img class="zoomable-image" src="./Picture/12_Integration_Deployment_VA_DepositCoreHub.png" alt="Integration & Deployment"><div class="image-caption">Diagram 12/12: Integration Architecture (Click to zoom)</div></div>
         <div class="space-y-4 text-gray-700 mt-4 p-4 border border-gray-200 rounded-lg bg-gray-50">
             <p class="font-bold text-lg text-blue-800">Asynchronous Integration Mechanism (Event-Driven)</p>
@@ -598,11 +712,11 @@
             </ul>
         </div>
 
-        <h2 class="sub-header"><i data-lucide="trello" class="w-6 h-6 text-indigo-500"></i> II. Group 2 – Logical Architecture & Business Process Flow Diagrams</h2>
+        <h2 id="group-2" class="sub-header"><i data-lucide="trello" class="w-6 h-6 text-indigo-500"></i> II. Group 2 – Logical Architecture & Business Process Flow Diagrams</h2>
         <p class="pl-2 text-gray-700 italic">These diagrams describe each business flow in detail, including transaction flows, VA management, and reconciliation (Diagrams #3 $\to$ #9).</p>
 
         <!-- Diagram 3 -->
-        <div class="section-header">6. Diagram #3 – Flow #1: VA-first Incoming (Deposit into VA)</div>
+        <div id="diag-3" class="section-header">6. Diagram #3 – Flow #1: VA-first Incoming (Deposit into VA)</div>
         <div class="image-container"><img class="zoomable-image" src="./Picture/03_Flow_VA_First_Incoming.png" alt="VA-first Incoming Flow"><div class="image-caption">Diagram 3/12: VA-first Incoming Flow (Deposit into VA) (Click to zoom)</div></div>
         <div class="mt-6 space-y-6">
             <div class="bg-blue-50 p-4 rounded-lg text-gray-700 border border-blue-100 shadow-sm italic">
@@ -658,7 +772,7 @@
         </div>
 
         <!-- Diagram 4 -->
-        <div class="section-header">7. Diagram #4 – DDA-first Incoming Flow (Credit to VA)</div>
+        <div id="diag-4" class="section-header">7. Diagram #4 – DDA-first Incoming Flow (Credit to VA)</div>
         <div class="image-container"><img class="zoomable-image" src="./Picture/04_Flow_DDA_First_Incoming.png" alt="DDA-first Incoming Flow"><div class="image-caption">Diagram 4/12: DDA-first Incoming Flow (Credit to VA) (Click to zoom)</div></div>
         
         <div class="mt-6 space-y-6">
@@ -814,7 +928,7 @@
         </div>
 
         <!-- Diagram 5 -->
-        <div class="section-header">8. Diagram #5 – Outgoing from VA (Debit from VA)</div>
+        <div id="diag-5" class="section-header">8. Diagram #5 – Outgoing from VA (Debit from VA)</div>
         <div class="image-container"><img class="zoomable-image" src="./Picture/05_Flow_Outgoing_From_VA.png" alt="Outgoing from VA"><div class="image-caption">Diagram 5/12: Outgoing Transaction Flow (Debit from VA) (Click to zoom)</div></div>
         
         <div class="mt-6 space-y-6">
@@ -972,7 +1086,7 @@
         </div>
 
         <!-- Diagram 6 -->
-        <div class="section-header">9. Diagram #6 – Interest Allocation Flow</div>
+        <div id="diag-6" class="section-header">9. Diagram #6 – Interest Allocation Flow</div>
         <div class="image-container"><img class="zoomable-image" src="./Picture/06_Flow_Interest_Allocation.png" alt="Interest Allocation Flow"><div class="image-caption">Diagram 6/12: Interest Allocation Flow (Click to zoom)</div></div>
        <div class="mt-6 space-y-6">
             <!-- Intro Block -->
@@ -1104,7 +1218,7 @@
         </div>
 
         <!-- Diagram 7 -->
-        <div class="section-header">10. Diagram #7 – Reconciliation Mechanism</div>
+        <div id="diag-7" class="section-header">10. Diagram #7 – Reconciliation Mechanism</div>
         <div class="image-container"><img class="zoomable-image" src="./Picture/07_Sequence_VA_First.png" alt="Sequence VA First"><div class="image-caption">Diagram 7/12: Reconciliation Mechanism (Click to zoom)</div></div>
      <div class="mt-6 space-y-6">
             <!-- Intro Block -->
@@ -1235,7 +1349,7 @@
         </div>
 
         <!-- Diagram 8 -->
-        <div class="section-header">11. Diagram #8 – VA Lifecycle</div>
+        <div id="diag-8" class="section-header">11. Diagram #8 – VA Lifecycle</div>
         <div class="image-container"><img class="zoomable-image" src="./Picture/08_Sequence_Outgoing_VA.png" alt="Sequence Outgoing VA"><div class="image-caption">Diagram 8/12: VA Lifecycle (Click to zoom)</div></div>
         <div class="mt-6 space-y-6">
             <!-- Intro Block -->
@@ -1376,7 +1490,7 @@
         </div>
         
         <!-- Diagram 9 -->
-        <div class="section-header">12. Diagram #9 – Sequence Interest Allocation</div>
+        <div id="diag-9" class="section-header">12. Diagram #9 – Sequence Interest Allocation</div>
         <div class="image-container"><img class="zoomable-image" src="./Picture/09_Sequence_Interest_Allocation.png" alt="Sequence Interest Allocation"><div class="image-caption">Diagram 9/12: Sequence Interest Allocation (Click to zoom)</div></div>
         <div class="mt-6 space-y-6">
             <!-- Intro Block -->
@@ -1513,6 +1627,9 @@
 
 </div>
 
+<!-- Scroll To Top Button -->
+<button id="scrollTopBtn" title="Go to top"><i data-lucide="arrow-up"></i></button>
+
 <!-- The Modal -->
 <div id="myModal" class="modal">
   <span class="close">&times;</span>
@@ -1545,6 +1662,24 @@
             modal.style.display = "none";
         }
     }
+
+    // --- SCROLL TO TOP LOGIC ---
+    let mybutton = document.getElementById("scrollTopBtn");
+
+    window.onscroll = function() {scrollFunction()};
+
+    function scrollFunction() {
+        if (document.body.scrollTop > 300 || document.documentElement.scrollTop > 300) {
+            mybutton.classList.add("show");
+        } else {
+            mybutton.classList.remove("show");
+        }
+    }
+
+    mybutton.addEventListener("click", function() {
+        document.body.scrollTop = 0; // For Safari
+        document.documentElement.scrollTop = 0; // For Chrome, Firefox, IE and Opera
+    });
 </script>
 
 </body>
