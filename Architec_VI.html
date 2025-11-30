@@ -13,6 +13,11 @@
         body { font-family: 'Inter', sans-serif; background-color: #f7f7f7; color: #1f2937; line-height: 1.6; }
         .container { max-width: 1000px; margin: 0 auto; padding: 20px; background-color: #ffffff; box-shadow: 0 0 20px rgba(0, 0, 0, 0.05); }
 
+        /* Smooth scrolling for anchor links */
+        html {
+            scroll-behavior: smooth;
+        }
+
         /* Custom Header Styles */
         .main-header { 
             color: #047857; 
@@ -49,6 +54,7 @@
             margin-bottom: 0.5rem; 
             padding-bottom: 0.25rem;
             border-bottom: 1px solid #e5e7eb;
+            scroll-margin-top: 20px; /* Offset for scroll anchor */
         }
 
         /* Image Box Styles */
@@ -181,11 +187,66 @@
             list-style: disc;
             margin-top: 0.25rem;
         }
+        
+        /* Link styles in summary */
+        .diagram-link:hover {
+            text-decoration: underline;
+            cursor: pointer;
+            opacity: 0.8;
+        }
+
+        /* Scroll Up Button */
+        #scrollUpBtn {
+            display: none;
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            z-index: 99;
+            border: none;
+            outline: none;
+            background-color: #3b82f6;
+            color: white;
+            cursor: pointer;
+            padding: 12px;
+            border-radius: 50%;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            transition: background-color 0.3s, transform 0.3s;
+        }
+
+        #scrollUpBtn:hover {
+            background-color: #2563eb;
+            transform: translateY(-2px);
+        }
+        
+        /* Table of Contents */
+        .toc-container {
+            background-color: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 0.5rem;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        .toc-link {
+            color: #475569;
+            font-size: 0.95rem;
+            transition: color 0.2s;
+            display: block;
+            padding: 2px 0;
+        }
+        .toc-link:hover {
+            color: #2563eb;
+            text-decoration: underline;
+        }
     </style>
 </head>
 <body>
 
-<div class="container">
+<div class="container relative">
+
+    <!-- Scroll Up Button -->
+    <button onclick="topFunction()" id="scrollUpBtn" title="Go to top">
+        <i data-lucide="arrow-up" class="w-6 h-6"></i>
+    </button>
 
     <!-- LANGUAGE SWITCHER -->
     <!-- Khi bấm sẽ chuyển trang sang file English -->
@@ -201,6 +262,37 @@
         <header class="text-center py-6">
             <h1 class="main-header justify-center">Thiết Kế Kiến Trúc Hệ Thống Virtual Account</h1>
         </header>
+
+        <!-- TABLE OF CONTENTS (MỤC LỤC) -->
+        <div class="toc-container">
+            <h2 class="text-lg font-bold text-gray-800 mb-3 border-b border-gray-300 pb-2 flex items-center gap-2">
+                <i data-lucide="list" class="w-5 h-5 text-gray-500"></i> Mục Lục
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-2">
+                <div>
+                    <div class="font-semibold text-indigo-700 mb-2 mt-1">I. Nhóm Macro Architecture</div>
+                    <ul class="space-y-1 pl-2 border-l-2 border-indigo-200">
+                        <li><a href="#diagram-1" class="toc-link">1. Sơ đồ 1 – Overall System Landscape</a></li>
+                        <li><a href="#diagram-2" class="toc-link">2. Sơ đồ 2 – Logical Architecture</a></li>
+                        <li><a href="#diagram-10" class="toc-link">3. Sơ đồ 10 – Data Model VA (ERD)</a></li>
+                        <li><a href="#diagram-11" class="toc-link">4. Sơ đồ 11 – Deployment Architecture</a></li>
+                        <li><a href="#diagram-12" class="toc-link">5. Sơ đồ 12 – Integration Architecture</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <div class="font-semibold text-rose-700 mb-2 mt-1 md:mt-1">II. Nhóm Logic & Nghiệp vụ</div>
+                    <ul class="space-y-1 pl-2 border-l-2 border-rose-200">
+                        <li><a href="#diagram-3" class="toc-link">6. Sơ đồ 3 – VA-first Incoming Flow</a></li>
+                        <li><a href="#diagram-4" class="toc-link">7. Sơ đồ 4 – DDA-first Incoming Flow</a></li>
+                        <li><a href="#diagram-5" class="toc-link">8. Sơ đồ 5 – Outgoing từ VA</a></li>
+                        <li><a href="#diagram-6" class="toc-link">9. Sơ đồ 6 – Interest Allocation Flow</a></li>
+                        <li><a href="#diagram-7" class="toc-link">10. Sơ đồ 7 – Sequence VA-first</a></li>
+                        <li><a href="#diagram-8" class="toc-link">11. Sơ đồ 8 – VA Lifecycle (Outgoing)</a></li>
+                        <li><a href="#diagram-9" class="toc-link">12. Sơ đồ 9 – VA Hierarchy Management</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
 
         <!-- KHỐI NỘI DUNG TỔNG HỢP -->
         <div class="summary-block">
@@ -221,10 +313,10 @@
                 </ul>
                 <p class="font-medium mt-2">2. Danh sách sơ đồ trong nhóm</p>
                 <ul class="diagram-list">
-                    <li><span class="font-semibold text-green-700">Sơ đồ số 1 – Overall System Landscape / Core Banking Super Layer:</span> Giới thiệu BIG PICTURE toàn hệ thống. Các lớp: Channels → API Gateway → Routing Hub → Deposit Core Hub → Core Banking → Data Layer. Chỉ rõ VA thuộc lớp nào và Core làm nhiệm vụ gì. Must-have.</li>
-                    <li><span class="font-semibold text-green-700">Sơ đồ số 2 – Logical Architecture (Deposit Core Hub + VA):</span> Mô tả các module chính: Routing Hub, VA Engine, DDA Handler, Interest Engine. Ranh giới logic giữa lớp Hub và Core. Giải thích trách nhiệm từng thành phần. Must-have.</li>
-                    <li><span class="font-semibold text-green-700">Sơ đồ số 10 – Data Model VA (ERD):</span> ERD tổng quan: VA, VA Ledger, VA Balance, Hierarchy, Enrollment, Identifier… Cho thấy cách dữ liệu VA được tổ chức. Must-have.</li>
-                    <li><span class="font-semibold text-green-700">Sơ đồ số 11 – Logical ERD Chi tiết:</span> Phiên bản chi tiết chuyên sâu hơn của ERD tổng quan (Sơ đồ #10). Thể hiện đầy đủ quan hệ giữa các bảng, các module logic. Rất hữu ích cho đội Data, BA, và Dev. Should-have.</li>
+                    <li><a href="#diagram-1" class="diagram-link"><span class="font-semibold text-green-700">Sơ đồ số 1 – Overall System Landscape / Core Banking Super Layer:</span></a> Giới thiệu BIG PICTURE toàn hệ thống. Các lớp: Channels → API Gateway → Routing Hub → Deposit Core Hub → Core Banking → Data Layer. Chỉ rõ VA thuộc lớp nào và Core làm nhiệm vụ gì. Must-have.</li>
+                    <li><a href="#diagram-2" class="diagram-link"><span class="font-semibold text-green-700">Sơ đồ số 2 – Logical Architecture (Deposit Core Hub + VA):</span></a> Mô tả các module chính: Routing Hub, VA Engine, DDA Handler, Interest Engine. Ranh giới logic giữa lớp Hub và Core. Giải thích trách nhiệm từng thành phần. Must-have.</li>
+                    <li><a href="#diagram-10" class="diagram-link"><span class="font-semibold text-green-700">Sơ đồ số 10 – Data Model VA (ERD):</span></a> ERD tổng quan: VA, VA Ledger, VA Balance, Hierarchy, Enrollment, Identifier… Cho thấy cách dữ liệu VA được tổ chức. Must-have.</li>
+                    <li><a href="#diagram-11" class="diagram-link"><span class="font-semibold text-green-700">Sơ đồ số 11 – Logical ERD Chi tiết:</span></a> Phiên bản chi tiết chuyên sâu hơn của ERD tổng quan (Sơ đồ #10). Thể hiện đầy đủ quan hệ giữa các bảng, các module logic. Rất hữu ích cho đội Data, BA, và Dev. Should-have.</li>
                 </ul>
             </div>
 
@@ -240,14 +332,14 @@
                 </ul>
                 <p class="font-medium mt-2">2. Danh sách sơ đồ trong nhóm</p>
                 <ul class="diagram-list">
-                    <li><span class="font-semibold text-red-700">Sơ đồ số 3 – VA-first Incoming Flow:</span> Luồng khi khách hàng nhập số VA trực tiếp. Routing → Validate VA → Core hạch toán → Event → Shadow Posting. Chuẩn quốc tế, đảm bảo không lạc VA. Must-have.</li>
-                    <li><span class="font-semibold text-red-700">Sơ đồ số 4 – DDA-first Incoming Flow:</span> Khi khách hàng chỉ nhập số DDA + remark. Core ghi có trước → Routing Hub tìm VA → VA ghi shadow. Hỗ trợ kênh liên ngân hàng không hỗ trợ VA. Must-have.</li>
-                    <li><span class="font-semibold text-red-700">Sơ đồ số 5 – Outgoing từ VA:</span> VA kiểm soát số dư → Shadow Debit → Core Debit DDA → Confirm. Phù hợp POBO, chi hộ, chuyển khoản từ VA. Must-have.</li>
-                    <li><span class="font-semibold text-red-700">Sơ đồ số 6 – Interest Allocation Flow:</span> Core tính lãi trên DDA → Routing Hub → VA Alloc Engine → Shadow Posting. Hỗ trợ mô hình chia lãi theo dự án/hộ gia đình/đơn vị. Should-have (nhưng quan trọng).</li>
-                    <li><span class="font-semibold text-red-700">Sơ đồ số 7 – Sequence VA-first:</span> Sequence Diagram mô tả tuần tự tương tác (của Sơ đồ #3). Phục vụ Dev/QA xây dựng API & xử lý lỗi. Should-have.</li>
-                    <li><span class="font-semibold text-red-700">Sơ đồ số 8 – Sequence Outgoing VA:</span> Toàn bộ logic chi từ VA theo dòng tuần tự (của Sơ đồ #5). Giúp đội kỹ thuật kiểm soát pending/confirmed debit. Should-have.</li>
-                    <li><span class="font-semibold text-red-700">Sơ đồ số 9 – Sequence Interest Allocation:</span> Chi tiết tính toán và phân bổ lãi (của Sơ đồ #6). Hỗ trợ kiểm toán, reconciliation. Should-have.</li>
-                    <li><span class="font-semibold text-red-700">Sơ đồ số 12 – Integration & Deployment Architecture:</span> Mô tả triển khai thực tế: container, scaling, HA/DR. Quan trọng cho DevOps, hạ tầng. Must-have.</li>
+                    <li><a href="#diagram-3" class="diagram-link"><span class="font-semibold text-red-700">Sơ đồ số 3 – VA-first Incoming Flow:</span></a> Luồng khi khách hàng nhập số VA trực tiếp. Routing → Validate VA → Core hạch toán → Event → Shadow Posting. Chuẩn quốc tế, đảm bảo không lạc VA. Must-have.</li>
+                    <li><a href="#diagram-4" class="diagram-link"><span class="font-semibold text-red-700">Sơ đồ số 4 – DDA-first Incoming Flow:</span></a> Khi khách hàng chỉ nhập số DDA + remark. Core ghi có trước → Routing Hub tìm VA → VA ghi shadow. Hỗ trợ kênh liên ngân hàng không hỗ trợ VA. Must-have.</li>
+                    <li><a href="#diagram-5" class="diagram-link"><span class="font-semibold text-red-700">Sơ đồ số 5 – Outgoing từ VA:</span></a> VA kiểm soát số dư → Shadow Debit → Core Debit DDA → Confirm. Phù hợp POBO, chi hộ, chuyển khoản từ VA. Must-have.</li>
+                    <li><a href="#diagram-6" class="diagram-link"><span class="font-semibold text-red-700">Sơ đồ số 6 – Interest Allocation Flow:</span></a> Core tính lãi trên DDA → Routing Hub → VA Alloc Engine → Shadow Posting. Hỗ trợ mô hình chia lãi theo dự án/hộ gia đình/đơn vị. Should-have (nhưng quan trọng).</li>
+                    <li><a href="#diagram-7" class="diagram-link"><span class="font-semibold text-red-700">Sơ đồ số 7 – Sequence VA-first:</span></a> Sequence Diagram mô tả tuần tự tương tác (của Sơ đồ #3). Phục vụ Dev/QA xây dựng API & xử lý lỗi. Should-have.</li>
+                    <li><a href="#diagram-8" class="diagram-link"><span class="font-semibold text-red-700">Sơ đồ số 8 – Sequence Outgoing VA:</span></a> Toàn bộ logic chi từ VA theo dòng tuần tự (của Sơ đồ #5). Giúp đội kỹ thuật kiểm soát pending/confirmed debit. Should-have.</li>
+                    <li><a href="#diagram-9" class="diagram-link"><span class="font-semibold text-red-700">Sơ đồ số 9 – Sequence Interest Allocation:</span></a> Chi tiết tính toán và phân bổ lãi (của Sơ đồ #6). Hỗ trợ kiểm toán, reconciliation. Should-have.</li>
+                    <li><a href="#diagram-12" class="diagram-link"><span class="font-semibold text-red-700">Sơ đồ số 12 – Integration & Deployment Architecture:</span></a> Mô tả triển khai thực tế: container, scaling, HA/DR. Quan trọng cho DevOps, hạ tầng. Must-have.</li>
                 </ul>
             </div>
         </div>
@@ -259,7 +351,7 @@
         <p class="pl-2 text-gray-700 italic">Các sơ đồ này trình bày bức tranh tổng thể hệ thống, kiến trúc logic và lớp dữ liệu (Sơ đồ #1, #2, #10, #11).</p>
 
         <!-- Sơ đồ số 1 -->
-        <div class="section-header">1. Sơ đồ số 1 – Overall System Landscape / Core Banking Super Layer</div>
+        <div id="diagram-1" class="section-header">1. Sơ đồ số 1 – Overall System Landscape / Core Banking Super Layer</div>
         <div class="image-container">
             <img class="zoomable-image" src="./Picture/01_Overall_System_Landscape.png" alt="Overall System Landscape">
             <div class="image-caption">Sơ đồ 1/12: Overall System Landscape / Core Banking Super Layer (Click để phóng to)</div>
@@ -383,7 +475,7 @@
         </div>
 
         <!-- Sơ đồ số 2 -->
-        <div class="section-header">2. Sơ đồ số 2 – Logical Architecture (Deposit Core Hub + VA)</div>
+        <div id="diagram-2" class="section-header">2. Sơ đồ số 2 – Logical Architecture (Deposit Core Hub + VA)</div>
         <div class="image-container">
             <img class="zoomable-image" src="./Picture/02_Logical_Architecture_DepositCoreHub_VA.png" alt="Logical Architecture">
             <div class="image-caption">Sơ đồ 2/12: Logical Architecture (Deposit Core Hub + VA) (Click để phóng to)</div>
@@ -449,7 +541,7 @@
         </div>
 
         <!-- Sơ đồ 10 -->
-        <div class="section-header">3. Sơ đồ số 10 – Data Model VA (ERD)</div>
+        <div id="diagram-10" class="section-header">3. Sơ đồ số 10 – Data Model VA (ERD)</div>
         <div class="image-container"><img class="zoomable-image" src="./Picture/10_Data_Model_VA_Conceptual.png" alt="Data Model VA (ERD)"><div class="image-caption">Sơ đồ 10/12: Data Model VA (ERD) & Data Flow (Click để phóng to)</div></div>
         <div class="mt-6 space-y-6">
             <!-- Intro Block -->
@@ -573,7 +665,7 @@
         </div>
 
         <!-- Sơ đồ 11 -->
-        <div class="section-header">4. Sơ đồ số 11 – Deployment Architecture</div>
+        <div id="diagram-11" class="section-header">4. Sơ đồ số 11 – Deployment Architecture</div>
         <div class="image-container"><img class="zoomable-image" src="./Picture/11_Logical_ERD_VA_Detail.png" alt="Logical ERD Detail"><div class="image-caption">Sơ đồ 11/12: Deployment Architecture (Click để phóng to)</div></div>
         <div class="space-y-4 text-gray-700 mt-4 p-4 border border-gray-200 rounded-lg bg-gray-50">
             <p class="font-bold text-lg text-blue-800">Mô hình Triển khai Hiện đại (Deployment & Integration)</p>
@@ -587,7 +679,7 @@
         </div>
 
         <!-- Sơ đồ 12 -->
-        <div class="section-header">5. Sơ đồ số 12 – Integration & Deployment Architecture (Cơ chế Tích hợp)</div>
+        <div id="diagram-12" class="section-header">5. Sơ đồ số 12 – Integration & Deployment Architecture (Cơ chế Tích hợp)</div>
         <div class="image-container"><img class="zoomable-image" src="./Picture/12_Integration_Deployment_VA_DepositCoreHub.png" alt="Integration & Deployment"><div class="image-caption">Sơ đồ 12/12: Integration Architecture (Click để phóng to)</div></div>
         <div class="space-y-4 text-gray-700 mt-4 p-4 border border-gray-200 rounded-lg bg-gray-50">
             <p class="font-bold text-lg text-blue-800">Cơ chế Tích hợp Bất Đồng Bộ (Event-Driven)</p>
@@ -603,7 +695,7 @@
         <p class="pl-2 text-gray-700 italic">Các sơ đồ này mô tả chi tiết từng luồng nghiệp vụ, bao gồm luồng giao dịch, quản lý VA và đối chiếu (Sơ đồ #3 $\to$ #9).</p>
 
         <!-- Sơ đồ 3 -->
-        <div class="section-header">6. Sơ đồ số 3 – Flow #1: VA-first Incoming (Nộp tiền vào VA)</div>
+        <div id="diagram-3" class="section-header">6. Sơ đồ số 3 – Flow #1: VA-first Incoming (Nộp tiền vào VA)</div>
         <div class="image-container"><img class="zoomable-image" src="./Picture/03_Flow_VA_First_Incoming.png" alt="VA-first Incoming Flow"><div class="image-caption">Sơ đồ 3/12: VA-first Incoming Flow (Nộp tiền vào VA) (Click để phóng to)</div></div>
         <div class="mt-6 space-y-6">
             <div class="bg-blue-50 p-4 rounded-lg text-gray-700 border border-blue-100 shadow-sm italic">
@@ -659,7 +751,7 @@
         </div>
 
         <!-- Sơ đồ 4 -->
-        <div class="section-header">7. Sơ đồ số 4 – VA-first Incoming Flow (Credit to VA)</div>
+        <div id="diagram-4" class="section-header">7. Sơ đồ số 4 – DDA-first Incoming Flow (Credit to VA)</div>
         <div class="image-container"><img class="zoomable-image" src="./Picture/04_Flow_DDA_First_Incoming.png" alt="DDA-first Incoming Flow"><div class="image-caption">Sơ đồ 4/12: VA-first Incoming Flow (Credit to VA) (Click để phóng to)</div></div>
         
         <div class="mt-6 space-y-6">
@@ -815,7 +907,7 @@
         </div>
 
         <!-- Sơ đồ 5 -->
-        <div class="section-header">8. Sơ đồ số 5 – Outgoing từ VA (Debit from VA)</div>
+        <div id="diagram-5" class="section-header">8. Sơ đồ số 5 – Outgoing từ VA (Debit from VA)</div>
         <div class="image-container"><img class="zoomable-image" src="./Picture/05_Flow_Outgoing_From_VA.png" alt="Outgoing from VA"><div class="image-caption">Sơ đồ 5/12: Outgoing Transaction Flow (Debit from VA) (Click để phóng to)</div></div>
         
         <div class="mt-6 space-y-6">
@@ -973,7 +1065,7 @@
         </div>
 
         <!-- Sơ đồ 6 -->
-        <div class="section-header">9. Sơ đồ số 6 – Interest Allocation Flow</div>
+        <div id="diagram-6" class="section-header">9. Sơ đồ số 6 – Interest Allocation Flow</div>
         <div class="image-container"><img class="zoomable-image" src="./Picture/06_Flow_Interest_Allocation.png" alt="Interest Allocation Flow"><div class="image-caption">Sơ đồ 6/12: Interest Allocation Flow (Click để phóng to)</div></div>
        <div class="mt-6 space-y-6">
             <!-- Intro Block -->
@@ -1105,7 +1197,7 @@
         </div>
 
         <!-- Sơ đồ 7 -->
-        <div class="section-header">10. Sơ đồ số 7 – Reconciliation Mechanism (Cơ chế Đối chiếu)</div>
+        <div id="diagram-7" class="section-header">10. Sơ đồ số 7 – Reconciliation Mechanism (Cơ chế Đối chiếu)</div>
         <div class="image-container"><img class="zoomable-image" src="./Picture/07_Sequence_VA_First.png" alt="Sequence VA First"><div class="image-caption">Sơ đồ 7/12: Reconciliation Mechanism (Click để phóng to)</div></div>
      <div class="mt-6 space-y-6">
             <!-- Intro Block -->
@@ -1236,7 +1328,7 @@
         </div>
 
         <!-- Sơ đồ 8 -->
-        <div class="section-header">11. Sơ đồ số 8 – VA Lifecycle (Vòng đời VA)</div>
+        <div id="diagram-8" class="section-header">11. Sơ đồ số 8 – VA Lifecycle (Vòng đời VA)</div>
         <div class="image-container"><img class="zoomable-image" src="./Picture/08_Sequence_Outgoing_VA.png" alt="Sequence Outgoing VA"><div class="image-caption">Sơ đồ 8/12: VA Lifecycle (Click để phóng to)</div></div>
         <div class="mt-6 space-y-6">
             <!-- Intro Block -->
@@ -1376,7 +1468,7 @@
         </div>
         
         <!-- Sơ đồ 9 -->
-        <div class="section-header">12. Sơ đồ số 9 – VA Hierarchy & Management (Cấu trúc Phân cấp)</div>
+        <div id="diagram-9" class="section-header">12. Sơ đồ số 9 – VA Hierarchy & Management (Cấu trúc Phân cấp)</div>
         <div class="image-container"><img class="zoomable-image" src="./Picture/09_Sequence_Interest_Allocation.png" alt="Sequence Interest Allocation"><div class="image-caption">Sơ đồ 9/12: VA Hierarchy & Management (Click để phóng to)</div></div>
         <div class="mt-6 space-y-6">
             <!-- Intro Block -->
@@ -1521,6 +1613,26 @@
 </div>
 
 <script>
+    // --- SCROLL TO TOP LOGIC ---
+    let mybutton = document.getElementById("scrollUpBtn");
+
+    // When the user scrolls down 20px from the top of the document, show the button
+    window.onscroll = function() {scrollFunction()};
+
+    function scrollFunction() {
+      if (document.body.scrollTop > 300 || document.documentElement.scrollTop > 300) {
+        mybutton.style.display = "block";
+      } else {
+        mybutton.style.display = "none";
+      }
+    }
+
+    // When the user clicks on the button, scroll to the top of the document
+    function topFunction() {
+      document.body.scrollTop = 0; // For Safari
+      document.documentElement.scrollTop = 0; // For Chrome, Firefox, IE and Opera
+    }
+
     // --- ZOOM IMAGE LOGIC ---
     var modal = document.getElementById("myModal");
     var modalImg = document.getElementById("img01");
