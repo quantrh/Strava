@@ -378,122 +378,236 @@
             <div class="image-caption">Diagram 1/12: Overall System Landscape / Core Banking Super Layer (Click to zoom)</div>
         </div>
         
-        <div class="mt-8 space-y-8">
-            <div class="bg-blue-50 p-6 rounded-lg border-l-4 border-blue-600 shadow-sm">
-                <h3 class="text-xl font-bold text-blue-800 uppercase mb-3 flex items-center gap-2">
-                    <i data-lucide="target" class="w-6 h-6"></i> Architectural Goals
-                </h3>
-                <p class="mb-4 text-gray-800">
-                    The <span class="font-bold text-blue-700">“Core Banking Super Layer”</span> model helps the bank separate the core accounting layer from the service layers attached to it, enabling rapid new product development without directly impacting the Core. This architecture aims to:
-                </p>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    <div class="flex items-start gap-2"><i data-lucide="shield-check" class="w-5 h-5 text-blue-600 mt-1 flex-shrink-0"></i><span class="text-gray-700 font-medium">Protect Core Banking from high loads and change risks</span></div>
-                    <div class="flex items-start gap-2"><i data-lucide="settings-2" class="w-5 h-5 text-blue-600 mt-1 flex-shrink-0"></i><span class="text-gray-700 font-medium">Standardize communication points between Channel – System – Core</span></div>
-                    <div class="flex items-start gap-2"><i data-lucide="zap" class="w-5 h-5 text-blue-600 mt-1 flex-shrink-0"></i><span class="text-gray-700 font-medium">Accelerate product innovation (Virtual Account, Alias Account, Fee Engine…)</span></div>
-                    <div class="flex items-start gap-2"><i data-lucide="trending-up" class="w-5 h-5 text-blue-600 mt-1 flex-shrink-0"></i><span class="text-gray-700 font-medium">Enhance corporate experience and competitiveness</span></div>
-                </div>
-            </div>
+       <div id="content-en">
+        <header class="text-center py-6">
+            <h1 class="main-header">
+                OVERALL ARCHITECTURE EXPLANATION
+                <span class="text-xl md:text-2xl text-emerald-600 font-bold mt-2">CORE BANKING SUPER LAYER MODEL FOR BIDV DEPOSIT MODULE</span>
+            </h1>
+            <p class="text-gray-500 italic text-center text-sm">(Updated version based on official design – added Virtual Account, Sub-Account, Multi-Currency, Accumulation Deposit)</p>
+        </header>
 
-            <div>
-                <h3 class="text-xl font-bold text-gray-800 mb-4 border-b-2 border-gray-200 pb-2">Main Architectural Layers</h3>
-                <div class="space-y-3">
-                    <div class="bg-white border border-gray-200 rounded-md p-4 flex flex-col md:flex-row gap-4 hover:shadow-md transition">
-                        <div class="md:w-1/4">
-                            <span class="inline-block px-3 py-1 rounded-full text-sm font-bold bg-gray-100 text-gray-700">Channel Layer</span>
-                            <div class="font-bold text-lg text-gray-900">Channel Layer</div>
-                        </div>
-                        <div class="md:w-3/4 text-gray-600 border-l md:border-gray-100 pl-0 md:pl-4">
-                            <p class="mb-1">Includes iBank, H2H, Mobile, Teller, inter-bank channels...</p>
-                            <p class="text-sm italic text-gray-500">→ Sends all transactions through API Gateway, no direct connection to Core.</p>
-                        </div>
-                    </div>
-                    <div class="bg-white border border-gray-200 rounded-md p-4 flex flex-col md:flex-row gap-4 hover:shadow-md transition">
-                        <div class="md:w-1/4">
-                            <span class="inline-block px-3 py-1 rounded-full text-sm font-bold bg-gray-100 text-gray-700">Integration</span>
-                            <div class="font-bold text-lg text-gray-900">API Gateway / ESB</div>
-                        </div>
-                        <div class="md:w-3/4 text-gray-600 border-l md:border-gray-100 pl-0 md:pl-4">
-                            <p class="mb-1">Performs coordination, authentication, protects Core from direct access.</p>
-                            <p class="text-sm font-semibold text-blue-600">→ The “single door” for all deposit transactions.</p>
-                        </div>
-                    </div>
-                    <div class="bg-indigo-50 border-2 border-indigo-200 rounded-lg p-5 flex flex-col gap-4 shadow-sm relative overflow-hidden">
-                        <div class="absolute top-0 right-0 bg-indigo-500 text-white text-xs font-bold px-2 py-1 rounded-bl">SUPER LAYER</div>
-                        <div class="flex flex-col md:flex-row gap-4">
-                            <div class="md:w-1/4">
-                                <span class="inline-block px-3 py-1 rounded-full text-sm font-bold bg-indigo-100 text-indigo-800">Core Hub</span>
-                                <div class="font-bold text-xl text-indigo-900 mt-1">Deposit Core Hub</div>
-                                <p class="text-sm text-indigo-700 mt-2">This is the critical layer, sitting between channels and Core.</p>
-                            </div>
-                            <div class="md:w-3/4 border-l-2 border-indigo-200 pl-0 md:pl-4">
-                                <p class="font-semibold text-indigo-900 mb-2">Key Functions:</p>
-                                <ul class="space-y-2 text-gray-700">
-                                    <li class="flex items-start gap-2"><div class="w-1.5 h-1.5 rounded-full bg-indigo-500 mt-2"></div><span><strong>Routing Hub:</strong> Coordinates incoming – outgoing – VA-first – DDA-first flows.</span></li>
-                                    <li class="flex items-start gap-2"><div class="w-1.5 h-1.5 rounded-full bg-indigo-500 mt-2"></div><span><strong>VA Engine:</strong> Manages Virtual Accounts, shadow posting, real/roll-up balances.</span></li>
-                                    <li class="flex items-start gap-2"><div class="w-1.5 h-1.5 rounded-full bg-indigo-500 mt-2"></div><span><strong>Interest Allocation:</strong> Allocates interest from DDA down to VA.</span></li>
-                                    <li class="flex items-start gap-2"><div class="w-1.5 h-1.5 rounded-full bg-indigo-500 mt-2"></div><span><strong>DDA Handler:</strong> Handles transactions written to DDA with extended logic.</span></li>
-                                </ul>
-                                <p class="mt-3 text-sm font-medium text-indigo-800 bg-indigo-100 p-2 rounded">→ Allows developing new features without modifying Core, reducing risk and speeding up deployment.</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="bg-slate-50 border border-slate-300 rounded-md p-4 flex flex-col md:flex-row gap-4">
-                        <div class="md:w-1/4">
-                            <span class="inline-block px-3 py-1 rounded-full text-sm font-bold bg-slate-200 text-slate-700">Backend</span>
-                            <div class="font-bold text-lg text-slate-900">Core Banking Layer</div>
-                        </div>
-                        <div class="md:w-3/4 text-gray-600 border-l md:border-gray-200 pl-0 md:pl-4">
-                            <p class="mb-2 italic">Core only performs true accounting and posting duties:</p>
-                            <div class="grid grid-cols-2 gap-2 text-sm">
-                                <div class="flex items-center gap-1"><i data-lucide="check" class="w-4 h-4 text-slate-500"></i> Credit/Debit DDA</div>
-                                <div class="flex items-center gap-1"><i data-lucide="check" class="w-4 h-4 text-slate-500"></i> Real Interest Calculation</div>
-                                <div class="flex items-center gap-1"><i data-lucide="check" class="w-4 h-4 text-slate-500"></i> Event Publishing</div>
-                                <div class="flex items-center gap-1"><i data-lucide="check" class="w-4 h-4 text-slate-500"></i> Ledger Integrity Assurance</div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2">
-                        <div class="bg-orange-50 border border-orange-200 rounded p-3">
-                            <div class="font-bold text-orange-800 mb-1 flex items-center gap-2"><i data-lucide="activity" class="w-4 h-4"></i> Event Bus</div>
-                            <p class="text-sm text-gray-700">Provides an asynchronous mechanism to synchronize transactions between Core and Super Layer.</p>
-                            <p class="text-xs text-orange-600 mt-1 font-semibold">→ Increases scalability, reduces bottlenecks.</p>
-                        </div>
-                        <div class="bg-cyan-50 border border-cyan-200 rounded p-3">
-                            <div class="font-bold text-cyan-800 mb-1 flex items-center gap-2"><i data-lucide="database" class="w-4 h-4"></i> Data Layer</div>
-                            <ul class="text-sm text-gray-700 space-y-1">
-                                <li><strong>Core DB:</strong> DDA ledger – audit standard ledger.</li>
-                                <li><strong>VA DB:</strong> VA ledger (shadow), registry, mapping.</li>
-                            </ul>
-                            <p class="text-xs text-cyan-600 mt-1 font-semibold">→ Separated to keep Core stable, VA flexible.</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div>
-                <h3 class="text-xl font-bold text-emerald-800 mb-4 flex items-center gap-2 border-b-2 border-emerald-100 pb-2">
-                    <i data-lucide="thumbs-up" class="w-6 h-6"></i> Overall Benefits for the Bank
-                </h3>
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    <div class="bg-white p-4 rounded-lg shadow-sm border-t-4 border-emerald-500"><h4 class="font-bold text-gray-800 mb-2">Protect Core – Reduce Risk</h4><p class="text-sm text-gray-600">Core changes less, avoiding upgrade impacts and system error risks.</p></div>
-                    <div class="bg-white p-4 rounded-lg shadow-sm border-t-4 border-emerald-500"><h4 class="font-bold text-gray-800 mb-2">Open Platform for New Products</h4><p class="text-sm text-gray-600">Virtual Account, Alias, Fee Engine… deploy quickly without touching Core.</p></div>
-                    <div class="bg-white p-4 rounded-lg shadow-sm border-t-4 border-emerald-500"><h4 class="font-bold text-gray-800 mb-2">Increase Performance & Scalability</h4><p class="text-sm text-gray-600">Super Layer handles high volume business logic, Core focuses on ledger → better performance.</p></div>
-                    <div class="bg-white p-4 rounded-lg shadow-sm border-t-4 border-emerald-500"><h4 class="font-bold text-gray-800 mb-2">Standardize Multi-channel Integration</h4><p class="text-sm text-gray-600">Transactions follow a unified flow, easy to operate and control.</p></div>
-                    <div class="bg-white p-4 rounded-lg shadow-sm border-t-4 border-emerald-500 lg:col-span-2"><h4 class="font-bold text-gray-800 mb-2">Upgrade Tech Model</h4><p class="text-sm text-gray-600">Approaching international banking architecture: layered, event-driven, microservices.</p></div>
-                </div>
-            </div>
-
-            <div class="bg-gray-800 text-white rounded-lg p-6 shadow-lg">
-                <h3 class="text-xl font-bold mb-3 flex items-center gap-2 text-yellow-400"><i data-lucide="flag" class="w-6 h-6"></i> Strategic Conclusion</h3>
-                <p class="mb-4 text-gray-300">The Core Banking Super Layer architecture not only addresses current needs (Virtual Account, Cash Management) but is also a long-term foundation for digital transformation strategies, helping BIDV:</p>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                    <div class="bg-gray-700 p-3 rounded text-center border border-gray-600"><div class="font-bold text-white">Reduce Dependence</div><div class="text-xs text-gray-400">on Core vendor</div></div>
-                    <div class="bg-gray-700 p-3 rounded text-center border border-gray-600"><div class="font-bold text-white">Proactively Expand</div><div class="text-xs text-gray-400">products according to market</div></div>
-                    <div class="bg-gray-700 p-3 rounded text-center border border-gray-600"><div class="font-bold text-white">Stabilize Operations</div><div class="text-xs text-gray-400">at critical system level</div></div>
-                </div>
-                <p class="text-sm text-gray-400 italic text-center border-t border-gray-700 pt-3">"This is the suitable model for banks wanting to strongly develop corporate transaction services and expand digital banking platforms"</p>
+        <!-- TABLE OF CONTENTS -->
+        <div class="toc-container">
+            <h2 class="text-lg font-bold text-gray-800 mb-3 border-b border-gray-300 pb-2 flex items-center gap-2">
+                <i data-lucide="list" class="w-5 h-5 text-gray-500"></i> Table of Contents
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-2">
+                <ul class="space-y-1 pl-2">
+                    <li><a href="#sec-1" class="toc-link">1. Architectural Objectives</a></li>
+                    <li><a href="#sec-2" class="toc-link">2. Overall Architecture (Jam Design)</a></li>
+                    <li><a href="#sec-3" class="toc-link">3. Layer 3 – SUPER LAYER (Deposit Core Hub)</a></li>
+                    <li><a href="#sec-4" class="toc-link">4. Layer 4 – Backend (Core Banking Layer)</a></li>
+                </ul>
+                <ul class="space-y-1 pl-2">
+                    <li><a href="#sec-5" class="toc-link">5. Layer 5 – Event Bus & Data Layer</a></li>
+                    <li><a href="#sec-6" class="toc-link">6. Overall Benefits for BIDV</a></li>
+                    <li><a href="#sec-7" class="toc-link">7. Strategic Conclusion</a></li>
+                </ul>
             </div>
         </div>
+
+        <!-- 1. OBJECTIVES -->
+        <div id="sec-1" class="section-header">1. Architectural Objectives</div>
+        <div class="summary-block">
+            <p class="mb-4">
+                The <strong>Core Banking Super Layer</strong> architecture is designed to move BIDV closer to the <strong>Lean Core Banking</strong> model – where Core only acts as an Account Engine/Ledger, while all flexible operations, complex logic, and product rules are processed at the intermediate layer: <strong>Deposit Core Hub (DCH)</strong>.
+            </p>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="bg-white p-4 rounded border border-green-200">
+                    <h4 class="font-bold text-green-800 mb-2 flex items-center gap-2"><i data-lucide="shield" class="w-4 h-4"></i> (1) Protect Core Banking</h4>
+                    <p class="text-sm text-gray-600">Reduce Load & Change Risks. Core no longer carries specific/exception logic. Avoid deep code modification in Core – minimizing critical system risks.</p>
+                </div>
+                <div class="bg-white p-4 rounded border border-blue-200">
+                    <h4 class="font-bold text-blue-800 mb-2 flex items-center gap-2"><i data-lucide="share-2" class="w-4 h-4"></i> (2) Standardize Communication Points</h4>
+                    <p class="text-sm text-gray-600">All transactions go solely through the API Gateway. No channel calls Core directly → ensuring control.</p>
+                </div>
+                <div class="bg-white p-4 rounded border border-purple-200">
+                    <h4 class="font-bold text-purple-800 mb-2 flex items-center gap-2"><i data-lucide="zap" class="w-4 h-4"></i> (3) Accelerate Product Development</h4>
+                    <p class="text-sm text-gray-600">Rapid development of Virtual Account, Sub-Account, Multi-Currency, Accumulation, Fee Engine... without dependency on Core roadmap.</p>
+                </div>
+                <div class="bg-white p-4 rounded border border-orange-200">
+                    <h4 class="font-bold text-orange-800 mb-2 flex items-center gap-2"><i data-lucide="briefcase" class="w-4 h-4"></i> (4) Enhance Corporate Experience</h4>
+                    <p class="text-sm text-gray-600">Cash flow management, account management, interest allocation, multi-layer, multi-currency. Supporting advanced Cash Management.</p>
+                </div>
+                <div class="bg-white p-4 rounded border border-gray-200 md:col-span-2">
+                    <h4 class="font-bold text-gray-800 mb-2 flex items-center gap-2"><i data-lucide="cpu" class="w-4 h-4"></i> (5) Modernize Technology</h4>
+                    <p class="text-sm text-gray-600">Decoupling, Event-driven, Microservices, API-first adhering to international standards.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. OVERALL ARCHITECTURE -->
+        <div id="sec-2" class="section-header">2. Overall Architecture (Jam Design)</div>
+        <p class="mb-4 text-gray-700">The official architecture is divided into 5 layers – as shown in the Jam diagram.</p>
+        
+        <div class="space-y-4">
+            <!-- Layer 1 -->
+            <div class="logic-card border-l-4 border-l-blue-500">
+                <h3 class="font-bold text-blue-900 text-lg mb-2">Layer 1 – Channel Layer</h3>
+                <ul class="grid grid-cols-2 gap-2 text-sm text-gray-700 list-disc ml-5">
+                    <li>SmartBanking</li>
+                    <li>BIDV Direct</li>
+                    <li>H2H, iBank</li>
+                    <li>Teller/SCH</li>
+                    <li>Interbank Channels</li>
+                    <li>Corporate Portal</li>
+                </ul>
+                <div class="mt-3 text-sm bg-blue-50 p-2 rounded text-blue-800 italic">
+                    → Receives requests and sends them to Backend via API Gateway. No channel connects directly to Core.
+                </div>
+            </div>
+
+            <!-- Layer 2 -->
+            <div class="logic-card border-l-4 border-l-indigo-500">
+                <h3 class="font-bold text-indigo-900 text-lg mb-2">Layer 2 – Integration Layer (API Gateway / ESB)</h3>
+                <p class="text-sm text-gray-700 mb-2">This is the sole entry point for the entire deposit transaction system.</p>
+                <ul class="text-sm text-gray-600 list-disc ml-5">
+                    <li>Transaction flow coordination.</li>
+                    <li>Control, authentication, rate limiting.</li>
+                    <li>Protect Core from direct access.</li>
+                    <li>Standardize APIs between systems.</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- 3. SUPER LAYER -->
+        <div id="sec-3" class="section-header">3. Layer 3 – SUPER LAYER (Deposit Core Hub – DCH)</div>
+        <div class="bg-indigo-50 p-5 rounded-lg border border-indigo-200 mb-6 relative">
+            <span class="absolute top-0 right-0 bg-indigo-600 text-white text-xs font-bold px-2 py-1 rounded-bl">CORE FOCUS</span>
+            <p class="font-bold text-indigo-900 mb-2">The business buffer layer between Channel and Core</p>
+            <p class="text-sm text-gray-700">Processes all complex logic. DCH is responsible for 80% of business logic; Core only records the 20% related to accounting entries and ledgers.</p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <!-- 3.1 Routing Hub -->
+            <div class="logic-card">
+                <h4 class="font-bold text-gray-800 mb-1">3.1 Routing Hub</h4>
+                <ul class="text-xs text-gray-600 list-disc ml-4 space-y-1">
+                    <li>Flow Dispatcher: Deposit – Withdraw – VND-first – FX-first – VA-first.</li>
+                    <li>Identify destination account, product mapping.</li>
+                    <li>Failover & fallback mechanisms ensuring 24/7 operation.</li>
+                </ul>
+            </div>
+            <!-- 3.2 VA Engine -->
+            <div class="logic-card bg-purple-50 border-purple-200">
+                <h4 class="font-bold text-purple-900 mb-1">3.2 VA Engine (Virtual Account)</h4>
+                <div class="text-xs text-gray-700 space-y-2">
+                    <p><strong class="text-purple-700">VA Light:</strong> Transaction ID only, no balance, used for collection/reconciliation.</p>
+                    <p><strong class="text-purple-700">VA Full (Hub):</strong> Internal shadow balance, multi-level management (household, contract). Interest/fee allocation at DCH.</p>
+                </div>
+            </div>
+            <!-- 3.3 Sub-Account -->
+            <div class="logic-card">
+                <h4 class="font-bold text-gray-800 mb-1">3.3 Sub-Account Engine</h4>
+                <ul class="text-xs text-gray-600 list-disc ml-4 space-y-1">
+                    <li>Multi-level Parent/Child account management (Master at Core, Sub at DCH).</li>
+                    <li>Each sub-account has its own balance and logic (Land funds, courts, retail chains...).</li>
+                </ul>
+            </div>
+            <!-- 3.4 Multi-Currency -->
+            <div class="logic-card">
+                <h4 class="font-bold text-gray-800 mb-1">3.4 Multi-Currency Engine</h4>
+                <ul class="text-xs text-gray-600 list-disc ml-4 space-y-1">
+                    <li>1 "Total Account" in VND managing conversion value.</li>
+                    <li>Core holds original currency accounts (USD, EUR...).</li>
+                    <li>DCH handles realtime FX conversion, multi-currency interest, consolidated reporting.</li>
+                </ul>
+            </div>
+            <!-- 3.5 Accumulation -->
+            <div class="logic-card">
+                <h4 class="font-bold text-gray-800 mb-1">3.5 Accumulation Engine</h4>
+                <p class="text-xs text-gray-600">Track deposits/withdrawals (FIFO/LIFO), progressive interest, auto-invest surplus to term deposits.</p>
+            </div>
+            <!-- 3.6 Interest Engine -->
+            <div class="logic-card">
+                <h4 class="font-bold text-gray-800 mb-1">3.6 Interest Engine</h4>
+                <p class="text-xs text-gray-600">Detailed interest calculation per product/sub-account. Compare – consolidate – push final interest to Core.</p>
+            </div>
+            <!-- 3.7 Balance Engine -->
+            <div class="logic-card">
+                <h4 class="font-bold text-gray-800 mb-1">3.7 Balance Engine</h4>
+                <p class="text-xs text-gray-600">Detailed balance logic. Track transaction history. Ensure consistency with Core.</p>
+            </div>
+            <!-- 3.8 Rules Engine -->
+            <div class="logic-card">
+                <h4 class="font-bold text-gray-800 mb-1">3.8 Rules Engine</h4>
+                <p class="text-xs text-gray-600">Account priority rules, FX rules. Auto sweep / auto invest / auto transfer.</p>
+            </div>
+        </div>
+
+        <!-- 4 & 5 BACKEND & DATA -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+            <div id="sec-4">
+                <div class="section-header">4. Layer 4 – Backend (Core Banking Layer)</div>
+                <div class="logic-card bg-gray-50 border-gray-300">
+                    <p class="font-bold text-gray-800 mb-2">Core retains the exact role of Account Engine:</p>
+                    <ul class="text-sm text-gray-600 list-disc ml-4 mb-2">
+                        <li>Real DDA Management & Summary Posting.</li>
+                        <li>Real Credit/Debit & Standard Ledger Management.</li>
+                        <li>Standard Interest Calculation (not complex interest).</li>
+                        <li>Event Emission: Posting events.</li>
+                    </ul>
+                    <div class="text-xs text-red-600 font-semibold bg-red-50 p-2 rounded">
+                        DOES NOT PROCESS: Sub-account interest allocation, multi-currency conversion, VA routing...
+                    </div>
+                </div>
+            </div>
+
+            <div id="sec-5">
+                <div class="section-header">5. Layer 5 – Event Bus & Data Layer</div>
+                <div class="logic-card bg-teal-50 border-teal-300">
+                    <div class="mb-3">
+                        <strong class="text-teal-900 block">Event Bus / Core MQ</strong>
+                        <span class="text-xs text-gray-600">Asynchronous sync between Core ↔ DCH. Supports scaling, separates real-time & batch.</span>
+                    </div>
+                    <div>
+                        <strong class="text-teal-900 block">Data Layer</strong>
+                        <span class="text-xs text-gray-600">Core DB (DDA ledger) separated from VA DB/DCH DB (Shadow ledger, rules).</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 6. BENEFITS -->
+        <div id="sec-6" class="section-header">6. Overall Benefits for BIDV</div>
+        <div class="bg-gradient-to-r from-emerald-50 to-green-50 border border-emerald-200 rounded-lg p-5">
+            <div class="space-y-3">
+                <div class="flex gap-3">
+                    <span class="font-bold text-green-600 bg-white px-2 rounded border border-green-200 h-fit">1</span>
+                    <div><h5 class="text-sm font-bold text-gray-800">Protect Core – Minimize Risk</h5><p class="text-xs text-gray-600">No need to modify Core for hundreds of business requests.</p></div>
+                </div>
+                <div class="flex gap-3">
+                    <span class="font-bold text-green-600 bg-white px-2 rounded border border-green-200 h-fit">2</span>
+                    <div><h5 class="text-sm font-bold text-gray-800">Fast New Product Development</h5><p class="text-xs text-gray-600">VA, Sub-Account... released to market via Agile model, without touching Core.</p></div>
+                </div>
+                <div class="flex gap-3">
+                    <span class="font-bold text-green-600 bg-white px-2 rounded border border-green-200 h-fit">3</span>
+                    <div><h5 class="text-sm font-bold text-gray-800">Superior Performance</h5><p class="text-xs text-gray-600">Core focuses on ledger; DCH handles heavy logic → reduces load, prevents bottlenecks.</p></div>
+                </div>
+                <div class="flex gap-3">
+                    <span class="font-bold text-green-600 bg-white px-2 rounded border border-green-200 h-fit">4</span>
+                    <div><h5 class="text-sm font-bold text-gray-800">International Standards</h5><p class="text-xs text-gray-600">Compatible with BIAN, Lean Core.</p></div>
+                </div>
+                <div class="flex gap-3">
+                    <span class="font-bold text-green-600 bg-white px-2 rounded border border-green-200 h-fit">5</span>
+                    <div><h5 class="text-sm font-bold text-gray-800">Optimize Corporate Operations</h5><p class="text-xs text-gray-600">Advanced Cash Management support: Multi-level cash flow, Multi-currency, Liquidity concentration, Real-time reporting.</p></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 7. CONCLUSION -->
+        <div id="sec-7" class="mt-8 bg-gray-800 text-white rounded-lg p-6 shadow-lg text-center">
+            <h3 class="text-xl font-bold mb-3 flex items-center justify-center gap-2 text-yellow-400">
+                <i data-lucide="flag" class="w-6 h-6"></i> 7. Strategic Conclusion
+            </h3>
+            <p class="mb-4 text-gray-300 text-sm">
+                The Core Banking Super Layer architecture is a long-term strategic direction for BIDV aiming to: Drastically reduce dependence on Core vendors, Proactively innovate products, Ensure stable operations at Critical Banking level, and create a modern technology foundation for Cash Management & Digital Banking.
+            </p>
+            <p class="text-xs text-gray-400 italic">"This is the international standard model for banks looking to aggressively expand corporate transaction services and modernize Core Banking towards Lean Core."</p>
+        </div>
+
+    </div>
 
         <!-- Diagram 2 -->
         <div id="diag-2" class="section-header">2. Diagram #2 – Logical Architecture (Deposit Core Hub + VA)</div>
@@ -1808,5 +1922,3 @@
 
 </body>
 </html>
-
-
