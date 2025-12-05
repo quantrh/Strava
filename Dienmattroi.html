@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Báo Cáo Vận Hành & Đầu Tư Điện Mặt Trời - Gia Lai</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Roboto', sans-serif; background-color: #f0f4f8; }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 100%;
+            height: 350px;
+            max-height: 400px;
+            margin: 0 auto;
+        }
+        @media (min-width: 768px) {
+            .chart-container { height: 400px; }
+        }
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #0ea5e9; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #0284c7; }
+        
+        .card-shadow { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); }
+        .gradient-text {
+            background: linear-gradient(to right, #0ea5e9, #22c55e);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+    </style>
+    <!-- 
+    PALETTE SELECTION: "Energetic & Professional"
+    Primary Blue: #0ea5e9 (Sky 500)
+    Secondary Green: #22c55e (Green 500)
+    Dark Accent: #0f172a (Slate 900)
+    Light Bg: #f8fafc (Slate 50)
+    Alert/Orange: #f97316 (Orange 500)
+    
+    Data Source Analysis:
+    - Entity: Khoa Viet Energy JSC.
+    - Loc: Ia Phin, Chu Prong, Gia Lai.
+    - Data: 2021 Invoices showing ~103k kWh (Jan) to ~169k kWh (Aug).
+    - Price: 1,938 VND/kWh.
+    - Context: Grid connected since Dec 2020.
+    -->
+</head>
+<body class="text-slate-800">
+
+    <!-- Header Section -->
+    <header class="bg-white shadow-lg sticky top-0 z-50">
+        <div class="container mx-auto px-4 py-4 flex justify-between items-center">
+            <div>
+                <h1 class="text-2xl md:text-3xl font-bold text-slate-900">Năng Lượng <span class="gradient-text">Khoa Việt</span></h1>
+                <p class="text-sm text-slate-500">Báo cáo Hiệu quả & Vận hành Hệ thống ĐMT Áp Mái (Gia Lai)</p>
+            </div>
+            <div class="hidden md:block text-right">
+                <p class="text-xs font-semibold text-slate-400">KHU VỰC</p>
+                <p class="font-bold text-slate-700">Chư Prông, Gia Lai</p>
+            </div>
+        </div>
+    </header>
+
+    <main class="container mx-auto px-4 py-8 space-y-12">
+
+        <!-- Section 1: Key Metrics (Inform) -->
+        <!-- Justification: Big Numbers are best for immediate impact of core KPIs derived from the uploaded invoices. -->
+        <section>
+            <div class="mb-6">
+                <h2 class="text-3xl font-bold text-slate-800 border-l-4 border-sky-500 pl-4">Tổng Quan Hoạt Động</h2>
+                <p class="mt-2 text-slate-600">Dữ liệu được tổng hợp từ biên bản xác nhận chỉ số và hóa đơn bán điện năm 2021 (giai đoạn vận hành ổn định sau COD).</p>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <!-- Card 1 -->
+                <div class="bg-white rounded-xl p-6 card-shadow border-t-4 border-sky-500">
+                    <p class="text-sm font-semibold text-slate-400 uppercase">Giá Bán Điện (FIT 2)</p>
+                    <div class="flex items-baseline mt-2">
+                        <span class="text-4xl font-bold text-sky-600">1,938</span>
+                        <span class="ml-2 text-sm font-medium text-slate-500">VND/kWh</span>
+                    </div>
+                    <p class="text-xs text-slate-400 mt-2">Chưa bao gồm VAT</p>
+                </div>
+
+                <!-- Card 2 -->
+                <div class="bg-white rounded-xl p-6 card-shadow border-t-4 border-green-500">
+                    <p class="text-sm font-semibold text-slate-400 uppercase">Sản Lượng Đỉnh (2021)</p>
+                    <div class="flex items-baseline mt-2">
+                        <span class="text-4xl font-bold text-green-600">168.9</span>
+                        <span class="ml-2 text-sm font-medium text-slate-500">MWh/tháng</span>
+                    </div>
+                    <p class="text-xs text-slate-400 mt-2">Tháng 8 (Mùa khô Tây Nguyên)</p>
+                </div>
+
+                <!-- Card 3 -->
+                <div class="bg-white rounded-xl p-6 card-shadow border-t-4 border-orange-500">
+                    <p class="text-sm font-semibold text-slate-400 uppercase">Doanh Thu Đỉnh</p>
+                    <div class="flex items-baseline mt-2">
+                        <span class="text-4xl font-bold text-orange-500">327</span>
+                        <span class="ml-2 text-sm font-medium text-slate-500">Triệu VNĐ</span>
+                    </div>
+                    <p class="text-xs text-slate-400 mt-2">Tháng cao điểm (Chưa VAT)</p>
+                </div>
+
+                <!-- Card 4 -->
+                <div class="bg-white rounded-xl p-6 card-shadow border-t-4 border-indigo-500">
+                    <p class="text-sm font-semibold text-slate-400 uppercase">Công Suất Trạm</p>
+                    <div class="flex items-baseline mt-2">
+                        <span class="text-4xl font-bold text-indigo-600">1000</span>
+                        <span class="ml-2 text-sm font-medium text-slate-500">kVA</span>
+                    </div>
+                    <p class="text-xs text-slate-400 mt-2">Trạm biến áp 22/0.4kV</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 2: Revenue & Production Analysis (Change/Relationship) -->
+        <!-- Justification: A mixed bar/line chart is ideal to show the correlation between solar irradiation (seasonality) and financial output. -->
+        <section class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div class="lg:col-span-2 bg-white rounded-xl p-6 card-shadow">
+                <h3 class="text-xl font-bold text-slate-800 mb-4">Biểu Đồ Sản Lượng & Doanh Thu (2021)</h3>
+                <p class="text-sm text-slate-500 mb-6">Phân tích số liệu thực tế cho thấy sự biến động rõ rệt giữa mùa khô (tháng 11 - tháng 4 năm sau) và mùa mưa tại Gia Lai. Sản lượng cao nhất rơi vào các tháng 3, 4 và tháng 8 (giữa mùa mưa có nắng gián đoạn).</p>
+                <div class="chart-container">
+                    <canvas id="revenueChart"></canvas>
+                </div>
+            </div>
+            <div class="bg-gradient-to-br from-sky-900 to-slate-800 rounded-xl p-6 text-white card-shadow flex flex-col justify-center">
+                <h4 class="text-lg font-bold mb-4 text-sky-300">Nhận Định Chuyên Sâu</h4>
+                <ul class="space-y-4 text-sm font-light leading-relaxed">
+                    <li class="flex items-start">
+                        <span class="mr-2 text-green-400 text-xl">●</span>
+                        Gia Lai có bức xạ nhiệt rất tốt, trung bình 4.8 - 5.2 kWh/m2/ngày. Tuy nhiên, mùa mưa (T5-T10) có thể làm giảm 20-30% sản lượng so với mùa khô.
+                    </li>
+                    <li class="flex items-start">
+                        <span class="mr-2 text-orange-400 text-xl">●</span>
+                        Tháng 1 & 2 thường bị ảnh hưởng bởi sương mù và không khí lạnh, sản lượng thấp hơn các tháng 3, 4.
+                    </li>
+                    <li class="flex items-start">
+                        <span class="mr-2 text-sky-400 text-xl">●</span>
+                        <strong class="text-white font-bold">Khuyến nghị:</strong> Lên kế hoạch vệ sinh tấm pin (cleaning) mật độ dày hơn vào tháng 11 (kết thúc mùa mưa) và tháng 2 (chuẩn bị cao điểm nắng).
+                    </li>
+                </ul>
+            </div>
+        </section>
+
+        <!-- Section 3: Curtailment Risk (Compare/Part-to-whole) -->
+        <!-- Justification: Stacked Bar Chart allows comparison of "Potential Revenue" vs "Lost Revenue" clearly showing the financial impact of grid curtailment. -->
+        <section>
+            <div class="bg-white rounded-xl p-6 card-shadow">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
+                    <div>
+                        <h3 class="text-xl font-bold text-slate-800">Rủi Ro Sa Thải (Cắt Giảm Công Suất)</h3>
+                        <p class="text-sm text-slate-500 mt-1 max-w-2xl">
+                            Khu vực Tây Nguyên thường xuyên gặp tình trạng quá tải lưới điện cục bộ vào giờ trưa (10:00 - 13:00). 
+                            Dưới đây là mô phỏng tác động tài chính khi bị tiết giảm sản lượng (Curtailment) ở các mức độ khác nhau.
+                        </p>
+                    </div>
+                    <div class="mt-4 md:mt-0 px-4 py-2 bg-orange-100 text-orange-700 rounded-lg text-xs font-bold uppercase tracking-wide">
+                        Rủi ro cao
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+                    <div class="chart-container">
+                        <canvas id="curtailmentChart"></canvas>
+                    </div>
+                    <div class="space-y-6">
+                        <div class="bg-slate-50 p-4 rounded-lg border-l-4 border-red-500">
+                            <h4 class="font-bold text-slate-700">Nguyên Nhân Sa Thải</h4>
+                            <p class="text-sm text-slate-600 mt-1">Quá tải đường dây trung thế 22kV hoặc máy biến áp 110kV khu vực Chư Prông vào giờ thấp điểm phụ tải dân sinh nhưng cao điểm phát điện mặt trời.</p>
+                        </div>
+                        <div class="bg-slate-50 p-4 rounded-lg border-l-4 border-yellow-500">
+                            <h4 class="font-bold text-slate-700">Giải Pháp Giảm Thiểu</h4>
+                            <ul class="list-disc list-inside text-sm text-slate-600 mt-1 space-y-1">
+                                <li>Theo dõi sát lệnh điều độ từ A3/PC Gia Lai.</li>
+                                <li>Kiểm tra hệ thống SCADA/PPC để đảm bảo cắt giảm chính xác, tránh bị phạt do phát vượt lệnh hoặc cắt quá sâu gây lãng phí.</li>
+                                <li>Bảo trì hệ thống vào các khung giờ bị sa thải để tối ưu thời gian.</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 4: Technical Longevity (Trend/Line) -->
+        <!-- Justification: Plotly Line Chart is best for continuous scientific data like degradation curves over long periods (20 years). -->
+        <section class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div class="lg:col-span-2 bg-white rounded-xl p-6 card-shadow">
+                <h3 class="text-xl font-bold text-slate-800 mb-4">Độ Bền & Suy Hao Hiệu Suất (Degradation)</h3>
+                <p class="text-sm text-slate-500 mb-6">
+                    Tấm pin mặt trời không hỏng ngay lập tức mà giảm dần hiệu suất. 
+                    Biểu đồ dưới đây thể hiện mức suy hao tiêu chuẩn (0.5% - 0.7%/năm) và thời điểm cần thay thế thiết bị (Inverter).
+                </p>
+                <div class="chart-container">
+                    <div id="degradationChart"></div>
+                </div>
+            </div>
+            
+            <div class="bg-white rounded-xl p-6 card-shadow space-y-6">
+                <h4 class="text-lg font-bold text-slate-800">Lưu Ý Về Thiết Bị</h4>
+                
+                <div class="group">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="font-semibold text-sm text-slate-700">Tấm Pin (PV Modules)</span>
+                        <span class="text-xs font-bold bg-green-100 text-green-700 px-2 py-1 rounded">20-25 Năm</span>
+                    </div>
+                    <div class="w-full bg-slate-200 h-2 rounded-full">
+                        <div class="bg-green-500 h-2 rounded-full" style="width: 90%"></div>
+                    </div>
+                    <p class="text-xs text-slate-500 mt-2">Suy hao: Năm đầu 2-3%, các năm sau 0.6%. Sau 20 năm còn ~80% hiệu suất.</p>
+                </div>
+
+                <div class="group">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="font-semibold text-sm text-slate-700">Inverter (Biến tần)</span>
+                        <span class="text-xs font-bold bg-orange-100 text-orange-700 px-2 py-1 rounded">10-12 Năm</span>
+                    </div>
+                    <div class="w-full bg-slate-200 h-2 rounded-full">
+                        <div class="bg-orange-500 h-2 rounded-full" style="width: 50%"></div>
+                    </div>
+                    <p class="text-xs text-slate-500 mt-2">Rủi ro hỏng quạt tản nhiệt, tụ điện. Cần ngân sách thay thế vào năm thứ 10.</p>
+                </div>
+
+                <div class="group">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="font-semibold text-sm text-slate-700">Hệ thống Khung/Xà</span>
+                        <span class="text-xs font-bold bg-sky-100 text-sky-700 px-2 py-1 rounded">Bảo trì Hàng Năm</span>
+                    </div>
+                    <div class="w-full bg-slate-200 h-2 rounded-full">
+                        <div class="bg-sky-500 h-2 rounded-full" style="width: 100%"></div>
+                    </div>
+                    <p class="text-xs text-slate-500 mt-2">Kiểm tra rỉ sét bu lông, kẹp pin, đặc biệt sau mùa mưa bão Gia Lai.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 5: O&M Process (Organize/Flow) -->
+        <!-- Justification: Using CSS Grid cards clearly delineates the different types of maintenance tasks without needing a complex flowchart diagram. -->
+        <section>
+            <div class="mb-6 text-center">
+                <h2 class="text-2xl font-bold text-slate-800">Quy Trình Vận Hành & Bảo Trì (O&M)</h2>
+                <p class="text-slate-500 max-w-2xl mx-auto mt-2">Để đảm bảo an toàn và tối ưu doanh thu, Công ty Năng Lượng Khoa Việt cần tuân thủ lịch trình O&M nghiêm ngặt.</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- Daily -->
+                <div class="bg-white p-6 rounded-xl border-t-4 border-sky-400 card-shadow hover:shadow-lg transition-shadow">
+                    <div class="flex items-center mb-4">
+                        <div class="w-10 h-10 rounded-full bg-sky-100 flex items-center justify-center text-sky-600 font-bold text-lg">D</div>
+                        <h3 class="ml-3 font-bold text-slate-700">Hàng Ngày (Monitoring)</h3>
+                    </div>
+                    <ul class="text-sm text-slate-600 space-y-3">
+                        <li class="flex items-start"><span class="mr-2 text-sky-500">✓</span> Theo dõi App Inverter: So sánh sản lượng giữa các chuỗi (string) để phát hiện bất thường.</li>
+                        <li class="flex items-start"><span class="mr-2 text-sky-500">✓</span> Kiểm tra cảnh báo lỗi (Error Log) trên hệ thống giám sát từ xa.</li>
+                        <li class="flex items-start"><span class="mr-2 text-sky-500">✓</span> Ghi nhận thông số vào nhật ký vận hành (theo quy định EVN).</li>
+                    </ul>
+                </div>
+
+                <!-- Monthly -->
+                <div class="bg-white p-6 rounded-xl border-t-4 border-indigo-400 card-shadow hover:shadow-lg transition-shadow">
+                    <div class="flex items-center mb-4">
+                        <div class="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold text-lg">M</div>
+                        <h3 class="ml-3 font-bold text-slate-700">Hàng Tháng/Quý</h3>
+                    </div>
+                    <ul class="text-sm text-slate-600 space-y-3">
+                        <li class="flex items-start"><span class="mr-2 text-indigo-500">✓</span> <strong>Vệ sinh tấm pin:</strong> Rất quan trọng tại Gia Lai vào mùa khô (bụi đất đỏ Bazan bám rất chặt).</li>
+                        <li class="flex items-start"><span class="mr-2 text-indigo-500">✓</span> Kiểm tra và cắt cỏ, cây cối che bóng râm lên giàn pin.</li>
+                        <li class="flex items-start"><span class="mr-2 text-indigo-500">✓</span> Kiểm tra tủ điện AC/DC, siết lại các điểm đấu nối bị lỏng do nhiệt.</li>
+                    </ul>
+                </div>
+
+                <!-- Annual -->
+                <div class="bg-white p-6 rounded-xl border-t-4 border-green-400 card-shadow hover:shadow-lg transition-shadow">
+                    <div class="flex items-center mb-4">
+                        <div class="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center text-green-600 font-bold text-lg">Y</div>
+                        <h3 class="ml-3 font-bold text-slate-700">Hàng Năm (Chuyên sâu)</h3>
+                    </div>
+                    <ul class="text-sm text-slate-600 space-y-3">
+                        <li class="flex items-start"><span class="mr-2 text-green-500">✓</span> Đo điện trở tiếp địa hệ thống chống sét.</li>
+                        <li class="flex items-start"><span class="mr-2 text-green-500">✓</span> Chụp ảnh nhiệt (Thermal Camera) toàn bộ tấm pin để phát hiện điểm nóng (Hotspot).</li>
+                        <li class="flex items-start"><span class="mr-2 text-green-500">✓</span> Bảo dưỡng máy biến áp 1000kVA (kiểm tra dầu, sứ cách điện) phối hợp với Điện lực Chư Prông.</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 6: Financial Projection (Relationship/Area) -->
+        <section class="bg-slate-900 text-white rounded-2xl p-8 shadow-2xl overflow-hidden relative">
+            <div class="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 rounded-full bg-sky-500 opacity-10 blur-3xl"></div>
+            <div class="relative z-10 grid grid-cols-1 lg:grid-cols-3 gap-12">
+                <div class="lg:col-span-1">
+                    <h2 class="text-3xl font-bold mb-4 text-sky-400">Dòng Tiền & Điểm Hòa Vốn</h2>
+                    <p class="text-slate-300 mb-6 text-sm leading-relaxed">
+                        Với doanh thu trung bình ~3.5 - 4 tỷ VNĐ/năm cho mỗi hệ thống 1MWp (dựa trên giá FIT 2), thời gian thu hồi vốn (ROI) dự kiến rơi vào khoảng 5-6 năm (tùy thuộc vào lãi vay và mức độ sa thải).
+                    </p>
+                    <div class="p-4 bg-slate-800 rounded-lg border border-slate-700">
+                        <p class="text-xs text-slate-400 uppercase tracking-widest">Doanh Thu Lũy Kế (Dự kiến)</p>
+                        <p class="text-2xl font-bold text-white mt-2">~ 70 Tỷ VNĐ</p>
+                        <p class="text-xs text-green-400 mt-1">Sau 20 năm vận hành</p>
+                    </div>
+                </div>
+                <div class="lg:col-span-2">
+                     <!-- Plotly Area Chart -->
+                     <div class="chart-container">
+                        <div id="financialChart"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer class="text-center text-slate-400 text-xs py-8 border-t border-slate-200 mt-12">
+            <p>Báo cáo được tổng hợp dựa trên tài liệu nội bộ Công ty Cổ phần Năng lượng Khoa Việt (2020-2021).</p>
+            <p class="mt-1">© 2025 Canvas Infographics Generator.</p>
+        </footer>
+
+    </main>
+
+    <!-- Script to Generate Charts -->
+    <script>
+        // --- UTILITY FUNCTION: Label Wrapping (16 chars) ---
+        function splitLabel(label) {
+            if (label.length <= 16) return label;
+            const words = label.split(' ');
+            const lines = [];
+            let currentLine = words[0];
+
+            for (let i = 1; i < words.length; i++) {
+                if ((currentLine + " " + words[i]).length <= 16) {
+                    currentLine += " " + words[i];
+                } else {
+                    lines.push(currentLine);
+                    currentLine = words[i];
+                }
+            }
+            lines.push(currentLine);
+            return lines;
+        }
+
+        // --- COMMON CHART CONFIG ---
+        const commonTooltip = {
+            callbacks: {
+                title: function(tooltipItems) {
+                    const item = tooltipItems[0];
+                    let label = item.chart.data.labels[item.dataIndex];
+                    if (Array.isArray(label)) {
+                        return label.join(' ');
+                    } else {
+                        return label;
+                    }
+                }
+            }
+        };
+
+        const vibrantPalette = {
+            blue: '#0ea5e9',
+            green: '#22c55e',
+            darkBlue: '#0f172a',
+            orange: '#f97316',
+            gray: '#cbd5e1'
+        };
+
+        // --- CHART 1: Production & Revenue (Chart.js) ---
+        // Data logic: Based on the invoices. 
+        // Jan: ~103k kWh (~200tr VND), Aug: ~168k kWh (~327tr VND).
+        // Interpolating for a typical year in Gia Lai.
+        const ctxRevenue = document.getElementById('revenueChart').getContext('2d');
+        const labelsRev = ['Tháng 1', 'Tháng 2', 'Tháng 3', 'Tháng 4', 'Tháng 5', 'Tháng 6', 'Tháng 7', 'Tháng 8', 'Tháng 9', 'Tháng 10', 'Tháng 11', 'Tháng 12'];
+        const processedLabelsRev = labelsRev.map(splitLabel);
+
+        new Chart(ctxRevenue, {
+            type: 'bar',
+            data: {
+                labels: processedLabelsRev,
+                datasets: [
+                    {
+                        label: 'Sản Lượng (kWh)',
+                        data: [103424, 115000, 155000, 160000, 145000, 138000, 142000, 168944, 135000, 120000, 110000, 105000],
+                        backgroundColor: vibrantPalette.blue,
+                        yAxisID: 'y',
+                        borderRadius: 4,
+                        order: 2
+                    },
+                    {
+                        label: 'Doanh Thu (Triệu VNĐ)',
+                        // Calculation: kWh * 1938 / 1,000,000
+                        data: [200, 222, 300, 310, 281, 267, 275, 327, 261, 232, 213, 203],
+                        borderColor: vibrantPalette.orange,
+                        backgroundColor: vibrantPalette.orange,
+                        type: 'line',
+                        yAxisID: 'y1',
+                        borderWidth: 3,
+                        pointRadius: 4,
+                        tension: 0.3,
+                        order: 1
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    tooltip: commonTooltip,
+                    legend: { position: 'bottom' }
+                },
+                scales: {
+                    x: { grid: { display: false } },
+                    y: {
+                        type: 'linear',
+                        display: true,
+                        position: 'left',
+                        title: { display: true, text: 'Sản Lượng (kWh)' }
+                    },
+                    y1: {
+                        type: 'linear',
+                        display: true,
+                        position: 'right',
+                        grid: { drawOnChartArea: false },
+                        title: { display: true, text: 'Doanh Thu (Triệu VNĐ)' }
+                    }
+                }
+            }
+        });
+
+        // --- CHART 2: Curtailment Risk (Chart.js Stacked Bar) ---
+        const ctxCurtail = document.getElementById('curtailmentChart').getContext('2d');
+        const scenarioLabels = ['Kịch Bản Tốt (0%)', 'Trung Bình (10%)', 'Xấu (20%)'];
+        const processedScenarioLabels = scenarioLabels.map(splitLabel);
+
+        // Assume standard annual revenue ~3.5 Billion VND
+        const baseRev = 3500; 
+
+        new Chart(ctxCurtail, {
+            type: 'bar',
+            data: {
+                labels: processedScenarioLabels,
+                datasets: [
+                    {
+                        label: 'Doanh Thu Thực Tế',
+                        data: [baseRev, baseRev * 0.9, baseRev * 0.8],
+                        backgroundColor: vibrantPalette.green,
+                        borderRadius: 4
+                    },
+                    {
+                        label: 'Doanh Thu Mất Đi (Sa thải)',
+                        data: [0, baseRev * 0.1, baseRev * 0.2],
+                        backgroundColor: '#ef4444', // Red for loss
+                        borderRadius: 4
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    tooltip: commonTooltip,
+                    legend: { position: 'bottom' },
+                    title: { display: true, text: 'Tác Động Cắt Giảm Đến Doanh Thu Năm (Triệu VNĐ)' }
+                },
+                scales: {
+                    x: { stacked: true },
+                    y: { 
+                        stacked: true,
+                        title: { display: true, text: 'Triệu VNĐ' }
+                    }
+                }
+            }
+        });
+
+        // --- CHART 3: Degradation Curve (Plotly.js) ---
+        // Scientific curve: y = Initial * (1 - rate)^year
+        const years = Array.from({length: 21}, (_, i) => i); // 0 to 20
+        const degradationRate = 0.006; // 0.6% per year
+        const efficiency = years.map(y => {
+            // Year 0 is 100%, Year 1 drops 2.5% initially, then linear
+            if (y === 0) return 100;
+            if (y === 1) return 97.5; 
+            return 97.5 - ((y-1) * 0.6);
+        });
+
+        const traceDegradation = {
+            x: years,
+            y: efficiency,
+            mode: 'lines+markers',
+            name: 'Hiệu Suất Tấm Pin (%)',
+            line: { color: vibrantPalette.blue, width: 3 },
+            marker: { size: 6 }
+        };
+
+        // Add a threshold line at 80% (Warranty limit usually)
+        const traceThreshold = {
+            x: [0, 20],
+            y: [80, 80],
+            mode: 'lines',
+            name: 'Ngưỡng Bảo Hành (80%)',
+            line: { color: vibrantPalette.orange, width: 2, dash: 'dot' }
+        };
+
+        const layoutDegradation = {
+            title: { text: 'Suy Hao Hiệu Suất Theo Năm', font: { size: 16 } },
+            showlegend: true,
+            legend: { orientation: 'h', y: -0.2 },
+            margin: { t: 40, b: 40, l: 50, r: 20 },
+            xaxis: { title: 'Năm Vận Hành', dtick: 2 },
+            yaxis: { title: 'Hiệu Suất (%)', range: [70, 105] },
+            paper_bgcolor: 'rgba(0,0,0,0)',
+            plot_bgcolor: 'rgba(0,0,0,0)'
+        };
+
+        Plotly.newPlot('degradationChart', [traceDegradation, traceThreshold], layoutDegradation, {responsive: true, displayModeBar: false});
+
+        // --- CHART 4: Financial Cumulative Cashflow (Plotly.js Area) ---
+        // Investment ~12-14 Billion for 1MWp (Estimated for 2020)
+        const initialInvestment = -13000; // -13 Ty VND
+        const yearlyNetIncome = 2500; // After O&M, Tax, Interest (Conservative estimate)
+        
+        let cumulativeCash = [initialInvestment];
+        for (let i = 1; i <= 20; i++) {
+            cumulativeCash.push(cumulativeCash[i-1] + yearlyNetIncome);
+        }
+        
+        const cashYears = Array.from({length: 21}, (_, i) => `Năm ${i}`);
+
+        const traceCash = {
+            x: cashYears,
+            y: cumulativeCash,
+            fill: 'tozeroy',
+            type: 'scatter',
+            mode: 'lines',
+            name: 'Dòng Tiền Tích Lũy',
+            line: { color: vibrantPalette.green },
+            fillcolor: 'rgba(34, 197, 94, 0.2)'
+        };
+
+        const layoutFinancial = {
+            title: { text: 'Biểu Đồ Hoàn Vốn (ROI)', font: { color: '#ffffff' } },
+            xaxis: { 
+                title: 'Thời Gian', 
+                color: '#cbd5e1',
+                tickvals: ['Năm 0', 'Năm 5', 'Năm 10', 'Năm 15', 'Năm 20']
+            },
+            yaxis: { 
+                title: 'Triệu VNĐ', 
+                color: '#cbd5e1',
+                zerolinecolor: '#ffffff',
+                zerolinewidth: 2
+            },
+            paper_bgcolor: 'rgba(0,0,0,0)',
+            plot_bgcolor: 'rgba(0,0,0,0)',
+            margin: { t: 40, b: 40, l: 60, r: 20 },
+            showlegend: false
+        };
+
+        Plotly.newPlot('financialChart', [traceCash], layoutFinancial, {responsive: true, displayModeBar: false});
+
+    </script>
+</body>
+</html>
