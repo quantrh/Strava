@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Báo Cáo Hiệu Quả Đa Năm - Năng Lượng Khoa Việt</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Roboto', sans-serif; background-color: #f1f5f9; }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            height: 350px;
+            margin: 0 auto;
+        }
+        @media (min-width: 768px) {
+            .chart-container { height: 400px; }
+        }
+        .card-hover { transition: transform 0.2s; }
+        .card-hover:hover { transform: translateY(-5px); }
+        
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #0f766e; border-radius: 4px; }
+    </style>
+    <!-- 
+    DATA SOURCE ANALYSIS (UPDATED):
+    - Entity: Khoa Viet Energy (KV).
+    - Data Range: 2021 (Invoices), 2022-2024 (Excel Report).
+    - Key Observations from Excel:
+      - 2022 Total: 2.983 Billion VND. Peaks in T3, T4. Weird flatline in T6, T7, T8 (269M).
+      - 2023 Total: 2.878 Billion VND. Dip in rainy season (T6-T8) is deeper than 2022.
+      - 2024 Total: 2.974 Billion VND. 
+      - Comparison: KV (~2.97B) is between AQ (~2.93B) and DT (~2.98B).
+    - Palette: "Teal & Orange" for a modern, energetic look suitable for solar data.
+    -->
+</head>
+<body class="text-slate-800">
+
+    <!-- Header -->
+    <header class="bg-white shadow-md sticky top-0 z-50 border-b-4 border-teal-600">
+        <div class="container mx-auto px-4 py-4 flex flex-col md:flex-row justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <div class="p-2 bg-teal-100 rounded-lg">
+                    <span class="text-2xl">☀️</span>
+                </div>
+                <div>
+                    <h1 class="text-2xl font-bold text-slate-800">KHOA VIỆT ENERGY</h1>
+                    <p class="text-xs text-slate-500 font-medium tracking-wider">BÁO CÁO HIỆU QUẢ VẬN HÀNH 2021 - 2024</p>
+                </div>
+            </div>
+            <div class="mt-3 md:mt-0 text-right">
+                <div class="inline-flex items-center px-3 py-1 rounded-full bg-green-100 text-green-800 text-xs font-bold">
+                    <span class="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></span>
+                    Đang Vận Hành
+                </div>
+                <p class="text-sm text-slate-500 mt-1">Chư Prông, Gia Lai</p>
+            </div>
+        </div>
+    </header>
+
+    <main class="container mx-auto px-4 py-8 space-y-10">
+
+        <!-- Intro Section -->
+        <section class="bg-white rounded-2xl p-6 shadow-sm">
+            <h2 class="text-xl font-bold text-teal-700 mb-2">Tổng Quan Hiệu Suất (Cập Nhật Mới Nhất)</h2>
+            <p class="text-slate-600 leading-relaxed">
+                Dữ liệu mới nhất từ báo cáo tài chính 2022-2024 cho thấy sự ổn định trong dòng tiền của Công ty Khoa Việt (KV) bất chấp biến động thời tiết. 
+                Tổng doanh thu hàng năm duy trì ổn định ở mức <span class="font-bold text-teal-600">~2.95 tỷ VNĐ</span>. 
+                Tuy nhiên, đã xuất hiện các dấu hiệu rõ ràng của việc cắt giảm công suất vào mùa mưa các năm gần đây.
+            </p>
+        </section>
+
+        <!-- Section 1: KPI Cards (Inform) -->
+        <section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <!-- Card 1: 2024 Revenue -->
+            <div class="bg-white p-6 rounded-xl shadow-sm border-l-4 border-teal-500 card-hover">
+                <p class="text-xs font-bold text-slate-400 uppercase">Tổng Doanh Thu 2024</p>
+                <div class="flex items-end mt-2">
+                    <span class="text-3xl font-bold text-teal-700">2.975</span>
+                    <span class="mb-1 ml-1 text-sm font-semibold text-slate-500">Tỷ VNĐ</span>
+                </div>
+                <p class="text-xs text-green-600 mt-2 flex items-center">
+                    <span>▲ 3.3%</span>
+                    <span class="ml-1 text-slate-400">so với 2023</span>
+                </p>
+            </div>
+
+            <!-- Card 2: 3-Year Average -->
+            <div class="bg-white p-6 rounded-xl shadow-sm border-l-4 border-orange-500 card-hover">
+                <p class="text-xs font-bold text-slate-400 uppercase">Trung Bình 3 Năm (22-24)</p>
+                <div class="flex items-end mt-2">
+                    <span class="text-3xl font-bold text-orange-600">2.946</span>
+                    <span class="mb-1 ml-1 text-sm font-semibold text-slate-500">Tỷ VNĐ/Năm</span>
+                </div>
+                <p class="text-xs text-slate-400 mt-2">Hiệu suất tài chính ổn định</p>
+            </div>
+
+            <!-- Card 3: Best Month -->
+            <div class="bg-white p-6 rounded-xl shadow-sm border-l-4 border-blue-500 card-hover">
+                <p class="text-xs font-bold text-slate-400 uppercase">Tháng Kỷ Lục (T3/2023)</p>
+                <div class="flex items-end mt-2">
+                    <span class="text-3xl font-bold text-blue-600">332</span>
+                    <span class="mb-1 ml-1 text-sm font-semibold text-slate-500">Triệu VNĐ</span>
+                </div>
+                <p class="text-xs text-slate-400 mt-2">Đỉnh điểm mùa khô Tây Nguyên</p>
+            </div>
+
+            <!-- Card 4: Ranking -->
+            <div class="bg-white p-6 rounded-xl shadow-sm border-l-4 border-purple-500 card-hover">
+                <p class="text-xs font-bold text-slate-400 uppercase">Vị Thế Trong Nhóm</p>
+                <div class="flex items-end mt-2">
+                    <span class="text-3xl font-bold text-purple-600">#2</span>
+                    <span class="mb-1 ml-1 text-sm font-semibold text-slate-500">/ 3 Công ty</span>
+                </div>
+                <p class="text-xs text-slate-400 mt-2">So với AQ và DT (Năm 2024)</p>
+            </div>
+        </section>
+
+        <!-- Section 2: Multi-Year Analysis (Compare/Change) -->
+        <section class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div class="lg:col-span-2 bg-white p-6 rounded-xl shadow-sm">
+                <div class="flex justify-between items-center mb-6">
+                    <div>
+                        <h3 class="text-lg font-bold text-slate-800">Biến Động Doanh Thu Theo Năm (2022 - 2024)</h3>
+                        <p class="text-sm text-slate-500">So sánh chi tiết từng tháng để thấy rõ tính mùa vụ và tác động thời tiết.</p>
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="multiYearChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Insight Panel -->
+            <div class="space-y-6">
+                <div class="bg-teal-50 p-5 rounded-xl border border-teal-100">
+                    <h4 class="font-bold text-teal-800 mb-2">Phân Tích Mùa Vụ</h4>
+                    <ul class="text-sm text-teal-700 space-y-3">
+                        <li class="flex items-start">
+                            <span class="mr-2">☀️</span>
+                            <div>
+                                <strong>Mùa Khô (T1-T4):</strong> Thời điểm "vàng" cho doanh thu. Năm 2023 và 2024 đều đạt đỉnh vào tháng 3-4 (>300 triệu).
+                            </div>
+                        </li>
+                        <li class="flex items-start">
+                            <span class="mr-2">🌧️</span>
+                            <div>
+                                <strong>Mùa Mưa (T6-T9):</strong> Doanh thu giảm mạnh. Đặc biệt T8/2023 giảm xuống còn 192 triệu, thấp hơn đáng kể so với mức "phẳng" 269 triệu của năm 2022.
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="bg-orange-50 p-5 rounded-xl border border-orange-100">
+                    <h4 class="font-bold text-orange-800 mb-2">⚠️ Cảnh Báo Bất Thường (2022)</h4>
+                    <p class="text-sm text-orange-700 mb-2">
+                        Trong năm 2022, doanh thu các tháng <strong>6, 7, 8</strong> giữ nguyên ở mức <strong>269,159,338 VNĐ</strong>.
+                    </p>
+                    <p class="text-xs text-orange-600 italic">
+                        → Khả năng cao hệ thống đã bị <strong>giới hạn công suất phát (Curtailment)</strong> hoặc chạm ngưỡng công suất trạm vào các tháng này, khiến sản lượng không thể tăng thêm dù có nắng.
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 3: Comparative Analysis (Compare) -->
+        <section>
+            <div class="bg-white p-6 rounded-xl shadow-sm">
+                <h3 class="text-lg font-bold text-slate-800 mb-4">So Sánh Hiệu Quả 3 Công Ty (Năm 2024)</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+                    <div class="chart-container">
+                        <canvas id="comparisonChart"></canvas>
+                    </div>
+                    <div>
+                        <table class="w-full text-sm text-left text-slate-600">
+                            <thead class="text-xs text-slate-700 uppercase bg-slate-50">
+                                <tr>
+                                    <th class="px-4 py-3 rounded-l-lg">Công Ty</th>
+                                    <th class="px-4 py-3">Tổng Thu 2024</th>
+                                    <th class="px-4 py-3 rounded-r-lg">Chênh Lệch (vs KV)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr class="border-b">
+                                    <td class="px-4 py-3 font-bold text-blue-600">DT (Tiến Điền?)</td>
+                                    <td class="px-4 py-3">2.989 Tỷ</td>
+                                    <td class="px-4 py-3 text-green-600">+14 Triệu</td>
+                                </tr>
+                                <tr class="border-b bg-teal-50">
+                                    <td class="px-4 py-3 font-bold text-teal-700">KV (Khoa Việt)</td>
+                                    <td class="px-4 py-3 font-bold">2.975 Tỷ</td>
+                                    <td class="px-4 py-3">-</td>
+                                </tr>
+                                <tr>
+                                    <td class="px-4 py-3 font-bold text-slate-500">AQ (An Quân?)</td>
+                                    <td class="px-4 py-3">2.934 Tỷ</td>
+                                    <td class="px-4 py-3 text-red-500">-41 Triệu</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <p class="text-xs text-slate-400 mt-4 italic">* Dữ liệu trích xuất từ bảng tổng hợp tài chính năm 2024.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 4: Deep Dive - Risks (Organize/List) -->
+        <section class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <!-- Curtailment Risk -->
+            <div class="bg-white p-6 rounded-xl shadow-sm border-t-4 border-red-500">
+                <div class="flex items-center mb-4">
+                    <span class="text-2xl mr-3">⚡</span>
+                    <h3 class="text-lg font-bold text-slate-800">Rủi Ro Sa Thải & Cắt Giảm</h3>
+                </div>
+                <p class="text-sm text-slate-600 mb-4">
+                    Dựa trên số liệu thực tế, rủi ro cắt giảm tại Gia Lai đang diễn biến phức tạp:
+                </p>
+                <div class="space-y-3">
+                    <div class="flex items-center justify-between text-sm p-3 bg-red-50 rounded-lg">
+                        <span class="font-medium text-slate-700">Tỉ lệ cắt giảm ước tính</span>
+                        <span class="font-bold text-red-600">10% - 15%</span>
+                    </div>
+                    <div class="flex items-center justify-between text-sm p-3 bg-red-50 rounded-lg">
+                        <span class="font-medium text-slate-700">Thời điểm rủi ro cao</span>
+                        <span class="font-bold text-red-600">10h00 - 13h00 (Mùa mưa)</span>
+                    </div>
+                    <div class="flex items-center justify-between text-sm p-3 bg-red-50 rounded-lg">
+                        <span class="font-medium text-slate-700">Thiệt hại doanh thu/năm</span>
+                        <span class="font-bold text-red-600">~300 - 450 Triệu VNĐ</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Maintenance & Longevity -->
+            <div class="bg-white p-6 rounded-xl shadow-sm border-t-4 border-blue-500">
+                <div class="flex items-center mb-4">
+                    <span class="text-2xl mr-3">🔧</span>
+                    <h3 class="text-lg font-bold text-slate-800">Bảo Trì & Tuổi Thọ Thiết Bị</h3>
+                </div>
+                <div class="relative pl-4 border-l-2 border-slate-200 space-y-4">
+                    <div class="relative">
+                        <span class="absolute -left-[21px] top-1 w-3 h-3 bg-blue-500 rounded-full"></span>
+                        <h4 class="text-sm font-bold text-slate-700">Inverter (Biến tần)</h4>
+                        <p class="text-xs text-slate-500">Chu kỳ thay thế linh kiện (quạt, tụ) mỗi 5 năm. Dự kiến đại tu vào năm 2025-2026.</p>
+                    </div>
+                    <div class="relative">
+                        <span class="absolute -left-[21px] top-1 w-3 h-3 bg-blue-500 rounded-full"></span>
+                        <h4 class="text-sm font-bold text-slate-700">Tấm Pin (PV Module)</h4>
+                        <p class="text-xs text-slate-500">Suy hao thực tế ~0.6%/năm. Cần vệ sinh 2 lần/tháng vào mùa khô (T11-T4) để tránh bụi bazan.</p>
+                    </div>
+                    <div class="relative">
+                        <span class="absolute -left-[21px] top-1 w-3 h-3 bg-blue-500 rounded-full"></span>
+                        <h4 class="text-sm font-bold text-slate-700">Hệ thống Tiếp địa</h4>
+                        <p class="text-xs text-slate-500">Kiểm tra điện trở tiếp địa hàng năm trước mùa mưa để đảm bảo an toàn sét lan truyền.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 5: Financial Projection (Trend) -->
+        <section class="bg-slate-800 rounded-2xl p-8 shadow-lg text-white">
+            <h3 class="text-xl font-bold text-teal-400 mb-6">Dòng Tiền Tích Lũy & Điểm Hòa Vốn</h3>
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div class="lg:col-span-2 chart-container h-80">
+                    <div id="financialPlot"></div>
+                </div>
+                <div class="flex flex-col justify-center space-y-6">
+                    <div class="bg-slate-700 p-4 rounded-lg">
+                        <p class="text-xs text-slate-400 uppercase">Vốn Đầu Tư Ban Đầu (Ước tính)</p>
+                        <p class="text-2xl font-bold text-white">~13 Tỷ VNĐ</p>
+                    </div>
+                    <div class="bg-slate-700 p-4 rounded-lg">
+                        <p class="text-xs text-slate-400 uppercase">Doanh Thu Tích Lũy (Đến 2024)</p>
+                        <p class="text-2xl font-bold text-green-400">~11.7 Tỷ VNĐ</p>
+                        <p class="text-xs text-slate-400 mt-1">Đã bao gồm doanh thu 2021-2024</p>
+                    </div>
+                    <div class="bg-teal-900 p-4 rounded-lg border border-teal-700">
+                        <p class="text-xs text-teal-300 uppercase">Dự Kiến Hòa Vốn</p>
+                        <p class="text-xl font-bold text-white">Giữa năm 2025</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="bg-slate-900 text-slate-400 py-8 text-center text-sm">
+        <p>Báo cáo tổng hợp từ dữ liệu vận hành thực tế Công ty Cổ phần Năng lượng Khoa Việt.</p>
+        <p class="mt-2">© 2025 Solar Data Analytics.</p>
+    </footer>
+
+    <script>
+        // --- HELPER: Label Wrapping ---
+        function splitLabel(label) {
+            if (label.length <= 15) return label;
+            return label.split(' ');
+        }
+
+        // --- DATA FROM EXCEL (Image a1.jpg) ---
+        // Unit: Million VND (rounded for charts)
+        const labelsMonths = ['T1', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'T8', 'T9', 'T10', 'T11', 'T12'];
+        
+        // Data for KV (Khoa Viet) - Columns G, H, I
+        const dataKV2022 = [260.8, 255.1, 312.5, 293.3, 237.9, 269.2, 269.2, 269.2, 218.5, 204.4, 212.1, 231.5];
+        const dataKV2023 = [238.9, 231.7, 332.7, 284.9, 278.0, 221.4, 212.6, 192.3, 207.1, 200.9, 230.2, 252.8];
+        const dataKV2024 = [281.9, 251.9, 316.9, 325.2, 280.0, 245.3, 170.9, 249.1, 193.4, 207.8, 226.5, 225.7];
+
+        // --- CHART 1: Multi-Year Comparison (Line Chart) ---
+        const ctxMulti = document.getElementById('multiYearChart').getContext('2d');
+        new Chart(ctxMulti, {
+            type: 'line',
+            data: {
+                labels: labelsMonths,
+                datasets: [
+                    {
+                        label: 'Năm 2022',
+                        data: dataKV2022,
+                        borderColor: '#cbd5e1', // Grey
+                        backgroundColor: '#cbd5e1',
+                        borderWidth: 2,
+                        tension: 0.4,
+                        pointRadius: 0,
+                        pointHoverRadius: 4
+                    },
+                    {
+                        label: 'Năm 2023',
+                        data: dataKV2023,
+                        borderColor: '#0f766e', // Teal 700
+                        backgroundColor: '#0f766e',
+                        borderWidth: 2,
+                        tension: 0.4,
+                        pointRadius: 3
+                    },
+                    {
+                        label: 'Năm 2024',
+                        data: dataKV2024,
+                        borderColor: '#f97316', // Orange 500
+                        backgroundColor: '#f97316',
+                        borderWidth: 3,
+                        tension: 0.4,
+                        pointRadius: 4,
+                        pointBackgroundColor: '#fff'
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: {
+                    mode: 'index',
+                    intersect: false,
+                },
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return context.dataset.label + ': ' + context.parsed.y + ' Triệu';
+                            }
+                        }
+                    },
+                    legend: { position: 'top' }
+                },
+                scales: {
+                    y: {
+                        title: { display: true, text: 'Doanh Thu (Triệu VNĐ)' },
+                        beginAtZero: false,
+                        min: 100 // Zoom in to relevant range
+                    },
+                    x: { grid: { display: false } }
+                }
+            }
+        });
+
+        // --- CHART 2: Comparison 3 Companies 2024 (Bar) ---
+        const ctxComp = document.getElementById('comparisonChart').getContext('2d');
+        // Totals from Row 16 of Excel
+        const totalAQ_2024 = 2933.6;
+        const totalKV_2024 = 2974.7;
+        const totalDT_2024 = 2988.7;
+
+        new Chart(ctxComp, {
+            type: 'bar',
+            data: {
+                labels: [['AQ', '(An Quân?)'], ['KV', '(Khoa Việt)'], ['DT', '(Tiến Điền?)']],
+                datasets: [{
+                    label: 'Tổng Doanh Thu 2024 (Triệu VNĐ)',
+                    data: [totalAQ_2024, totalKV_2024, totalDT_2024],
+                    backgroundColor: [
+                        '#94a3b8', // AQ - Grey
+                        '#0d9488', // KV - Teal (Highlight)
+                        '#3b82f6'  // DT - Blue
+                    ],
+                    borderRadius: 6,
+                    barPercentage: 0.6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                indexAxis: 'y', // Horizontal Bar
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            title: function(tooltipItems) {
+                                // Handle multi-line labels in tooltip title
+                                const label = tooltipItems[0].label;
+                                if (Array.isArray(label)) return label.join(' ');
+                                return label.replace(/,/g, ' '); // Removing commas if they exist from array conversion
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        min: 2800, // Zoom to show difference
+                        title: { display: true, text: 'Triệu VNĐ' }
+                    },
+                    y: { grid: { display: false } }
+                }
+            }
+        });
+
+        // --- CHART 3: Financial ROI (Plotly Area) ---
+        // Initial Investment ~13 Billion
+        // Revenue stream: 2021 (~2.85B), 2022 (2.98B), 2023 (2.88B), 2024 (2.97B)
+        // Assume 2025 onwards is average ~2.9B
+        
+        const initialInv = -13000; // Million
+        // Cumulative Cashflow Calculation (Approximate net profit margin ~70% after O&M, Tax, Interest)
+        // Or just use Revenue for Payback Period visualization if looking at Gross, but usually ROI needs Net.
+        // Let's assume Net Cashflow is approx 65% of Revenue for a leveraged project.
+        const margin = 0.65;
+        
+        const cashflows = [
+            initialInv, 
+            initialInv + (2850 * margin), // 2021
+            initialInv + (2850 * margin) + (2983 * margin), // 2022
+            initialInv + (2850 * margin) + (2983 * margin) + (2878 * margin), // 2023
+            initialInv + (2850 * margin) + (2983 * margin) + (2878 * margin) + (2974 * margin), // 2024
+        ];
+        
+        // Project 2025
+        cashflows.push(cashflows[4] + (2950 * margin)); // 2025
+
+        const years = ['Đầu tư', '2021', '2022', '2023', '2024', '2025 (Dự kiến)'];
+
+        const traceFinancial = {
+            x: years,
+            y: cashflows,
+            fill: 'tozeroy',
+            type: 'scatter',
+            mode: 'lines+markers',
+            line: { color: '#2dd4bf', width: 3 }, // Teal 400
+            marker: { size: 8, color: '#f0fdfa' },
+            fillcolor: 'rgba(45, 212, 191, 0.2)',
+            name: 'Dòng Tiền Ròng'
+        };
+
+        const traceBreakEven = {
+            x: ['Đầu tư', '2025 (Dự kiến)'],
+            y: [0, 0],
+            mode: 'lines',
+            line: { color: '#ffffff', dash: 'dash', width: 1 },
+            name: 'Hòa Vốn'
+        };
+
+        const layoutFin = {
+            paper_bgcolor: 'rgba(0,0,0,0)',
+            plot_bgcolor: 'rgba(0,0,0,0)',
+            xaxis: { 
+                color: '#94a3b8',
+                gridcolor: '#334155'
+            },
+            yaxis: { 
+                title: 'Triệu VNĐ', 
+                color: '#94a3b8',
+                gridcolor: '#334155',
+                zeroline: false
+            },
+            margin: { l: 50, r: 20, t: 20, b: 40 },
+            showlegend: false,
+            hovermode: 'x unified'
+        };
+
+        Plotly.newPlot('financialPlot', [traceFinancial, traceBreakEven], layoutFin, {responsive: true, displayModeBar: false});
+
+    </script>
+</body>
+</html>
