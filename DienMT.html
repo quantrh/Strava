@@ -160,21 +160,22 @@
                 </div>
                 <div class="overflow-x-auto">
                     <table class="w-full text-sm text-left">
-                        <thead class="text-xs uppercase bg-slate-100 text-gray-700">
+                        <thead class="text-xs uppercase bg-slate-100 text-gray-700 font-bold border-b-2 border-gray-200">
                             <tr>
-                                <th class="px-6 py-3 w-32">Công ty</th>
-                                <th class="px-6 py-3 w-16">Tháng</th>
-                                <th class="px-6 py-3 text-right text-gray-500">2023 vs 2022</th>
-                                <th class="px-6 py-3 text-right text-secondary">2024 vs 2023</th>
-                                <th class="px-6 py-3 text-right text-primary">2025 vs 2024</th>
-                                <th class="px-6 py-3 text-right text-accent2">2025 vs 2022 (YTD)</th>
+                                <th class="px-6 py-3 w-32 border-r">Năm</th>
+                                <th class="px-6 py-3 w-16 text-center border-r hidden">Tháng</th>
+                                <th class="px-6 py-3 text-right text-gray-600 border-r">2023 vs 2022</th>
+                                <th class="px-6 py-3 text-right text-gray-600 border-r">2024 vs 2023</th>
+                                <th class="px-6 py-3 text-right text-gray-600 border-r">2025 vs 2024</th>
+                                <th class="px-6 py-3 text-right text-gray-600">2025 vs 2022</th>
                             </tr>
                         </thead>
                         <tbody id="delta-table-body"></tbody>
+                        <tfoot id="delta-table-footer" class="bg-gray-100 font-bold text-gray-800 border-t-2 border-gray-300"></tfoot>
                     </table>
                 </div>
                 <div class="p-3 bg-gray-50 text-xs text-gray-500 italic border-t">
-                    * Lưu ý: Cột "2025 vs 2022" so sánh số liệu lũy kế 11 tháng đầu năm.
+                    * Ghi chú: Cột so sánh với năm 2025 (2025vs2024, 2025vs2022) sử dụng số liệu lũy kế 11 tháng (YTD) để đảm bảo tính chính xác, do tháng 12/2025 chưa có dữ liệu.
                 </div>
             </div>
 
@@ -540,9 +541,19 @@
             });
         };
 
-        // --- 4. TABLE LOGIC ---
+        // --- 4. TABLE LOGIC (UPDATED WITH GRAND TOTAL) ---
         const renderDeltaTable = () => {
             const tbody = document.getElementById('delta-table-body');
+            const tfoot = document.getElementById('delta-table-footer');
+            tbody.innerHTML = "";
+            tfoot.innerHTML = "";
+
+            // Accumulators for Grand Total
+            let total23_22 = 0;
+            let total24_23 = 0;
+            let total25_24 = 0;
+            let total25_22 = 0;
+
             companies.forEach(company => {
                 const data = REAL_DATA[company];
                 const d23_22 = data[2023].map((v, i) => v - data[2022][i]);
@@ -555,27 +566,70 @@
 
                 const deltaYear23_22 = sum(data[2023]) - sum(data[2022]);
                 const deltaYear24_23 = sum(data[2024]) - sum(data[2023]);
-                const deltaYear25_24 = sum(data[2025]) - sum(data[2024]);
-                // Special logic for 2025 vs 2022 (YTD 11 months as per user image logic)
-                const deltaYear25_22_YTD = sumYTD(data[2025]) - sumYTD(data[2022]);
+                
+                // IMPORTANT LOGIC UPDATE: Use YTD (11 months) for 2025 comparisons to match image data
+                const deltaYear25_24 = sumYTD(data[2025]) - sumYTD(data[2024]);
+                const deltaYear25_22 = sumYTD(data[2025]) - sumYTD(data[2022]);
 
+                // Accumulate Grand Totals
+                total23_22 += deltaYear23_22;
+                total24_23 += deltaYear24_23;
+                total25_24 += deltaYear25_24;
+                total25_22 += deltaYear25_22;
+
+                // Render Company Header Row
                 const header = document.createElement('tr');
                 header.className = "bg-gray-50 border-b border-gray-200 cursor-pointer font-bold hover:bg-blue-50";
-                header.innerHTML = `<td class="px-6 py-3 text-primary flex items-center gap-2"><i data-lucide="chevron-down" class="w-4 h-4"></i> ${company}</td><td class="text-right px-6 text-gray-500">${formatMoney(deltaYear23_22)}</td><td class="text-right px-6 text-secondary">${formatMoney(deltaYear24_23)}</td><td class="text-right px-6 text-primary">${formatMoney(deltaYear25_24)}</td><td class="text-right px-6 text-accent2 bg-orange-50">${formatMoney(deltaYear25_22_YTD)}</td>`;
+                header.innerHTML = `
+                    <td class="px-6 py-3 text-primary flex items-center gap-2 border-r"><i data-lucide="chevron-down" class="w-4 h-4"></i> ${company}</td>
+                    <td class="px-6 py-3 w-16 text-center border-r hidden"></td>
+                    <td class="text-right px-6 text-gray-700 border-r">${formatNumber(deltaYear23_22)}</td>
+                    <td class="text-right px-6 text-gray-700 border-r">${formatNumber(deltaYear24_23)}</td>
+                    <td class="text-right px-6 text-gray-700 border-r">${formatNumber(deltaYear25_24)}</td>
+                    <td class="text-right px-6 text-gray-700">${formatNumber(deltaYear25_22)}</td>
+                `;
                 
                 const detailsFrag = document.createDocumentFragment();
                 for(let i=0; i<12; i++) {
                     const row = document.createElement('tr');
                     row.className = `border-b border-gray-100 bg-white group-delta-${company.replace(/\s/g,'')}`;
-                    const fmt = (val) => `<span class="${val>0?'text-green-600':(val<0?'text-red-500':'text-gray-400')}">${formatMoney(val)}</span>`;
+                    const fmt = (val) => `<span class="${val>0?'text-black':(val<0?'text-black':'text-gray-400')}">${formatNumber(val)}</span>`;
                     
-                    row.innerHTML = `<td class="px-6 py-2 pl-12 text-gray-500 text-xs"></td><td class="px-6 py-2 text-gray-700 font-bold text-xs">T${i+1}</td><td class="text-right px-6 font-mono text-xs">${fmt(d23_22[i])}</td><td class="text-right px-6 font-mono text-xs">${fmt(d24_23[i])}</td><td class="text-right px-6 font-mono text-xs">${fmt(d25_24[i])}</td><td class="text-right px-6 font-mono text-xs">${fmt(d25_22[i])}</td>`;
+                    // Logic to handle empty cells for December 2025
+                    let val25_24 = fmt(d25_24[i]);
+                    let val25_22 = fmt(d25_22[i]);
+                    
+                    if (i === 11) { // December
+                        val25_24 = '<span class="text-gray-300">-</span>';
+                        val25_22 = '<span class="text-gray-300">-</span>';
+                    }
+
+                    row.innerHTML = `
+                        <td class="px-6 py-2 pl-12 text-gray-500 text-xs border-r">T${i+1 < 10 ? '0'+(i+1) : i+1}</td>
+                        <td class="px-6 py-2 text-gray-700 font-bold text-xs border-r hidden"></td>
+                        <td class="text-right px-6 font-mono text-xs border-r text-gray-600">${fmt(d23_22[i])}</td>
+                        <td class="text-right px-6 font-mono text-xs border-r text-gray-600">${fmt(d24_23[i])}</td>
+                        <td class="text-right px-6 font-mono text-xs border-r text-gray-600">${val25_24}</td>
+                        <td class="text-right px-6 font-mono text-xs text-gray-600">${val25_22}</td>
+                    `;
                     detailsFrag.appendChild(row);
                 }
                 header.onclick = () => { document.querySelectorAll(`.group-delta-${company.replace(/\s/g,'')}`).forEach(r => r.style.display = r.style.display === 'none' ? 'table-row' : 'none'); };
                 tbody.appendChild(header);
                 tbody.appendChild(detailsFrag);
             });
+
+            // Render Grand Total Footer Row
+            const footerRow = document.createElement('tr');
+            footerRow.innerHTML = `
+                <td class="px-6 py-4 uppercase border-r">Tổng số 3 công ty</td>
+                <td class="px-6 py-3 w-16 text-center border-r hidden"></td>
+                <td class="text-right px-6 border-r">${formatNumber(total23_22)}</td>
+                <td class="text-right px-6 border-r">${formatNumber(total24_23)}</td>
+                <td class="text-right px-6 border-r">${formatNumber(total25_24)}</td>
+                <td class="text-right px-6">${formatNumber(total25_22)}</td>
+            `;
+            tfoot.appendChild(footerRow);
         };
 
         const renderMainTable = () => {
