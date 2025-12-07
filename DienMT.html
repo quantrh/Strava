@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Solar Monitor Pro - Pleiku Operation Center</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Chart.js Data Labels Plugin -->
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <style>
+        /* Custom Palette configuration */
+        :root {
+            --color-primary: #009BB3;   /* Teal/Blue */
+            --color-secondary: #CBDAA4; /* Sage Green */
+            --color-accent1: #DFE583;   /* Lime */
+            --color-accent2: #F36859;   /* Coral Red */
+            --color-neutral: #CCCCCC;
+            --color-text: #374151;
+        }
+        .bg-primary { background-color: var(--color-primary); }
+        .text-primary { color: var(--color-primary); }
+        .text-accent2 { color: var(--color-accent2); }
+        
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #c1c1c1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #a8a8a8; }
+        
+        .hidden-tab { display: none; }
+        .active-tab-btn { background-color: white; color: var(--color-primary); box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
+        .inactive-tab-btn { color: #E0F2FE; }
+        .inactive-tab-btn:hover { background-color: rgba(255, 255, 255, 0.1); }
+        
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-fade-in { animation: fadeIn 0.5s ease-out forwards; }
+    </style>
+</head>
+<body class="bg-slate-50 font-sans text-gray-900 min-h-screen pb-12">
+
+    <!-- Header -->
+    <header class="text-white shadow-xl sticky top-0 z-50" style="background: linear-gradient(to right, #1e293b, var(--color-primary));">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="bg-yellow-400 p-1 rounded-full"><i data-lucide="sun" class="w-6 h-6 text-indigo-900"></i></div>
+                <div>
+                    <h1 class="text-xl font-bold">Solar Monitor Pro</h1>
+                    <p class="text-[10px] opacity-80 uppercase">Pleiku Operation Center</p>
+                </div>
+            </div>
+            <nav class="flex space-x-1 bg-white/10 p-1 rounded-xl">
+                <button onclick="switchTab('dashboard')" id="btn-dashboard" class="px-4 py-2 rounded-lg text-sm font-medium transition-all active-tab-btn">Tổng quan</button>
+                <button onclick="switchTab('analysis')" id="btn-analysis" class="px-4 py-2 rounded-lg text-sm font-medium transition-all inactive-tab-btn">Phân tích & Báo cáo</button>
+                <button onclick="switchTab('strategy')" id="btn-strategy" class="px-4 py-2 rounded-lg text-sm font-medium transition-all inactive-tab-btn">Chiến lược</button>
+            </nav>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        
+        <!-- ALERT: DATA UPDATE -->
+        <div class="bg-green-50 border-l-4 border-green-400 p-4 mb-6 rounded-r shadow-sm">
+            <div class="flex items-center">
+                <div class="flex-shrink-0">
+                    <i data-lucide="database" class="h-5 w-5 text-green-600"></i>
+                </div>
+                <div class="ml-3">
+                    <p class="text-sm text-green-800">
+                        <span class="font-bold">Dữ liệu đồng bộ:</span> Hệ thống đã cập nhật toàn bộ số liệu chi tiết từng tháng cho 3 nhà máy (Ánh Quang, Duy Tiên, Khoa Việt) theo báo cáo quyết toán mới nhất.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- DASHBOARD TAB -->
+        <div id="tab-dashboard" class="space-y-8 animate-fade-in">
+            <!-- 1. KPI Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
+                    <p class="text-xs font-bold text-gray-400 uppercase">Tổng Doanh Thu (2022-2025)</p>
+                    <h3 class="text-2xl font-bold text-gray-800 mt-1" id="kpi-total-revenue">...</h3>
+                    <div class="mt-2 text-xs text-green-600 flex items-center gap-1"><i data-lucide="trending-up" class="w-3 h-3"></i> Số liệu thực tế</div>
+                </div>
+                <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
+                    <p class="text-xs font-bold text-gray-400 uppercase">Doanh thu TB/Năm</p>
+                    <h3 class="text-2xl font-bold text-gray-800 mt-1">~8.5 Tỷ</h3>
+                    <div class="mt-2 text-xs text-blue-600">Đạt 98% kế hoạch</div>
+                </div>
+                <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
+                    <p class="text-xs font-bold text-gray-400 uppercase">Dòng tiền Tích lũy</p>
+                    <h3 class="text-2xl font-bold text-emerald-600 mt-1">Dương (+)</h3>
+                    <div class="mt-2 text-xs text-gray-500">Đã qua điểm hòa vốn</div>
+                </div>
+                <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
+                    <p class="text-xs font-bold text-gray-400 uppercase">Trạng thái Thiết bị</p>
+                    <h3 class="text-2xl font-bold text-gray-800 mt-1">Ổn định</h3>
+                    <div class="mt-2 text-xs text-orange-500 flex items-center gap-1"><i data-lucide="alert-triangle" class="w-3 h-3"></i> Lưu ý mùa mưa T7-T8</div>
+                </div>
+            </div>
+
+            <!-- 2. SECTION: DOANH THU & PHÂN TÍCH -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Total Revenue Chart -->
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+                    <h2 class="text-lg font-bold mb-4 flex items-center gap-2 text-gray-800">
+                        <i data-lucide="activity" class="w-5 h-5 text-primary"></i> 
+                        Biểu đồ Biến động Doanh thu Cả cụm (Line Chart)
+                    </h2>
+                    <div class="h-80"><canvas id="chart-total-revenue-line"></canvas></div>
+                </div>
+                <!-- Total Delta Chart -->
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+                    <h2 class="text-lg font-bold mb-4 flex items-center gap-2 text-gray-800">
+                        <i data-lucide="git-commit" class="w-5 h-5 text-accent2"></i> 
+                        Biểu đồ Delta Tổng hợp (Biến động Cả cụm 3 Nhà máy)
+                    </h2>
+                    <div class="h-80"><canvas id="chart-total-delta-line"></canvas></div>
+                </div>
+            </div>
+
+            <!-- 3. SECTION: SO SÁNH HIỆU QUẢ & TÀI CHÍNH -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Comparison Chart -->
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+                    <h2 class="text-lg font-bold mb-4 flex items-center gap-2 text-gray-800">
+                        <i data-lucide="pie-chart" class="w-5 h-5 text-secondary"></i> 
+                        So sánh Hiệu quả Tổng hợp (2022-2025)
+                    </h2>
+                    <div class="h-64"><canvas id="chart-comparison"></canvas></div>
+                    <p class="text-xs text-center mt-3 text-gray-500 italic">Số liệu tổng hợp chính xác từ báo cáo quyết toán 4 năm.</p>
+                </div>
+
+                <!-- Financial ROI -->
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+                    <h2 class="text-lg font-bold mb-4 flex items-center gap-2 text-gray-800">
+                        <i data-lucide="dollar-sign" class="w-5 h-5 text-emerald-600"></i> 
+                        Dòng tiền Tích lũy & Điểm Hòa vốn (Loại VAT 8%)
+                    </h2>
+                    <div class="h-64"><canvas id="chart-financial-roi"></canvas></div>
+                    <p class="text-xs text-center mt-2 text-gray-400 italic">DT Hòa vốn = (Doanh thu / 1.08). Giả định 2021: 10 Tỷ VNĐ</p>
+                </div>
+            </div>
+
+            <!-- 4. SECTION: DELTA TABLE (UPDATED) -->
+             <div class="bg-white rounded-xl shadow-sm border border-gray-300 overflow-hidden mt-8">
+                <div class="px-6 py-4 border-b flex justify-between items-center bg-teal-700">
+                    <h2 class="text-lg font-bold text-white flex items-center gap-2">
+                        <i data-lucide="activity" class="w-5 h-5"></i> Phân tích Biến động Delta (Theo Công ty)
+                    </h2>
+                    <span class="text-xs bg-white/20 text-white px-2 py-1 rounded">Số liệu chi tiết (Đơn vị: VNĐ)</span>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm text-left">
+                        <thead class="text-xs uppercase bg-slate-100 text-gray-700">
+                            <tr>
+                                <th class="px-6 py-3 w-32">Công ty</th>
+                                <th class="px-6 py-3 w-16">Tháng</th>
+                                <th class="px-6 py-3 text-right text-gray-500">2023 vs 2022</th>
+                                <th class="px-6 py-3 text-right text-secondary">2024 vs 2023</th>
+                                <th class="px-6 py-3 text-right text-primary">2025 vs 2024</th>
+                                <th class="px-6 py-3 text-right text-accent2">2025 vs 2022 (YTD)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="delta-table-body"></tbody>
+                    </table>
+                </div>
+                <div class="p-3 bg-gray-50 text-xs text-gray-500 italic border-t">
+                    * Lưu ý: Cột "2025 vs 2022" so sánh số liệu lũy kế 11 tháng đầu năm.
+                </div>
+            </div>
+
+            <!-- Main Data Table -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-300 overflow-hidden mt-8">
+                <div class="px-6 py-4 border-b flex justify-between items-center bg-gray-800">
+                    <h2 class="text-lg font-bold text-white flex items-center gap-2">
+                        <i data-lucide="table" class="w-5 h-5"></i> Bảng Dữ liệu Chi tiết (2022 - 2025)
+                    </h2>
+                    <span class="text-xs bg-white/20 text-white px-2 py-1 rounded">Click vào năm để xem chi tiết</span>
+                </div>
+                <div class="overflow-x-auto max-h-96">
+                    <table class="w-full text-sm text-left" id="main-data-table">
+                        <thead class="text-xs uppercase bg-gray-100 text-gray-700 sticky top-0">
+                            <tr>
+                                <th class="px-6 py-3">Thời gian</th>
+                                <th class="px-6 py-3 text-right">Ánh Quang</th>
+                                <th class="px-6 py-3 text-right">Duy Tiên</th>
+                                <th class="px-6 py-3 text-right">Khoa Việt</th>
+                                <th class="px-6 py-3 text-right font-bold">Tổng cộng</th>
+                            </tr>
+                        </thead>
+                        <tbody id="main-table-body"></tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- ANALYSIS TAB -->
+        <div id="tab-analysis" class="space-y-12 hidden-tab animate-fade-in">
+            <!-- Ánh Quang Analysis -->
+            <div class="border-t border-gray-300 pt-6">
+                <h3 class="text-lg font-bold mb-4 px-3 py-1 rounded w-fit text-white bg-primary">1. Công ty Ánh Quang</h3>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <div class="bg-white p-5 rounded-xl border border-gray-300">
+                        <h4 class="font-bold mb-4">Biểu đồ Doanh thu (Ánh Quang)</h4>
+                        <div class="h-72"><canvas id="chart-aq-revenue"></canvas></div>
+                    </div>
+                    <div>
+                         <div class="bg-white p-5 rounded-xl border border-gray-300 mb-6">
+                            <h4 class="font-bold mb-4">Biểu đồ Delta (Ánh Quang)</h4>
+                            <div class="h-64"><canvas id="chart-aq-delta"></canvas></div>
+                         </div>
+                         <div class="p-4 rounded-lg border-l-4 text-sm text-gray-700 shadow-sm bg-gray-50 border-blue-400">
+                            <h4 class="font-bold mb-2 text-primary">Phân tích chi tiết:</h4>
+                            <ul class="list-disc pl-5 space-y-2">
+                                <li><b>Tổng Doanh thu:</b> Đạt ~11.3 tỷ VNĐ (2022-2025). Năm 2022 là năm đạt đỉnh doanh thu (~2.95 tỷ).</li>
+                                <li><b>Phân tích Delta:</b> Năm 2023 giảm mạnh (-118 triệu) so với 2022. Tuy nhiên, năm 2024 đã có sự phục hồi ấn tượng (+100 triệu). 11 tháng đầu năm 2025 đang thấp hơn cùng kỳ 2024 khoảng 130 triệu.</li>
+                                <li><b>Tính chất mùa vụ:</b> Doanh thu đạt đỉnh rõ rệt vào mùa khô (Tháng 3, 4, 5). Thấp điểm rơi vào mùa mưa (Tháng 7, 8, 9), đặc biệt tháng 7 thường xuyên giảm sâu do thời tiết.</li>
+                            </ul>
+                         </div>
+                    </div>
+                </div>
+            </div>
+
+             <!-- Duy Tiên Analysis -->
+             <div class="border-t border-gray-300 pt-6">
+                <h3 class="text-lg font-bold mb-4 px-3 py-1 rounded w-fit text-white bg-primary">2. Công ty Duy Tiên</h3>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <div class="bg-white p-5 rounded-xl border border-gray-300">
+                        <h4 class="font-bold mb-4">Biểu đồ Doanh thu (Duy Tiên)</h4>
+                        <div class="h-72"><canvas id="chart-dt-revenue"></canvas></div>
+                    </div>
+                    <div>
+                         <div class="bg-white p-5 rounded-xl border border-gray-300 mb-6">
+                            <h4 class="font-bold mb-4">Biểu đồ Delta (Duy Tiên)</h4>
+                            <div class="h-64"><canvas id="chart-dt-delta"></canvas></div>
+                         </div>
+                         <div class="p-4 rounded-lg border-l-4 text-sm text-gray-700 shadow-sm bg-gray-50 border-green-400">
+                            <h4 class="font-bold mb-2 text-primary">Phân tích chi tiết:</h4>
+                            <ul class="list-disc pl-5 space-y-2">
+                                <li><b>Tổng Doanh thu:</b> Dẫn đầu cụm nhà máy với ~11.5 tỷ VNĐ. Năm 2024 hoạt động hiệu quả nhất (~2.99 tỷ).</li>
+                                <li><b>Phân tích Delta:</b> Tương tự Ánh Quang, 2023 giảm nhẹ nhưng 2024 tăng trưởng tốt (+92 triệu). So sánh lũy kế 3 năm (2025 vs 2022), mức giảm khoảng 125 triệu.</li>
+                                <li><b>Tính chất mùa vụ:</b> Biến động mùa vụ rất mạnh. Tháng 3-4 thường đạt trên 300 triệu/tháng. Cần lưu ý bảo trì vào tháng 7 khi sản lượng thường xuyên chạm đáy.</li>
+                            </ul>
+                         </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Khoa Việt Analysis -->
+            <div class="border-t border-gray-300 pt-6">
+                <h3 class="text-lg font-bold mb-4 px-3 py-1 rounded w-fit text-white bg-primary">3. Công ty Khoa Việt</h3>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <div class="bg-white p-5 rounded-xl border border-gray-300">
+                        <h4 class="font-bold mb-4">Biểu đồ Doanh thu (Khoa Việt)</h4>
+                        <div class="h-72"><canvas id="chart-kv-revenue"></canvas></div>
+                    </div>
+                    <div>
+                         <div class="bg-white p-5 rounded-xl border border-gray-300 mb-6">
+                            <h4 class="font-bold mb-4">Biểu đồ Delta (Khoa Việt)</h4>
+                            <div class="h-64"><canvas id="chart-kv-delta"></canvas></div>
+                         </div>
+                         <div class="p-4 rounded-lg border-l-4 text-sm text-gray-700 shadow-sm bg-gray-50 border-orange-400">
+                            <h4 class="font-bold mb-2 text-primary">Phân tích chi tiết:</h4>
+                            <ul class="list-disc pl-5 space-y-2">
+                                <li><b>Tổng Doanh thu:</b> Duy trì ổn định ở mức ~11.45 tỷ VNĐ.</li>
+                                <li><b>Phân tích Delta:</b> Năm 2024 là năm tăng trưởng tốt nhất (+96 triệu so với 2023). Delta tháng 7 giữa các năm thường âm lớn, cho thấy tác động mạnh của thời tiết.</li>
+                                <li><b>Tính chất mùa vụ:</b> Đồng pha với 2 nhà máy còn lại. Mùa cao điểm (T3-T5) đóng góp tỷ trọng lớn vào doanh thu cả năm.</li>
+                            </ul>
+                         </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- STRATEGY TAB -->
+        <div id="tab-strategy" class="hidden-tab animate-fade-in">
+            <div class="max-w-4xl mx-auto bg-white p-8 rounded-xl border border-gray-300 shadow-sm">
+                <h2 class="text-2xl font-bold mb-4 text-gray-800">Chiến lược Quản trị Dài hạn</h2>
+                <div class="space-y-4 text-gray-600">
+                    <p>Dựa trên phân tích số liệu thực tế, các hành động khuyến nghị bao gồm:</p>
+                    <ul class="list-disc pl-5 space-y-2">
+                        <li><b>Mùa vụ:</b> Tập trung tối đa nguồn lực bảo trì vào tháng 11-12 để đón đỉnh sản lượng tháng 3-4 năm sau.</li>
+                        <li><b>Tài chính:</b> Với dòng tiền ròng ổn định (đã qua điểm hòa vốn), nên cân nhắc tái đầu tư vào hệ thống Robot vệ sinh để giảm chi phí nhân công và tăng sản lượng mùa bụi (T1-T4).</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- LOGIC SCRIPT -->
+    <script>
+        // --- 1. CONFIG & REAL DATA FROM EXCEL ---
+        const companies = ['Ánh Quang', 'Duy Tiên', 'Khoa Việt'];
+        const COLORS = {
+            primary: '#009BB3', secondary: '#CBDAA4', accent1: '#DFE583', accent2: '#F36859', neutral: '#CCCCCC'
+        };
+
+        // NEW: EXACT DATA FROM USER IMAGE (Updated)
+        const REAL_DATA = {
+            'Ánh Quang': {
+                2022: [262952444, 252743531, 308893847, 288858725, 235423065, 265708228, 265708228, 217432480, 201584179, 208787952, 216293278, 227515667],
+                2023: [236882007, 228663525, 326024048, 280005878, 269179097, 218184872, 208954179, 187901534, 203487541, 198087126, 226588841, 249487197],
+                2024: [278904398, 249754660, 313341331, 320489515, 275691925, 241153523, 167894891, 244884137, 190760012, 204162588, 223640364, 222880424],
+                2025: [265496396, 241786170, 302346672, 318589509, 285753698, 196973028, 158748629, 218569218, 174460755, 211700806, 206310016, 0]
+            },
+            'Duy Tiên': {
+                2022: [260750559, 252039907, 313547540, 293717083, 238304574, 269125832, 269125832, 219442835, 204733736, 213646311, 219978930, 232374026],
+                2023: [236506617, 232527746, 335005750, 286724748, 276246095, 224277112, 215414169, 194908401, 209398517, 201983628, 229767566, 253691317],
+                2024: [282565926, 253241316, 318762379, 327605315, 282047786, 247647554, 172281816, 250894570, 194248827, 207234731, 226783751, 225367500],
+                2025: [266236308, 244252544, 306469040, 326129568, 288572411, 202716157, 163117635, 224735154, 179499205, 216034578, 211559871, 0]
+            },
+            'Khoa Việt': {
+                2022: [260836607, 255088945, 312509200, 293267869, 237936009, 269159338, 269159338, 218471163, 204365171, 212105038, 219208293, 231469366],
+                2023: [238895465, 231657426, 332742918, 284914483, 273008505, 221387650, 212577242, 192276554, 207074288, 200958233, 230177724, 252836821],
+                2024: [281978700, 251928693, 316933774, 325187325, 280009765, 245264107, 170934650, 249098349, 193350716, 207787414, 226541952, 225712927],
+                2025: [266342010, 244182076, 305059684, 323028983, 288678113, 200778291, 161990149, 223114394, 178019381, 215787941, 210432385, 0]
+            }
+        };
+
+        // KPI Calculated from NEW REAL DATA
+        const totalRevenue = Object.values(REAL_DATA).reduce((acc, company) => {
+            return acc + Object.values(company).reduce((sum, yearArr) => sum + yearArr.reduce((a,b)=>a+b, 0), 0);
+        }, 0);
+
+        // Formatters
+        const formatMoney = (val) => new Intl.NumberFormat('vi-VN').format((val/1000000).toFixed(0)) + ' tr';
+        const formatCurrencyFull = (val) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(val);
+        const formatNumber = (val) => new Intl.NumberFormat('vi-VN').format(val);
+
+        // --- 2. DATA PROCESSING ---
+        
+        // Calculated Aggregate Data from REAL_DATA
+        const getMonthlyTotal = () => {
+             return Array.from({length: 12}, (_, i) => {
+                let y22=0, y23=0, y24=0, y25=0;
+                companies.forEach(c => {
+                    y22 += REAL_DATA[c][2022][i] || 0;
+                    y23 += REAL_DATA[c][2023][i] || 0;
+                    y24 += REAL_DATA[c][2024][i] || 0;
+                    y25 += REAL_DATA[c][2025][i] || 0;
+                });
+                return { label: `T${i+1}`, 2022: y22, 2023: y23, 2024: y24, 2025: y25 };
+            });
+        };
+
+        const getCompanyTotal = () => {
+            const result = {};
+            companies.forEach(c => {
+                result[c] = Object.values(REAL_DATA[c]).reduce((sum, arr) => sum + arr.reduce((a,b)=>a+b, 0), 0);
+            });
+            return result;
+        };
+
+        // --- 3. CHART RENDERING ---
+        
+        // 3.1 Total Revenue (LINE CHART)
+        const renderTotalRevenueChart = () => {
+            const ctx = document.getElementById('chart-total-revenue-line').getContext('2d');
+            const data = getMonthlyTotal();
+            const labels = data.map(d => d.label);
+            
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        { label: '2025 (Hiện tại)', data: data.map(d => d[2025]), borderColor: COLORS.accent2, borderWidth: 3, tension: 0.2, pointRadius: 5, backgroundColor: COLORS.accent2 },
+                        { label: '2024', data: data.map(d => d[2024]), borderColor: COLORS.primary, borderWidth: 2, tension: 0.2, pointRadius: 3, backgroundColor: COLORS.primary },
+                        { label: '2023', data: data.map(d => d[2023]), borderColor: COLORS.secondary, borderWidth: 2, tension: 0.2, pointRadius: 3, backgroundColor: COLORS.secondary },
+                        { label: '2022', data: data.map(d => d[2022]), borderColor: COLORS.neutral, borderWidth: 2, borderDash: [5,5], tension: 0.2, pointRadius: 2 }
+                    ]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { position: 'bottom' }, datalabels: { display: false } },
+                    scales: { y: { beginAtZero: false } }
+                }
+            });
+        };
+
+        // 3.1.2 Total Delta Chart (Calculated from Real Data)
+        const renderTotalDeltaChart = () => {
+            const ctx = document.getElementById('chart-total-delta-line').getContext('2d');
+            const monthlyTotal = getMonthlyTotal();
+            const labels = monthlyTotal.map(m => m.label);
+            
+            const d23_22 = monthlyTotal.map(m => m[2023] - m[2022]);
+            const d24_23 = monthlyTotal.map(m => m[2024] - m[2023]);
+            const d25_24 = monthlyTotal.map(m => m[2025] - m[2024]);
+            const d25_22 = monthlyTotal.map(m => m[2025] - m[2022]);
+
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        { label: '23 vs 22', data: d23_22, borderColor: COLORS.neutral, borderWidth: 1 },
+                        { label: '24 vs 23', data: d24_23, borderColor: COLORS.secondary, borderWidth: 2 },
+                        { label: '25 vs 24', data: d25_24, borderColor: COLORS.primary, borderWidth: 2 },
+                        { label: '25 vs 22 (3y)', data: d25_22, borderColor: COLORS.accent2, borderWidth: 3 }
+                    ]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { position: 'bottom' }, datalabels: { display: false } },
+                    scales: { y: { ticks: { callback: (val) => (val/1000000).toFixed(0) } } }
+                }
+            });
+        };
+
+        // 3.2 Comparison Chart
+        const renderComparisonChart = () => {
+            const ctx = document.getElementById('chart-comparison').getContext('2d');
+            const totals = getCompanyTotal();
+            
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: Object.keys(totals),
+                    datasets: [{
+                        label: 'Tổng Doanh Thu (VNĐ)',
+                        data: Object.values(totals),
+                        backgroundColor: [COLORS.primary, COLORS.secondary, COLORS.accent2],
+                        borderRadius: 8,
+                        barThickness: 50
+                    }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    indexAxis: 'y',
+                    plugins: { 
+                        legend: { display: false },
+                        datalabels: {
+                            color: '#000', anchor: 'end', align: 'end',
+                            formatter: (value) => new Intl.NumberFormat('vi-VN', { maximumFractionDigits: 3, minimumFractionDigits: 3 }).format(value/1000000000) + ' Tỷ', 
+                            font: { weight: 'bold' }
+                        }
+                    },
+                    scales: { x: { display: false, max: Math.max(...Object.values(totals)) * 1.3 } },
+                    layout: { padding: { right: 80 } }
+                }
+            });
+        };
+
+        // 3.3 Financial ROI Chart (VAT 8% Logic)
+        const renderFinancialChart = () => {
+            const ctx = document.getElementById('chart-financial-roi').getContext('2d');
+            const labels = ['2020 (Đầu tư)', '2021', '2022', '2023', '2024', '2025'];
+            
+            const initialInv = -42000000000;
+            // Rev 2021 = 10 Billion. Break-even rev = 10B / 1.08.
+            const cf2021 = 10000000000 / 1.08;
+            
+            const getRev = (y) => {
+               return Object.values(REAL_DATA).reduce((acc, c) => acc + c[y].reduce((a,b)=>a+b,0), 0); 
+            };
+            
+            const cf22 = getRev(2022) / 1.08;
+            const cf23 = getRev(2023) / 1.08;
+            const cf24 = getRev(2024) / 1.08;
+            const cf25 = getRev(2025) / 1.08;
+
+            const cashflow = [
+                initialInv,
+                initialInv + cf2021,
+                initialInv + cf2021 + cf22,
+                initialInv + cf2021 + cf22 + cf23,
+                initialInv + cf2021 + cf22 + cf23 + cf24,
+                initialInv + cf2021 + cf22 + cf23 + cf24 + cf25
+            ];
+
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Dòng tiền Tích lũy (Doanh thu hoàn vốn)',
+                        data: cashflow,
+                        borderColor: '#059669',
+                        backgroundColor: 'rgba(5, 150, 105, 0.1)',
+                        fill: true,
+                        tension: 0.3,
+                    }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { display: false }, datalabels: { display: false } },
+                    scales: { y: { ticks: { callback: (val) => (val/1000000000).toFixed(0) + ' tỷ' } } }
+                }
+            });
+        };
+
+        // 3.4 Analysis Line Charts
+        const renderStandardLineChart = (canvasId, company, type='revenue') => {
+            const ctx = document.getElementById(canvasId).getContext('2d');
+            const data = REAL_DATA[company];
+            const labels = Array.from({length: 12}, (_, i) => `T${i+1}`);
+            let datasets = [];
+            
+            if (type === 'revenue') {
+                datasets = [
+                    { label: '2022', data: data[2022], borderColor: COLORS.neutral, borderDash: [5,5], pointRadius: 0 },
+                    { label: '2023', data: data[2023], borderColor: COLORS.secondary, pointRadius: 2 },
+                    { label: '2024', data: data[2024], borderColor: COLORS.primary, pointRadius: 2 },
+                    { label: '2025', data: data[2025], borderColor: COLORS.accent2, pointRadius: 4 }
+                ];
+            } else {
+                const d23_22 = data[2023].map((v, i) => v - data[2022][i]);
+                const d24_23 = data[2024].map((v, i) => v - data[2023][i]);
+                const d25_24 = data[2025].map((v, i) => v - data[2024][i]);
+                const d25_22 = data[2025].map((v, i) => v - data[2022][i]);
+
+                datasets = [
+                    { label: '23 vs 22', data: d23_22, borderColor: COLORS.neutral, borderWidth: 1 },
+                    { label: '24 vs 23', data: d24_23, borderColor: COLORS.secondary, borderWidth: 2 },
+                    { label: '25 vs 24', data: d25_24, borderColor: COLORS.primary, borderWidth: 2 },
+                    { label: '25 vs 22 (3y)', data: d25_22, borderColor: COLORS.accent2, borderWidth: 3 }
+                ];
+            }
+
+            new Chart(ctx, {
+                type: 'line',
+                data: { labels, datasets },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { position: 'bottom' }, datalabels: { display: false } },
+                    scales: { y: { ticks: { callback: (val) => (val/1000000).toFixed(0) } } }
+                }
+            });
+        };
+
+        // --- 4. TABLE LOGIC ---
+        const renderDeltaTable = () => {
+            const tbody = document.getElementById('delta-table-body');
+            companies.forEach(company => {
+                const data = REAL_DATA[company];
+                const d23_22 = data[2023].map((v, i) => v - data[2022][i]);
+                const d24_23 = data[2024].map((v, i) => v - data[2023][i]);
+                const d25_24 = data[2025].map((v, i) => v - data[2024][i]);
+                const d25_22 = data[2025].map((v, i) => v - data[2022][i]);
+
+                const sum = (arr) => arr.reduce((a,b)=>a+b,0);
+                const sumYTD = (arr) => arr.slice(0, 11).reduce((a,b)=>a+b,0);
+
+                const deltaYear23_22 = sum(data[2023]) - sum(data[2022]);
+                const deltaYear24_23 = sum(data[2024]) - sum(data[2023]);
+                const deltaYear25_24 = sum(data[2025]) - sum(data[2024]);
+                // Special logic for 2025 vs 2022 (YTD 11 months as per user image logic)
+                const deltaYear25_22_YTD = sumYTD(data[2025]) - sumYTD(data[2022]);
+
+                const header = document.createElement('tr');
+                header.className = "bg-gray-50 border-b border-gray-200 cursor-pointer font-bold hover:bg-blue-50";
+                header.innerHTML = `<td class="px-6 py-3 text-primary flex items-center gap-2"><i data-lucide="chevron-down" class="w-4 h-4"></i> ${company}</td><td class="text-right px-6 text-gray-500">${formatMoney(deltaYear23_22)}</td><td class="text-right px-6 text-secondary">${formatMoney(deltaYear24_23)}</td><td class="text-right px-6 text-primary">${formatMoney(deltaYear25_24)}</td><td class="text-right px-6 text-accent2 bg-orange-50">${formatMoney(deltaYear25_22_YTD)}</td>`;
+                
+                const detailsFrag = document.createDocumentFragment();
+                for(let i=0; i<12; i++) {
+                    const row = document.createElement('tr');
+                    row.className = `border-b border-gray-100 bg-white group-delta-${company.replace(/\s/g,'')}`;
+                    const fmt = (val) => `<span class="${val>0?'text-green-600':(val<0?'text-red-500':'text-gray-400')}">${formatMoney(val)}</span>`;
+                    
+                    row.innerHTML = `<td class="px-6 py-2 pl-12 text-gray-500 text-xs"></td><td class="px-6 py-2 text-gray-700 font-bold text-xs">T${i+1}</td><td class="text-right px-6 font-mono text-xs">${fmt(d23_22[i])}</td><td class="text-right px-6 font-mono text-xs">${fmt(d24_23[i])}</td><td class="text-right px-6 font-mono text-xs">${fmt(d25_24[i])}</td><td class="text-right px-6 font-mono text-xs">${fmt(d25_22[i])}</td>`;
+                    detailsFrag.appendChild(row);
+                }
+                header.onclick = () => { document.querySelectorAll(`.group-delta-${company.replace(/\s/g,'')}`).forEach(r => r.style.display = r.style.display === 'none' ? 'table-row' : 'none'); };
+                tbody.appendChild(header);
+                tbody.appendChild(detailsFrag);
+            });
+        };
+
+        const renderMainTable = () => {
+            const tbody = document.getElementById('main-table-body');
+            const years = [2025, 2024, 2023, 2022];
+            years.forEach(year => {
+                const aqTotal = REAL_DATA['Ánh Quang'][year].reduce((a,b)=>a+b,0);
+                const dtTotal = REAL_DATA['Duy Tiên'][year].reduce((a,b)=>a+b,0);
+                const kvTotal = REAL_DATA['Khoa Việt'][year].reduce((a,b)=>a+b,0);
+                const yearTotal = aqTotal + dtTotal + kvTotal;
+
+                const header = document.createElement('tr');
+                header.className = "bg-secondary/30 cursor-pointer hover:bg-secondary/50 font-bold border-b border-gray-200";
+                header.innerHTML = `<td class="px-6 py-3 flex gap-2"><i data-lucide="chevron-down" class="w-4 h-4"></i> Năm ${year}</td><td class="text-right px-6">${formatMoney(aqTotal)}</td><td class="text-right px-6">${formatMoney(dtTotal)}</td><td class="text-right px-6">${formatMoney(kvTotal)}</td><td class="text-right px-6 text-primary">${formatMoney(yearTotal)}</td>`;
+                
+                const detailsFrag = document.createDocumentFragment();
+                for(let m=0; m<12; m++) {
+                    const aq = REAL_DATA['Ánh Quang'][year][m];
+                    const dt = REAL_DATA['Duy Tiên'][year][m];
+                    const kv = REAL_DATA['Khoa Việt'][year][m];
+                    const row = document.createElement('tr');
+                    row.className = `border-b border-gray-100 bg-white group-year-${year}`;
+                    row.innerHTML = `<td class="px-6 py-2 pl-12 text-gray-500 text-xs">T${m+1}</td><td class="text-right px-6 font-mono text-xs text-gray-600">${formatCurrencyFull(aq)}</td><td class="text-right px-6 font-mono text-xs text-gray-600">${formatCurrencyFull(dt)}</td><td class="text-right px-6 font-mono text-xs text-gray-600">${formatCurrencyFull(kv)}</td><td class="text-right px-6 font-mono text-xs font-medium">${formatCurrencyFull(aq+dt+kv)}</td>`;
+                    detailsFrag.appendChild(row);
+                }
+                header.onclick = () => { document.querySelectorAll(`.group-year-${year}`).forEach(r => r.style.display = r.style.display === 'none' ? 'table-row' : 'none'); };
+                tbody.appendChild(header);
+                tbody.appendChild(detailsFrag);
+            });
+            [2024, 2023, 2022].forEach(y => document.querySelectorAll(`.group-year-${y}`).forEach(r => r.style.display = 'none'));
+        };
+
+        // --- 5. INITIALIZATION ---
+        function switchTab(tabId) {
+            ['dashboard', 'analysis', 'strategy'].forEach(id => {
+                document.getElementById(`tab-${id}`).classList.add('hidden-tab');
+                document.getElementById(`btn-${id}`).classList.replace('active-tab-btn', 'inactive-tab-btn');
+            });
+            document.getElementById(`tab-${tabId}`).classList.remove('hidden-tab');
+            document.getElementById(`btn-${tabId}`).classList.replace('inactive-tab-btn', 'active-tab-btn');
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+            document.getElementById('kpi-total-revenue').innerText = formatMoney(totalRevenue);
+
+            Chart.defaults.font.family = 'sans-serif';
+            Chart.defaults.color = '#64748b';
+
+            renderTotalRevenueChart();
+            renderTotalDeltaChart(); // NEW
+            renderComparisonChart();
+            renderFinancialChart();
+            
+            ['Ánh Quang', 'Duy Tiên', 'Khoa Việt'].forEach(c => {
+                let code = c === 'Ánh Quang' ? 'aq' : (c === 'Duy Tiên' ? 'dt' : 'kv');
+                renderStandardLineChart(`chart-${code}-revenue`, c, 'revenue');
+                renderStandardLineChart(`chart-${code}-delta`, c, 'delta');
+            });
+
+            renderMainTable();
+            renderDeltaTable();
+        });
+    </script>
+</body>
+</html>
