@@ -2,7 +2,7 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Solar Monitor Pro - Pleiku Operation Center</title>
     
     <!-- Tailwind CSS -->
@@ -31,147 +31,163 @@
         .text-accent2 { color: var(--color-accent2); }
         
         /* Custom Scrollbar */
-        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: #f1f1f1; }
         ::-webkit-scrollbar-thumb { background: #c1c1c1; border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: #a8a8a8; }
         
+        /* Hide scrollbar for nav on mobile but keep functionality */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
         .hidden-tab { display: none; }
-        .active-tab-btn { background-color: white; color: var(--color-primary); box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
+        .active-tab-btn { background-color: white; color: var(--color-primary); box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); font-weight: 700; }
         .inactive-tab-btn { color: #E0F2FE; }
         .inactive-tab-btn:hover { background-color: rgba(255, 255, 255, 0.1); }
         
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        .animate-fade-in { animation: fadeIn 0.5s ease-out forwards; }
+        .animate-fade-in { animation: fadeIn 0.4s ease-out forwards; }
+
+        /* Mobile specific adjustments */
+        @media (max-width: 640px) {
+            .chart-container { height: 250px !important; }
+            h1 { font-size: 1.1rem !important; }
+            h2 { font-size: 1.1rem !important; }
+        }
     </style>
 </head>
-<body class="bg-slate-50 font-sans text-gray-900 min-h-screen pb-12">
+<body class="bg-slate-50 font-sans text-gray-900 min-h-screen pb-16 md:pb-12">
 
-    <!-- Header -->
-    <header class="text-white shadow-xl sticky top-0 z-50" style="background: linear-gradient(to right, #1e293b, var(--color-primary));">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-            <div class="flex items-center gap-3">
-                <div class="bg-yellow-400 p-1 rounded-full"><i data-lucide="sun" class="w-6 h-6 text-indigo-900"></i></div>
-                <div>
-                    <h1 class="text-xl font-bold">Solar Monitor Pro</h1>
-                    <p class="text-[10px] opacity-80 uppercase">Pleiku Operation Center</p>
+    <!-- Header - Responsive Modified -->
+    <header class="text-white shadow-xl sticky top-0 z-50 transition-all duration-300" style="background: linear-gradient(to right, #1e293b, var(--color-primary));">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 md:h-16 flex flex-col md:flex-row items-center justify-between gap-3 md:gap-0">
+            <!-- Logo Section -->
+            <div class="flex items-center gap-3 w-full md:w-auto">
+                <div class="bg-yellow-400 p-1.5 rounded-full shadow-lg shrink-0"><i data-lucide="sun" class="w-5 h-5 md:w-6 md:h-6 text-indigo-900"></i></div>
+                <div class="flex flex-col">
+                    <h1 class="text-lg md:text-xl font-bold leading-tight">Solar Monitor Pro</h1>
+                    <p class="text-[10px] opacity-80 uppercase tracking-wide">Pleiku Operation Center</p>
                 </div>
             </div>
-            <nav class="flex space-x-1 bg-white/10 p-1 rounded-xl">
-                <button onclick="switchTab('dashboard')" id="btn-dashboard" class="px-4 py-2 rounded-lg text-sm font-medium transition-all active-tab-btn">Tổng quan</button>
-                <button onclick="switchTab('analysis')" id="btn-analysis" class="px-4 py-2 rounded-lg text-sm font-medium transition-all inactive-tab-btn">Phân tích & Báo cáo</button>
-                <button onclick="switchTab('strategy')" id="btn-strategy" class="px-4 py-2 rounded-lg text-sm font-medium transition-all inactive-tab-btn">Chiến lược</button>
+            
+            <!-- Nav Section - Scrollable on Mobile -->
+            <nav class="w-full md:w-auto flex items-center space-x-1 bg-white/10 p-1 rounded-xl overflow-x-auto no-scrollbar whitespace-nowrap mask-linear-fade">
+                <button onclick="switchTab('dashboard')" id="btn-dashboard" class="flex-1 md:flex-none px-4 py-2 rounded-lg text-sm font-medium transition-all active-tab-btn">Tổng quan</button>
+                <button onclick="switchTab('analysis')" id="btn-analysis" class="flex-1 md:flex-none px-4 py-2 rounded-lg text-sm font-medium transition-all inactive-tab-btn">Phân tích</button>
+                <button onclick="switchTab('strategy')" id="btn-strategy" class="flex-1 md:flex-none px-4 py-2 rounded-lg text-sm font-medium transition-all inactive-tab-btn">Chiến lược</button>
             </nav>
         </div>
     </header>
 
-    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <main class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-6 md:py-8">
         
         <!-- ALERT: DATA UPDATE -->
-        <div class="bg-green-50 border-l-4 border-green-400 p-4 mb-6 rounded-r shadow-sm">
-            <div class="flex items-center">
-                <div class="flex-shrink-0">
+        <div class="bg-green-50 border-l-4 border-green-400 p-3 md:p-4 mb-6 rounded-r shadow-sm">
+            <div class="flex items-start md:items-center">
+                <div class="flex-shrink-0 mt-0.5 md:mt-0">
                     <i data-lucide="database" class="h-5 w-5 text-green-600"></i>
                 </div>
                 <div class="ml-3">
-                    <p class="text-sm text-green-800">
-                        <span class="font-bold">Dữ liệu đồng bộ:</span> Hệ thống đã cập nhật toàn bộ số liệu chi tiết từng tháng cho 3 nhà máy (Ánh Quang, Duy Tiên, Khoa Việt) theo báo cáo quyết toán mới nhất.
+                    <p class="text-sm text-green-800 leading-relaxed">
+                        <span class="font-bold block md:inline">Dữ liệu đồng bộ:</span> Hệ thống đã cập nhật số liệu chi tiết 3 nhà máy (Ánh Quang, Duy Tiên, Khoa Việt) theo báo cáo quyết toán mới nhất.
                     </p>
                 </div>
             </div>
         </div>
 
         <!-- DASHBOARD TAB -->
-        <div id="tab-dashboard" class="space-y-8 animate-fade-in">
-            <!-- 1. KPI Cards -->
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
-                    <p class="text-xs font-bold text-gray-400 uppercase">Tổng Doanh Thu (2022-2025)</p>
-                    <h3 class="text-2xl font-bold text-gray-800 mt-1" id="kpi-total-revenue">...</h3>
+        <div id="tab-dashboard" class="space-y-6 md:space-y-8 animate-fade-in">
+            <!-- 1. KPI Cards - Grid optimized for mobile (2 cols on small screens) -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+                <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 col-span-2 md:col-span-1">
+                    <p class="text-[10px] md:text-xs font-bold text-gray-400 uppercase tracking-wider">Tổng Doanh Thu (22-25)</p>
+                    <h3 class="text-xl md:text-2xl font-bold text-gray-800 mt-1" id="kpi-total-revenue">...</h3>
                     <div class="mt-2 text-xs text-green-600 flex items-center gap-1"><i data-lucide="trending-up" class="w-3 h-3"></i> Số liệu thực tế</div>
                 </div>
                 <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
-                    <p class="text-xs font-bold text-gray-400 uppercase">Doanh thu TB/Năm</p>
-                    <h3 class="text-2xl font-bold text-gray-800 mt-1">~8.5 Tỷ</h3>
-                    <div class="mt-2 text-xs text-blue-600">Đạt 98% kế hoạch</div>
+                    <p class="text-[10px] md:text-xs font-bold text-gray-400 uppercase tracking-wider">Doanh thu TB/Năm</p>
+                    <h3 class="text-lg md:text-2xl font-bold text-gray-800 mt-1">~8.5 Tỷ</h3>
+                    <div class="mt-2 text-[10px] md:text-xs text-blue-600 truncate">Đạt 98% kế hoạch</div>
                 </div>
                 <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
-                    <p class="text-xs font-bold text-gray-400 uppercase">Dòng tiền Tích lũy</p>
-                    <h3 class="text-2xl font-bold text-emerald-600 mt-1">Dương (+)</h3>
-                    <div class="mt-2 text-xs text-gray-500">Đã qua điểm hòa vốn</div>
+                    <p class="text-[10px] md:text-xs font-bold text-gray-400 uppercase tracking-wider">Dòng tiền Tích lũy</p>
+                    <h3 class="text-lg md:text-2xl font-bold text-emerald-600 mt-1">Dương (+)</h3>
+                    <div class="mt-2 text-[10px] md:text-xs text-gray-500 truncate">Qua điểm hòa vốn</div>
                 </div>
-                <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
-                    <p class="text-xs font-bold text-gray-400 uppercase">Trạng thái Thiết bị</p>
-                    <h3 class="text-2xl font-bold text-gray-800 mt-1">Ổn định</h3>
+                <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 col-span-2 md:col-span-1">
+                    <p class="text-[10px] md:text-xs font-bold text-gray-400 uppercase tracking-wider">Trạng thái Thiết bị</p>
+                    <h3 class="text-xl md:text-2xl font-bold text-gray-800 mt-1">Ổn định</h3>
                     <div class="mt-2 text-xs text-orange-500 flex items-center gap-1"><i data-lucide="alert-triangle" class="w-3 h-3"></i> Lưu ý mùa mưa T7-T8</div>
                 </div>
             </div>
 
             <!-- 2. SECTION: DOANH THU & PHÂN TÍCH -->
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div class="lg:col-span-2 bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-                    <h2 class="text-lg font-bold mb-4 flex items-center gap-2 text-gray-800">
-                        <i data-lucide="activity" class="w-5 h-5 text-primary"></i> 
-                        Biểu đồ Biến động Doanh thu (Mềm mại & Dễ theo dõi)
+                <!-- Chart Box -->
+                <div class="lg:col-span-2 bg-white p-4 md:p-6 rounded-xl shadow-sm border border-gray-200">
+                    <h2 class="text-base md:text-lg font-bold mb-4 flex items-center gap-2 text-gray-800">
+                        <i data-lucide="activity" class="w-5 h-5 text-primary shrink-0"></i> 
+                        Biểu đồ Biến động Doanh thu
                     </h2>
-                    <div class="h-80"><canvas id="chart-total-revenue-line"></canvas></div>
+                    <div class="h-64 md:h-80 w-full"><canvas id="chart-total-revenue-line"></canvas></div>
                 </div>
                 
-                <div class="space-y-6">
-                    <div class="bg-teal-50 p-5 rounded-xl border border-teal-100 shadow-sm">
-                        <h4 class="font-bold text-teal-800 mb-2 flex items-center gap-2"><i data-lucide="cloud-sun" class="w-4 h-4"></i> Phân Tích Mùa Vụ</h4>
+                <!-- Info Boxes -->
+                <div class="space-y-4 md:space-y-6">
+                    <div class="bg-teal-50 p-4 md:p-5 rounded-xl border border-teal-100 shadow-sm">
+                        <h4 class="font-bold text-teal-800 mb-2 flex items-center gap-2 text-sm md:text-base"><i data-lucide="cloud-sun" class="w-4 h-4"></i> Phân Tích Mùa Vụ</h4>
                         <ul class="text-sm text-teal-700 space-y-3">
                             <li class="flex items-start">
-                                <span class="mr-2 mt-1">☀️</span>
-                                <div><strong>Mùa Khô (T1-T4):</strong> Thời điểm "vàng" cho doanh thu. Các năm đều đạt đỉnh vào tháng 3-4 (>300 triệu/nhà máy).</div>
+                                <span class="mr-2 mt-0.5">☀️</span>
+                                <div><strong>Mùa Khô (T1-T4):</strong> Thời điểm "vàng". Đạt đỉnh vào tháng 3-4 (>300 tr/nhà máy).</div>
                             </li>
                             <li class="flex items-start">
-                                <span class="mr-2 mt-1">🌧️</span>
-                                <div><strong>Mùa Mưa (T6-T9):</strong> Doanh thu giảm mạnh. Tháng 7-8 thường là vùng trũng sản lượng.</div>
+                                <span class="mr-2 mt-0.5">🌧️</span>
+                                <div><strong>Mùa Mưa (T6-T9):</strong> Giảm mạnh. T7-T8 là vùng trũng sản lượng.</div>
                             </li>
                         </ul>
                     </div>
 
-                    <div class="bg-orange-50 p-5 rounded-xl border border-orange-100 shadow-sm">
-                        <h4 class="font-bold text-orange-800 mb-2 flex items-center gap-2"><i data-lucide="alert-circle" class="w-4 h-4"></i> Cảnh Báo Bất Thường (2022)</h4>
-                        <p class="text-sm text-orange-700 mb-2">Doanh thu các tháng <strong>6, 7, 8</strong> năm 2022 giữ nguyên mức ~269 triệu.</p>
-                        <p class="text-xs text-orange-600 italic">→ Dấu hiệu hệ thống bị giới hạn công suất phát (Curtailment) hoặc chạm ngưỡng công suất trạm.</p>
+                    <div class="bg-orange-50 p-4 md:p-5 rounded-xl border border-orange-100 shadow-sm">
+                        <h4 class="font-bold text-orange-800 mb-2 flex items-center gap-2 text-sm md:text-base"><i data-lucide="alert-circle" class="w-4 h-4"></i> Cảnh Báo (2022)</h4>
+                        <p class="text-sm text-orange-700 mb-2">Doanh thu T6, T7, T8 năm 2022 giữ nguyên mức ~269 triệu.</p>
+                        <p class="text-xs text-orange-600 italic">→ Dấu hiệu bị giới hạn công suất phát (Curtailment).</p>
                     </div>
                 </div>
             </div>
 
             <!-- Total Delta Chart -->
-            <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-                <h2 class="text-lg font-bold mb-4 flex items-center gap-2 text-gray-800">
-                    <i data-lucide="git-commit" class="w-5 h-5 text-accent2"></i> 
-                    Biểu đồ Delta Tổng hợp (Biến động Cả cụm 3 Nhà máy)
+            <div class="bg-white p-4 md:p-6 rounded-xl shadow-sm border border-gray-200">
+                <h2 class="text-base md:text-lg font-bold mb-4 flex items-center gap-2 text-gray-800">
+                    <i data-lucide="git-commit" class="w-5 h-5 text-accent2 shrink-0"></i> 
+                    Biểu đồ Delta Tổng hợp
                 </h2>
-                <div class="h-80"><canvas id="chart-total-delta-line"></canvas></div>
+                <div class="h-64 md:h-80"><canvas id="chart-total-delta-line"></canvas></div>
             </div>
 
             <!-- 3. SECTION: SO SÁNH HIỆU QUẢ -->
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div class="lg:col-span-2 bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-                    <h2 class="text-lg font-bold mb-6 flex items-center gap-2 text-gray-800">
-                        <i data-lucide="pie-chart" class="w-5 h-5 text-secondary"></i> 
-                        So sánh Hiệu quả Tổng hợp (2022-2025)
+                <div class="lg:col-span-2 bg-white p-4 md:p-6 rounded-xl shadow-sm border border-gray-200">
+                    <h2 class="text-base md:text-lg font-bold mb-6 flex items-center gap-2 text-gray-800">
+                        <i data-lucide="pie-chart" class="w-5 h-5 text-secondary shrink-0"></i> 
+                        So sánh Hiệu quả (2022-2025)
                     </h2>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
-                        <div class="h-64 w-full">
+                        <div class="h-56 md:h-64 w-full">
                             <canvas id="chart-comparison"></canvas>
                         </div>
-                        <div>
-                            <table class="w-full text-sm text-left text-slate-600 border border-gray-100 rounded-lg overflow-hidden">
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-sm text-left text-slate-600 border border-gray-100 rounded-lg min-w-[300px]">
                                 <thead class="text-xs text-slate-700 uppercase bg-slate-50">
                                     <tr>
-                                        <th class="px-4 py-3 bg-gray-100">Công Ty</th>
-                                        <th class="px-4 py-3 bg-gray-100 text-right">Tổng Thu (22-25)</th>
-                                        <th class="px-4 py-3 bg-gray-100 text-right">Tỷ trọng</th>
+                                        <th class="px-3 py-3 bg-gray-100">Công Ty</th>
+                                        <th class="px-3 py-3 bg-gray-100 text-right">Tổng Thu</th>
+                                        <th class="px-3 py-3 bg-gray-100 text-right">Tỷ trọng</th>
                                     </tr>
                                 </thead>
                                 <tbody id="comparison-table-body"></tbody>
                             </table>
-                            <p class="text-xs text-slate-400 mt-4 italic">* Số liệu tổng hợp chính xác từ báo cáo quyết toán 4 năm.</p>
+                            <p class="text-xs text-slate-400 mt-4 italic text-center md:text-left">* Số liệu chính xác từ báo cáo quyết toán 4 năm.</p>
                         </div>
                     </div>
                 </div>
@@ -179,65 +195,63 @@
 
             <!-- 4. SECTION: FINANCIAL & RISKS -->
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div class="lg:col-span-2 bg-slate-800 rounded-xl p-6 shadow-lg text-white">
-                    <h2 class="text-lg font-bold mb-6 flex items-center gap-2 text-teal-400">
+                <div class="lg:col-span-2 bg-slate-800 rounded-xl p-4 md:p-6 shadow-lg text-white">
+                    <h2 class="text-base md:text-lg font-bold mb-6 flex items-center gap-2 text-teal-400">
                         <i data-lucide="dollar-sign" class="w-5 h-5"></i> 
-                        Dòng tiền Tích lũy & Điểm Hòa vốn
+                        Dòng tiền & Điểm Hòa vốn
                     </h2>
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <div class="md:col-span-2 h-72">
+                        <div class="md:col-span-2 h-64 md:h-72 order-2 md:order-1">
                              <canvas id="chart-financial-roi"></canvas>
                         </div>
-                        <div class="flex flex-col justify-center space-y-4">
-                            <div class="bg-slate-700 p-4 rounded-lg border border-slate-600">
-                                <p class="text-[10px] text-slate-400 uppercase tracking-wider">Vốn Đầu Tư (Ước tính)</p>
-                                <p class="text-xl font-bold text-white">~42 Tỷ VNĐ</p>
+                        <div class="flex flex-row md:flex-col justify-between md:justify-center gap-3 md:gap-4 order-1 md:order-2 overflow-x-auto pb-2 md:pb-0">
+                            <div class="bg-slate-700 p-3 md:p-4 rounded-lg border border-slate-600 min-w-[120px] flex-1">
+                                <p class="text-[9px] md:text-[10px] text-slate-400 uppercase tracking-wider">Vốn Đầu Tư</p>
+                                <p class="text-base md:text-xl font-bold text-white whitespace-nowrap">~42 Tỷ</p>
                             </div>
-                            <div class="bg-slate-700 p-4 rounded-lg border border-slate-600">
-                                <p class="text-[10px] text-slate-400 uppercase tracking-wider">Doanh Thu Tích Lũy</p>
-                                <p class="text-xl font-bold text-green-400" id="fin-acc-revenue">...</p>
-                                <p class="text-[10px] text-slate-400 mt-1">Đến cuối 2025</p>
+                            <div class="bg-slate-700 p-3 md:p-4 rounded-lg border border-slate-600 min-w-[120px] flex-1">
+                                <p class="text-[9px] md:text-[10px] text-slate-400 uppercase tracking-wider">Lũy kế 2025</p>
+                                <p class="text-base md:text-xl font-bold text-green-400 whitespace-nowrap" id="fin-acc-revenue">...</p>
                             </div>
-                            <div class="bg-teal-900/50 p-4 rounded-lg border border-teal-500/50">
-                                <p class="text-[10px] text-teal-300 uppercase tracking-wider">Dự Kiến Hòa Vốn</p>
-                                <p class="text-lg font-bold text-white">Cuối năm 2025</p>
+                            <div class="bg-teal-900/50 p-3 md:p-4 rounded-lg border border-teal-500/50 min-w-[120px] flex-1">
+                                <p class="text-[9px] md:text-[10px] text-teal-300 uppercase tracking-wider">Hòa Vốn</p>
+                                <p class="text-base md:text-lg font-bold text-white whitespace-nowrap">Cuối 2025</p>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                 <div class="bg-white p-0 rounded-xl shadow-sm border border-gray-200 overflow-hidden flex flex-col">
-                    <div class="p-5 border-b border-gray-100 border-l-4 border-l-red-500 flex-1">
+                 <div class="bg-white p-0 rounded-xl shadow-sm border border-gray-200 overflow-hidden flex flex-col md:flex-row lg:flex-col">
+                    <div class="p-4 md:p-5 border-b md:border-b-0 lg:border-b md:border-r lg:border-r-0 border-gray-100 border-l-4 border-l-red-500 flex-1">
                         <div class="flex items-center mb-3">
                             <span class="text-xl mr-2">⚡</span>
-                            <h3 class="font-bold text-gray-800">Rủi Ro Sa Thải & Cắt Giảm</h3>
+                            <h3 class="font-bold text-gray-800 text-sm md:text-base">Rủi Ro Cắt Giảm</h3>
                         </div>
                         <div class="space-y-2 text-sm">
                             <div class="flex justify-between bg-red-50 p-2 rounded text-red-700">
-                                <span>Tỉ lệ cắt giảm</span>
+                                <span>Tỉ lệ</span>
                                 <span class="font-bold">10% - 15%</span>
                             </div>
                             <div class="flex justify-between bg-red-50 p-2 rounded text-red-700">
-                                <span>Giờ cao điểm</span>
+                                <span>Cao điểm</span>
                                 <span class="font-bold">10h - 13h</span>
                             </div>
-                            <p class="text-xs text-gray-500 mt-2">Đặc biệt cao vào mùa mưa khi phụ tải thấp.</p>
                         </div>
                     </div>
 
-                    <div class="p-5 border-l-4 border-l-blue-500 flex-1">
+                    <div class="p-4 md:p-5 border-l-4 border-l-blue-500 flex-1">
                         <div class="flex items-center mb-3">
                             <span class="text-xl mr-2">🔧</span>
-                            <h3 class="font-bold text-gray-800">Bảo Trì & Tuổi Thọ</h3>
+                            <h3 class="font-bold text-gray-800 text-sm md:text-base">Bảo Trì & Tuổi Thọ</h3>
                         </div>
                         <ul class="text-xs space-y-3 text-gray-600">
                             <li class="relative pl-3">
                                 <span class="absolute left-0 top-1.5 w-1.5 h-1.5 bg-blue-500 rounded-full"></span>
-                                <strong>Inverter:</strong> Thay linh kiện mỗi 5 năm. Đại tu 2025-2026.
+                                <strong>Inverter:</strong> Thay linh kiện mỗi 5 năm.
                             </li>
                             <li class="relative pl-3">
                                 <span class="absolute left-0 top-1.5 w-1.5 h-1.5 bg-blue-500 rounded-full"></span>
-                                <strong>Tấm Pin:</strong> Suy hao ~0.6%/năm. Vệ sinh 2 lần/tháng (Mùa khô).
+                                <strong>Pin:</strong> Vệ sinh 2 lần/tháng (Mùa khô).
                             </li>
                         </ul>
                     </div>
@@ -246,50 +260,46 @@
 
             <!-- 5. SECTION: DELTA TABLE -->
              <div class="bg-white rounded-xl shadow-sm border border-gray-300 overflow-hidden mt-8">
-                <div class="px-6 py-4 border-b flex justify-between items-center bg-teal-700">
-                    <h2 class="text-lg font-bold text-white flex items-center gap-2">
-                        <i data-lucide="activity" class="w-5 h-5"></i> Phân tích Biến động Delta (Theo Công ty)
+                <div class="px-4 md:px-6 py-4 border-b flex flex-col md:flex-row justify-between items-start md:items-center bg-teal-700 gap-2">
+                    <h2 class="text-base md:text-lg font-bold text-white flex items-center gap-2">
+                        <i data-lucide="activity" class="w-5 h-5 shrink-0"></i> Phân tích Biến động
                     </h2>
-                    <span class="text-xs bg-white/20 text-white px-2 py-1 rounded">Số liệu chi tiết (Đơn vị: VNĐ)</span>
+                    <span class="text-[10px] md:text-xs bg-white/20 text-white px-2 py-1 rounded">Trượt để xem chi tiết &rarr;</span>
                 </div>
-                <div class="overflow-x-auto">
-                    <table class="w-full text-sm text-left">
+                <div class="overflow-x-auto w-full">
+                    <table class="w-full text-sm text-left min-w-[600px]">
                         <thead class="text-xs uppercase bg-slate-100 text-gray-700 font-bold border-b-2 border-gray-200">
                             <tr>
-                                <th class="px-6 py-3 w-32 border-r">Năm</th>
-                                <th class="px-6 py-3 w-16 text-center border-r hidden">Tháng</th>
-                                <th class="px-6 py-3 text-right text-gray-600 border-r">2023 vs 2022</th>
-                                <th class="px-6 py-3 text-right text-gray-600 border-r">2024 vs 2023</th>
-                                <th class="px-6 py-3 text-right text-gray-600 border-r">2025 vs 2024</th>
-                                <th class="px-6 py-3 text-right text-gray-600">2025 vs 2022</th>
+                                <th class="px-4 md:px-6 py-3 border-r whitespace-nowrap sticky left-0 bg-slate-100 z-10 shadow-sm">Năm</th>
+                                <th class="px-4 md:px-6 py-3 text-right text-gray-600 border-r whitespace-nowrap">23 vs 22</th>
+                                <th class="px-4 md:px-6 py-3 text-right text-gray-600 border-r whitespace-nowrap">24 vs 23</th>
+                                <th class="px-4 md:px-6 py-3 text-right text-gray-600 border-r whitespace-nowrap">25 vs 24</th>
+                                <th class="px-4 md:px-6 py-3 text-right text-gray-600 whitespace-nowrap">25 vs 22</th>
                             </tr>
                         </thead>
                         <tbody id="delta-table-body"></tbody>
                         <tfoot id="delta-table-footer" class="bg-gray-100 font-bold text-gray-800 border-t-2 border-gray-300"></tfoot>
                     </table>
                 </div>
-                <div class="p-3 bg-gray-50 text-xs text-gray-500 italic border-t">
-                    * Ghi chú: Cột so sánh với năm 2025 (2025vs2024, 2025vs2022) sử dụng số liệu lũy kế 11 tháng (YTD) để đảm bảo tính chính xác.
-                </div>
             </div>
 
             <!-- Main Data Table -->
             <div class="bg-white rounded-xl shadow-sm border border-gray-300 overflow-hidden mt-8">
-                <div class="px-6 py-4 border-b flex justify-between items-center bg-gray-800">
-                    <h2 class="text-lg font-bold text-white flex items-center gap-2">
-                        <i data-lucide="table" class="w-5 h-5"></i> Bảng Dữ liệu Chi tiết (2022 - 2025)
+                <div class="px-4 md:px-6 py-4 border-b flex flex-col md:flex-row justify-between items-start md:items-center bg-gray-800 gap-2">
+                    <h2 class="text-base md:text-lg font-bold text-white flex items-center gap-2">
+                        <i data-lucide="table" class="w-5 h-5 shrink-0"></i> Dữ liệu Chi tiết
                     </h2>
-                    <span class="text-xs bg-white/20 text-white px-2 py-1 rounded">Click vào năm để xem chi tiết</span>
+                    <span class="text-[10px] md:text-xs bg-white/20 text-white px-2 py-1 rounded">Chạm vào năm để mở rộng</span>
                 </div>
-                <div class="overflow-x-auto max-h-96">
-                    <table class="w-full text-sm text-left" id="main-data-table">
-                        <thead class="text-xs uppercase bg-gray-100 text-gray-700 sticky top-0">
+                <div class="overflow-x-auto max-h-[60vh] md:max-h-96 w-full">
+                    <table class="w-full text-sm text-left min-w-[600px]" id="main-data-table">
+                        <thead class="text-xs uppercase bg-gray-100 text-gray-700 sticky top-0 z-20 shadow-sm">
                             <tr>
-                                <th class="px-6 py-3">Thời gian</th>
-                                <th class="px-6 py-3 text-right">Ánh Quang</th>
-                                <th class="px-6 py-3 text-right">Duy Tiên</th>
-                                <th class="px-6 py-3 text-right">Khoa Việt</th>
-                                <th class="px-6 py-3 text-right font-bold">Tổng cộng</th>
+                                <th class="px-4 md:px-6 py-3 sticky left-0 bg-gray-100 border-r z-30">Thời gian</th>
+                                <th class="px-4 md:px-6 py-3 text-right whitespace-nowrap">Ánh Quang</th>
+                                <th class="px-4 md:px-6 py-3 text-right whitespace-nowrap">Duy Tiên</th>
+                                <th class="px-4 md:px-6 py-3 text-right whitespace-nowrap">Khoa Việt</th>
+                                <th class="px-4 md:px-6 py-3 text-right font-bold whitespace-nowrap">Tổng cộng</th>
                             </tr>
                         </thead>
                         <tbody id="main-table-body"></tbody>
@@ -300,110 +310,52 @@
         </div>
 
         <!-- ANALYSIS TAB (UPDATED WITH DEEP DIVE) -->
-        <div id="tab-analysis" class="space-y-12 hidden-tab animate-fade-in pb-12">
-            <div class="bg-blue-50 border border-blue-200 p-4 rounded-lg mb-8">
-                <h3 class="text-lg font-bold text-blue-800 flex items-center gap-2"><i data-lucide="info" class="w-5 h-5"></i> Phương pháp Phân tích Biến động Delta</h3>
-                <p class="text-sm text-blue-700 mt-1">Hệ thống tự động phát hiện các điểm "Delta Âm" (Sụt giảm doanh thu cùng kỳ) và "Dữ liệu Phẳng" (Nghi vấn cắt giảm) để đưa ra cảnh báo.</p>
+        <div id="tab-analysis" class="space-y-8 md:space-y-12 hidden-tab animate-fade-in pb-12">
+            <div class="bg-blue-50 border border-blue-200 p-4 rounded-lg mb-4 md:mb-8">
+                <h3 class="text-base md:text-lg font-bold text-blue-800 flex items-center gap-2"><i data-lucide="info" class="w-5 h-5"></i> Phương pháp Phân tích</h3>
+                <p class="text-sm text-blue-700 mt-1">Hệ thống tự động phát hiện các điểm "Delta Âm" và "Dữ liệu Phẳng" để cảnh báo.</p>
             </div>
 
-            <!-- Ánh Quang Analysis -->
-            <div class="border-t border-gray-300 pt-6">
-                <h3 class="text-lg font-bold mb-4 px-3 py-1 rounded w-fit text-white bg-primary">1. Công ty Ánh Quang</h3>
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                    <div class="bg-white p-5 rounded-xl border border-gray-300 shadow-sm">
-                        <h4 class="font-bold mb-4 text-gray-700">Biểu đồ Doanh thu (Ánh Quang)</h4>
-                        <div class="h-72"><canvas id="chart-aq-revenue"></canvas></div>
-                    </div>
-                    <div>
-                         <div class="bg-white p-5 rounded-xl border border-gray-300 shadow-sm mb-6">
-                            <h4 class="font-bold mb-4 text-gray-700">Biểu đồ Delta (Biến động cùng kỳ)</h4>
-                            <div class="h-64"><canvas id="chart-aq-delta"></canvas></div>
-                         </div>
-                         <!-- Dynamic Analysis Box -->
-                         <div id="analysis-box-aq" class="p-4 rounded-lg border-l-4 text-sm shadow-sm bg-gray-50 border-gray-300 space-y-3">
-                            <!-- JS will populate this -->
-                         </div>
-                    </div>
-                </div>
-            </div>
-
-             <!-- Duy Tiên Analysis -->
-             <div class="border-t border-gray-300 pt-6">
-                <h3 class="text-lg font-bold mb-4 px-3 py-1 rounded w-fit text-white bg-primary">2. Công ty Duy Tiên</h3>
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                    <div class="bg-white p-5 rounded-xl border border-gray-300 shadow-sm">
-                        <h4 class="font-bold mb-4 text-gray-700">Biểu đồ Doanh thu (Duy Tiên)</h4>
-                        <div class="h-72"><canvas id="chart-dt-revenue"></canvas></div>
-                    </div>
-                    <div>
-                         <div class="bg-white p-5 rounded-xl border border-gray-300 shadow-sm mb-6">
-                            <h4 class="font-bold mb-4 text-gray-700">Biểu đồ Delta (Biến động cùng kỳ)</h4>
-                            <div class="h-64"><canvas id="chart-dt-delta"></canvas></div>
-                         </div>
-                         <div id="analysis-box-dt" class="p-4 rounded-lg border-l-4 text-sm shadow-sm bg-gray-50 border-gray-300 space-y-3">
-                             <!-- JS will populate this -->
-                         </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Khoa Việt Analysis -->
-            <div class="border-t border-gray-300 pt-6">
-                <h3 class="text-lg font-bold mb-4 px-3 py-1 rounded w-fit text-white bg-primary">3. Công ty Khoa Việt</h3>
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                    <div class="bg-white p-5 rounded-xl border border-gray-300 shadow-sm">
-                        <h4 class="font-bold mb-4 text-gray-700">Biểu đồ Doanh thu (Khoa Việt)</h4>
-                        <div class="h-72"><canvas id="chart-kv-revenue"></canvas></div>
-                    </div>
-                    <div>
-                         <div class="bg-white p-5 rounded-xl border border-gray-300 shadow-sm mb-6">
-                            <h4 class="font-bold mb-4 text-gray-700">Biểu đồ Delta (Biến động cùng kỳ)</h4>
-                            <div class="h-64"><canvas id="chart-kv-delta"></canvas></div>
-                         </div>
-                         <div id="analysis-box-kv" class="p-4 rounded-lg border-l-4 text-sm shadow-sm bg-gray-50 border-gray-300 space-y-3">
-                             <!-- JS will populate this -->
-                         </div>
-                    </div>
-                </div>
-            </div>
+            <!-- Components generated by JS below will follow grid layout logic -->
+            <div id="analysis-container"></div>
         </div>
 
         <!-- STRATEGY TAB (UPDATED WITH DOC CONTENT) -->
         <div id="tab-strategy" class="hidden-tab animate-fade-in">
-            <div class="max-w-5xl mx-auto space-y-8">
+            <div class="max-w-5xl mx-auto space-y-6 md:space-y-8">
                 
                 <!-- 1. Strategic Roadmap -->
-                <div class="bg-white p-8 rounded-xl border border-gray-300 shadow-md">
-                    <h2 class="text-2xl font-bold mb-6 text-gray-800 flex items-center gap-3">
-                        <span class="bg-primary text-white p-2 rounded-lg"><i data-lucide="map"></i></span>
-                        Chiến lược Quản trị Tài sản (2025 - 2030)
+                <div class="bg-white p-4 md:p-8 rounded-xl border border-gray-300 shadow-md">
+                    <h2 class="text-xl md:text-2xl font-bold mb-6 text-gray-800 flex flex-col md:flex-row items-start md:items-center gap-3">
+                        <span class="bg-primary text-white p-2 rounded-lg inline-flex"><i data-lucide="map"></i></span>
+                        Chiến lược Quản trị Tài sản (25-30)
                     </h2>
                     
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                        <div class="bg-blue-50 p-5 rounded-xl border border-blue-100">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 mb-8">
+                        <div class="bg-blue-50 p-4 md:p-5 rounded-xl border border-blue-100">
                             <h3 class="font-bold text-blue-800 mb-2">1. Kiểm toán O&M</h3>
-                            <p class="text-sm text-gray-600 mb-2">Thực hiện ngay thí nghiệm định kỳ 3 năm (C-Test) để đảm bảo tuân thủ hợp đồng mua bán điện.</p>
+                            <p class="text-sm text-gray-600 mb-2">Thực hiện ngay thí nghiệm định kỳ 3 năm (C-Test) để đảm bảo tuân thủ HĐ.</p>
                             <div class="text-xs font-semibold text-blue-600 bg-white inline-block px-2 py-1 rounded">Hạn chót: Q1/2025</div>
                         </div>
-                        <div class="bg-orange-50 p-5 rounded-xl border border-orange-100">
+                        <div class="bg-orange-50 p-4 md:p-5 rounded-xl border border-orange-100">
                             <h3 class="font-bold text-orange-800 mb-2">2. Vệ sinh Chuyên sâu</h3>
-                            <p class="text-sm text-gray-600 mb-2">Thiết lập quy trình vệ sinh riêng cho <strong>bụi đất đỏ Bazan</strong>. Tuyệt đối không quét khô gây xước kính.</p>
-                            <div class="text-xs font-semibold text-orange-600 bg-white inline-block px-2 py-1 rounded">Tần suất: 2 lần/tháng (Mùa khô)</div>
+                            <p class="text-sm text-gray-600 mb-2">Quy trình vệ sinh riêng cho <strong>bụi đất đỏ Bazan</strong>. Tuyệt đối không quét khô.</p>
+                            <div class="text-xs font-semibold text-orange-600 bg-white inline-block px-2 py-1 rounded">2 lần/tháng (Mùa khô)</div>
                         </div>
-                        <div class="bg-green-50 p-5 rounded-xl border border-green-100">
-                            <h3 class="font-bold text-green-800 mb-2">3. Quỹ Thay thế Inverter</h3>
-                            <p class="text-sm text-gray-600 mb-2">Trích lập dự phòng 10-15% tổng mức đầu tư cho việc thay thế Inverter vào giai đoạn 2030-2032.</p>
-                            <div class="text-xs font-semibold text-green-600 bg-white inline-block px-2 py-1 rounded">Mục tiêu: 5-7 Tỷ VNĐ</div>
+                        <div class="bg-green-50 p-4 md:p-5 rounded-xl border border-green-100">
+                            <h3 class="font-bold text-green-800 mb-2">3. Quỹ Thay Inverter</h3>
+                            <p class="text-sm text-gray-600 mb-2">Trích lập dự phòng 10-15% tổng mức đầu tư cho giai đoạn 2030-2032.</p>
+                            <div class="text-xs font-semibold text-green-600 bg-white inline-block px-2 py-1 rounded">Mục tiêu: 5-7 Tỷ</div>
                         </div>
                     </div>
 
-                    <h3 class="font-bold text-lg text-gray-800 mb-4 border-l-4 border-primary pl-3">Phân tích Rủi ro & Khuyến nghị Kỹ thuật</h3>
+                    <h3 class="font-bold text-lg text-gray-800 mb-4 border-l-4 border-primary pl-3">Phân tích Rủi ro & Khuyến nghị</h3>
                     <div class="space-y-4 text-gray-700 text-sm leading-relaxed">
-                        <p><strong><i data-lucide="thermometer" class="inline w-4 h-4 text-red-500"></i> Tác động Nhiệt độ & UV:</strong> Tại Pleiku, biên độ nhiệt ngày đêm lớn gây hiện tượng "sốc nhiệt" (Thermal Cycling), làm mỏi các mối hàn trong tấm pin. Cần sử dụng Flycam nhiệt (Thermography) định kỳ hằng năm để phát hiện sớm điểm nóng (Hot-spot).</p>
+                        <p><strong><i data-lucide="thermometer" class="inline w-4 h-4 text-red-500"></i> Tác động Nhiệt độ:</strong> Pleiku có biên độ nhiệt lớn gây "sốc nhiệt", làm mỏi mối hàn. Cần dùng Flycam nhiệt hàng năm.</p>
                         
-                        <p><strong><i data-lucide="zap-off" class="inline w-4 h-4 text-yellow-600"></i> Rủi ro Cắt giảm (Curtailment):</strong> Dữ liệu năm 2022 cho thấy sự "phẳng" bất thường của biểu đồ doanh thu mùa mưa. Điều này khẳng định rủi ro quá tải lưới khu vực là hiện hữu. Cần duy trì kênh liên lạc 24/7 với A3/A0 để tuân thủ lệnh điều độ, tránh bị phạt vi phạm hợp đồng.</p>
+                        <p><strong><i data-lucide="zap-off" class="inline w-4 h-4 text-yellow-600"></i> Rủi ro Cắt giảm:</strong> Biểu đồ 2022 "phẳng" ở mùa mưa cảnh báo quá tải lưới. Cần duy trì liên lạc 24/7 với A3/A0.</p>
                         
-                        <p><strong><i data-lucide="trending-up" class="inline w-4 h-4 text-green-600"></i> Tối ưu Tài chính:</strong> Với dòng tiền ròng (Free Cash Flow) đang dương mạnh (~700-900 triệu/năm/công ty), nên ưu tiên tất toán sớm các khoản vay lãi suất thả nổi cao trước khi tái đầu tư mở rộng.</p>
+                        <p><strong><i data-lucide="trending-up" class="inline w-4 h-4 text-green-600"></i> Tối ưu Tài chính:</strong> Dòng tiền dương mạnh (~800tr/năm/cty), nên ưu tiên tất toán khoản vay lãi cao.</p>
                     </div>
                 </div>
 
@@ -420,7 +372,7 @@
             primary: '#009BB3', secondary: '#CBDAA4', accent1: '#DFE583', accent2: '#F36859', neutral: '#CCCCCC'
         };
 
-        // NEW: EXACT DATA FROM USER IMAGE (Updated)
+        // NEW: EXACT DATA FROM USER IMAGE
         const REAL_DATA = {
             'Ánh Quang': {
                 2022: [262952444, 252743531, 308893847, 288858725, 235423065, 265708228, 265708228, 217432480, 201584179, 208787952, 216293278, 227515667],
@@ -442,19 +394,15 @@
             }
         };
 
-        // KPI Calculated from NEW REAL DATA
         const totalRevenue = Object.values(REAL_DATA).reduce((acc, company) => {
             return acc + Object.values(company).reduce((sum, yearArr) => sum + yearArr.reduce((a,b)=>a+b, 0), 0);
         }, 0);
 
-        // Formatters
         const formatMoney = (val) => new Intl.NumberFormat('vi-VN').format((val/1000000).toFixed(0)) + ' tr';
         const formatCurrencyFull = (val) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(val);
         const formatNumber = (val) => new Intl.NumberFormat('vi-VN').format(val);
 
         // --- 2. DATA PROCESSING ---
-        
-        // Calculated Aggregate Data from REAL_DATA
         const getMonthlyTotal = () => {
              return Array.from({length: 12}, (_, i) => {
                 let y22=0, y23=0, y24=0, y25=0;
@@ -477,8 +425,6 @@
         };
 
         // --- 3. CHART RENDERING ---
-        
-        // 3.1 Total Revenue (LINE CHART) - SMOOTH & INTERACTIVE
         const renderTotalRevenueChart = () => {
             const ctx = document.getElementById('chart-total-revenue-line').getContext('2d');
             const data = getMonthlyTotal();
@@ -489,22 +435,28 @@
                 data: {
                     labels: labels,
                     datasets: [
-                        { label: '2025 (Hiện tại)', data: data.map(d => d[2025]), borderColor: COLORS.accent2, borderWidth: 3, tension: 0.4, pointRadius: 4, pointHoverRadius: 6, backgroundColor: COLORS.accent2 },
-                        { label: '2024', data: data.map(d => d[2024]), borderColor: COLORS.primary, borderWidth: 2, tension: 0.4, pointRadius: 3, pointHoverRadius: 5, backgroundColor: COLORS.primary },
-                        { label: '2023', data: data.map(d => d[2023]), borderColor: COLORS.secondary, borderWidth: 2, tension: 0.4, pointRadius: 3, pointHoverRadius: 5, backgroundColor: COLORS.secondary },
-                        { label: '2022', data: data.map(d => d[2022]), borderColor: COLORS.neutral, borderWidth: 2, borderDash: [5,5], tension: 0.4, pointRadius: 2 }
+                        { label: '2025', data: data.map(d => d[2025]), borderColor: COLORS.accent2, borderWidth: 3, tension: 0.4, pointRadius: 3, pointHoverRadius: 6, backgroundColor: COLORS.accent2 },
+                        { label: '2024', data: data.map(d => d[2024]), borderColor: COLORS.primary, borderWidth: 2, tension: 0.4, pointRadius: 2, pointHoverRadius: 5, backgroundColor: COLORS.primary },
+                        { label: '2023', data: data.map(d => d[2023]), borderColor: COLORS.secondary, borderWidth: 2, tension: 0.4, pointRadius: 2, pointHoverRadius: 5, backgroundColor: COLORS.secondary },
+                        { label: '2022', data: data.map(d => d[2022]), borderColor: COLORS.neutral, borderWidth: 2, borderDash: [5,5], tension: 0.4, pointRadius: 1 }
                     ]
                 },
                 options: {
                     responsive: true, maintainAspectRatio: false,
                     interaction: { mode: 'index', intersect: false },
-                    plugins: { legend: { position: 'top' }, datalabels: { display: false } },
-                    scales: { y: { beginAtZero: false, grid: { borderDash: [2, 2] } } }
+                    plugins: { legend: { position: 'top', labels: { boxWidth: 10, font: { size: 10 } } }, datalabels: { display: false } },
+                    scales: { 
+                        y: { 
+                            beginAtZero: false, 
+                            ticks: { font: { size: 10 } },
+                            grid: { borderDash: [2, 2] } 
+                        },
+                        x: { ticks: { font: { size: 10 } } }
+                    }
                 }
             });
         };
 
-        // 3.1.2 Total Delta Chart (Calculated from Real Data) - SMOOTH
         const renderTotalDeltaChart = () => {
             const ctx = document.getElementById('chart-total-delta-line').getContext('2d');
             const monthlyTotal = getMonthlyTotal();
@@ -520,22 +472,24 @@
                 data: {
                     labels: labels,
                     datasets: [
-                        { label: '23 vs 22', data: d23_22, borderColor: COLORS.neutral, borderWidth: 1, tension: 0.4 },
-                        { label: '24 vs 23', data: d24_23, borderColor: COLORS.secondary, borderWidth: 2, tension: 0.4 },
-                        { label: '25 vs 24', data: d25_24, borderColor: COLORS.primary, borderWidth: 2, tension: 0.4 },
-                        { label: '25 vs 22 (3y)', data: d25_22, borderColor: COLORS.accent2, borderWidth: 3, tension: 0.4 }
+                        { label: '23 vs 22', data: d23_22, borderColor: COLORS.neutral, borderWidth: 1, tension: 0.4, pointRadius: 1 },
+                        { label: '24 vs 23', data: d24_23, borderColor: COLORS.secondary, borderWidth: 2, tension: 0.4, pointRadius: 2 },
+                        { label: '25 vs 24', data: d25_24, borderColor: COLORS.primary, borderWidth: 2, tension: 0.4, pointRadius: 2 },
+                        { label: '25 vs 22', data: d25_22, borderColor: COLORS.accent2, borderWidth: 3, tension: 0.4, pointRadius: 3 }
                     ]
                 },
                 options: {
                     responsive: true, maintainAspectRatio: false,
                     interaction: { mode: 'index', intersect: false },
-                    plugins: { legend: { position: 'top' }, datalabels: { display: false } },
-                    scales: { y: { ticks: { callback: (val) => (val/1000000).toFixed(0) } } }
+                    plugins: { legend: { position: 'top', labels: { boxWidth: 10, font: { size: 10 } } }, datalabels: { display: false } },
+                    scales: { 
+                        y: { ticks: { callback: (val) => (val/1000000).toFixed(0), font: { size: 10 } } },
+                        x: { ticks: { font: { size: 10 } } }
+                    }
                 }
             });
         };
 
-        // 3.2 Comparison Chart & Table Population
         const renderComparisonChart = () => {
             const ctx = document.getElementById('chart-comparison').getContext('2d');
             const totals = getCompanyTotal();
@@ -545,21 +499,20 @@
             const tbody = document.getElementById('comparison-table-body');
             const sortedKeys = Object.keys(totals).sort((a,b) => totals[b] - totals[a]);
             
-            tbody.innerHTML = ''; // Clear previous
+            tbody.innerHTML = ''; 
             sortedKeys.forEach(company => {
                 const val = totals[company];
                 const percentage = ((val/grandTotal)*100).toFixed(1);
                 const row = document.createElement('tr');
                 row.className = "border-b border-gray-50 hover:bg-gray-50 transition-colors";
                 row.innerHTML = `
-                    <td class="px-4 py-3 font-medium text-gray-800">${company}</td>
-                    <td class="px-4 py-3 text-right font-mono text-primary">${formatMoney(val)}</td>
-                    <td class="px-4 py-3 text-right text-xs text-gray-500">${percentage}%</td>
+                    <td class="px-3 py-3 font-medium text-gray-800 whitespace-nowrap">${company}</td>
+                    <td class="px-3 py-3 text-right font-mono text-primary whitespace-nowrap">${formatMoney(val)}</td>
+                    <td class="px-3 py-3 text-right text-xs text-gray-500">${percentage}%</td>
                 `;
                 tbody.appendChild(row);
             });
             
-            // Render Chart
             new Chart(ctx, {
                 type: 'bar',
                 data: {
@@ -569,7 +522,8 @@
                         data: Object.values(totals),
                         backgroundColor: [COLORS.primary, COLORS.secondary, COLORS.accent2],
                         borderRadius: 8,
-                        barThickness: 40
+                        barThickness: 'flex',
+                        maxBarThickness: 40
                     }]
                 },
                 options: {
@@ -579,19 +533,21 @@
                         legend: { display: false },
                         datalabels: {
                             color: '#fff', anchor: 'end', align: 'start', offset: -50,
-                            formatter: (value) => (value/1000000000).toFixed(2) + ' Tỷ', 
-                            font: { weight: 'bold' }
+                            formatter: (value) => (value/1000000000).toFixed(1) + 'Tỷ', 
+                            font: { weight: 'bold', size: 11 }
                         }
                     },
-                    scales: { x: { display: false, max: Math.max(...Object.values(totals)) * 1.2 }, y: { grid: { display: false } } },
+                    scales: { 
+                        x: { display: false, max: Math.max(...Object.values(totals)) * 1.2 }, 
+                        y: { grid: { display: false }, ticks: { font: { size: 11 } } } 
+                    },
                 }
             });
         };
 
-        // 3.3 Financial ROI Chart (VAT 8% Logic)
         const renderFinancialChart = () => {
             const ctx = document.getElementById('chart-financial-roi').getContext('2d');
-            const labels = ['2020', '2021', '2022', '2023', '2024', '2025'];
+            const labels = ['20', '21', '22', '23', '24', '25'];
             
             const initialInv = -42000000000;
             const cf2021 = 10000000000 / 1.08;
@@ -615,21 +571,19 @@
             ];
 
             const accRevenue = cf2021 + cf22 + cf23 + cf24 + cf25;
-            document.getElementById('fin-acc-revenue').innerText = '~' + (accRevenue/1000000000).toFixed(1) + ' Tỷ VNĐ';
+            document.getElementById('fin-acc-revenue').innerText = '~' + (accRevenue/1000000000).toFixed(1) + ' Tỷ';
 
             new Chart(ctx, {
                 type: 'line',
                 data: {
                     labels: labels,
                     datasets: [{
-                        label: 'Dòng tiền Tích lũy (Sau VAT)',
+                        label: 'Dòng tiền',
                         data: cashflow,
                         borderColor: '#2dd4bf', 
                         backgroundColor: 'rgba(45, 212, 191, 0.1)',
-                        borderWidth: 3,
-                        pointBackgroundColor: '#fff',
-                        pointBorderColor: '#2dd4bf',
-                        pointRadius: 5,
+                        borderWidth: 2,
+                        pointRadius: 4,
                         fill: true,
                         tension: 0.4,
                     }]
@@ -639,16 +593,15 @@
                     plugins: { legend: { display: false }, datalabels: { display: false } },
                     scales: { 
                         y: { 
-                            ticks: { callback: (val) => (val/1000000000).toFixed(0) + ' tỷ', color: '#94a3b8' },
+                            ticks: { callback: (val) => (val/1000000000).toFixed(0) + 'tỷ', color: '#94a3b8', font: { size: 10 } },
                             grid: { color: '#334155' }
                         },
-                        x: { ticks: { color: '#94a3b8' }, grid: { display: false } }
+                        x: { ticks: { color: '#94a3b8', font: { size: 10 } }, grid: { display: false } }
                     }
                 }
             });
         };
 
-        // 3.4 Analysis Line Charts with Dynamic Box
         const renderStandardLineChart = (canvasId, company, type='revenue') => {
             const ctx = document.getElementById(canvasId).getContext('2d');
             const data = REAL_DATA[company];
@@ -657,10 +610,10 @@
             
             if (type === 'revenue') {
                 datasets = [
-                    { label: '2022', data: data[2022], borderColor: COLORS.neutral, borderDash: [5,5], pointRadius: 0, tension: 0.4 },
-                    { label: '2023', data: data[2023], borderColor: COLORS.secondary, pointRadius: 2, tension: 0.4 },
-                    { label: '2024', data: data[2024], borderColor: COLORS.primary, pointRadius: 2, tension: 0.4 },
-                    { label: '2025', data: data[2025], borderColor: COLORS.accent2, pointRadius: 4, tension: 0.4 }
+                    { label: '22', data: data[2022], borderColor: COLORS.neutral, borderDash: [5,5], pointRadius: 0, tension: 0.4 },
+                    { label: '23', data: data[2023], borderColor: COLORS.secondary, pointRadius: 1, tension: 0.4 },
+                    { label: '24', data: data[2024], borderColor: COLORS.primary, pointRadius: 1, tension: 0.4 },
+                    { label: '25', data: data[2025], borderColor: COLORS.accent2, pointRadius: 2, tension: 0.4 }
                 ];
             } else {
                 const d23_22 = data[2023].map((v, i) => v - data[2022][i]);
@@ -669,10 +622,10 @@
                 const d25_22 = data[2025].map((v, i) => v - data[2022][i]);
 
                 datasets = [
-                    { label: '23 vs 22', data: d23_22, borderColor: COLORS.neutral, borderWidth: 1, tension: 0.4 },
-                    { label: '24 vs 23', data: d24_23, borderColor: COLORS.secondary, borderWidth: 2, tension: 0.4 },
-                    { label: '25 vs 24', data: d25_24, borderColor: COLORS.primary, borderWidth: 2, tension: 0.4 },
-                    { label: '25 vs 22 (3y)', data: d25_22, borderColor: COLORS.accent2, borderWidth: 3, tension: 0.4 }
+                    { label: '23-22', data: d23_22, borderColor: COLORS.neutral, borderWidth: 1, tension: 0.4, pointRadius: 0 },
+                    { label: '24-23', data: d24_23, borderColor: COLORS.secondary, borderWidth: 2, tension: 0.4, pointRadius: 1 },
+                    { label: '25-24', data: d25_24, borderColor: COLORS.primary, borderWidth: 2, tension: 0.4, pointRadius: 1 },
+                    { label: '25-22', data: d25_22, borderColor: COLORS.accent2, borderWidth: 2, tension: 0.4, pointRadius: 2 }
                 ];
             }
 
@@ -681,57 +634,92 @@
                 data: { labels, datasets },
                 options: {
                     responsive: true, maintainAspectRatio: false,
-                    plugins: { legend: { position: 'bottom' }, datalabels: { display: false } },
-                    scales: { y: { ticks: { callback: (val) => (val/1000000).toFixed(0) } } }
+                    plugins: { legend: { position: 'bottom', labels: { boxWidth: 8, font: { size: 10 } } }, datalabels: { display: false } },
+                    scales: { 
+                        y: { ticks: { callback: (val) => (val/1000000).toFixed(0), font: { size: 10 } } },
+                        x: { ticks: { font: { size: 10 } } }
+                    }
                 }
             });
             
-            // Generate Analysis Text (Only run once per company)
             if(type === 'revenue') {
-                generateAnalysisBox(company);
+                // Return analysis HTML string for this company
+                return generateAnalysisBox(company);
             }
+            return "";
         };
 
-        // NEW FUNCTION: Generate Analysis Content Dynamically
         const generateAnalysisBox = (company) => {
             const data = REAL_DATA[company];
-            let code = company === 'Ánh Quang' ? 'aq' : (company === 'Duy Tiên' ? 'dt' : 'kv');
-            const box = document.getElementById(`analysis-box-${code}`);
-            
-            // Logic to find Anomalies
             let anomalies = [];
             
-            // 1. Check flatline in 2022 (Curtailment check)
             const t6_22 = data[2022][5];
             const t7_22 = data[2022][6];
             if (t6_22 === t7_22) {
-                anomalies.push(`<span class="text-orange-600 font-bold"><i data-lucide="alert-triangle" class="w-3 h-3 inline"></i> T6-T7/2022 Phẳng bất thường:</span> Doanh thu giữ nguyên mức ${formatMoney(t6_22)}. Dấu hiệu bị giới hạn công suất phát (Curtailment).`);
+                anomalies.push(`<span class="text-orange-600 font-bold"><i data-lucide="alert-triangle" class="w-3 h-3 inline"></i> T6-T7/22 Phẳng:</span> Doanh thu giữ nguyên mức ${formatMoney(t6_22)}. Dấu hiệu Curtailment.`);
             }
             
-            // 2. Check big drops in T7 (Rainy season peak)
             const delta24_22_t7 = data[2024][6] - data[2022][6];
             if (delta24_22_t7 < -50000000) {
-                 anomalies.push(`<span class="text-blue-600 font-bold"><i data-lucide="cloud-rain" class="w-3 h-3 inline"></i> T7/2024 Giảm sâu:</span> Thấp hơn T7/2022 khoảng ${formatMoney(Math.abs(delta24_22_t7))}. Cần kiểm tra lịch tiết giảm hoặc thời tiết mưa kéo dài.`);
+                 anomalies.push(`<span class="text-blue-600 font-bold"><i data-lucide="cloud-rain" class="w-3 h-3 inline"></i> T7/24 Giảm sâu:</span> Thấp hơn T7/22 ${formatMoney(Math.abs(delta24_22_t7))}. Cần kiểm tra tiết giảm/thời tiết.`);
             }
 
-            // 3. Positive Recovery
             const sum24 = data[2024].reduce((a,b)=>a+b,0);
             const sum23 = data[2023].reduce((a,b)=>a+b,0);
             if(sum24 > sum23) {
-                 anomalies.push(`<span class="text-green-600 font-bold"><i data-lucide="trending-up" class="w-3 h-3 inline"></i> Phục hồi 2024:</span> Tổng doanh thu tăng trưởng trở lại (+${formatMoney(sum24-sum23)}) nhờ mùa khô thuận lợi.`);
+                 anomalies.push(`<span class="text-green-600 font-bold"><i data-lucide="trending-up" class="w-3 h-3 inline"></i> Phục hồi 24:</span> Tổng tăng (+${formatMoney(sum24-sum23)}).`);
             }
 
-            box.innerHTML = `
-                <h5 class="font-bold text-gray-800 border-b border-gray-200 pb-2 mb-2">Nhận định Chuyên gia:</h5>
-                <ul class="list-disc pl-4 space-y-2 text-gray-600">
-                    ${anomalies.map(a => `<li>${a}</li>`).join('')}
-                    <li><strong>Khuyến nghị:</strong> Rà soát biên bản O&M tháng 7 hàng năm để xác định nguyên nhân sụt giảm.</li>
-                </ul>
+            return `
+                <div class="p-3 md:p-4 rounded-lg border-l-4 text-sm shadow-sm bg-gray-50 border-gray-300 space-y-2">
+                    <h5 class="font-bold text-gray-800 border-b border-gray-200 pb-2 mb-2">Nhận định Chuyên gia:</h5>
+                    <ul class="list-disc pl-4 space-y-1 text-gray-600 text-xs md:text-sm">
+                        ${anomalies.map(a => `<li>${a}</li>`).join('')}
+                        <li><strong>Khuyến nghị:</strong> Rà soát biên bản O&M tháng 7.</li>
+                    </ul>
+                </div>
             `;
-            lucide.createIcons();
         };
 
-        // --- 4. TABLE LOGIC (Keep existing logic) ---
+        const renderAnalysisTab = () => {
+             const container = document.getElementById('analysis-container');
+             companies.forEach((company, index) => {
+                 let code = company === 'Ánh Quang' ? 'aq' : (company === 'Duy Tiên' ? 'dt' : 'kv');
+                 
+                 // Create Analysis Structure using string template
+                 const html = `
+                    <div class="border-t border-gray-300 pt-6">
+                        <h3 class="text-base md:text-lg font-bold mb-4 px-3 py-1 rounded w-fit text-white bg-primary">${index+1}. Công ty ${company}</h3>
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-8">
+                            <div class="bg-white p-3 md:p-5 rounded-xl border border-gray-300 shadow-sm">
+                                <h4 class="font-bold mb-2 md:mb-4 text-gray-700 text-sm md:text-base">Biểu đồ Doanh thu</h4>
+                                <div class="h-64 md:h-72"><canvas id="chart-${code}-revenue"></canvas></div>
+                            </div>
+                            <div>
+                                <div class="bg-white p-3 md:p-5 rounded-xl border border-gray-300 shadow-sm mb-4 md:mb-6">
+                                    <h4 class="font-bold mb-2 md:mb-4 text-gray-700 text-sm md:text-base">Biểu đồ Delta</h4>
+                                    <div class="h-56 md:h-64"><canvas id="chart-${code}-delta"></canvas></div>
+                                </div>
+                                <div id="analysis-box-${code}"></div>
+                            </div>
+                        </div>
+                    </div>
+                 `;
+                 container.innerHTML += html;
+             });
+
+             // Render Charts after DOM injection
+             setTimeout(() => {
+                 companies.forEach(company => {
+                    let code = company === 'Ánh Quang' ? 'aq' : (company === 'Duy Tiên' ? 'dt' : 'kv');
+                    const analysisHtml = renderStandardLineChart(`chart-${code}-revenue`, company, 'revenue');
+                    renderStandardLineChart(`chart-${code}-delta`, company, 'delta');
+                    document.getElementById(`analysis-box-${code}`).innerHTML = analysisHtml;
+                 });
+                 lucide.createIcons();
+             }, 100);
+        };
+
         const renderDeltaTable = () => {
             const tbody = document.getElementById('delta-table-body');
             const tfoot = document.getElementById('delta-table-footer');
@@ -766,12 +754,11 @@
                 const header = document.createElement('tr');
                 header.className = "bg-gray-50 border-b border-gray-200 cursor-pointer font-bold hover:bg-blue-50";
                 header.innerHTML = `
-                    <td class="px-6 py-3 text-primary flex items-center gap-2 border-r"><i data-lucide="chevron-down" class="w-4 h-4"></i> ${company}</td>
-                    <td class="px-6 py-3 w-16 text-center border-r hidden"></td>
-                    <td class="text-right px-6 text-gray-700 border-r">${formatNumber(deltaYear23_22)}</td>
-                    <td class="text-right px-6 text-gray-700 border-r">${formatNumber(deltaYear24_23)}</td>
-                    <td class="text-right px-6 text-gray-700 border-r">${formatNumber(deltaYear25_24)}</td>
-                    <td class="text-right px-6 text-gray-700">${formatNumber(deltaYear25_22)}</td>
+                    <td class="px-4 md:px-6 py-3 text-primary flex items-center gap-2 border-r whitespace-nowrap sticky left-0 bg-gray-50 z-10"><i data-lucide="chevron-down" class="w-4 h-4"></i> ${company}</td>
+                    <td class="text-right px-4 md:px-6 text-gray-700 border-r whitespace-nowrap">${formatNumber(deltaYear23_22)}</td>
+                    <td class="text-right px-4 md:px-6 text-gray-700 border-r whitespace-nowrap">${formatNumber(deltaYear24_23)}</td>
+                    <td class="text-right px-4 md:px-6 text-gray-700 border-r whitespace-nowrap">${formatNumber(deltaYear25_24)}</td>
+                    <td class="text-right px-4 md:px-6 text-gray-700 whitespace-nowrap">${formatNumber(deltaYear25_22)}</td>
                 `;
                 
                 const detailsFrag = document.createDocumentFragment();
@@ -784,12 +771,11 @@
                     if (i === 11) { val25_24 = '<span class="text-gray-300">-</span>'; val25_22 = '<span class="text-gray-300">-</span>'; }
 
                     row.innerHTML = `
-                        <td class="px-6 py-2 pl-12 text-gray-500 text-xs border-r">T${i+1 < 10 ? '0'+(i+1) : i+1}</td>
-                        <td class="px-6 py-2 text-gray-700 font-bold text-xs border-r hidden"></td>
-                        <td class="text-right px-6 font-mono text-xs border-r text-gray-600">${fmt(d23_22[i])}</td>
-                        <td class="text-right px-6 font-mono text-xs border-r text-gray-600">${fmt(d24_23[i])}</td>
-                        <td class="text-right px-6 font-mono text-xs border-r text-gray-600">${val25_24}</td>
-                        <td class="text-right px-6 font-mono text-xs text-gray-600">${val25_22}</td>
+                        <td class="px-4 md:px-6 py-2 pl-12 text-gray-500 text-xs border-r sticky left-0 bg-white z-10">T${i+1}</td>
+                        <td class="text-right px-4 md:px-6 font-mono text-xs border-r text-gray-600 whitespace-nowrap">${fmt(d23_22[i])}</td>
+                        <td class="text-right px-4 md:px-6 font-mono text-xs border-r text-gray-600 whitespace-nowrap">${fmt(d24_23[i])}</td>
+                        <td class="text-right px-4 md:px-6 font-mono text-xs border-r text-gray-600 whitespace-nowrap">${val25_24}</td>
+                        <td class="text-right px-4 md:px-6 font-mono text-xs text-gray-600 whitespace-nowrap">${val25_22}</td>
                     `;
                     detailsFrag.appendChild(row);
                 }
@@ -800,12 +786,11 @@
 
             const footerRow = document.createElement('tr');
             footerRow.innerHTML = `
-                <td class="px-6 py-4 uppercase border-r">Tổng số 3 công ty</td>
-                <td class="px-6 py-3 w-16 text-center border-r hidden"></td>
-                <td class="text-right px-6 border-r">${formatNumber(total23_22)}</td>
-                <td class="text-right px-6 border-r">${formatNumber(total24_23)}</td>
-                <td class="text-right px-6 border-r">${formatNumber(total25_24)}</td>
-                <td class="text-right px-6">${formatNumber(total25_22)}</td>
+                <td class="px-4 md:px-6 py-4 uppercase border-r sticky left-0 bg-gray-100 z-10">Tổng số</td>
+                <td class="text-right px-4 md:px-6 border-r whitespace-nowrap">${formatNumber(total23_22)}</td>
+                <td class="text-right px-4 md:px-6 border-r whitespace-nowrap">${formatNumber(total24_23)}</td>
+                <td class="text-right px-4 md:px-6 border-r whitespace-nowrap">${formatNumber(total25_24)}</td>
+                <td class="text-right px-4 md:px-6 whitespace-nowrap">${formatNumber(total25_22)}</td>
             `;
             tfoot.appendChild(footerRow);
         };
@@ -821,7 +806,7 @@
 
                 const header = document.createElement('tr');
                 header.className = "bg-secondary/30 cursor-pointer hover:bg-secondary/50 font-bold border-b border-gray-200";
-                header.innerHTML = `<td class="px-6 py-3 flex gap-2"><i data-lucide="chevron-down" class="w-4 h-4"></i> Năm ${year}</td><td class="text-right px-6">${formatMoney(aqTotal)}</td><td class="text-right px-6">${formatMoney(dtTotal)}</td><td class="text-right px-6">${formatMoney(kvTotal)}</td><td class="text-right px-6 text-primary">${formatMoney(yearTotal)}</td>`;
+                header.innerHTML = `<td class="px-4 md:px-6 py-3 flex gap-2 sticky left-0 bg-secondary/30 z-10 items-center"><i data-lucide="chevron-down" class="w-4 h-4"></i> Năm ${year}</td><td class="text-right px-4 md:px-6 whitespace-nowrap">${formatMoney(aqTotal)}</td><td class="text-right px-4 md:px-6 whitespace-nowrap">${formatMoney(dtTotal)}</td><td class="text-right px-4 md:px-6 whitespace-nowrap">${formatMoney(kvTotal)}</td><td class="text-right px-4 md:px-6 text-primary whitespace-nowrap">${formatMoney(yearTotal)}</td>`;
                 
                 const detailsFrag = document.createDocumentFragment();
                 for(let m=0; m<12; m++) {
@@ -830,7 +815,7 @@
                     const kv = REAL_DATA['Khoa Việt'][year][m];
                     const row = document.createElement('tr');
                     row.className = `border-b border-gray-100 bg-white group-year-${year}`;
-                    row.innerHTML = `<td class="px-6 py-2 pl-12 text-gray-500 text-xs">T${m+1}</td><td class="text-right px-6 font-mono text-xs text-gray-600">${formatCurrencyFull(aq)}</td><td class="text-right px-6 font-mono text-xs text-gray-600">${formatCurrencyFull(dt)}</td><td class="text-right px-6 font-mono text-xs text-gray-600">${formatCurrencyFull(kv)}</td><td class="text-right px-6 font-mono text-xs font-medium">${formatCurrencyFull(aq+dt+kv)}</td>`;
+                    row.innerHTML = `<td class="px-4 md:px-6 py-2 pl-12 text-gray-500 text-xs sticky left-0 bg-white z-10 shadow-sm border-r">T${m+1}</td><td class="text-right px-4 md:px-6 font-mono text-xs text-gray-600 whitespace-nowrap">${formatCurrencyFull(aq)}</td><td class="text-right px-4 md:px-6 font-mono text-xs text-gray-600 whitespace-nowrap">${formatCurrencyFull(dt)}</td><td class="text-right px-4 md:px-6 font-mono text-xs text-gray-600 whitespace-nowrap">${formatCurrencyFull(kv)}</td><td class="text-right px-4 md:px-6 font-mono text-xs font-medium whitespace-nowrap">${formatCurrencyFull(aq+dt+kv)}</td>`;
                     detailsFrag.appendChild(row);
                 }
                 header.onclick = () => { document.querySelectorAll(`.group-year-${year}`).forEach(r => r.style.display = r.style.display === 'none' ? 'table-row' : 'none'); };
@@ -862,11 +847,8 @@
             renderComparisonChart();
             renderFinancialChart();
             
-            ['Ánh Quang', 'Duy Tiên', 'Khoa Việt'].forEach(c => {
-                let code = c === 'Ánh Quang' ? 'aq' : (c === 'Duy Tiên' ? 'dt' : 'kv');
-                renderStandardLineChart(`chart-${code}-revenue`, c, 'revenue');
-                renderStandardLineChart(`chart-${code}-delta`, c, 'delta');
-            });
+            // Build Analysis Tab
+            renderAnalysisTab();
 
             renderMainTable();
             renderDeltaTable();
