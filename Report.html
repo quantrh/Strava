@@ -5,9 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Báo cáo hoạt động chạy bộ - FOR RUNNER LOVER</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- D3.js for bubble charts and weekly distance (from original report.html) -->
+    <!-- D3.js for bubble charts and weekly distance -->
     <script src="https://d3js.org/d3.v7.min.js"></script>
-    <!-- Chart.js for other charts (from report origin.html) -->
+    <!-- Chart.js for other charts -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
@@ -64,7 +64,7 @@
             @apply w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500;
         }
         
-        /* Multi-select specific CSS (from original report.html) */
+        /* Multi-select specific CSS */
         .multi-select-container {
             position: relative;
         }
@@ -133,14 +133,14 @@
             color: #9ca3af;
         }
 
-        /* Chart.js specific styles from report origin.html */
+        /* Chart.js specific styles */
         .chart-container {
             position: relative;
             height: 400px; /* Fixed height for charts */
             width: 100%;
         }
 
-        /* D3.js chart specific styles (from original report.html) */
+        /* D3.js chart specific styles */
         #distance-by-runner-chart,
         #distance-by-club-chart,
         #weekly-distance-chart-container {
@@ -302,7 +302,6 @@
 
         #custom-alert, #custom-confirm-modal, #training-suggestions-modal {
             background-color: rgba(0, 0, 0, 0.5);
-            /* display: flex; <-- REMOVED this line as 'hidden' class handles it */
             align-items: center;
             justify-content: center;
         }
@@ -324,6 +323,21 @@
             display: none;
         }
 
+        /* Custom Styles for Top Stats List */
+        .top-stats-list li {
+            padding: 0.5rem 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .top-stats-list li:last-child {
+            border-bottom: none;
+        }
+        .top-stats-icon {
+            width: 24px;
+            text-align: center;
+            display: inline-block;
+            margin-right: 8px;
+        }
+
     </style>
 </head>
 <body>
@@ -333,7 +347,7 @@
                 <img src="Running-Management-logo.png" alt="Logo Den lu Running Club" class="h-20 w-auto rounded-md">
                 <h1 class="text-2xl font-bold text-white">Báo cáo hoạt động chạy bộ - FOR RUNNER LOVER</h1>
             </div>
-            <nav class="flex items-center space-x-4"> <!-- Added flex and space-x-4 for proper spacing -->
+            <nav class="flex items-center space-x-4">
                 <button id="back-to-home-btn" class="btn-primary">
                     <i class="fas fa-home"></i> Quay về
                 </button>
@@ -411,24 +425,48 @@
                 <!-- Tổng quan thống kê -->
                 <div class="bg-white p-6 rounded-lg shadow-md border border-gray-200">
                     <h2 class="text-xl font-semibold text-gray-700 mb-4">Tổng quan thống kê</h2>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Stats Grid -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mb-6">
                         <div class="bg-gradient-to-r from-blue-500 to-blue-600 text-white p-4 rounded-lg shadow-md">
-                            <h2 class="text-lg font-semibold mb-1">Tổng quãng đường</h2>
-                            <p id="totalDistance" class="text-2xl font-bold"></p>
+                            <h2 class="text-sm font-semibold mb-1">Tổng quãng đường</h2>
+                            <p id="totalDistance" class="text-xl font-bold"></p>
                         </div>
                         <div class="bg-gradient-to-r from-green-500 to-green-600 text-white p-4 rounded-lg shadow-md">
-                            <h2 class="text-lg font-semibold mb-1">Tổng thời gian di chuyển</h2>
-                            <p id="totalMovingTime" class="text-2xl font-bold"></p>
+                            <h2 class="text-sm font-semibold mb-1">Tổng thời gian</h2>
+                            <p id="totalMovingTime" class="text-xl font-bold"></p>
                         </div>
                         <div class="bg-gradient-to-r from-purple-500 to-purple-600 text-white p-4 rounded-lg shadow-md">
-                            <h2 class="text-lg font-semibold mb-1">Tốc độ trung bình</h2>
-                            <p id="averageOverallPace" class="text-2xl font-bold"></p>
+                            <h2 class="text-sm font-semibold mb-1">Pace trung bình</h2>
+                            <p id="averageOverallPace" class="text-xl font-bold"></p>
                         </div>
                         <div class="bg-gradient-to-r from-red-500 to-red-600 text-white p-4 rounded-lg shadow-md">
-                            <h2 class="text-lg font-semibold mb-1">Hoạt động</h2>
-                            <p id="totalActivities" class="text-2xl font-bold"></p>
+                            <h2 class="text-sm font-semibold mb-1">Hoạt động</h2>
+                            <p id="totalActivities" class="text-xl font-bold"></p>
+                        </div>
+                        <div class="bg-gradient-to-r from-orange-500 to-orange-600 text-white p-4 rounded-lg shadow-md sm:col-span-2 md:col-span-2">
+                            <h2 class="text-sm font-semibold mb-1">Tổng độ cao đạt được</h2>
+                            <p id="totalElevationGain" class="text-xl font-bold">0 m</p>
                         </div>
                     </div>
+
+                    <!-- Top Records Sections -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 border-t pt-4">
+                        <div>
+                            <h3 class="text-md font-bold text-gray-700 mb-2 border-b pb-1"><i class="fas fa-route text-blue-500 mr-2"></i>2 Cuộc chạy dài nhất</h3>
+                            <ul id="longest-runs-list" class="top-stats-list text-sm text-gray-600">
+                                <!-- JS will populate this -->
+                                <li class="text-center italic text-gray-400">Đang tải...</li>
+                            </ul>
+                        </div>
+                        <div>
+                            <h3 class="text-md font-bold text-gray-700 mb-2 border-b pb-1"><i class="fas fa-bolt text-yellow-500 mr-2"></i>2 Cuộc chạy nhanh nhất</h3>
+                            <ul id="fastest-runs-list" class="top-stats-list text-sm text-gray-600">
+                                <!-- JS will populate this -->
+                                <li class="text-center italic text-gray-400">Đang tải...</li>
+                            </ul>
+                        </div>
+                    </div>
+
                     <button id="get-training-suggestions-btn" class="btn-primary w-full mt-6 flex items-center justify-center">
                         <i class="fas fa-magic mr-2"></i> ✨Gợi ý Luyện tập Thông minh
                         <span id="training-suggestions-loader" class="loader hidden"></span>
@@ -436,7 +474,7 @@
                 </div>
             </div>
 
-            <!-- Charts Section (from report origin.html - Chart.js) -->
+            <!-- Charts Section -->
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-8">
                 <div class="bg-white p-6 rounded-lg shadow-md border border-gray-200">
                     <h2 class="text-xl font-semibold text-gray-700 mb-4">Quãng đường chạy theo ngày (km)</h2>
@@ -451,9 +489,16 @@
                     </div>
                 </div>
                 <div class="bg-white p-6 rounded-lg shadow-md border border-gray-200">
-                    <h2 class="text-xl font-semibold text-gray-700 mb-4">Nhịp tim trung bình theo tốc độ (phút/km)</h2>
+                    <h2 class="text-xl font-semibold text-gray-700 mb-4">Nhịp tim trung bình theo tốc độ</h2>
                     <div class="chart-container">
                         <canvas id="heartRatePaceChart"></canvas>
+                    </div>
+                </div>
+                <!-- New Chart: Average Heart Rate by Month -->
+                <div class="bg-white p-6 rounded-lg shadow-md border border-gray-200">
+                    <h2 class="text-xl font-semibold text-gray-700 mb-4">Nhịp tim trung bình theo tháng</h2>
+                    <div class="chart-container">
+                        <canvas id="monthlyHeartRateChart"></canvas>
                     </div>
                 </div>
                 <div class="bg-white p-6 rounded-lg shadow-md border border-gray-200">
@@ -464,7 +509,7 @@
                 </div>
             </div>
 
-            <!-- D3.js Charts (Restored from original report.html) -->
+            <!-- D3.js Charts -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
                 <div class="card p-6">
                     <h3 class="text-xl font-semibold mb-4 text-green-700">Quãng đường (KM) theo Runner</h3>
@@ -506,7 +551,7 @@
                                 <th>Quãng đường (KM)</th>
                                 <th>Thời gian</th>
                                 <th>Pace</th>
-                                <th>Năng lượng (KJ)</th> <!-- Bổ sung trường kilojoules -->
+                                <th>Năng lượng (KJ)</th>
                                 <th>Nhịp tim TB</th>
                                 <th>Độ cao tăng (m)</th>
                             </tr>
@@ -634,51 +679,50 @@
         const SUPABASE_URL = 'https://rmbsxccrwrktbjlnezpu.supabase.co'; // Replace with your Supabase URL
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJtYnN4Y2Nyd3JrdGJqbG5lenB1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg2MjczNjQsImV4cCI6MjA2NDIwMzM2NH0.ydCqificftdtn1niRciFCifeuo8aX6SDGti-hCY5Z_Y'; // Replace with your Supabase Anon Key
 
-        // Supabase Edge Function URL to fetch activities (from original report.html)
-        // const GET_STATS_API_URL = 'https://rmbsxccrwrktbjlnezpu.supabase.co/functions/v1/get-user-activities'; // Original
-        // New: Edge Function for Gemini analysis
         const ANALYZE_ACTIVITIES_EDGE_FUNCTION_URL = 'https://rmbsxccrwrktbjlnezpu.supabase.co/functions/v1/analyze-activities-with-gemini';
 
 
         let supabaseClientInstance;
-        let allRunnerCredentials = []; // Used for filtering and display (from original report.html)
-        let allClubs = []; // Used for filtering and display (from original report.html)
-        let allActivitiesData = []; // Store all fetched activities for the report (from original report.html)
+        let allRunnerCredentials = []; 
+        let allClubs = []; 
+        let allActivitiesData = []; 
 
-        // Filter states (from original report.html)
+        // Filter states
         let selectedRunnerIdReport = 'all'; 
         let selectedClubNamesReport = []; 
         let selectedActivityTypesReport = []; 
-        let minPaceFilter = null; // New filter for minimum pace (seconds/km)
-        let minDistanceFilter = null; // New filter for minimum distance (km)
+        let minPaceFilter = null; 
+        let minDistanceFilter = null; 
 
-
-        // Chart.js instances (from report origin.html)
-        let distanceChart, paceDistributionChart, heartRatePaceChart, activityTypeChart;
+        // Chart.js instances
+        let distanceChart, paceDistributionChart, heartRatePaceChart, activityTypeChart, monthlyHeartRateChart;
 
         // DOM Elements
         const currentUserEmailSpan = document.getElementById('current-user-email');
         const logoutBtn = document.getElementById('logout-btn');
-        const backToHomeBtn = document.getElementById('back-to-home-btn'); // Added back to home button
+        const backToHomeBtn = document.getElementById('back-to-home-btn');
 
-        // Filter elements (from original report.html's filter section)
+        // Filter elements
         const reportRunnerFilter = document.getElementById('report-runner-filter');
         const multiSelectDisplayClub = document.getElementById('multi-select-display-club');
         const multiSelectOptionsClub = document.getElementById('multi-select-options-club');
         const multiSelectDisplayReport = document.getElementById('multi-select-display-report');
         const multiSelectOptionsReport = document.getElementById('multi-select-options-report');
-        const reportMinPaceInput = document.getElementById('report-min-pace'); // New pace filter input
-        const reportMinDistanceInput = document.getElementById('report-min-distance'); // New distance filter input
+        const reportMinPaceInput = document.getElementById('report-min-pace');
+        const reportMinDistanceInput = document.getElementById('report-min-distance');
         const reportStartDateInput = document.getElementById('report-start-date');
         const reportEndDateInput = document.getElementById('report-end-date');
         const applyReportFiltersBtn = document.getElementById('apply-report-filters-btn');
         const reportFilterStatus = document.getElementById('report-filter-status');
         
-        // Summary stats elements (from report origin.html, using Chart.js related IDs)
+        // Summary stats elements
         const totalDistanceSpan = document.getElementById('totalDistance');
         const totalMovingTimeSpan = document.getElementById('totalMovingTime');
         const averageOverallPaceSpan = document.getElementById('averageOverallPace');
         const totalActivitiesSpan = document.getElementById('totalActivities');
+        const totalElevationGainSpan = document.getElementById('totalElevationGain'); // New element
+        const longestRunsList = document.getElementById('longest-runs-list'); // New element
+        const fastestRunsList = document.getElementById('fastest-runs-list'); // New element
 
         // New Gemini API related elements
         const getTrainingSuggestionsBtn = document.getElementById('get-training-suggestions-btn');
@@ -689,21 +733,21 @@
         const trainingSuggestionsStatus = document.getElementById('training-suggestions-status');
 
 
-        // D3.js chart specific elements (from original report.html)
+        // D3.js chart specific elements
         const distanceByRunnerChart = document.getElementById('distance-by-runner-chart'); 
         const distanceByClubChart = document.getElementById('distance-by-club-chart'); 
 
-        // Detailed Activities Table elements (from original report.html)
+        // Detailed Activities Table elements
         const detailedActivitiesTableBody = document.querySelector('#detailed-activities-table tbody');
         const detailedActivitiesStatus = document.getElementById('detailed-activities-status');
         const downloadDetailedActivitiesExcelBtn = document.getElementById('download-detailed-activities-excel');
 
 
-        // Weekly Distance Chart elements (from original report.html)
+        // Weekly Distance Chart elements
         const weeklyDistanceChartContainer = document.getElementById('weekly-distance-chart-container');
         const weeklyChartStatus = document.getElementById('weekly-chart-status');
 
-        // Penalty/Bonus Table elements (from original report.html)
+        // Penalty/Bonus Table elements
         const penaltyPerKmGt10Input = document.getElementById('penalty-per-km-gt10');
         const penaltyPerKmLte10Input = document.getElementById('penalty-per-km-lte10');
         const targetKmPerWeekInput = document.getElementById('target-km-per-week');
@@ -712,14 +756,14 @@
         const downloadPenaltyBonusExcelBtn = document.getElementById('download-penalty-bonus-excel');
 
 
-        // Weekly Activities Modal elements (from original report.html)
+        // Weekly Activities Modal elements
         const weeklyActivitiesModal = document.getElementById('weekly-activities-modal');
         const closeWeeklyActivitiesModalBtn = document.getElementById('close-weekly-activities-modal-btn');
         const weeklyActivitiesTitle = document.getElementById('weekly-activities-title');
         const weeklyActivitiesList = document.getElementById('weekly-activities-list');
         const weeklyActivitiesStatus = document.getElementById('weekly-activities-status');
 
-        // Collapsible section elements (for Detailed Activities Table)
+        // Collapsible section elements
         const detailedActivitiesSection = document.getElementById('detailed-activities-section');
         const detailedActivitiesHeader = document.getElementById('detailed-activities-header');
         const detailedActivitiesContent = document.getElementById('detailed-activities-content');
@@ -727,7 +771,7 @@
         const DETAILED_ACTIVITIES_STATE_KEY = 'detailedActivitiesCollapsed';
 
 
-        // All Activity Types for multi-select (from original report.html)
+        // All Activity Types
         const ALL_ACTIVITY_TYPES = [
             'Run', 'Walk', 'Ride', 'Swim', 'Hike', 'NordicSki', 'AlpineSki', 'Workout', 'Yoga', 
             'WeightTraining', 'Elliptical', 'StairStepper', 'Rowing', 'Crossfit', 'Canoeing', 
@@ -736,7 +780,7 @@
             'EBikeRide', 'MountainBikeRide', 'GravelRide', 'Velomobile', 'Kitesurf', 'Windsurf', 
             'RockClimbing', 'Alpinism', 'Badminton', 'Squash', 'TableTennis', 'Tennis', 'Volleyball', 
             'Surfing', 'Pilates', 'Golf', 'WaterSport', 'Soccer', 'Basketball'
-        ].sort(); // Sort activity types alphabetically
+        ].sort();
 
 
         // --- Helper Functions ---
@@ -748,11 +792,11 @@
 
             alertMessage.textContent = message;
             customAlert.classList.remove('hidden');
-            customAlert.style.display = 'flex'; // Ensure it's visible
+            customAlert.style.display = 'flex'; 
 
             alertOkBtn.onclick = () => {
                 customAlert.classList.add('hidden');
-                customAlert.style.display = 'none'; // Ensure it's hidden
+                customAlert.style.display = 'none'; 
             };
         }
 
@@ -765,11 +809,11 @@
 
                 confirmMessage.textContent = message;
                 customConfirm.classList.remove('hidden');
-                customConfirm.style.display = 'flex'; // Ensure it's visible
+                customConfirm.style.display = 'flex'; 
 
                 const cleanup = () => {
                     customConfirm.classList.add('hidden');
-                    customConfirm.style.display = 'none'; // Ensure it's hidden
+                    customConfirm.style.display = 'none'; 
                     confirmOkBtn.onclick = null;
                     confirmCancelBtn.onclick = null;
                 };
@@ -785,7 +829,6 @@
             });
         }
 
-        // Function to convert seconds to HH:MM:SS format (used for total moving time) - from report origin.html
         function formatTime(seconds) {
             if (seconds === null || isNaN(seconds)) return 'N/A';
             const h = Math.floor(seconds / 3600);
@@ -797,93 +840,64 @@
                 .join(':') || '00:00';
         }
 
-        // Function to format seconds into MM:SS for pace labels (used for chart axes and tooltips) - from report origin.html
-        // This function assumes valid totalSeconds input. The validity check should happen upstream.
         function formatPaceLabel(totalSeconds) {
-            console.log('DEBUG: formatPaceLabel input totalSeconds:', totalSeconds);
             if (totalSeconds === null || isNaN(totalSeconds) || totalSeconds < 0) {
-                console.log('DEBUG: formatPaceLabel output: N/A (invalid input)');
                 return 'N/A';
             }
             const minutes = Math.floor(totalSeconds / 60);
             const seconds = Math.round(totalSeconds % 60);
-            console.log(`DEBUG: minutes=${minutes}, seconds=${seconds} for totalSeconds=${totalSeconds}`);
             const formatted = `${minutes < 10 ? '0' : ''}${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
-            console.log('DEBUG: formatPaceLabel output:', formatted);
             return formatted;
         }
 
-        // Function to convert average_speed (m/s) to pace (min/km) formatted as MM:SS /km (used for overall summary)
         function formatPace(speedMs) {
-            console.log('DEBUG: formatPace input speedMs (for overall summary):', speedMs);
             if (speedMs === null || isNaN(speedMs) || speedMs <= 0) {
-                console.log('DEBUG: formatPace output (overall): N/A (invalid speedMs)');
                 return 'N/A';
             }
-            // Check for extremely fast pace that would result in 00:00 (less than 0.5 seconds/km)
-            const paceSecondsPerKm = 1000 / speedMs; // total seconds per kilometer
-            console.log('DEBUG: Calculated paceSecondsPerKm (overall):', paceSecondsPerKm);
+            const paceSecondsPerKm = 1000 / speedMs; 
 
             if (paceSecondsPerKm < 0.5) { 
-                console.warn('DEBUG: Extremely fast pace detected, returning N/A. Pace seconds/km:', paceSecondsPerKm);
-                return 'N/A'; // Revert to plain N/A
+                return 'N/A'; 
             }
 
             const formatted = `${formatPaceLabel(paceSecondsPerKm)} /km`;
-            console.log('DEBUG: formatPace output (overall):', formatted);
             return formatted;
         }
         
-        // Original formatPace from initial report.html for detailed table
         function formatPaceForTable(metersPerSecond) {
-            console.log('DEBUG: formatPaceForTable input metersPerSecond (for detailed table):', metersPerSecond);
             if (typeof metersPerSecond !== 'number' || isNaN(metersPerSecond) || metersPerSecond <= 0) {
-                console.log('DEBUG: formatPaceForTable output (individual): N/A (invalid metersPerSecond)');
                 return 'N/A';
             }
             const kmPerHour = (metersPerSecond * 3.6); 
             if (kmPerHour === 0) {
-                console.log('DEBUG: formatPaceForTable output (individual): N/A (kmPerHour is 0)');
                 return 'N/A';
             }
             const minutesPerKm = 60 / kmPerHour; 
-            console.log('DEBUG: Calculated minutesPerKm (individual):', minutesPerKm);
 
-            // Check for extremely fast pace that would result in 00:00 (less than 0.5 seconds)
             if (minutesPerKm < (0.5 / 60)) { 
-                console.warn('DEBUG: Extremely fast pace detected for table, returning N/A. Minutes per Km:', minutesPerKm);
-                return 'N/A'; // Revert to plain N/A
+                return 'N/A'; 
             }
 
             const minutes = Math.floor(minutesPerKm);
             const seconds = Math.round((minutesPerKm - minutes) * 60);
-            console.log(`DEBUG: minutes (table)=${minutes}, seconds (table)=${seconds} for minutesPerKm=${minutesPerKm}`);
             return `${minutes}:${String(seconds).padStart(2, '0')} /km`;
         }
 
-        // Function to format elevation gain (m)
         function formatElevationGain(meters) {
             if (meters === null || isNaN(meters)) return 'N/A';
             return `${Math.round(meters)} m`;
         }
         
-        // Cập nhật: Hàm formatKilojoules chỉ trả về giá trị số hoặc 'N/A'
         function formatKilojoules(kilojoules) {
             if (kilojoules === null || isNaN(kilojoules) || kilojoules === 0) return 'N/A';
-            // Trả về giá trị số được làm tròn
             return Math.round(kilojoules);
         }
 
-        // Hàm mới để hiển thị giá trị năng lượng KÈM ĐƠN VỊ (cho modal, tooltip, v.v.)
         function formatKilojoulesDisplay(kilojoules) {
             if (kilojoules === null || isNaN(kilojoules) || kilojoules === 0) return 'N/A';
-            // Format có đơn vị và dấu phân cách hàng nghìn
             return `${Math.round(kilojoules).toLocaleString('vi-VN')} KJ`;
         }
         
-        /**
-         * Populates the multi-select filter for activity types.
-         */
         function populateActivityTypeFilter() {
             multiSelectOptionsReport.innerHTML = ''; 
             ALL_ACTIVITY_TYPES.forEach(type => {
@@ -895,9 +909,6 @@
             });
         }
         
-        /**
-         * Populates the multi-select filter for clubs.
-         */
         function populateClubFilter() {
             multiSelectOptionsClub.innerHTML = '';
             allClubs.forEach(club => {
@@ -909,13 +920,6 @@
             });
         }
 
-        /**
-         * Updates the display of selected items in a multi-select component.
-         * @param {HTMLElement} displayElement - The element to show selected tags.
-         * @param {string[]} selectedItems - Array of selected item values.
-         * @param {HTMLElement} optionsContainer - The container for options to update their 'selected' class.
-         * @param {string} placeholder - The text to display when no items are selected.
-         */
         function updateMultiSelectDisplay(displayElement, selectedItems, optionsContainer, placeholder) {
             displayElement.innerHTML = '';
             if (selectedItems.length === 0) {
@@ -938,42 +942,31 @@
             });
         }
 
-        /**
-         * Toggles an item in a selected list for a multi-select component.
-         * @param {string} item - The item value to toggle.
-         * @param {string[]} selectedItemsArray - The array of selected items to modify.
-         * @param {HTMLElement} displayElement - The display element for this filter.
-         * @param {HTMLElement} optionsContainer - The options container for this filter.
-         * @param {string} placeholder - The placeholder text for the display element.
-         */
         function toggleItemInList(item, selectedItemsArray, displayElement, optionsContainer, placeholder) {
             const index = selectedItemsArray.indexOf(item);
             if (index > -1) {
-                selectedItemsArray.splice(index, 1); // Remove if already exists
+                selectedItemsArray.splice(index, 1); 
             } else {
-                selectedItemsArray.push(item); // Add if not exists
-                selectedItemsArray.sort(); // Keep sorted alphabetically
+                selectedItemsArray.push(item); 
+                selectedItemsArray.sort(); 
             }
             updateMultiSelectDisplay(displayElement, selectedItemsArray, optionsContainer, placeholder);
         }
 
         // Event delegation for all multi-select components
         document.addEventListener('click', (event) => {
-            // --- Activity Type Filter Logic ---
             if (event.target.closest('#multi-select-display-report')) {
                 multiSelectOptionsReport.classList.toggle('hidden');
             } else if (!event.target.closest('#multi-select-options-report')) {
                 multiSelectOptionsReport.classList.add('hidden');
             }
 
-            // --- Club Filter Logic ---
             if (event.target.closest('#multi-select-display-club')) {
                 multiSelectOptionsClub.classList.toggle('hidden');
             } else if (!event.target.closest('#multi-select-options-club')) {
                 multiSelectOptionsClub.classList.add('hidden');
             }
 
-            // --- Option Selection/Deselection Logic ---
             if (event.target.classList.contains('multi-select-option')) {
                 const value = event.target.dataset.value;
                 if (event.target.closest('#multi-select-options-report')) {
@@ -992,9 +985,6 @@
         });
 
 
-        /**
-         * Fetches all runner credentials for the logged-in user from Supabase (from original report.html).
-         */
         async function fetchAllRunnerCredentials() {
             try {
                 const { data, error } = await supabaseClientInstance
@@ -1011,9 +1001,6 @@
             }
         }
 
-        /**
-         * Fetches clubs from Supabase and updates the global `allClubs` array (from original report.html).
-         */
         async function fetchClubs() {
             try {
                 const { data, error } = await supabaseClientInstance
@@ -1030,19 +1017,16 @@
             }
         }
 
-        /**
-         * Populates the runner and club filter dropdowns (from original report.html).
-         */
         function populateFilters() {
             // Populate Runner filter
             reportRunnerFilter.innerHTML = '<option value="all">Tất cả Runner</option>';
             allRunnerCredentials.forEach(cred => {
                 const option = document.createElement('option');
-                option.value = String(cred.athlete_id); // Use athlete_id for filtering activities
+                option.value = String(cred.athlete_id); 
                 option.textContent = cred.runner_name;
                 reportRunnerFilter.appendChild(option);
             });
-            reportRunnerFilter.value = selectedRunnerIdReport; // Restore previous selection
+            reportRunnerFilter.value = selectedRunnerIdReport; 
 
             // Populate Club filter
             populateClubFilter();
@@ -1057,13 +1041,9 @@
             reportMinDistanceInput.value = minDistanceFilter !== null ? minDistanceFilter : '';
         }
 
-        /**
-         * Fetches activity data based on current filters from Supabase and then renders all reports.
-         * (Adapted from original report.html)
-         */
         async function fetchAndRenderReportData() {
             reportFilterStatus.textContent = 'Đang tải dữ liệu báo cáo...';
-            allActivitiesData = []; // Clear previous data
+            allActivitiesData = []; 
 
             try {
                 const { data: { session }, error: sessionError } = await supabaseClientInstance.auth.getSession();
@@ -1071,72 +1051,53 @@
                     throw new Error('Không tìm thấy phiên đăng nhập Supabase. Vui lòng đăng nhập lại.');
                 }
 
-                // Prepare filters for the Supabase query
+                // Prepare filters
                 let queryRunnerIds = [];
                 if (selectedRunnerIdReport === 'all') {
-                    // If 'All Runners' is selected, get all athlete_ids that exist
                     queryRunnerIds = allRunnerCredentials.filter(c => c.athlete_id).map(c => String(c.athlete_id));
                 } else {
                     queryRunnerIds = [selectedRunnerIdReport];
                 }
 
-                // If specific clubs are selected, narrow down runner IDs further
                 if (selectedClubNamesReport.length > 0) {
                     const runnersInSelectedClubs = allRunnerCredentials.filter(
                         c => selectedClubNamesReport.includes(c.running_team) && c.athlete_id
                     ).map(c => String(c.athlete_id));
-                    // Filter the existing queryRunnerIds to only include runners from the selected clubs
                     queryRunnerIds = queryRunnerIds.filter(id => runnersInSelectedClubs.includes(id));
                 }
 
                 if (queryRunnerIds.length === 0) {
                     reportFilterStatus.textContent = 'Không có dữ liệu để hiển thị với các bộ lọc đã chọn. Vui lòng điều chỉnh bộ lọc.';
-                    renderAllReports(); // Render empty reports
+                    renderAllReports(); 
                     return;
                 }
 
-                // Cập nhật câu lệnh SELECT: Truy vấn cột 'data' để lấy kilojoules từ JSONB
                 let query = supabaseClientInstance
                     .from('activities')
                     .select('strava_activity_id, name, type, distance, moving_time, total_elevation_gain, start_date, average_speed, average_heartrate, user_id, data')
-                    .in('user_id', queryRunnerIds); // Filter by runner IDs
+                    .in('user_id', queryRunnerIds); 
 
                 if (selectedActivityTypesReport.length > 0) {
                     query = query.in('type', selectedActivityTypesReport);
                 }
 
-                // Apply new pace filter (average_speed is in m/s, convert min/km to m/s)
-                // pace (min/km) = 60 / (speed in km/h) = 60 / (speed_ms * 3.6)
-                // speed_ms = 1000 / pace_seconds_per_km
-                // So, if user enters min pace in min/km, we need to convert it to max average_speed in m/s
                 if (minPaceFilter !== null && minPaceFilter > 0) {
-                    // Convert minPace (min/km) to min_speed (m/s)
-                    // minPace (min/km) = minPace * 60 (seconds/km)
-                    // min_speed_ms = 1000 / (minPace * 60)
                     const minSpeedMs = 1000 / (minPaceFilter * 60);
-                    // Change from lte to gte for pace <= X (meaning speed >= Y)
                     query = query.gte('average_speed', minSpeedMs); 
                 }
 
-                // Apply new distance filter (distance is in meters, convert km to meters)
                 if (minDistanceFilter !== null && minDistanceFilter > 0) {
-                    query = query.gte('distance', minDistanceFilter * 1000); // Convert km to meters
+                    query = query.gte('distance', minDistanceFilter * 1000); 
                 }
 
-                // Điều chỉnh bộ lọc ngày bắt đầu để lọc chính xác từ đầu ngày Việt Nam
                 if (reportStartDateInput.value) {
                     const selectedStartDate = new Date(reportStartDateInput.value);
-                    // Đặt thời gian là đầu ngày (00:00:00.000) theo múi giờ địa phương của trình duyệt.
-                    // Sau đó, khi gọi .toISOString(), nó sẽ tự động chuyển đổi sang UTC.
                     selectedStartDate.setHours(0, 0, 0, 0); 
                     query = query.gte('start_date', selectedStartDate.toISOString());
                 }
                 
-                // Điều chỉnh bộ lọc ngày kết thúc để lọc chính xác theo cuối ngày Việt Nam
                 if (reportEndDateInput.value) {
                     const selectedEndDate = new Date(reportEndDateInput.value);
-                    // Đặt thời gian là cuối ngày (23:59:59.999) theo múi giờ địa phương của trình duyệt.
-                    // Sau đó, khi gọi .toISOString(), nó sẽ tự động chuyển đổi sang UTC.
                     selectedEndDate.setHours(23, 59, 59, 999); 
                     query = query.lte('start_date', selectedEndDate.toISOString());
                 }
@@ -1147,72 +1108,63 @@
 
                 if (error) throw error;
                 
-                // Process fetched data to include formatted fields for Chart.js and D3.js
                 allActivitiesData = data.map(activity => ({
                     ...activity,
-                    // Lấy giá trị kilojoules từ cột data (JSONB)
                     kilojoules: activity.data ? activity.data.kilojoules : null,
-                    // Xóa cột data sau khi đã trích xuất, để giữ sạch sẽ cho các bước xử lý sau
                     data: undefined, 
-                    start_date: new Date(activity.start_date), // Convert date string to Date object
-                    distance_km: (activity.distance / 1000).toFixed(2), // Convert meters to km
+                    start_date: new Date(activity.start_date), 
+                    distance_km: (activity.distance / 1000).toFixed(2), 
                     moving_time_formatted: formatTime(activity.moving_time),
-                    // Calculate raw pace in seconds/km for sorting/binning (numerical value for Chart.js)
                     pace_seconds_per_km_raw: (activity.average_speed !== null && activity.average_speed > 0) ? (1000 / activity.average_speed) : null,
-                    pace_min_per_km_formatted: formatPaceForTable(activity.average_speed) // Formatted pace string for display
+                    pace_min_per_km_formatted: formatPaceForTable(activity.average_speed) 
                 }));
 
                 reportFilterStatus.textContent = `Đã tải ${allActivitiesData.length} hoạt động.`;
-                renderAllReports(); // Call a function to render all sections
+                renderAllReports(); 
                 
             } catch (error) {
                 console.error('Error fetching report data:', error.message);
                 reportFilterStatus.textContent = `Lỗi khi tải báo cáo: ${error.message}`;
                 showAlert(`Lỗi khi tải báo cáo: ${error.message}`);
-                allActivitiesData = []; // Clear data on error
-                renderAllReports(); // Render empty reports
+                allActivitiesData = []; 
+                renderAllReports(); 
             }
         }
 
 
-        /**
-         * Renders all report sections: summary, detailed table, charts.
-         * (Adapted from original report.html)
-         */
         function renderAllReports() {
             // 1. Render Overall Stats
             let totalActivities = allActivitiesData.length;
-            let totalDistance = 0; // in meters
-            let totalMovingTime = 0; // in seconds
+            let totalDistance = 0; 
+            let totalMovingTime = 0; 
+            let totalElevationGain = 0; // New variable
 
             allActivitiesData.forEach(activity => {
                 totalDistance += activity.distance || 0;
                 totalMovingTime += activity.moving_time || 0;
+                totalElevationGain += activity.total_elevation_gain || 0; // Sum elevation gain
             });
-
-            console.log('DEBUG: Total Distance (m):', totalDistance, 'Total Moving Time (s):', totalMovingTime); // Debugging log
 
             totalActivitiesSpan.textContent = totalActivities;
             totalDistanceSpan.textContent = `${(totalDistance / 1000).toFixed(2)} KM`;
             totalMovingTimeSpan.textContent = formatTime(totalMovingTime);
+            totalElevationGainSpan.textContent = `${Math.round(totalElevationGain)} m`; // Display total gain
 
-            // Calculate overall average pace for summary
+            // Calculate overall average pace
             let averageOverallPaceFormatted = 'N/A';
             if (totalDistance > 0 && totalMovingTime > 0) {
-                // Corrected: totalDistance is already in meters, no need to multiply by 1000 again.
                 const overallAverageSpeedMs = totalDistance / totalMovingTime; 
-                console.log('DEBUG: Overall Average Speed (m/s):', overallAverageSpeedMs); // Debugging log
                 averageOverallPaceFormatted = formatPace(overallAverageSpeedMs);
             }
-            console.log('DEBUG: Average Overall Pace Formatted (before assign):', averageOverallPaceFormatted); // Debugging log
             averageOverallPaceSpan.textContent = averageOverallPaceFormatted;
 
+            // Render Top Runs Summary (Longest and Fastest)
+            renderTopActivities(allActivitiesData);
 
             // 2. Render Detailed Activities Table
             renderDetailedActivitiesTable(allActivitiesData);
 
             // 3. Render Weekly Distance Chart (D3.js)
-            // Changed to use the generic drawBubbleChart function
             renderWeeklyDistanceChart(allActivitiesData);
 
             // 4. Render Penalty/Bonus Table
@@ -1221,25 +1173,164 @@
             // 5. Render Distance by Runner/Club Chart (D3.js)
             renderDistanceCharts(allActivitiesData);
 
-            // 6. Render Chart.js Charts (re-using functions from report origin.html)
+            // 6. Render Chart.js Charts
             renderChartJSCharts(allActivitiesData);
         }
+
+        // New function to find and render top activities
+        function renderTopActivities(data) {
+            // Find 2 longest runs
+            const longestRuns = [...data]
+                .sort((a, b) => b.distance - a.distance)
+                .slice(0, 2);
+
+            longestRunsList.innerHTML = '';
+            if (longestRuns.length === 0) {
+                longestRunsList.innerHTML = '<li class="text-center italic text-gray-400">Không có dữ liệu</li>';
+            } else {
+                longestRuns.forEach(run => {
+                    const runner = allRunnerCredentials.find(rc => String(rc.athlete_id) === String(run.user_id));
+                    const runnerName = runner ? runner.runner_name : 'Runner';
+                    const li = document.createElement('li');
+                    li.innerHTML = `
+                        <div class="flex justify-between items-center">
+                            <span class="font-semibold text-gray-700 w-1/3 truncate" title="${runnerName}">${runnerName}</span>
+                            <span class="font-bold text-blue-600 w-1/3 text-center">${(run.distance / 1000).toFixed(2)} km</span>
+                            <span class="text-xs text-gray-400 w-1/3 text-right">${run.start_date.toLocaleDateString('vi-VN')}</span>
+                        </div>
+                    `;
+                    longestRunsList.appendChild(li);
+                });
+            }
+
+            // Find 2 fastest runs (based on average_speed)
+            const fastestRuns = [...data]
+                .filter(run => run.average_speed > 0)
+                .sort((a, b) => b.average_speed - a.average_speed)
+                .slice(0, 2);
+
+            fastestRunsList.innerHTML = '';
+            if (fastestRuns.length === 0) {
+                fastestRunsList.innerHTML = '<li class="text-center italic text-gray-400">Không có dữ liệu</li>';
+            } else {
+                fastestRuns.forEach(run => {
+                    const runner = allRunnerCredentials.find(rc => String(rc.athlete_id) === String(run.user_id));
+                    const runnerName = runner ? runner.runner_name : 'Runner';
+                    const li = document.createElement('li');
+                    li.innerHTML = `
+                        <div class="flex justify-between items-center">
+                            <span class="font-semibold text-gray-700 w-1/3 truncate" title="${runnerName}">${runnerName}</span>
+                            <span class="font-bold text-yellow-600 w-1/3 text-center">${formatPaceForTable(run.average_speed)}</span>
+                            <span class="text-xs text-gray-400 w-1/3 text-right">${run.start_date.toLocaleDateString('vi-VN')}</span>
+                        </div>
+                    `;
+                    fastestRunsList.appendChild(li);
+                });
+            }
+        }
         
-        /**
-         * Renders all Chart.js specific charts.
-         * @param {Array} data - Array of activity objects.
-         */
         function renderChartJSCharts(data) {
             renderDistanceChart(data);
             renderPaceDistributionChart(data);
             renderHeartRatePaceChart(data);
+            renderMonthlyHeartRateChart(data); // Call the new chart renderer
             renderActivityTypeChart(data);
         }
 
-        /**
-         * Renders the detailed activities table (from original report.html).
-         * @param {Array} activities - Array of activity objects.
-         */
+        // New function to render Monthly Heart Rate Chart
+        function renderMonthlyHeartRateChart(data) {
+            const ctx = document.getElementById('monthlyHeartRateChart').getContext('2d');
+
+            // 1. Group by Month (YYYY-MM) and calculate average HR
+            const monthlyStats = {}; // { '2023-10': { sum: 0, count: 0 }, ... }
+
+            data.forEach(activity => {
+                // Only consider activities with valid heart rate
+                if (activity.average_heartrate && activity.average_heartrate > 0) {
+                    const date = new Date(activity.start_date);
+                    // Format: YYYY-MM
+                    const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+
+                    if (!monthlyStats[monthKey]) {
+                        monthlyStats[monthKey] = { sum: 0, count: 0 };
+                    }
+                    monthlyStats[monthKey].sum += activity.average_heartrate;
+                    monthlyStats[monthKey].count += 1;
+                }
+            });
+
+            // 2. Prepare sorted data for chart
+            const labels = Object.keys(monthlyStats).sort(); // Sort chronological
+            const hrData = labels.map(month => {
+                const stats = monthlyStats[month];
+                return (stats.sum / stats.count).toFixed(1);
+            });
+
+            // 3. Render Chart
+            if (monthlyHeartRateChart) {
+                monthlyHeartRateChart.destroy();
+            }
+
+            if (labels.length === 0) {
+                ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+                ctx.font = '16px Inter';
+                ctx.fillStyle = '#6b7280';
+                ctx.fillText("Không có dữ liệu nhịp tim để hiển thị.", 10, 50);
+                return;
+            }
+
+            monthlyHeartRateChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Nhịp tim trung bình (bpm)',
+                        data: hrData,
+                        borderColor: 'rgb(255, 99, 132)',
+                        backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                        tension: 0.3,
+                        fill: true,
+                        pointBackgroundColor: 'rgb(255, 99, 132)',
+                        pointBorderColor: '#fff',
+                        pointHoverBackgroundColor: '#fff',
+                        pointHoverBorderColor: 'rgb(255, 99, 132)'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `Nhịp tim TB: ${context.parsed.y} bpm`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Tháng',
+                                color: '#4b5563'
+                            },
+                            ticks: { color: '#4b5563' }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Nhịp tim (bpm)',
+                                color: '#4b5563'
+                            },
+                            beginAtZero: false, // Often HR doesn't start at 0, looks better
+                            ticks: { color: '#4b5563' }
+                        }
+                    }
+                }
+            });
+        }
+
         function renderDetailedActivitiesTable(activities) {
             detailedActivitiesTableBody.innerHTML = '';
             if (activities.length === 0) {
@@ -1263,18 +1354,13 @@
                     <td>${(activity.distance / 1000).toFixed(2)}</td>
                     <td>${formatTime(activity.moving_time)}</td>
                     <td>${formatPaceForTable(activity.average_speed)}</td>
-                    <td>${formatKilojoules(activity.kilojoules)}</td> <!-- Hiển thị giá trị số đã được format -->
+                    <td>${formatKilojoules(activity.kilojoules)}</td>
                     <td>${activity.average_heartrate ? activity.average_heartrate.toFixed(0) : 'N/A'}</td>
                     <td>${formatElevationGain(activity.total_elevation_gain)}</td>
                 `;
             });
         }
 
-        /**
-         * Calculates and renders weekly distance chart (D3.js).
-         * This version aggregates distance across all runners for each week.
-         * @param {Array} activities - Array of activity objects.
-         */
         function renderWeeklyDistanceChart(activities) {
             weeklyDistanceChartContainer.innerHTML = '';
             weeklyChartStatus.textContent = '';
@@ -1284,8 +1370,8 @@
                 return;
             }
 
-            const weeklyAggregatedData = new Map(); // Map: ISOWeek -> totalDistance
-            const weeklyDetailedActivities = new Map(); // Map: ISOWeek -> array of activities for that week
+            const weeklyAggregatedData = new Map(); 
+            const weeklyDetailedActivities = new Map(); 
 
             activities.forEach(activity => {
                 const isoWeek = getISOWeekString(activity.start_date);
@@ -1295,17 +1381,13 @@
                     if (!weeklyDetailedActivities.has(isoWeek)) {
                         weeklyDetailedActivities.set(isoWeek, []);
                     }
-                    // Store the original activity object (or a copy) along with its runner's athlete_id
                     weeklyDetailedActivities.get(isoWeek).push({ ...activity, athlete_id: activity.user_id }); 
                 }
             });
 
-            // Convert map to array for D3, then sort by week
             const weeklyStats = Array.from(weeklyAggregatedData.entries()).map(([week, totalDistance]) => ({
                 week: week,
-                totalDistance: totalDistance, // Total distance for the week across all runners
-                // We don't need athlete_id here for drawing the bubble, but for the modal click.
-                // We'll pass the whole week's activities to the modal function.
+                totalDistance: totalDistance, 
             })).sort((a, b) => a.week.localeCompare(b.week));
 
 
@@ -1316,7 +1398,7 @@
 
             const container = weeklyDistanceChartContainer;
             const width = container.clientWidth;
-            const height = 300; // Fixed height for weekly chart
+            const height = 300; 
 
             const svg = d3.select(container)
                 .append("svg")
@@ -1328,11 +1410,10 @@
             const maxDistance = d3.max(weeklyStats, d => d.totalDistance);
             const minDistance = d3.min(weeklyStats, d => d.totalDistance);
 
-            // Defensive check for D3 functions
             if (typeof d3.scaleSequential !== 'function' || typeof d3.interpolateViridis !== 'function') {
                 console.error("D3 scales or interpolators are not available. Cannot draw weekly distance chart.");
                 weeklyDistanceChartContainer.innerHTML = `<p class="text-red-500 text-center">Lỗi: Không thể vẽ biểu đồ. Thư viện D3.js hoặc các thành phần của nó không khả dụng.</p>`;
-                return; // Exit if D3 components are missing
+                return; 
             }
 
             const radiusScale = d3.scaleSqrt()
@@ -1343,18 +1424,17 @@
                 .domain([maxDistance || 1, minDistance || 0]);
 
             const x = d3.scaleBand()
-                .domain(weeklyStats.map(d => d.week)) // Use unique week string for X axis
+                .domain(weeklyStats.map(d => d.week)) 
                 .range([50, width - 20])
                 .paddingInner(0.1);
 
             const y = d3.scaleLinear()
-                .domain([0, maxDistance * 1.2 || 10000]) // Extend y-axis slightly
+                .domain([0, maxDistance * 1.2 || 10000]) 
                 .range([height - 50, 20]);
 
-            // Adjust x-axis tick format to show only week number and year
             const xAxis = d3.axisBottom(x).tickFormat(d => {
                 const parts = d.split('-W');
-                return `W${parts[1]}-${parts[0]}`; // Format as WNN-YYYY
+                return `W${parts[1]}-${parts[0]}`; 
             });
             const yAxis = d3.axisLeft(y).tickFormat(d => `${(d / 1000).toFixed(0)}km`);
 
@@ -1379,7 +1459,7 @@
                 .data(weeklyStats)
                 .enter().append("circle")
                 .attr("class", "bubble")
-                .attr("cx", d => x(d.week) + x.bandwidth() / 2) // Center bubble in band
+                .attr("cx", d => x(d.week) + x.bandwidth() / 2) 
                 .attr("cy", d => y(d.totalDistance))
                 .attr("r", d => radiusScale(d.totalDistance))
                 .attr("fill", d => colorScale(d.totalDistance))
@@ -1393,24 +1473,22 @@
                     tooltip.style("opacity", 0);
                 })
                 .on("click", function(event, d) {
-                    // When clicked, open modal for activities of this week (for ALL runners)
                     const activitiesInWeek = weeklyDetailedActivities.get(d.week) || [];
                     weeklyActivitiesTitle.textContent = `Hoạt động trong tuần ${d.week.replace(/-W/, 'W')}:`;
-                    displayActivitiesInModal(activitiesInWeek); // New function to display
+                    displayActivitiesInModal(activitiesInWeek); 
                 });
 
-            // Add text labels for weekly distance chart
             svg.selectAll(".weekly-bubble-text")
                 .data(weeklyStats)
                 .enter().append("text")
                 .attr("class", "weekly-bubble-text")
                 .attr("x", d => x(d.week) + x.bandwidth() / 2)
                 .attr("y", d => d.y)
-                .text(d => `${(d.totalDistance / 1000).toFixed(0)}km`) // Display KM value
+                .text(d => `${(d.totalDistance / 1000).toFixed(0)}km`) 
                 .attr("dy", "0.35em")
                 .attr("text-anchor", "middle")
-                .attr("font-size", d => Math.max(8, radiusScale(d.totalDistance) / 3)) // Dynamic font size
-                .attr("fill", "black") // Set text color to black
+                .attr("font-size", d => Math.max(8, radiusScale(d.totalDistance) / 3)) 
+                .attr("fill", "black") 
                 .attr("pointer-events", "none");
 
             svg.append("text")
@@ -1424,18 +1502,9 @@
                 .text("Quãng đường (KM)");
         }
 
-        /**
-         * Helper to get ISO week string (YYYY-WNN) from a Date object, adjusted for Vietnam timezone.
-         * This function ensures that the week calculation aligns with Vietnam local time (UTC+7),
-         * regardless of the user's browser timezone settings, by explicitly converting the UTC date
-         * to its Vietnam timezone components before calculating the ISO week.
-         * @param {Date|string} d - The Date object or ISO 8601 string (assumed to be UTC from Supabase).
-         * @returns {string} ISO week string (YYYY-WNN). Returns null if input is invalid.
-         */
         function getISOWeekString(d) {
             let activityDateUtc;
 
-            // Ensure we have a valid Date object, assuming string inputs are UTC ISO 8601
             if (typeof d === 'string') {
                 activityDateUtc = new Date(d);
             } else if (d instanceof Date) {
@@ -1445,14 +1514,11 @@
                 return null;
             }
 
-            // Check for invalid date
             if (isNaN(activityDateUtc.getTime())) {
                 console.error("Invalid Date object after parsing in getISOWeekString:", d);
                 return null;
             }
 
-            // Use Intl.DateTimeFormat to get date components as perceived in 'Asia/Ho_Chi_Minh'
-            // This is the most robust way to get timezone-specific date parts in vanilla JS.
             const formatter = new Intl.DateTimeFormat('en-US', {
                 year: 'numeric',
                 month: 'numeric',
@@ -1461,7 +1527,7 @@
                 minute: 'numeric',
                 second: 'numeric',
                 timeZone: 'Asia/Ho_Chi_Minh',
-                hour12: false // Ensure 24-hour format for consistency
+                hour12: false 
             });
 
             const parts = formatter.formatToParts(activityDateUtc);
@@ -1478,47 +1544,23 @@
                 }
             });
 
-            // Construct a new Date object using Date.UTC() from the Vietnam-aligned components.
-            // This creates a UTC date whose *UTC properties* (like getUTCDay, getUTCFullYear)
-            // will now correctly reflect the date and day of the week in Vietnam.
             const vietnamAlignedUtcDate = new Date(Date.UTC(year, month - 1, day, hour, minute, second));
-
-            // Set to the start of the day in UTC for the Vietnam-aligned date
             vietnamAlignedUtcDate.setUTCHours(0, 0, 0, 0);
 
-            // ISO week calculation logic (ISO 8601 defines weeks starting on Monday)
-            // getUTCDay() returns 0 for Sunday, 1 for Monday, ..., 6 for Saturday.
-            // We map Sunday (0) to 7 for consistent calculation.
             const dayOfVietnamWeekUtc = vietnamAlignedUtcDate.getUTCDay() || 7; 
-
-            // Adjust the date to the nearest Thursday of its week (in Vietnam time).
-            // Thursday is chosen because it's always in the same ISO week as the week's Monday.
             vietnamAlignedUtcDate.setUTCDate(vietnamAlignedUtcDate.getUTCDate() + 4 - dayOfVietnamWeekUtc);
 
-            // Get the year of the ISO week. This might be different from the actual year
-            // if the first week of the new year falls into the end of the previous year, or vice-versa.
             const isoWeekYear = vietnamAlignedUtcDate.getUTCFullYear();
-
-            // Get the first day of that ISO year (January 1st UTC of the ISO year)
             const yearStart = new Date(Date.UTC(isoWeekYear, 0, 1));
-
-            // Calculate the ISO week number:
-            // (Difference in milliseconds between the Vietnam-aligned Thursday and the start of its ISO year + 1 day) / milliseconds in 7 days
             const weekNo = Math.ceil((((vietnamAlignedUtcDate - yearStart) / 86400000) + 1) / 7);
 
-            // Return the ISO week string inYYYY-WNN format
             return `${isoWeekYear}-W${String(weekNo).padStart(2, '0')}`;
         }
 
-        /**
-         * Displays detailed activities for a specific week in a modal.
-         * This function now takes an array of activity objects directly.
-         * @param {Array} activitiesToDisplay - Array of activity objects for the week.
-         */
         function displayActivitiesInModal(activitiesToDisplay) {
             weeklyActivitiesList.innerHTML = '';
             weeklyActivitiesStatus.textContent = '';
-            weeklyActivitiesModal.style.display = 'flex'; // Show modal
+            weeklyActivitiesModal.style.display = 'flex'; 
 
             if (activitiesToDisplay.length > 0) {
                 activitiesToDisplay.sort((a, b) => new Date(b.start_date) - new Date(a.start_date));
@@ -1534,7 +1576,7 @@
                         <p class="text-sm text-gray-600">Quãng đường: ${(activity.distance / 1000).toFixed(2)} km</p>
                         <p class="text-sm text-gray-600">Thời gian: ${formatTime(activity.moving_time)}</p>
                         <p class="text-sm text-gray-600">Pace: ${formatPaceForTable(activity.average_speed)}</p>
-                        <p class="text-sm text-gray-600">Năng lượng: ${formatKilojoulesDisplay(activity.kilojoules)}</p> <!-- Sử dụng hàm mới KÈM ĐƠN VỊ -->
+                        <p class="text-sm text-gray-600">Năng lượng: ${formatKilojoulesDisplay(activity.kilojoules)}</p>
                         ${activity.strava_activity_id ? `<button class="btn-primary mt-2 text-xs px-2 py-1 view-map-btn" data-activity-id="${activity.strava_activity_id}">Xem bản đồ</button>` : ''}
                     `;
                     weeklyActivitiesList.appendChild(li);
@@ -1553,13 +1595,8 @@
             }
         }
 
-        /**
-         * Renders the penalty/bonus table with collapsible runner sections and nested collapsible weekly summaries.
-         * @param {Array} activities - Array of activity objects.
-         */
         function renderPenaltyBonusTable(activities) {
             const table = document.getElementById('penalty-bonus-table');
-            // Clear everything except the header
             table.querySelectorAll('tbody').forEach(tbody => tbody.remove());
 
             const penaltyBonusStatus = document.getElementById('penalty-bonus-status');
@@ -1594,8 +1631,7 @@
                 return;
             }
             
-            // A single event listener for the entire table for better performance and to handle dynamic content
-            table.removeEventListener('click', handlePenaltyTableClick); // Remove old listener to avoid duplicates
+            table.removeEventListener('click', handlePenaltyTableClick); 
             table.addEventListener('click', handlePenaltyTableClick);
 
             sortedAthleteIds.forEach(athleteId => {
@@ -1627,11 +1663,10 @@
                         week.penaltyBonus = -(deficitKm * rate);
                         totalRunnerAmount += week.penaltyBonus;
                     } else {
-                        week.penaltyBonus = 0; // No bonus calculation is defined
+                        week.penaltyBonus = 0; 
                     }
                 });
                 
-                // Runner Summary Body
                 const summaryTbody = document.createElement('tbody');
                 summaryTbody.className = 'runner-summary-group';
                 summaryTbody.innerHTML = `
@@ -1653,10 +1688,8 @@
                 `;
                 table.appendChild(summaryTbody);
 
-                // Runner Details Body (contains weeks and activities) - Appended as a separate tbody
                 const detailedTbody = document.createElement('tbody');
                 detailedTbody.id = `penalty-details-for-${athleteId}`;
-                // Using 'hidden' instead of 'collapsed' for direct display control
                 detailedTbody.className = 'hidden'; 
                 
                 const sortedWeeks = Object.keys(weeklyStats).sort().reverse();
@@ -1664,11 +1697,10 @@
                     const weekData = weeklyStats[isoWeek];
                     const weekTargetClass = `week-details-for-${athleteId}-${isoWeek.replace(/\W/g, '')}`;
                     
-                    // Weekly Summary Row
                     const weekSummaryRow = document.createElement('tr');
                     weekSummaryRow.className = 'weekly-summary-row bg-gray-100 hover:bg-gray-200 cursor-pointer';
                     weekSummaryRow.innerHTML = `
-                        <td></td> <!-- Empty for Runner Name -->
+                        <td></td> 
                         <td class="font-bold">
                             ${isoWeek.replace('-W', ' Tuần ')}
                             <i class="fas fa-chevron-right text-gray-600 ml-2 cursor-pointer week-toggle-icon" data-week-target-class="${weekTargetClass}"></i>
@@ -1684,11 +1716,10 @@
                     `;
                     detailedTbody.appendChild(weekSummaryRow);
 
-                    // Individual Activity Rows for the week
                     weekData.activities.sort((a, b) => new Date(b.start_date) - new Date(a.start_date));
                     weekData.activities.forEach(activity => {
                         const activityRow = document.createElement('tr');
-                        activityRow.className = `weekly-activity-row ${weekTargetClass} hidden bg-white`; // Initially hidden
+                        activityRow.className = `weekly-activity-row ${weekTargetClass} hidden bg-white`; 
                         activityRow.innerHTML = `
                             <td></td>
                             <td>${new Date(activity.start_date).toLocaleDateString('vi-VN')}</td>
@@ -1710,10 +1741,6 @@
         }
 
 
-        /**
-         * Renders bubble charts for distance by runner and distance by club (D3.js - from original report.html).
-         * @param {Array} activities - Array of activity objects.
-         */
         function renderDistanceCharts(activities) {
             distanceByRunnerChart.innerHTML = '<p class="text-gray-500 text-sm">Biểu đồ quãng đường theo Runner sẽ hiển thị ở đây.</p>';
             distanceByClubChart.innerHTML = '<p class="text-gray-500 text-sm">Biểu đồ quãng đường theo CLB sẽ hiển thị ở đây.</p>';
@@ -1751,11 +1778,9 @@
                 runnerCount: stats.runners.size
             }));
 
-            // Render Runner Chart
             drawBubbleChart(distanceByRunnerChart, runnerData, "Quãng đường (KM) theo Runner", "name", "distance");
 
-            // Prepare and render Club Chart with legend
-            if (clubLegendContainer) clubLegendContainer.innerHTML = ''; // Clear previous legend on re-render
+            if (clubLegendContainer) clubLegendContainer.innerHTML = ''; 
 
             const startDate = reportStartDateInput.value;
             const endDate = reportEndDateInput.value;
@@ -1766,7 +1791,7 @@
                 "Quãng đường (KM) theo CLB",
                 "name",
                 "distance",
-                { // New legendOptions object
+                { 
                     container: clubLegendContainer,
                     startDate: startDate,
                     endDate: endDate
@@ -1774,20 +1799,10 @@
             );
         }
 
-        /**
-         * Generic function to draw a bubble chart (D3.js - from original report.html).
-         * @param {HTMLElement} container - The DOM element to append the SVG to.
-         * @param {Array} data - Array of objects for the chart.
-         * @param {string} title - Chart title.
-         * @param {string} nameKey - Key for the name/category (e.g., 'runner_name', 'club_name').
-         * @param {string} valueKey - Key for the numerical value (e.g., 'totalDistance', 'distance').
-         * @param {object|null} legendOptions - Optional parameters for creating a legend table.
-         */
         function drawBubbleChart(container, data, title, nameKey, valueKey, legendOptions = null) {
             container.innerHTML = '';
             if (data.length === 0) {
                 container.innerHTML = `<p class="text-gray-500 text-sm">${title} - Không có dữ liệu.</p>`;
-                // Also clear the legend if there's no data
                 if (legendOptions && legendOptions.container) {
                     legendOptions.container.innerHTML = '';
                 }
@@ -1795,7 +1810,7 @@
             }
 
             const width = container.clientWidth;
-            const height = Math.max(300, data.length * 60); // Adjust height dynamically based on number of items
+            const height = Math.max(300, data.length * 60); 
 
             const svg = d3.select(container)
                 .append("svg")
@@ -1807,28 +1822,26 @@
             const maxValue = d3.max(data, d => d[valueKey]);
             const minValue = d3.min(data, d => d[valueKey]);
 
-            // Defensive check for D3 functions
             if (typeof d3.scaleSequential !== 'function' || typeof d3.interpolateViridis !== 'function') {
                 console.error("D3 scales or interpolators are not available. Cannot draw bubble chart for " + title);
                 container.innerHTML = `<p class="text-red-500 text-center">Lỗi: Không thể vẽ biểu đồ. Thư viện D3.js hoặc các thành phần của nó không khả dụng.</p>`;
-                return; // Exit if D3 components are missing
+                return; 
             }
 
-            const maxRadius = width < 768 ? 70 : 60; // Max radius for bubbles
-            const minRadius = width < 768 ? 8 : 15; // Min radius for bubbles
+            const maxRadius = width < 768 ? 70 : 60; 
+            const minRadius = width < 768 ? 8 : 15; 
 
             const radiusScale = d3.scaleSqrt()
                 .domain([0, maxValue || 1])
-                .range([minRadius, maxRadius]); // Adjust range based on desired bubble sizes
+                .range([minRadius, maxRadius]); 
 
-            // Tăng cường độ mạnh của force để giãn các bong bóng ra xa hơn
             const simulation = d3.forceSimulation(data)
-                .force("x", d3.forceX(width / 2).strength(0.15)) // Tăng strength X
-                .force("y", d3.forceY(height / 2).strength(0.15)) // Tăng strength Y
-                .force("collide", d3.forceCollide(d => radiusScale(d[valueKey]) + 4)) // Tăng khoảng cách va chạm
+                .force("x", d3.forceX(width / 2).strength(0.15)) 
+                .force("y", d3.forceY(height / 2).strength(0.15)) 
+                .force("collide", d3.forceCollide(d => radiusScale(d[valueKey]) + 4)) 
                 .stop();
 
-            for (let i = 0; i < 200; ++i) simulation.tick(); // Chạy simulation nhiều lần hơn để đạt trạng thái ổn định
+            for (let i = 0; i < 200; ++i) simulation.tick(); 
 
             let tooltip = d3.select("body").select(".tooltip");
             if (tooltip.empty()) {
@@ -1864,23 +1877,22 @@
                 .attr("x", d => d.x)
                 .attr("y", d => d.y)
                 .text(d => d[nameKey])
-                .attr("dy", "-0.3em") // Điều chỉnh vị trí chữ để thêm dòng KM
-                .attr("font-size", d => Math.max(8, radiusScale(d[valueKey]) / 4)) // Dynamic font size
-                .attr("fill", "black") // Set text color to black
+                .attr("dy", "-0.3em") 
+                .attr("font-size", d => Math.max(8, radiusScale(d[valueKey]) / 4)) 
+                .attr("fill", "black") 
                 .attr("pointer-events", "none");
 
-            // Thêm dòng hiển thị KM
             svg.selectAll(".bubble-km-text")
                 .data(data)
                 .enter().append("text")
-                .attr("class", "bubble-text bubble-km-text") // Sử dụng lại class bubble-text
+                .attr("class", "bubble-text bubble-km-text") 
                 .attr("x", d => d.x)
                 .attr("y", d => d.y)
-                .text(d => `${d[valueKey].toFixed(1)} KM`) // Hiển thị số KM
-                .attr("dy", "1em") // Điều chỉnh vị trí để nằm dưới tên
+                .text(d => `${d[valueKey].toFixed(1)} KM`) 
+                .attr("dy", "1em") 
                 .attr("text-anchor", "middle")
-                .attr("font-size", d => Math.max(8, radiusScale(d[valueKey]) / 4.5)) // Dynamic font size
-                .attr("fill", "black") // Set text color to black
+                .attr("font-size", d => Math.max(8, radiusScale(d[valueKey]) / 4.5)) 
+                .attr("fill", "black") 
                 .attr("pointer-events", "none");
 
 
@@ -1893,26 +1905,22 @@
                 .attr("fill", "#333")
                 .text(title);
 
-            // --- START: New Legend Generation Logic ---
             if (legendOptions && legendOptions.container && data.length > 0) {
                 const { container: legendContainer, startDate, endDate } = legendOptions;
-                legendContainer.innerHTML = ''; // Clear previous legend
+                legendContainer.innerHTML = ''; 
 
-                // Helper function to format date string from 'YYYY-MM-DD' to 'DD/MM/YYYY'
                 const formatDate = (dateString) => {
                     if (!dateString) return '...';
                     const parts = dateString.split('-');
-                    if (parts.length !== 3) return dateString; // Fallback for unexpected formats
+                    if (parts.length !== 3) return dateString; 
                     return `${parts[2]}/${parts[1]}/${parts[0]}`;
                 };
 
                 const startDateFormatted = formatDate(startDate);
                 const endDateFormatted = formatDate(endDate);
 
-                // Sort data by distance (valueKey) descending for the table
                 const sortedData = [...data].sort((a, b) => b[valueKey] - a[valueKey]);
 
-                // Create the table HTML
                 let tableHtml = `
                     <h4 class="text-md font-semibold mb-2 text-center">Kết quả chạy từ ngày ${startDateFormatted} đến ngày ${endDateFormatted}</h4>
                     <table class="data-table w-full text-sm">
@@ -1938,7 +1946,6 @@
                     `;
                 });
                 
-                // Add total row
                 const totalKm = data.reduce((sum, item) => sum + item[valueKey], 0);
                 const totalRunners = data.reduce((sum, item) => sum + (item.runnerCount || 0), 0);
                 tableHtml += `
@@ -1956,26 +1963,18 @@
 
                 legendContainer.innerHTML = tableHtml;
             }
-            // --- END: New Legend Generation Logic ---
         }
 
-        // --- Chart.js Specific Rendering Functions (from report origin.html) ---
-
-        /**
-         * Function to render Distance over Time Chart (Chart.js).
-         * @param {Array} data - Array of activity objects.
-         */
         function renderDistanceChart(data) {
             const ctx = document.getElementById('distanceChart').getContext('2d');
 
-            // Sort data by date for chronological display
             data.sort((a, b) => a.start_date - b.start_date);
 
             const labels = data.map(activity => activity.start_date.toLocaleDateString('vi-VN'));
             const distances = data.map(activity => activity.distance_km);
 
             if (distanceChart) {
-                distanceChart.destroy(); // Destroy previous chart instance
+                distanceChart.destroy(); 
             }
 
             distanceChart = new Chart(ctx, {
@@ -2035,34 +2034,27 @@
             });
         }
 
-        /**
-         * Function to render Pace Distribution Chart (Chart.js).
-         * @param {Array} data - Array of activity objects.
-         */
         function renderPaceDistributionChart(data) {
             const ctx = document.getElementById('paceDistributionChart').getContext('2d');
 
-            // Filter out activities with null or invalid pace
             const validPaces = data
                 .filter(activity => activity.pace_seconds_per_km_raw !== null && activity.pace_seconds_per_km_raw > 0)
                 .map(activity => activity.pace_seconds_per_km_raw);
 
             if (validPaces.length === 0) {
                 if (paceDistributionChart) paceDistributionChart.destroy();
-                ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height); // Clear canvas
+                ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height); 
                 ctx.font = '16px Inter';
                 ctx.fillStyle = '#6b7280';
                 ctx.fillText("Không có dữ liệu tốc độ để hiển thị.", 10, 50);
                 return;
             }
 
-            // Create bins for histogram (e.g., 30 seconds/km intervals)
             const minPace = Math.min(...validPaces);
             const maxPace = Math.max(...validPaces);
-            const binSize = 30; // seconds/km (e.g., 0.5 min/km)
+            const binSize = 30; 
             const bins = {};
 
-            // Initialize bins
             for (let i = Math.floor(minPace / binSize) * binSize; i <= maxPace + binSize; i += binSize) {
                 bins[i.toFixed(0)] = 0;
             }
@@ -2074,7 +2066,6 @@
                 }
             });
 
-            // Get raw seconds labels for Chart.js to handle tick generation
             const labels = Object.keys(bins).sort((a, b) => parseFloat(a) - parseFloat(b));
             const counts = labels.map(label => bins[label]);
 
@@ -2085,7 +2076,7 @@
             paceDistributionChart = new Chart(ctx, {
                 type: 'bar',
                 data: {
-                    labels: labels, // Use raw seconds values as labels
+                    labels: labels, 
                     datasets: [{
                         label: 'Số lượng hoạt động',
                         data: counts,
@@ -2101,7 +2092,6 @@
                         tooltip: {
                             callbacks: {
                                 title: function(context) {
-                                    // Get the raw seconds value for the bin
                                     const rawSeconds = parseFloat(context[0].label);
                                     const startPace = formatPaceLabel(rawSeconds);
                                     const endPace = formatPaceLabel(rawSeconds + binSize);
@@ -2117,12 +2107,11 @@
                         x: {
                             title: {
                                 display: true,
-                                text: 'Tốc độ trung bình (phút/km)', // Updated label for clarity
+                                text: 'Tốc độ trung bình (phút/km)', 
                                 color: '#4b5563'
                             },
                             ticks: {
                                 color: '#4b5563',
-                                // Format x-axis ticks as MM:SS pace range using the new formatPaceLabel function
                                 callback: function(value, index, values) {
                                     const startSeconds = parseFloat(this.getLabelForValue(value));
                                     const endSeconds = startSeconds + binSize;
@@ -2138,7 +2127,7 @@
                             },
                             beginAtZero: true,
                             ticks: {
-                                precision: 0, // Ensure integer ticks for counts
+                                precision: 0, 
                                 color: '#4b5563'
                             }
                         }
@@ -2147,27 +2136,23 @@
             });
         }
 
-        /**
-         * Function to render Heart Rate vs. Pace Chart (Chart.js).
-         * @param {Array} data - Array of activity objects.
-         */
         function renderHeartRatePaceChart(data) {
             const ctx = document.getElementById('heartRatePaceChart').getContext('2d');
 
             const scatterData = data
                 .filter(activity => activity.average_heartrate !== null && activity.average_heartrate > 0 && activity.pace_seconds_per_km_raw !== null && activity.pace_seconds_per_km_raw > 0)
                 .map(activity => ({
-                    x: activity.pace_seconds_per_km_raw, // Raw pace in seconds/km for plotting
+                    x: activity.pace_seconds_per_km_raw, 
                     y: activity.average_heartrate,
                     name: activity.name,
                     distance_km: activity.distance_km,
                     moving_time_formatted: activity.moving_time_formatted,
-                    pace_min_per_km_formatted: formatPaceForTable(activity.average_speed) // Formatted pace for tooltip
+                    pace_min_per_km_formatted: formatPaceForTable(activity.average_speed) 
                 }));
 
             if (scatterData.length === 0) {
                 if (heartRatePaceChart) heartRatePaceChart.destroy();
-                ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height); // Clear canvas
+                ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height); 
                 ctx.font = '16px Inter';
                 ctx.fillStyle = '#6b7280';
                 ctx.fillText("Không có dữ liệu nhịp tim/tốc độ để hiển ý.", 10, 50);
@@ -2207,14 +2192,14 @@
                         x: {
                             title: {
                                 display: true,
-                                text: 'Tốc độ trung bình (phút/km)', // Updated label for clarity
+                                text: 'Tốc độ trung bình (phút/km)', 
                                 color: '#4b5563'
                             },
                             beginAtZero: true,
                             ticks: {
                                 color: '#4b5563',
                                 callback: function(value, index, values) {
-                                    return formatPaceLabel(value); // Format x-axis ticks as MM:SS
+                                    return formatPaceLabel(value); 
                                 }
                             }
                         },
@@ -2234,10 +2219,6 @@
             });
         }
 
-        /**
-         * Function to render Activity Type Chart (Doughnut Chart) (Chart.js).
-         * @param {Array} data - Array of activity objects.
-         */
         function renderActivityTypeChart(data) {
             const ctx = document.getElementById('activityTypeChart').getContext('2d');
 
@@ -2250,11 +2231,11 @@
             const counts = Object.values(activityTypes);
 
             const backgroundColors = [
-                'rgba(255, 205, 86, 0.8)', // Yellow for Run
-                'rgba(54, 162, 235, 0.8)',  // Blue for Walk
-                'rgba(75, 192, 192, 0.8)',  // Teal for others
-                'rgba(153, 102, 255, 0.8)', // Purple
-                'rgba(201, 203, 207, 0.8)'  // Gray
+                'rgba(255, 205, 86, 0.8)', 
+                'rgba(54, 162, 235, 0.8)', 
+                'rgba(75, 192, 192, 0.8)', 
+                'rgba(153, 102, 255, 0.8)', 
+                'rgba(201, 203, 207, 0.8)'  
             ];
             const borderColors = [
                 'rgb(255, 205, 86)',
@@ -2300,20 +2281,11 @@
             });
         }
 
-        /**
-         * Toggles the visibility of a collapsible content section and rotates its icon.
-         * Optionally saves the state to localStorage.
-         * @param {HTMLElement} contentElement - The content div to show/hide.
-         * @param {HTMLElement} toggleIcon - The icon element to rotate.
-         * @param {boolean|null} forceCollapse - If true, forces collapse; if false, forces expand. If null, toggles.
-         * @param {string|null} stateKey - Key for localStorage to save the state ('expanded' or 'collapsed').
-         */
         function toggleCollapsible(contentElement, toggleIcon, forceCollapse = null, stateKey = null) {
             let isCollapsed;
             if (forceCollapse !== null) {
                 isCollapsed = forceCollapse;
             } else {
-                // If not forcing, toggle based on current state
                 isCollapsed = !contentElement.classList.contains('collapsed');
             }
 
@@ -2330,15 +2302,10 @@
             }
         }
 
-        /**
-         * Handles all click events within the penalty/bonus table for collapsing/expanding sections.
-         * @param {Event} event - The click event.
-         */
         function handlePenaltyTableClick(event) {
             const icon = event.target.closest('i.cursor-pointer');
             if (!icon) return;
 
-            // Handle main runner toggle
             if (icon.classList.contains('penalty-toggle-icon')) {
                 const targetId = icon.dataset.targetTbodyId;
                 const contentTbody = document.getElementById(targetId);
@@ -2354,7 +2321,6 @@
                 }
             }
 
-            // Handle weekly activities toggle
             if (icon.classList.contains('week-toggle-icon')) {
                 const targetClass = icon.dataset.weekTargetClass;
                 const activityRows = document.querySelectorAll(`.${targetClass}`);
@@ -2374,10 +2340,6 @@
             }
         }
 
-        /**
-         * Fetches training suggestions from the Gemini API based on current activity data.
-         * This version sends a more detailed payload to the Supabase Edge Function to avoid ambiguity.
-         */
         async function getTrainingSuggestions() {
             if (allActivitiesData.length === 0) {
                 showAlert('Không có dữ liệu hoạt động để tạo gợi ý luyện tập. Vui lòng tải dữ liệu trước.');
@@ -2397,29 +2359,25 @@
 
                 const isSingleRunner = selectedRunnerIdReport !== 'all';
                 
-                // Construct a more detailed and context-rich payload for the AI
                 const payload = {
                     activities: allActivitiesData.map(activity => {
                         const runner = allRunnerCredentials.find(rc => String(rc.athlete_id) === String(activity.user_id));
                         const runnerName = runner ? runner.runner_name : 'Không rõ';
 
-                        // Create a clean object with descriptive keys for each activity
                         return {
-                            runner_name: runnerName, // Add runner name for context
+                            runner_name: runnerName, 
                             type: activity.type,
                             distance_km: parseFloat(activity.distance_km),
                             moving_time_seconds: activity.moving_time,
                             average_speed_mps: activity.average_speed,
                             average_heartrate: activity.average_heartrate,
-                            kilojoules: activity.kilojoules, // Bổ sung kilojoules
+                            kilojoules: activity.kilojoules, 
                             start_date: activity.start_date.toISOString(),
                             total_elevation_gain_meters: activity.total_elevation_gain
                         };
                     }),
-                    // Add an explicit context object to guide the AI's analysis
                     analysis_context: {
                         is_single_runner: isSingleRunner,
-                        // Provide the name of the single runner or indicate it's a group
                         runner_name: isSingleRunner 
                             ? (allRunnerCredentials.find(rc => String(rc.athlete_id) === selectedRunnerIdReport)?.runner_name || 'Runner đã chọn') 
                             : 'Nhiều runners',
@@ -2462,25 +2420,17 @@
         }
 
 
-        /**
-         * Converts table data to an array of objects suitable for XLSX.
-         * @param {HTMLTableElement} tableElement - The table DOM element.
-         * @returns {Array<Object>} An array of objects, where each object represents a row.
-         */
         function tableToJson(tableElement) {
             const data = [];
             const headers = [];
             
-            // Get headers
             tableElement.querySelectorAll('thead th').forEach(header => {
                 headers.push(header.textContent.trim());
             });
 
-            // Get rows
             tableElement.querySelectorAll('tbody tr').forEach(row => {
                 const rowData = {};
                 row.querySelectorAll('td').forEach((cell, index) => {
-                    // Use headers as keys. If there are more cells than headers, use a generic key.
                     const header = headers[index] || `Column ${index + 1}`;
                     rowData[header] = cell.textContent.trim();
                 });
@@ -2489,12 +2439,6 @@
             return data;
         }
 
-        /**
-         * Downloads data as an XLSX file.
-         * @param {Array<Object>} data - Array of objects to export.
-         * @param {string} fileName - The desired file name (e.g., 'report.xlsx').
-         * @param {string} sheetName - The name of the sheet within the workbook.
-         */
         function downloadExcel(data, fileName, sheetName) {
             if (!data || data.length === 0) {
                 showAlert('Không có dữ liệu để xuất ra Excel.');
@@ -2508,7 +2452,6 @@
         }
 
 
-        // --- Supabase Authentication Check for Report Page ---
         async function checkAuthAndLoadReport() {
             try {
                 const { data: { session }, error } = await supabaseClientInstance.auth.getSession();
@@ -2516,17 +2459,15 @@
                     console.warn('No active Supabase session found. Redirecting to Index1.html');
                     showAlert('Bạn cần đăng nhập để truy cập trang báo cáo. Đang chuyển hướng về trang đăng nhập...');
                     setTimeout(() => {
-                        window.location.href = 'https://quantrh.github.io/Strava/index1.html'; // Changed to direct link
-                    }, 2000); // Redirect after 2 seconds
+                        window.location.href = 'https://quantrh.github.io/Strava/index1.html'; 
+                    }, 2000); 
                     return;
                 }
                 
-                // If session exists, set current user email and proceed to load data
                 currentUserEmailSpan.textContent = session.user.email;
-                await fetchAllRunnerCredentials(); // Load all runner credentials
-                await fetchClubs(); // Load all clubs
+                await fetchAllRunnerCredentials(); 
+                await fetchClubs(); 
                 
-                // Load filter states from local storage
                 selectedRunnerIdReport = localStorage.getItem('report_runner_filter') || 'all';
                 try {
                     const savedClubs = localStorage.getItem('report_club_filter');
@@ -2545,29 +2486,27 @@
                 minPaceFilter = localStorage.getItem('report_min_pace') ? parseFloat(localStorage.getItem('report_min_pace')) : null;
                 minDistanceFilter = localStorage.getItem('report_min_distance') ? parseFloat(localStorage.getItem('report_min_distance')) : null;
 
-                populateFilters(); // Populate dropdowns and inputs with loaded/default values
+                populateFilters(); 
 
-                // Set default dates to past 6 days from today (inclusive 7 days)
                 const today = new Date();
                 const endDate = today.toISOString().split('T')[0];
                 reportEndDateInput.value = endDate;
 
                 const sixDaysAgo = new Date(today);
-                sixDaysAgo.setDate(today.getDate() - 6); // Changed to 6 days ago for a 7-day inclusive range
+                sixDaysAgo.setDate(today.getDate() - 6); 
                 const startDate = sixDaysAgo.toISOString().split('T')[0];
                 reportStartDateInput.value = startDate;
 
-                await fetchAndRenderReportData(); // Initial data load from Supabase
+                await fetchAndRenderReportData(); 
             } catch (authError) {
                 console.error('Error during authentication check:', authError.message);
                 showAlert(`Lỗi xác thực: ${authError.message}. Đang chuyển hướng về trang đăng nhập...`);
                 setTimeout(() => {
-                    window.location.href = 'https://quantrh.github.io/Strava/index1.html'; // Changed to direct link
+                    window.location.href = 'https://quantrh.github.io/Strava/index1.html'; 
                 }, 2000);
             }
         }
 
-        // --- Event Listeners and Initialization ---
         window.onload = async () => {
             if (typeof window.supabase === 'undefined') {
                 showAlert('Lỗi: Thư viện Supabase không được tải. Vui lòng kiểm tra kết nối internet hoặc URL CDN.');
@@ -2591,7 +2530,6 @@
                         localStorage.removeItem('strava_runner_name');
                         localStorage.removeItem('strava_runner_credential_id');
                         localStorage.removeItem('strava_authenticated');
-                        // Clear saved filters from local storage on logout
                         localStorage.removeItem('report_runner_filter');
                         localStorage.removeItem('report_club_filter');
                         localStorage.removeItem('report_activity_types');
@@ -2600,7 +2538,7 @@
 
                         showAlert('Đăng xuất thành công. Đang chuyển hướng về trang đăng nhập...');
                         setTimeout(() => {
-                            window.location.href = 'https://quantrh.github.io/Strava/index1.html'; // Changed to direct link
+                            window.location.href = 'https://quantrh.github.io/Strava/index1.html'; 
                         }, 1500);
                     }
                     catch (error) {
@@ -2610,14 +2548,11 @@
                 }
             });
 
-            // Event listener for the new "Quay về" button
             backToHomeBtn.addEventListener('click', () => {
                 window.location.href = 'https://quantrh.github.io/Strava/index1.html';
             });
 
-            // Event listener for the Apply Filters button (to fetch data from Supabase)
             applyReportFiltersBtn.addEventListener('click', () => {
-                // Save current filter states to local storage before applying
                 localStorage.setItem('report_runner_filter', selectedRunnerIdReport);
                 localStorage.setItem('report_club_filter', JSON.stringify(selectedClubNamesReport));
                 localStorage.setItem('report_activity_types', JSON.stringify(selectedActivityTypesReport));
@@ -2627,16 +2562,13 @@
                 fetchAndRenderReportData();
             });
 
-            // Filter changes don't trigger direct fetch, only update selected values
             reportRunnerFilter.addEventListener('change', (e) => {
                 selectedRunnerIdReport = e.target.value;
             });
 
-            // Multi-select changes are handled by global click listener
-            reportStartDateInput.addEventListener('change', () => { /* value changed */ });
-            reportEndDateInput.addEventListener('change', () => { /* value changed */ });
+            reportStartDateInput.addEventListener('change', () => { });
+            reportEndDateInput.addEventListener('change', () => { });
 
-            // New filter inputs event listeners
             reportMinPaceInput.addEventListener('input', (e) => {
                 minPaceFilter = e.target.value !== '' ? parseFloat(e.target.value) : null;
             });
@@ -2644,7 +2576,6 @@
                 minDistanceFilter = e.target.value !== '' ? parseFloat(e.target.value) : null;
             });
 
-            // Penalty/Bonus calculation inputs trigger re-render of all reports (not a new fetch)
             penaltyPerKmGt10Input.addEventListener('input', renderAllReports);
             penaltyPerKmLte10Input.addEventListener('input', renderAllReports);
             targetKmPerWeekInput.addEventListener('input', renderAllReports);
@@ -2652,17 +2583,14 @@
             closeWeeklyActivitiesModalBtn.addEventListener('click', () => {
                 weeklyActivitiesModal.style.display = 'none';
             });
-            // Close button for the new training suggestions modal
             closeTrainingSuggestionsModalBtn.addEventListener('click', () => {
                 trainingSuggestionsModal.classList.add('hidden');
                 trainingSuggestionsModal.style.display = 'none';
             });
 
 
-            // --- Gemini API Feature: Get Training Suggestions ---
             getTrainingSuggestionsBtn.addEventListener('click', getTrainingSuggestions);
 
-            // Excel Download buttons
             downloadDetailedActivitiesExcelBtn.addEventListener('click', () => {
                 const table = document.getElementById('detailed-activities-table');
                 const dataToExport = tableToJson(table);
@@ -2676,7 +2604,6 @@
             });
 
 
-            // Scroll-to-top button logic
             const scrollToTopBtn = document.getElementById('scroll-to-top-btn');
             window.onscroll = function() {
                 if (document.body.scrollTop > 20 || document.documentElement.scrollTop > 20) {
@@ -2689,28 +2616,20 @@
                 window.scrollTo({top: 0, behavior: 'smooth'});
             });
 
-            // Re-render charts on window resize
             window.addEventListener('resize', () => {
                 if (allActivitiesData.length > 0) {
-                    renderDistanceCharts(allActivitiesData); // D3.js charts
-                    renderWeeklyDistanceChart(allActivitiesData); // D3.js chart
-                    renderChartJSCharts(allActivitiesData); // Chart.js chartsaa
+                    renderDistanceCharts(allActivitiesData); 
+                    renderWeeklyDistanceChart(allActivitiesData); 
+                    renderChartJSCharts(allActivitiesData); 
                 }
             });
 
-            // Initial state: Clear charts and filter options until data is loaded
-            // (Note: Initial rendering is now handled by checkAuthAndLoadReport calling fetchAndRenderReportData)
             document.addEventListener('DOMContentLoaded', () => {
-                // Clear charts and set initial filter options, though checkAuthAndLoadReport will ultimately populate
-                // and fetch data, so this might be redundant but safe.
-                // clearCharts(); // Already handled by fetchAndRenderReportData which calls renderAllReports
-                populateFilters(); // Ensure filters are populated even if no data is loaded yet
+                populateFilters(); 
             });
 
-            // Initialize collapsible detailed activities section
             if (detailedActivitiesHeader && detailedActivitiesContent && detailedActivitiesToggleIcon) {
                 const savedState = localStorage.getItem(DETAILED_ACTIVITIES_STATE_KEY);
-                // Default to collapsed if no state saved or if it was explicitly collapsed
                 const initialStateCollapsed = (savedState === null || savedState === 'collapsed');
                 toggleCollapsible(detailedActivitiesContent, detailedActivitiesToggleIcon, initialStateCollapsed, DETAILED_ACTIVITIES_STATE_KEY);
 
