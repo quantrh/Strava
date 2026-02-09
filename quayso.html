@@ -1,0 +1,998 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lì xì 2026 - Tết Bính Ngọ</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Canvas Confetti -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800&display=swap" rel="stylesheet">
+    
+    <style>
+        body {
+            font-family: 'Montserrat', 'Segoe UI', sans-serif;
+            overflow: hidden; 
+            /* 2.1 Background Design - Updated to show 100% image */
+            background: url('https://raw.githubusercontent.com/quantrh/Strava/main/Picture/nenquayso.png');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+        }
+        
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: rgba(255,255,255,0.5); }
+        ::-webkit-scrollbar-thumb { background: #d32f2f; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #b71c1c; }
+
+        .wheel-shadow { box-shadow: 0 0 25px rgba(0,0,0,0.15); }
+
+        .pointer {
+            position: absolute;
+            right: -25px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 0; height: 0; 
+            border-top: 25px solid transparent;
+            border-bottom: 25px solid transparent;
+            border-right: 50px solid #c62828; /* Tet Red */
+            z-index: 10;
+            filter: drop-shadow(-2px 2px 2px rgba(0,0,0,0.3));
+        }
+
+        @media (max-width: 768px) {
+            body { overflow-y: auto; }
+            .pointer {
+                right: auto; top: -25px; left: 50%;
+                transform: translateX(-50%) rotate(90deg);
+            }
+        }
+
+        /* Views Management */
+        .view-section {
+            display: none;
+            width: 100%;
+            height: 100%;
+            overflow-y: auto;
+        }
+        .view-section.active {
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Animation */
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+            100% { transform: translateY(0px); }
+        }
+        .floating-icon {
+            animation: float 3s ease-in-out infinite;
+        }
+
+        .glow-effect {
+            box-shadow: 0 0 20px rgba(255, 193, 7, 0.6);
+        }
+
+        /* Modal */
+        .modal {
+            transition: opacity 0.3s ease;
+            opacity: 0;
+            pointer-events: none;
+        }
+        .modal.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+    </style>
+</head>
+<body class="h-screen w-screen overflow-hidden text-gray-800">
+
+    <!-- View 1: HOME SCREEN (Redesigned) -->
+    <div id="view-home" class="view-section active items-center justify-center p-4">
+        
+        <!-- 2.2 Main Card -->
+        <div class="bg-white/95 backdrop-blur-sm rounded-[2rem] shadow-2xl w-full max-w-[480px] p-8 border border-white/50 relative overflow-visible">
+            
+            <!-- (1) Biểu tượng & nhận diện -->
+            <div class="absolute -top-12 left-1/2 transform -translate-x-1/2">
+                <div class="w-24 h-24 bg-gradient-to-br from-orange-500 to-yellow-400 rounded-full flex items-center justify-center text-white text-4xl shadow-xl floating-icon glow-effect border-4 border-white">
+                    <i class="fas fa-gift"></i>
+                </div>
+            </div>
+
+            <!-- (2) Tiêu đề & mô tả -->
+            <div class="text-center mt-12 mb-8">
+                <h1 class="text-4xl font-extrabold text-red-800 mb-1 tracking-tight" style="font-family: 'Montserrat', sans-serif;">LÌ XÌ 2026</h1>
+                <p class="text-gray-500 font-medium text-sm uppercase tracking-wider mb-2">Hệ thống quay thưởng & quản lý lì xì</p>
+                <p class="text-xs text-orange-600 font-serif italic">“Chúc mừng năm mới – Vạn sự như ý”</p>
+            </div>
+            
+            <!-- (3) Khu vực hành động chính (CTA) -->
+            <div class="space-y-4">
+                
+                <!-- Nút 1: Admin -->
+                <button onclick="showView('view-organizer')" class="group w-full py-3.5 bg-white border-2 border-red-100 text-red-700 rounded-xl font-bold hover:bg-red-50 hover:border-red-200 transition-all flex items-center justify-center gap-3 shadow-sm hover:shadow">
+                    <div class="w-8 h-8 rounded-full bg-red-50 flex items-center justify-center group-hover:bg-red-100 transition-colors">
+                        <i class="fas fa-user-tie text-lg"></i>
+                    </div>
+                    <span>TÔI LÀ NGƯỜI TỔ CHỨC</span>
+                </button>
+
+                <!-- Nút 2: Người chơi chính (Primary) -->
+                <button onclick="showView('view-player-login')" class="w-full py-5 bg-gradient-to-r from-red-600 to-orange-500 text-white rounded-2xl font-extrabold text-lg shadow-lg hover:shadow-orange-500/40 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-3 transform">
+                    <i class="fas fa-gamepad text-2xl animate-pulse"></i>
+                    THAM GIA QUAY SỐ
+                </button>
+
+                <!-- Nút 3: Chơi nhanh -->
+                <button onclick="startInstantPlay()" class="group w-full py-3.5 bg-white border-2 border-green-500 text-green-600 rounded-xl font-bold hover:bg-green-50 transition-all flex items-center justify-center gap-3 shadow-sm hover:shadow">
+                    <i class="fas fa-rocket text-xl group-hover:-translate-y-0.5 transition-transform"></i>
+                    CHƠI NGAY (KHÔNG CẦN ĐĂNG KÝ)
+                </button>
+            </div>
+
+            <!-- (4) Thông tin phụ -->
+            <div class="mt-8 pt-6 border-t border-gray-100 text-center">
+                <p class="text-xs text-gray-400 font-medium tracking-wide mb-3">Minh bạch – Công bằng – Vui vẻ</p>
+                <span class="inline-block px-3 py-1 bg-red-50 text-red-600 text-[10px] font-bold uppercase tracking-wider rounded-full border border-red-100">
+                    🧧 Tết Bính Ngọ 2026
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <!-- View 2: ORGANIZER DASHBOARD -->
+    <div id="view-organizer" class="view-section bg-gray-50/90 backdrop-blur-sm">
+        <nav class="bg-white shadow p-4 flex justify-between items-center sticky top-0 z-20">
+            <button onclick="showView('view-home')" class="text-gray-600 hover:text-red-500 font-medium flex items-center gap-2"><i class="fas fa-arrow-left"></i> Trang chủ</button>
+            <h2 class="font-bold text-lg text-red-800">Quản lý Đợt Lì Xì</h2>
+            <button onclick="openCreateSessionModal()" class="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 text-sm font-bold shadow flex items-center gap-2"><i class="fas fa-plus"></i> Tạo đợt mới</button>
+        </nav>
+
+        <div class="container mx-auto p-4 max-w-4xl h-full">
+            <div id="session-list" class="grid grid-cols-1 md:grid-cols-2 gap-4 pb-20">
+                <!-- Session cards injected here -->
+            </div>
+            <div id="empty-session-msg" class="text-center text-gray-400 mt-20 hidden">
+                <div class="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-folder-open text-3xl"></i>
+                </div>
+                <p>Chưa có đợt lì xì nào. Hãy tạo mới!</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- View 3: PLAYER LOGIN -->
+    <div id="view-player-login" class="view-section items-center justify-center p-4">
+        <div class="bg-white/95 backdrop-blur rounded-2xl shadow-xl max-w-md w-full p-8 relative">
+            <button onclick="showView('view-home')" class="absolute top-4 right-4 text-gray-400 hover:text-red-500 transition-colors">
+                <i class="fas fa-times text-xl"></i>
+            </button>
+            
+            <div class="text-center mb-6">
+                <h2 class="text-2xl font-extrabold text-red-700">Đăng Nhập Quay Số</h2>
+                <p class="text-sm text-gray-500 mt-1">Nhập thông tin để nhận Lì Xì</p>
+            </div>
+
+            <form id="playerForm" onsubmit="handlePlayerLogin(event)" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-1">Chọn đợt lì xì</label>
+                    <div class="relative">
+                        <select id="loginSessionId" class="w-full p-3 pl-10 border border-gray-300 rounded-xl bg-gray-50 outline-none focus:ring-2 focus:ring-red-500 appearance-none transition-all" required>
+                            <option value="">-- Chọn đợt đang mở --</option>
+                        </select>
+                        <i class="fas fa-gift absolute left-3 top-3.5 text-gray-400"></i>
+                        <i class="fas fa-chevron-down absolute right-3 top-3.5 text-gray-400 text-xs"></i>
+                    </div>
+                </div>
+                
+                <div id="sessionInfoDisplay" class="hidden bg-orange-50 p-3 rounded-lg border border-orange-200 text-sm text-gray-700 mb-2 flex gap-2">
+                    <i class="fas fa-info-circle text-orange-500 mt-0.5"></i>
+                    <span id="sessionDescText"></span>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-1">Mã PIN tham gia</label>
+                    <div class="relative">
+                        <input type="password" id="loginPin" class="w-full p-3 pl-10 border border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-red-500 transition-all" placeholder="Nhập mã PIN BTC cung cấp" required>
+                        <i class="fas fa-key absolute left-3 top-3.5 text-gray-400"></i>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="col-span-2">
+                        <label class="block text-sm font-bold text-gray-700 mb-1">Họ và Tên</label>
+                        <div class="relative">
+                            <input type="text" id="loginName" class="w-full p-3 pl-10 border border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-red-500 transition-all" placeholder="VD: Nguyen Van A" required>
+                            <i class="fas fa-user absolute left-3 top-3.5 text-gray-400"></i>
+                        </div>
+                    </div>
+                    <div class="col-span-2">
+                        <label class="block text-sm font-bold text-gray-700 mb-1">Số tài khoản BIDV</label>
+                        <div class="relative">
+                            <input type="text" id="loginAccount" class="w-full p-3 pl-10 border border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-red-500 transition-all" placeholder="Nhập STK để nhận tiền" required>
+                            <i class="fas fa-credit-card absolute left-3 top-3.5 text-gray-400"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <button type="submit" class="w-full py-4 bg-gradient-to-r from-red-600 to-orange-500 text-white font-bold rounded-xl hover:shadow-lg transform hover:-translate-y-0.5 transition-all mt-6">
+                    XÁC NHẬN VÀO QUAY
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- View 4: GAME INTERFACE (The Wheel) -->
+    <div id="view-game" class="view-section flex-col h-screen">
+        <!-- Game Navbar -->
+        <nav class="bg-white/90 backdrop-blur-md shadow-sm p-3 flex justify-between items-center z-20">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-full bg-green-100 text-green-600 flex items-center justify-center font-bold border border-green-200 shadow-sm">
+                    <i class="fas fa-user"></i>
+                </div>
+                <div class="flex flex-col">
+                    <span class="font-bold text-gray-800" id="gamePlayerName">Player</span>
+                    <span class="text-xs text-gray-500 uppercase tracking-wide" id="gameSessionName">Session</span>
+                </div>
+            </div>
+            <button onclick="exitGame()" class="text-red-500 font-bold hover:bg-red-50 px-4 py-2 rounded-lg transition-colors flex items-center gap-2">
+                <i class="fas fa-sign-out-alt"></i> Thoát
+            </button>
+        </nav>
+
+        <!-- Wheel Content -->
+        <div class="flex flex-col md:flex-row flex-1 overflow-hidden relative">
+            <!-- Left: Wheel -->
+            <div class="w-full md:w-3/5 flex items-center justify-center relative p-4" id="wheel-container">
+                <div class="relative w-[300px] h-[300px] sm:w-[400px] sm:h-[400px] md:w-[500px] md:h-[500px] lg:w-[600px] lg:h-[600px] max-w-full max-h-full transition-all">
+                    <canvas id="wheelCanvas" class="w-full h-full cursor-pointer wheel-shadow rounded-full border-4 border-white/50"></canvas>
+                    <!-- Center Hub -->
+                    <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-20 h-20 bg-white rounded-full shadow-lg border-4 border-red-100 z-10 flex items-center justify-center pointer-events-none">
+                        <div class="w-16 h-16 bg-red-50 rounded-full overflow-hidden flex items-center justify-center">
+                             <span class="text-3xl">🧧</span>
+                        </div>
+                    </div>
+                    <!-- Pointer -->
+                    <div class="pointer"></div>
+                </div>
+                
+                <!-- Instruction Toast -->
+                <div id="spin-instruction" class="absolute bottom-10 bg-white/90 backdrop-blur text-red-600 px-6 py-3 rounded-full text-sm font-bold shadow-lg pointer-events-none animate-bounce border border-red-100">
+                    <i class="fas fa-hand-pointer mr-2"></i> Chạm vào vòng quay để bắt đầu!
+                </div>
+            </div>
+
+            <!-- Right: Info & Controls -->
+            <div class="w-full md:w-2/5 bg-white/80 backdrop-blur-md shadow-2xl z-10 flex flex-col border-l border-white/50 h-1/2 md:h-full p-6">
+                
+                <!-- Player Info Box (Visible in Session Mode) -->
+                <div id="gamePlayerInfo" class="hidden">
+                    <h3 class="text-lg font-bold text-gray-800 mb-3 flex items-center gap-2">
+                        <i class="fas fa-id-card text-orange-500"></i> Thông tin người nhận
+                    </h3>
+                    <div class="bg-gradient-to-br from-blue-50 to-indigo-50 p-4 rounded-xl border border-blue-100 mb-6 shadow-sm">
+                        <p class="text-xs text-gray-500 uppercase font-semibold">Họ tên</p>
+                        <p class="font-bold text-lg text-blue-900 mb-2" id="displayPlayerName">...</p>
+                        <div class="h-px bg-blue-200 my-2"></div>
+                        <p class="text-xs text-gray-500 uppercase font-semibold">STK BIDV</p>
+                        <p class="font-mono font-bold text-lg text-blue-900 tracking-wider" id="displayPlayerAcc">...</p>
+                    </div>
+                </div>
+
+                <!-- Instant Play Controls (Visible in Guest Mode) -->
+                <div id="instantControls" class="hidden flex-col h-full">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg font-bold text-gray-800">Cài đặt vòng quay</h3>
+                        <button id="instantModeBtn" onclick="toggleInstantMode()" class="px-3 py-1.5 text-xs bg-indigo-100 text-indigo-700 rounded-full hover:bg-indigo-200 font-bold transition-colors shadow-sm">
+                            <i class="fas fa-sync-alt mr-1"></i> Đổi chế độ
+                        </button>
+                    </div>
+                    
+                    <!-- Text Area for Name Mode -->
+                    <div id="nameInputContainer" class="hidden flex-1 flex flex-col">
+                        <label class="text-xs font-bold text-gray-500 mb-2 uppercase">Nhập danh sách (Mỗi tên 1 dòng)</label>
+                        <div class="relative flex-1">
+                            <textarea id="instantNamesInput" class="w-full h-full p-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none resize-none text-base font-sans bg-white/50" placeholder="Lan&#10;Hoa&#10;Tuan..."></textarea>
+                            <div class="absolute bottom-3 right-3 text-xs bg-white px-2 py-1 rounded shadow text-gray-500 font-medium" id="nameCount">0 mục</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Prize/Name List Display (Shared area) -->
+                <div id="prizeListContainer" class="flex-1 overflow-y-auto mt-2 pr-2">
+                    <h4 class="font-bold text-gray-700 mb-3 flex items-center gap-2" id="listTitle">
+                        <i class="fas fa-list-ul text-red-500"></i> Cơ cấu giải thưởng
+                    </h4>
+                    <ul class="space-y-2 text-sm text-gray-600" id="prizeListDisplay">
+                        <!-- Filled by JS -->
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: Create Session -->
+    <div id="createSessionModal" class="modal fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-6 transform transition-all scale-100">
+            <h3 class="text-xl font-extrabold text-red-800 mb-4 border-b pb-2">Tạo Đợt Lì Xì Mới</h3>
+            <form onsubmit="handleCreateSession(event)" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-1">Tên đợt (Duy nhất)</label>
+                    <input type="text" name="name" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 outline-none" placeholder="VD: Lì xì Team Tech 2026" required>
+                </div>
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-1">Mã PIN bảo vệ (Tùy chọn)</label>
+                    <input type="text" name="pin" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 outline-none" placeholder="VD: 1234">
+                </div>
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-1">Thể lệ / Lời chúc</label>
+                    <textarea name="description" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 outline-none" rows="3" placeholder="Nhập nội dung hiển thị cho người chơi..."></textarea>
+                </div>
+                <div class="flex justify-end gap-3 mt-6 pt-4 border-t">
+                    <button type="button" onclick="closeModal('createSessionModal')" class="px-5 py-2.5 text-gray-600 hover:bg-gray-100 rounded-lg font-medium">Hủy</button>
+                    <button type="submit" class="px-5 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 font-bold shadow-lg">Tạo ngay</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: Statistics -->
+    <div id="statsModal" class="modal fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-5xl h-[85vh] flex flex-col overflow-hidden">
+            <div class="p-5 border-b bg-gray-50 flex justify-between items-center">
+                <div>
+                    <h3 class="text-xl font-extrabold text-gray-800" id="statsTitle">Thống kê</h3>
+                    <p class="text-sm text-gray-500 mt-1" id="statsSubtitle">...</p>
+                </div>
+                <button onclick="closeModal('statsModal')" class="w-8 h-8 rounded-full bg-gray-200 hover:bg-red-100 hover:text-red-500 flex items-center justify-center transition-colors"><i class="fas fa-times"></i></button>
+            </div>
+            
+            <div class="flex-1 overflow-auto p-6 bg-white">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                    <div class="bg-gradient-to-r from-green-50 to-emerald-50 p-6 rounded-xl border border-green-100 shadow-sm">
+                        <div class="flex items-center gap-4">
+                            <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center text-green-600 text-xl"><i class="fas fa-users"></i></div>
+                            <div>
+                                <p class="text-sm text-gray-500 font-medium uppercase">Tổng người chơi</p>
+                                <p class="text-3xl font-extrabold text-green-700" id="statsTotalPlayers">0</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-xl border border-blue-100 shadow-sm">
+                        <div class="flex items-center gap-4">
+                            <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 text-xl"><i class="fas fa-coins"></i></div>
+                            <div>
+                                <p class="text-sm text-gray-500 font-medium uppercase">Tổng tiền đã trao</p>
+                                <p class="text-3xl font-extrabold text-blue-700" id="statsTotalMoney">0 VND</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto rounded-xl border border-gray-200">
+                    <table class="w-full text-left">
+                        <thead>
+                            <tr class="bg-gray-100 text-gray-600 text-xs uppercase tracking-wider font-bold">
+                                <th class="p-4 border-b">Thời gian</th>
+                                <th class="p-4 border-b">Họ Tên</th>
+                                <th class="p-4 border-b">STK BIDV</th>
+                                <th class="p-4 border-b text-right">Giải thưởng</th>
+                            </tr>
+                        </thead>
+                        <tbody id="statsTableBody" class="text-sm text-gray-700 divide-y divide-gray-100">
+                            <!-- Rows injected here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="p-4 border-t bg-gray-50 flex justify-end">
+                <button onclick="exportToCSV()" class="px-5 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 font-bold shadow flex items-center gap-2">
+                    <i class="fas fa-file-excel"></i> Xuất Báo Cáo (CSV)
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: Winner Celebration -->
+    <div id="winnerModal" class="modal fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+        <div class="bg-white rounded-2xl shadow-2xl transform scale-100 w-full max-w-lg overflow-hidden animate-[bounceIn_0.5s_ease-out] relative">
+            <!-- Decorative Confetti BG -->
+            <div class="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/confetti.png')]"></div>
+            
+            <div class="relative bg-gradient-to-b from-red-600 to-red-500 p-8 text-center text-white">
+                <div class="w-16 h-16 bg-yellow-400 rounded-full flex items-center justify-center text-red-600 text-3xl mx-auto mb-4 shadow-lg border-4 border-white/30">
+                    <i class="fas fa-star"></i>
+                </div>
+                <h2 class="text-3xl font-extrabold mb-1">CHÚC MỪNG!</h2>
+                <div class="text-red-100 text-sm font-medium" id="winSubtext">Lộc xuân đã về ví của bạn</div>
+            </div>
+            
+            <div class="p-8 text-center bg-white">
+                <div class="text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-red-600 to-orange-500 mb-6 break-words leading-tight" id="winnerText">
+                    ...
+                </div>
+                
+                <div id="winnerImageContainer" class="mb-8 flex justify-center h-40">
+                     <img id="winnerImage" src="" class="h-full shadow-xl rounded-lg object-contain border-4 border-yellow-100 transform hover:scale-105 transition-transform duration-300">
+                </div>
+                
+                <button onclick="finishGameAndExit()" class="w-full py-4 bg-red-600 text-white font-bold text-lg rounded-xl hover:bg-red-700 shadow-xl shadow-red-200 transition-all transform hover:-translate-y-1">
+                    NHẬN QUÀ NGAY
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Javascript Logic -->
+    <script>
+        // --- ASSET CONFIGURATION ---
+        const baseUrl = "https://raw.githubusercontent.com/quantrh/Strava/main/Picture/";
+        
+        // Cập nhật tên file ảnh theo yêu cầu
+        const moneyImageFiles = {
+            "1.000 VND": baseUrl + "1k.jpg",
+            "2.000 VND": baseUrl + "2k.jpg",
+            "5.000 VND": baseUrl + "5K.jpg",
+            "10.000 VND": baseUrl + "10k.jpg",
+            "20.000 VND": baseUrl + "20K.jpg",
+            "50.000 VND": baseUrl + "50k.jpg",
+            "100.000 VND": baseUrl + "100k.jpg",
+            "200.000 VND": baseUrl + "200K.jpg",
+            "500.000 VND": baseUrl + "500K.jpg" // Updated to jpg
+        };
+        const moneyList = [
+            "1.000 VND", "2.000 VND", "5.000 VND", "10.000 VND", "20.000 VND", 
+            "50.000 VND", "100.000 VND", "200.000 VND", "500.000 VND"
+        ];
+        
+        // Colors for Name Mode & fallback
+        const segmentColors = ["#e53935", "#fb8c00", "#fdd835", "#43a047", "#1e88e5", "#8e24aa", "#ffb74d", "#ef5350"];
+
+        // --- DATA MANAGEMENT (LOCAL STORAGE) ---
+        const DB_KEY = 'lixi_2026_data';
+        
+        function getSessions() {
+            const data = localStorage.getItem(DB_KEY);
+            return data ? JSON.parse(data) : [];
+        }
+
+        function saveSessions(sessions) {
+            localStorage.setItem(DB_KEY, JSON.stringify(sessions));
+        }
+
+        function createSession(name, pin, description) {
+            const sessions = getSessions();
+            if (sessions.some(s => s.name.toLowerCase() === name.toLowerCase())) {
+                alert('Tên đợt lì xì này đã tồn tại! Vui lòng chọn tên khác.');
+                return false;
+            }
+
+            const newSession = {
+                id: crypto.randomUUID(),
+                name: name,
+                pin: pin,
+                description: description,
+                createdAt: new Date().toISOString(),
+                winners: [] 
+            };
+            sessions.unshift(newSession);
+            saveSessions(sessions);
+            return true;
+        }
+
+        function getSessionById(id) {
+            return getSessions().find(s => s.id === id);
+        }
+
+        function recordWinner(sessionId, winnerData) {
+            const sessions = getSessions();
+            const sessionIndex = sessions.findIndex(s => s.id === sessionId);
+            if (sessionIndex !== -1) {
+                sessions[sessionIndex].winners.push(winnerData);
+                saveSessions(sessions);
+            }
+        }
+
+        function hasPlayed(sessionId, account) {
+            const session = getSessionById(sessionId);
+            if (!session) return false;
+            const cleanAcc = account.replace(/\s/g, '');
+            return session.winners.some(w => w.account.replace(/\s/g, '') === cleanAcc);
+        }
+
+        // --- GLOBAL STATE ---
+        let currentSession = null;
+        let currentPlayer = null;
+        let isMoneyMode = true; 
+        let nameList = ['Lan', 'Hoa', 'Tuan', 'Hung', 'Mai', 'Linh', 'Dat', 'Cuong'];
+
+        // --- VIEW NAVIGATION ---
+        function showView(viewId) {
+            document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
+            document.getElementById(viewId).classList.add('active');
+            
+            if (viewId === 'view-organizer') renderSessionList();
+            if (viewId === 'view-player-login') loadSessionDropdown();
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('active');
+        }
+
+        // --- ORGANIZER LOGIC ---
+        function openCreateSessionModal() {
+            document.getElementById('createSessionModal').classList.add('active');
+        }
+
+        function handleCreateSession(e) {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const success = createSession(
+                formData.get('name'),
+                formData.get('pin'),
+                formData.get('description')
+            );
+            
+            if (success) {
+                e.target.reset();
+                closeModal('createSessionModal');
+                renderSessionList();
+            }
+        }
+
+        function renderSessionList() {
+            const sessions = getSessions();
+            const container = document.getElementById('session-list');
+            const emptyMsg = document.getElementById('empty-session-msg');
+            
+            container.innerHTML = '';
+            if (sessions.length === 0) {
+                emptyMsg.classList.remove('hidden');
+                return;
+            }
+            emptyMsg.classList.add('hidden');
+
+            sessions.forEach(s => {
+                const date = new Date(s.createdAt).toLocaleString('vi-VN');
+                const playerCount = s.winners.length;
+                let totalMoney = 0;
+                s.winners.forEach(w => {
+                    const num = parseInt(w.prize.replace(/\D/g, '')) || 0;
+                    totalMoney += num;
+                });
+
+                const card = document.createElement('div');
+                card.className = "bg-white p-5 rounded-xl border border-gray-100 hover:shadow-lg transition-shadow";
+                card.innerHTML = `
+                    <div class="flex justify-between items-start mb-3">
+                        <h3 class="font-bold text-lg text-gray-800">${s.name}</h3>
+                        <span class="bg-gray-100 text-xs font-semibold px-2 py-1 rounded text-gray-500">${date}</span>
+                    </div>
+                    <p class="text-sm text-gray-500 mb-4 line-clamp-2 h-10">${s.description || 'Không có mô tả'}</p>
+                    <div class="flex justify-between items-center text-sm mb-5 bg-gray-50 p-3 rounded-lg">
+                        <div class="flex items-center gap-1 font-semibold text-gray-700"><i class="fas fa-users text-blue-500"></i> ${playerCount}</div>
+                        <div class="flex items-center gap-1 font-bold text-yellow-600"><i class="fas fa-coins text-yellow-500"></i> ${totalMoney.toLocaleString('vi-VN')} đ</div>
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="viewStats('${s.id}')" class="flex-1 py-2.5 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 font-bold text-sm transition-colors">
+                            <i class="fas fa-chart-bar mr-1"></i> Thống kê
+                        </button>
+                         <button onclick="deleteSession('${s.id}')" class="px-4 py-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function deleteSession(id) {
+            if(confirm("Bạn có chắc muốn xóa đợt lì xì này và toàn bộ dữ liệu người chơi không?")) {
+                let sessions = getSessions();
+                sessions = sessions.filter(s => s.id !== id);
+                saveSessions(sessions);
+                renderSessionList();
+            }
+        }
+
+        // --- STATS LOGIC ---
+        let currentStatsSessionId = null;
+
+        function viewStats(sessionId) {
+            currentStatsSessionId = sessionId;
+            const session = getSessionById(sessionId);
+            if (!session) return;
+
+            document.getElementById('statsTitle').innerText = session.name;
+            document.getElementById('statsSubtitle').innerText = session.description || "Chi tiết kết quả quay thưởng";
+            document.getElementById('statsTotalPlayers').innerText = session.winners.length;
+
+            let totalMoney = 0;
+            const tbody = document.getElementById('statsTableBody');
+            tbody.innerHTML = '';
+
+            [...session.winners].reverse().forEach(w => {
+                 const num = parseInt(w.prize.replace(/\D/g, '')) || 0;
+                 totalMoney += num;
+
+                 const tr = document.createElement('tr');
+                 tr.className = "border-b border-gray-50 hover:bg-gray-50";
+                 tr.innerHTML = `
+                    <td class="p-4 text-gray-500 text-xs">
+                        <div class="font-semibold">${new Date(w.time).toLocaleDateString()}</div>
+                        <div>${new Date(w.time).toLocaleTimeString()}</div>
+                    </td>
+                    <td class="p-4 font-bold text-gray-800">${w.name}</td>
+                    <td class="p-4 font-mono text-blue-600 bg-blue-50/50 rounded">${w.account}</td>
+                    <td class="p-4 text-right font-extrabold text-red-600">${w.prize}</td>
+                 `;
+                 tbody.appendChild(tr);
+            });
+
+            document.getElementById('statsTotalMoney').innerText = totalMoney.toLocaleString('vi-VN') + ' VND';
+            document.getElementById('statsModal').classList.add('active');
+        }
+
+        function exportToCSV() {
+            if (!currentStatsSessionId) return;
+            const session = getSessionById(currentStatsSessionId);
+            let csvContent = "data:text/csv;charset=utf-8,";
+            csvContent += "Thoi gian,Ho Ten,So Tai Khoan BIDV,Giai Thuong\n"; 
+
+            session.winners.forEach(w => {
+                const row = [
+                    new Date(w.time).toLocaleString('vi-VN'),
+                    `"${w.name}"`,
+                    `"${w.account}"`,
+                    `"${w.prize}"`
+                ].join(",");
+                csvContent += row + "\n";
+            });
+
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", `Lixi_Report_${session.name}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        // --- PLAYER LOGIC ---
+        function loadSessionDropdown() {
+            const sessions = getSessions();
+            const select = document.getElementById('loginSessionId');
+            select.innerHTML = '<option value="">-- Chọn đợt đang mở --</option>';
+            sessions.forEach(s => {
+                const opt = document.createElement('option');
+                opt.value = s.id;
+                opt.text = s.name;
+                select.appendChild(opt);
+            });
+            select.onchange = (e) => {
+                const infoBox = document.getElementById('sessionInfoDisplay');
+                const sess = getSessionById(e.target.value);
+                if (sess && sess.description) {
+                    document.getElementById('sessionDescText').innerText = sess.description;
+                    infoBox.classList.remove('hidden');
+                } else {
+                    infoBox.classList.add('hidden');
+                }
+            };
+        }
+
+        function handlePlayerLogin(e) {
+            e.preventDefault();
+            const sessionId = document.getElementById('loginSessionId').value;
+            const pin = document.getElementById('loginPin').value;
+            const name = document.getElementById('loginName').value.trim();
+            const account = document.getElementById('loginAccount').value.trim();
+
+            const session = getSessionById(sessionId);
+            if (!session) { alert("Vui lòng chọn đợt lì xì"); return; }
+            if (session.pin && session.pin !== pin) { alert("Mã PIN không chính xác!"); return; }
+            if (hasPlayed(sessionId, account)) { alert(`TK ${account} đã quay rồi!`); return; }
+
+            currentSession = session;
+            currentPlayer = { name, account };
+            isMoneyMode = true;
+            startGame();
+        }
+
+        function startInstantPlay() {
+            currentSession = { id: null, name: "Khách - Chơi Tự Do" };
+            currentPlayer = { name: "Khách", account: "Vui chơi" };
+            isMoneyMode = true; 
+            startGame();
+        }
+
+        // --- GAME LOGIC ---
+        const canvas = document.getElementById('wheelCanvas');
+        const ctx = canvas.getContext('2d');
+        let currentRotation = 0;
+        let isSpinning = false;
+        let loadedMoneyImages = {};
+
+        function preloadImages() {
+             for (const [key, src] of Object.entries(moneyImageFiles)) {
+                if (!loadedMoneyImages[key]) {
+                    const img = new Image();
+                    img.crossOrigin = "anonymous";
+                    img.onload = () => { loadedMoneyImages[key] = img; };
+                    img.src = src;
+                }
+            }
+        }
+        preloadImages();
+
+        function toggleInstantMode() {
+            isMoneyMode = !isMoneyMode;
+            updateGameUI();
+            drawWheel();
+        }
+        
+        document.getElementById('instantNamesInput').addEventListener('input', (e) => {
+            const val = e.target.value;
+            nameList = val.split('\n').filter(n => n.trim() !== '');
+            document.getElementById('nameCount').innerText = `${nameList.length} mục`;
+            if(!isMoneyMode) drawWheel();
+        });
+
+        function startGame() {
+            document.getElementById('gamePlayerName').innerText = currentPlayer.name;
+            document.getElementById('gameSessionName').innerText = currentSession.name;
+            document.getElementById('displayPlayerName').innerText = currentPlayer.name;
+            document.getElementById('displayPlayerAcc').innerText = currentPlayer.account;
+            
+            if (currentSession.id === null) {
+                document.getElementById('gamePlayerInfo').classList.add('hidden');
+                document.getElementById('instantControls').classList.remove('hidden');
+                document.getElementById('instantControls').classList.add('flex');
+                
+                const textArea = document.getElementById('instantNamesInput');
+                if(!textArea.value) textArea.value = nameList.join('\n');
+            } else {
+                document.getElementById('gamePlayerInfo').classList.remove('hidden');
+                document.getElementById('instantControls').classList.add('hidden');
+                document.getElementById('instantControls').classList.remove('flex');
+            }
+
+            showView('view-game');
+            updateGameUI();
+            
+            // Wait for transition before sizing canvas
+            setTimeout(() => {
+                resizeCanvas();
+                drawWheel();
+            }, 100);
+            
+            canvas.onclick = startSpin;
+        }
+
+        function updateGameUI() {
+            const btn = document.getElementById('instantModeBtn');
+            const nameInput = document.getElementById('nameInputContainer');
+            const prizeListContainer = document.getElementById('prizeListContainer');
+            const prizeListDisplay = document.getElementById('prizeListDisplay');
+            const listTitle = document.getElementById('listTitle');
+
+            if (isMoneyMode) {
+                btn.innerHTML = '<i class="fas fa-font"></i> Chuyển Quay Tên';
+                nameInput.classList.add('hidden');
+                prizeListContainer.classList.remove('hidden');
+                listTitle.innerHTML = '<i class="fas fa-coins text-yellow-500"></i> Cơ cấu giải thưởng';
+                
+                prizeListDisplay.innerHTML = '';
+                moneyList.forEach(m => {
+                    const li = document.createElement('li');
+                    li.className = "flex items-center gap-2 p-2 bg-gray-50 rounded border border-gray-100";
+                    li.innerHTML = `<i class="fas fa-money-bill-wave text-green-500"></i> <span class="font-bold text-gray-700">${m}</span>`;
+                    prizeListDisplay.appendChild(li);
+                });
+            } else {
+                btn.innerHTML = '<i class="fas fa-money-bill-wave"></i> Chuyển Quay Tiền';
+                nameInput.classList.remove('hidden');
+                prizeListContainer.classList.add('hidden');
+            }
+        }
+
+        function resizeCanvas() {
+            const container = document.getElementById('wheel-container');
+            const size = Math.min(container.clientWidth, container.clientHeight) * 0.9;
+            const dpr = window.devicePixelRatio || 1;
+            const rect = canvas.getBoundingClientRect();
+            if (rect.width === 0) return;
+            canvas.width = rect.width * dpr;
+            canvas.height = rect.height * dpr;
+            ctx.scale(dpr, dpr);
+        }
+        window.onresize = () => { if(document.getElementById('view-game').classList.contains('active')) { resizeCanvas(); drawWheel(); }};
+
+        function drawWheel() {
+            const rect = canvas.getBoundingClientRect();
+            if (rect.width === 0) return;
+            const width = rect.width;
+            const height = rect.height;
+            const centerX = width / 2;
+            const centerY = height / 2;
+            let radius = width / 2 - 10; 
+            if (radius <= 0) return;
+
+            const items = isMoneyMode ? moneyList : nameList;
+
+            ctx.clearRect(0, 0, width, height);
+            
+            if (items.length === 0) return;
+
+            const step = (2 * Math.PI) / items.length;
+
+            ctx.save();
+            ctx.translate(centerX, centerY);
+            ctx.rotate(currentRotation);
+
+            for (let i = 0; i < items.length; i++) {
+                ctx.beginPath();
+                ctx.moveTo(0, 0);
+                ctx.arc(0, 0, radius, i * step, (i + 1) * step);
+                ctx.closePath();
+                ctx.fillStyle = segmentColors[i % segmentColors.length];
+                ctx.fill();
+                ctx.lineWidth = 1;
+                ctx.strokeStyle = "#fff";
+                ctx.stroke();
+
+                ctx.save();
+                ctx.rotate(i * step + step / 2);
+                
+                const val = items[i];
+                
+                if (isMoneyMode && loadedMoneyImages[val]) {
+                    const img = loadedMoneyImages[val];
+                    const aspectRatio = img.width / img.height;
+                    const drawHeight = radius * 0.35; 
+                    const drawWidth = drawHeight * aspectRatio;
+                    const startX = radius * 0.2;
+                    let finalWidth = drawWidth;
+                    let finalHeight = drawHeight;
+                    
+                    if (startX + finalWidth > radius - 10) {
+                        const scale = (radius - 10 - startX) / finalWidth;
+                        finalWidth *= scale;
+                        finalHeight *= scale;
+                    }
+                    ctx.drawImage(img, startX, -finalHeight/2, finalWidth, finalHeight);
+                } else {
+                    ctx.textAlign = "right";
+                    ctx.fillStyle = "#fff";
+                    const fontSize = Math.min(20 + 200/items.length, 28);
+                    ctx.font = `bold ${fontSize}px Montserrat, Arial`;
+                    ctx.shadowColor = "rgba(0,0,0,0.3)";
+                    ctx.shadowBlur = 2;
+                    ctx.fillText(val, radius - 20, 8);
+                }
+                ctx.restore();
+            }
+            ctx.restore();
+        }
+
+        function startSpin() {
+            const items = isMoneyMode ? moneyList : nameList;
+            if (isSpinning || items.length === 0) return;
+            
+            isSpinning = true;
+            document.getElementById('spin-instruction').style.opacity = '0';
+            
+            const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            function playTick() {
+                 const osc = audioCtx.createOscillator();
+                 const gain = audioCtx.createGain();
+                 osc.frequency.setValueAtTime(600, audioCtx.currentTime);
+                 gain.gain.setValueAtTime(0.05, audioCtx.currentTime);
+                 gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.05);
+                 osc.connect(gain); gain.connect(audioCtx.destination);
+                 osc.start(); osc.stop(audioCtx.currentTime + 0.05);
+            }
+
+            const duration = 7000; 
+            const startTimestamp = performance.now();
+            const randomOffset = Math.random() * 2 * Math.PI;
+            const totalRotationNeeded = (15 * Math.PI * 2) + randomOffset; 
+            const startAngle = currentRotation;
+            let lastSegmentIndex = -1;
+
+            function animate(timestamp) {
+                const elapsed = timestamp - startTimestamp;
+                const progress = Math.min(elapsed / duration, 1);
+                const ease = 1 - Math.pow(1 - progress, 3);
+                
+                const prevRotation = currentRotation;
+                currentRotation = startAngle + (totalRotationNeeded * ease);
+
+                const itemsCount = isMoneyMode ? moneyList.length : nameList.length;
+                const step = (2 * Math.PI) / itemsCount;
+                const normalizedRot = currentRotation % (2 * Math.PI);
+                const currentIndex = Math.floor((2 * Math.PI - normalizedRot) / step) % itemsCount;
+                
+                if (currentIndex !== lastSegmentIndex && progress < 1) {
+                    playTick();
+                    lastSegmentIndex = currentIndex;
+                }
+
+                drawWheel();
+
+                if (progress < 1) {
+                    requestAnimationFrame(animate);
+                } else {
+                    isSpinning = false;
+                    finishSpin();
+                }
+            }
+            requestAnimationFrame(animate);
+        }
+
+        function finishSpin() {
+            const items = isMoneyMode ? moneyList : nameList;
+            const step = (2 * Math.PI) / items.length;
+            const normalizedRotation = currentRotation % (2 * Math.PI);
+            let winningIndex = Math.floor(((2 * Math.PI) - normalizedRotation) / step) % items.length;
+            if (winningIndex < 0) winningIndex += items.length;
+
+            const prize = items[winningIndex];
+            
+            if (currentSession && currentSession.id) {
+                const winnerData = {
+                    name: currentPlayer.name,
+                    account: currentPlayer.account,
+                    prize: prize,
+                    time: new Date().toISOString()
+                };
+                recordWinner(currentSession.id, winnerData);
+            }
+
+            document.getElementById('winnerText').innerText = prize;
+            document.getElementById('winSubtext').innerText = isMoneyMode ? "Lộc xuân đã về ví của bạn" : "Người chiến thắng là";
+
+            const imgContainer = document.getElementById('winnerImageContainer');
+            
+            if (isMoneyMode && loadedMoneyImages[prize]) {
+                document.getElementById('winnerImage').src = loadedMoneyImages[prize].src;
+                imgContainer.classList.remove('hidden');
+            } else {
+                imgContainer.classList.add('hidden');
+            }
+            
+            document.getElementById('winnerModal').classList.add('active');
+            
+            confetti({ particleCount: 200, spread: 120, origin: { y: 0.6 }, colors: ['#e53935', '#ffeb3b', '#43a047'] });
+        }
+
+        function finishGameAndExit() {
+            document.getElementById('winnerModal').classList.remove('active');
+            if (currentSession.id) {
+                exitGame();
+            } else {
+                document.getElementById('spin-instruction').style.opacity = '1';
+            }
+        }
+
+        function exitGame() {
+            currentSession = null;
+            currentPlayer = null;
+            isSpinning = false;
+            document.getElementById('spin-instruction').style.opacity = '1';
+            showView('view-home');
+            document.getElementById('playerForm').reset();
+        }
+
+        resizeCanvas();
+    </script>
+</body>
+</html>
