@@ -2,7 +2,7 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Lì xì 2026 - Tết Bính Ngọ</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -17,7 +17,7 @@
         body {
             font-family: 'Montserrat', 'Segoe UI', sans-serif;
             overflow: hidden; 
-            /* 2.1 Background Design - Updated to show 100% image */
+            /* 2.1 Background Design */
             background: url('https://raw.githubusercontent.com/quantrh/Strava/main/Picture/nenquayso.png');
             background-size: cover;
             background-position: center;
@@ -25,13 +25,13 @@
         }
         
         /* Custom Scrollbar */
-        ::-webkit-scrollbar { width: 8px; height: 8px; }
-        ::-webkit-scrollbar-track { background: rgba(255,255,255,0.5); }
+        ::-webkit-scrollbar { width: 4px; height: 4px; }
+        ::-webkit-scrollbar-track { background: rgba(255,255,255,0.2); }
         ::-webkit-scrollbar-thumb { background: #d32f2f; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #b71c1c; }
 
         .wheel-shadow { box-shadow: 0 0 25px rgba(0,0,0,0.15); }
 
+        /* Desktop Pointer (Right side) */
         .pointer {
             position: absolute;
             right: -25px;
@@ -45,11 +45,40 @@
             filter: drop-shadow(-2px 2px 2px rgba(0,0,0,0.3));
         }
 
+        /* Mobile Responsive Adjustments */
         @media (max-width: 768px) {
-            body { overflow-y: auto; }
+            body { 
+                overflow-y: auto; /* Allow scrolling on mobile body */
+                height: auto;
+                min-height: 100vh;
+            }
+            
+            /* Pointer moves to Top on Mobile */
             .pointer {
-                right: auto; top: -25px; left: 50%;
+                right: auto; 
+                top: -20px; 
+                left: 50%;
                 transform: translateX(-50%) rotate(90deg);
+                border-top: 20px solid transparent;
+                border-bottom: 20px solid transparent;
+                border-right: 40px solid #c62828;
+            }
+
+            /* Adjust Wheel Container spacing for top pointer */
+            #wheel-container {
+                padding-top: 40px !important;
+                padding-bottom: 20px !important;
+            }
+            
+            /* Game layout specific */
+            #view-game {
+                height: auto !important;
+                min-height: 100vh;
+                display: block; /* Break flex height constraint */
+            }
+            
+            .mobile-full-height {
+                min-height: 100vh;
             }
         }
 
@@ -75,11 +104,6 @@
             animation: float 3s ease-in-out infinite;
         }
 
-        .glow-effect {
-            box-shadow: 0 0 20px rgba(255, 193, 7, 0.6);
-        }
-
-        /* Modal */
         .modal {
             transition: opacity 0.3s ease;
             opacity: 0;
@@ -91,54 +115,44 @@
         }
     </style>
 </head>
-<body class="h-screen w-screen overflow-hidden text-gray-800">
+<body class="h-screen w-screen text-gray-800">
 
-    <!-- View 1: HOME SCREEN (Redesigned) -->
+    <!-- View 1: HOME SCREEN -->
     <div id="view-home" class="view-section active items-center justify-center p-4">
-        
-        <!-- 2.2 Main Card -->
-        <div class="bg-white/95 backdrop-blur-sm rounded-[2rem] shadow-2xl w-full max-w-[480px] p-8 border border-white/50 relative overflow-visible">
+        <div class="bg-white/95 backdrop-blur-sm rounded-[2rem] shadow-2xl w-full max-w-[480px] p-6 md:p-8 border border-white/50 relative overflow-visible mt-8 md:mt-0">
             
-            <!-- (1) Biểu tượng & nhận diện -->
-            <div class="absolute -top-12 left-1/2 transform -translate-x-1/2">
-                <div class="w-24 h-24 bg-gradient-to-br from-orange-500 to-yellow-400 rounded-full flex items-center justify-center text-white text-4xl shadow-xl floating-icon glow-effect border-4 border-white">
+            <div class="absolute -top-10 left-1/2 transform -translate-x-1/2">
+                <div class="w-20 h-20 md:w-24 md:h-24 bg-gradient-to-br from-orange-500 to-yellow-400 rounded-full flex items-center justify-center text-white text-3xl md:text-4xl shadow-xl floating-icon glow-effect border-4 border-white">
                     <i class="fas fa-gift"></i>
                 </div>
             </div>
 
-            <!-- (2) Tiêu đề & mô tả -->
-            <div class="text-center mt-12 mb-8">
-                <h1 class="text-4xl font-extrabold text-red-800 mb-1 tracking-tight" style="font-family: 'Montserrat', sans-serif;">LÌ XÌ 2026</h1>
-                <p class="text-gray-500 font-medium text-sm uppercase tracking-wider mb-2">Hệ thống quay thưởng & quản lý lì xì</p>
+            <div class="text-center mt-10 md:mt-12 mb-6 md:mb-8">
+                <h1 class="text-3xl md:text-4xl font-extrabold text-red-800 mb-1 tracking-tight">LÌ XÌ 2026</h1>
+                <p class="text-gray-500 font-medium text-xs md:text-sm uppercase tracking-wider mb-2">Hệ thống quay thưởng & quản lý lì xì</p>
                 <p class="text-xs text-orange-600 font-serif italic">“Chúc mừng năm mới – Vạn sự như ý”</p>
             </div>
             
-            <!-- (3) Khu vực hành động chính (CTA) -->
-            <div class="space-y-4">
-                
-                <!-- Nút 1: Admin -->
-                <button onclick="showView('view-organizer')" class="group w-full py-3.5 bg-white border-2 border-red-100 text-red-700 rounded-xl font-bold hover:bg-red-50 hover:border-red-200 transition-all flex items-center justify-center gap-3 shadow-sm hover:shadow">
+            <div class="space-y-3 md:space-y-4">
+                <button onclick="showView('view-organizer')" class="group w-full py-3 bg-white border-2 border-red-100 text-red-700 rounded-xl font-bold hover:bg-red-50 hover:border-red-200 transition-all flex items-center justify-center gap-3 shadow-sm hover:shadow text-sm md:text-base">
                     <div class="w-8 h-8 rounded-full bg-red-50 flex items-center justify-center group-hover:bg-red-100 transition-colors">
                         <i class="fas fa-user-tie text-lg"></i>
                     </div>
                     <span>TÔI LÀ NGƯỜI TỔ CHỨC</span>
                 </button>
 
-                <!-- Nút 2: Người chơi chính (Primary) -->
-                <button onclick="showView('view-player-login')" class="w-full py-5 bg-gradient-to-r from-red-600 to-orange-500 text-white rounded-2xl font-extrabold text-lg shadow-lg hover:shadow-orange-500/40 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-3 transform">
-                    <i class="fas fa-gamepad text-2xl animate-pulse"></i>
+                <button onclick="showView('view-player-login')" class="w-full py-4 bg-gradient-to-r from-red-600 to-orange-500 text-white rounded-2xl font-extrabold text-base md:text-lg shadow-lg hover:shadow-orange-500/40 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-3 transform">
+                    <i class="fas fa-gamepad text-xl md:text-2xl animate-pulse"></i>
                     THAM GIA QUAY SỐ
                 </button>
 
-                <!-- Nút 3: Chơi nhanh -->
-                <button onclick="startInstantPlay()" class="group w-full py-3.5 bg-white border-2 border-green-500 text-green-600 rounded-xl font-bold hover:bg-green-50 transition-all flex items-center justify-center gap-3 shadow-sm hover:shadow">
-                    <i class="fas fa-rocket text-xl group-hover:-translate-y-0.5 transition-transform"></i>
+                <button onclick="startInstantPlay()" class="group w-full py-3 bg-white border-2 border-green-500 text-green-600 rounded-xl font-bold hover:bg-green-50 transition-all flex items-center justify-center gap-3 shadow-sm hover:shadow text-sm md:text-base">
+                    <i class="fas fa-rocket text-lg md:text-xl group-hover:-translate-y-0.5 transition-transform"></i>
                     CHƠI NGAY (KHÔNG CẦN ĐĂNG KÝ)
                 </button>
             </div>
 
-            <!-- (4) Thông tin phụ -->
-            <div class="mt-8 pt-6 border-t border-gray-100 text-center">
+            <div class="mt-6 md:mt-8 pt-4 md:pt-6 border-t border-gray-100 text-center">
                 <p class="text-xs text-gray-400 font-medium tracking-wide mb-3">Minh bạch – Công bằng – Vui vẻ</p>
                 <span class="inline-block px-3 py-1 bg-red-50 text-red-600 text-[10px] font-bold uppercase tracking-wider rounded-full border border-red-100">
                     🧧 Tết Bính Ngọ 2026
@@ -148,14 +162,14 @@
     </div>
 
     <!-- View 2: ORGANIZER DASHBOARD -->
-    <div id="view-organizer" class="view-section bg-gray-50/90 backdrop-blur-sm">
-        <nav class="bg-white shadow p-4 flex justify-between items-center sticky top-0 z-20">
-            <button onclick="showView('view-home')" class="text-gray-600 hover:text-red-500 font-medium flex items-center gap-2"><i class="fas fa-arrow-left"></i> Trang chủ</button>
-            <h2 class="font-bold text-lg text-red-800">Quản lý Đợt Lì Xì</h2>
-            <button onclick="openCreateSessionModal()" class="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 text-sm font-bold shadow flex items-center gap-2"><i class="fas fa-plus"></i> Tạo đợt mới</button>
+    <div id="view-organizer" class="view-section bg-gray-50/90 backdrop-blur-sm h-full">
+        <nav class="bg-white shadow p-3 md:p-4 flex justify-between items-center sticky top-0 z-20">
+            <button onclick="showView('view-home')" class="text-gray-600 hover:text-red-500 font-medium flex items-center gap-2 text-sm md:text-base"><i class="fas fa-arrow-left"></i> <span class="hidden md:inline">Trang chủ</span></button>
+            <h2 class="font-bold text-base md:text-lg text-red-800">Quản lý Đợt Lì Xì</h2>
+            <button onclick="openCreateSessionModal()" class="bg-red-600 text-white px-3 py-1.5 md:px-4 md:py-2 rounded-lg hover:bg-red-700 text-xs md:text-sm font-bold shadow flex items-center gap-2"><i class="fas fa-plus"></i> <span class="hidden md:inline">Tạo đợt mới</span><span class="md:hidden">Tạo mới</span></button>
         </nav>
 
-        <div class="container mx-auto p-4 max-w-4xl h-full">
+        <div class="container mx-auto p-4 max-w-4xl h-full overflow-y-auto">
             <div id="session-list" class="grid grid-cols-1 md:grid-cols-2 gap-4 pb-20">
                 <!-- Session cards injected here -->
             </div>
@@ -170,21 +184,21 @@
 
     <!-- View 3: PLAYER LOGIN -->
     <div id="view-player-login" class="view-section items-center justify-center p-4">
-        <div class="bg-white/95 backdrop-blur rounded-2xl shadow-xl max-w-md w-full p-8 relative">
+        <div class="bg-white/95 backdrop-blur rounded-2xl shadow-xl max-w-md w-full p-6 md:p-8 relative mt-10 md:mt-0">
             <button onclick="showView('view-home')" class="absolute top-4 right-4 text-gray-400 hover:text-red-500 transition-colors">
                 <i class="fas fa-times text-xl"></i>
             </button>
             
             <div class="text-center mb-6">
-                <h2 class="text-2xl font-extrabold text-red-700">Đăng Nhập Quay Số</h2>
-                <p class="text-sm text-gray-500 mt-1">Nhập thông tin để nhận Lì Xì</p>
+                <h2 class="text-xl md:text-2xl font-extrabold text-red-700">Đăng Nhập Quay Số</h2>
+                <p class="text-xs md:text-sm text-gray-500 mt-1">Nhập thông tin để nhận Lì Xì</p>
             </div>
 
             <form id="playerForm" onsubmit="handlePlayerLogin(event)" class="space-y-4">
                 <div>
                     <label class="block text-sm font-bold text-gray-700 mb-1">Chọn đợt lì xì</label>
                     <div class="relative">
-                        <select id="loginSessionId" class="w-full p-3 pl-10 border border-gray-300 rounded-xl bg-gray-50 outline-none focus:ring-2 focus:ring-red-500 appearance-none transition-all" required>
+                        <select id="loginSessionId" class="w-full p-3 pl-10 border border-gray-300 rounded-xl bg-gray-50 outline-none focus:ring-2 focus:ring-red-500 appearance-none transition-all text-sm md:text-base" required>
                             <option value="">-- Chọn đợt đang mở --</option>
                         </select>
                         <i class="fas fa-gift absolute left-3 top-3.5 text-gray-400"></i>
@@ -200,63 +214,65 @@
                 <div>
                     <label class="block text-sm font-bold text-gray-700 mb-1">Mã PIN tham gia</label>
                     <div class="relative">
-                        <input type="password" id="loginPin" class="w-full p-3 pl-10 border border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-red-500 transition-all" placeholder="Nhập mã PIN BTC cung cấp" required>
+                        <input type="password" id="loginPin" class="w-full p-3 pl-10 border border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-red-500 transition-all text-sm md:text-base" placeholder="Nhập mã PIN BTC cung cấp" required>
                         <i class="fas fa-key absolute left-3 top-3.5 text-gray-400"></i>
                     </div>
                 </div>
 
-                <div class="grid grid-cols-2 gap-4">
-                    <div class="col-span-2">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="col-span-1">
                         <label class="block text-sm font-bold text-gray-700 mb-1">Họ và Tên</label>
                         <div class="relative">
-                            <input type="text" id="loginName" class="w-full p-3 pl-10 border border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-red-500 transition-all" placeholder="VD: Nguyen Van A" required>
+                            <input type="text" id="loginName" class="w-full p-3 pl-10 border border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-red-500 transition-all text-sm md:text-base" placeholder="VD: Nguyen Van A" required>
                             <i class="fas fa-user absolute left-3 top-3.5 text-gray-400"></i>
                         </div>
                     </div>
-                    <div class="col-span-2">
+                    <div class="col-span-1">
                         <label class="block text-sm font-bold text-gray-700 mb-1">Số tài khoản BIDV</label>
                         <div class="relative">
-                            <input type="text" id="loginAccount" class="w-full p-3 pl-10 border border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-red-500 transition-all" placeholder="Nhập STK để nhận tiền" required>
+                            <input type="text" id="loginAccount" class="w-full p-3 pl-10 border border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-red-500 transition-all text-sm md:text-base" placeholder="Nhập STK để nhận tiền" required>
                             <i class="fas fa-credit-card absolute left-3 top-3.5 text-gray-400"></i>
                         </div>
                     </div>
                 </div>
 
-                <button type="submit" class="w-full py-4 bg-gradient-to-r from-red-600 to-orange-500 text-white font-bold rounded-xl hover:shadow-lg transform hover:-translate-y-0.5 transition-all mt-6">
+                <button type="submit" class="w-full py-3.5 md:py-4 bg-gradient-to-r from-red-600 to-orange-500 text-white font-bold rounded-xl hover:shadow-lg transform hover:-translate-y-0.5 transition-all mt-6 text-sm md:text-base">
                     XÁC NHẬN VÀO QUAY
                 </button>
             </form>
         </div>
     </div>
 
-    <!-- View 4: GAME INTERFACE (The Wheel) -->
-    <div id="view-game" class="view-section flex-col h-screen">
+    <!-- View 4: GAME INTERFACE (Responsive Layout) -->
+    <div id="view-game" class="view-section flex-col h-full bg-white/30">
         <!-- Game Navbar -->
-        <nav class="bg-white/90 backdrop-blur-md shadow-sm p-3 flex justify-between items-center z-20">
+        <nav class="bg-white/90 backdrop-blur-md shadow-sm p-3 flex justify-between items-center z-20 sticky top-0">
             <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-full bg-green-100 text-green-600 flex items-center justify-center font-bold border border-green-200 shadow-sm">
-                    <i class="fas fa-user"></i>
+                <div class="w-8 h-8 md:w-10 md:h-10 rounded-full bg-green-100 text-green-600 flex items-center justify-center font-bold border border-green-200 shadow-sm">
+                    <i class="fas fa-user text-sm md:text-base"></i>
                 </div>
                 <div class="flex flex-col">
-                    <span class="font-bold text-gray-800" id="gamePlayerName">Player</span>
-                    <span class="text-xs text-gray-500 uppercase tracking-wide" id="gameSessionName">Session</span>
+                    <span class="font-bold text-gray-800 text-sm md:text-base" id="gamePlayerName">Player</span>
+                    <span class="text-[10px] md:text-xs text-gray-500 uppercase tracking-wide" id="gameSessionName">Session</span>
                 </div>
             </div>
-            <button onclick="exitGame()" class="text-red-500 font-bold hover:bg-red-50 px-4 py-2 rounded-lg transition-colors flex items-center gap-2">
+            <button onclick="exitGame()" class="text-red-500 font-bold hover:bg-red-50 px-3 py-1.5 md:px-4 md:py-2 rounded-lg transition-colors flex items-center gap-2 text-sm md:text-base">
                 <i class="fas fa-sign-out-alt"></i> Thoát
             </button>
         </nav>
 
-        <!-- Wheel Content -->
-        <div class="flex flex-col md:flex-row flex-1 overflow-hidden relative">
-            <!-- Left: Wheel -->
-            <div class="w-full md:w-3/5 flex items-center justify-center relative p-4" id="wheel-container">
-                <div class="relative w-[300px] h-[300px] sm:w-[400px] sm:h-[400px] md:w-[500px] md:h-[500px] lg:w-[600px] lg:h-[600px] max-w-full max-h-full transition-all">
+        <!-- Wheel Content: Mobile (Col) -> Desktop (Row) -->
+        <div class="flex flex-col md:flex-row flex-1 relative w-full h-full md:overflow-hidden overflow-y-auto">
+            
+            <!-- Left (Top on Mobile): Wheel -->
+            <!-- Adjusted height for mobile to fit screen better -->
+            <div class="w-full md:w-3/5 flex items-center justify-center relative p-4 shrink-0 bg-transparent min-h-[350px] md:min-h-full" id="wheel-container">
+                <div class="relative w-[280px] h-[280px] sm:w-[350px] sm:h-[350px] md:w-[500px] md:h-[500px] lg:w-[600px] lg:h-[600px] max-w-full max-h-full transition-all">
                     <canvas id="wheelCanvas" class="w-full h-full cursor-pointer wheel-shadow rounded-full border-4 border-white/50"></canvas>
                     <!-- Center Hub -->
-                    <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-20 h-20 bg-white rounded-full shadow-lg border-4 border-red-100 z-10 flex items-center justify-center pointer-events-none">
-                        <div class="w-16 h-16 bg-red-50 rounded-full overflow-hidden flex items-center justify-center">
-                             <span class="text-3xl">🧧</span>
+                    <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-16 h-16 md:w-20 md:h-20 bg-white rounded-full shadow-lg border-4 border-red-100 z-10 flex items-center justify-center pointer-events-none">
+                        <div class="w-12 h-12 md:w-16 md:h-16 bg-red-50 rounded-full overflow-hidden flex items-center justify-center">
+                             <span class="text-2xl md:text-3xl">🧧</span>
                         </div>
                     </div>
                     <!-- Pointer -->
@@ -264,53 +280,56 @@
                 </div>
                 
                 <!-- Instruction Toast -->
-                <div id="spin-instruction" class="absolute bottom-10 bg-white/90 backdrop-blur text-red-600 px-6 py-3 rounded-full text-sm font-bold shadow-lg pointer-events-none animate-bounce border border-red-100">
-                    <i class="fas fa-hand-pointer mr-2"></i> Chạm vào vòng quay để bắt đầu!
+                <div id="spin-instruction" class="absolute bottom-4 md:bottom-10 bg-white/90 backdrop-blur text-red-600 px-4 py-2 md:px-6 md:py-3 rounded-full text-xs md:text-sm font-bold shadow-lg pointer-events-none animate-bounce border border-red-100 text-center whitespace-nowrap">
+                    <i class="fas fa-hand-pointer mr-2"></i> Chạm để quay!
                 </div>
             </div>
 
-            <!-- Right: Info & Controls -->
-            <div class="w-full md:w-2/5 bg-white/80 backdrop-blur-md shadow-2xl z-10 flex flex-col border-l border-white/50 h-1/2 md:h-full p-6">
+            <!-- Right (Bottom on Mobile): Info & Controls -->
+            <div class="w-full md:w-2/5 bg-white/80 backdrop-blur-md shadow-[0_-10px_20px_rgba(0,0,0,0.1)] md:shadow-2xl z-10 flex flex-col md:border-l border-white/50 min-h-[40vh] md:h-full p-4 md:p-6 rounded-t-[2rem] md:rounded-none relative">
                 
+                <!-- Handle bar for mobile feel -->
+                <div class="w-12 h-1 bg-gray-300 rounded-full mx-auto mb-4 md:hidden"></div>
+
                 <!-- Player Info Box (Visible in Session Mode) -->
                 <div id="gamePlayerInfo" class="hidden">
-                    <h3 class="text-lg font-bold text-gray-800 mb-3 flex items-center gap-2">
+                    <h3 class="text-base md:text-lg font-bold text-gray-800 mb-3 flex items-center gap-2">
                         <i class="fas fa-id-card text-orange-500"></i> Thông tin người nhận
                     </h3>
-                    <div class="bg-gradient-to-br from-blue-50 to-indigo-50 p-4 rounded-xl border border-blue-100 mb-6 shadow-sm">
+                    <div class="bg-gradient-to-br from-blue-50 to-indigo-50 p-4 rounded-xl border border-blue-100 mb-4 shadow-sm">
                         <p class="text-xs text-gray-500 uppercase font-semibold">Họ tên</p>
-                        <p class="font-bold text-lg text-blue-900 mb-2" id="displayPlayerName">...</p>
+                        <p class="font-bold text-base md:text-lg text-blue-900 mb-2" id="displayPlayerName">...</p>
                         <div class="h-px bg-blue-200 my-2"></div>
                         <p class="text-xs text-gray-500 uppercase font-semibold">STK BIDV</p>
-                        <p class="font-mono font-bold text-lg text-blue-900 tracking-wider" id="displayPlayerAcc">...</p>
+                        <p class="font-mono font-bold text-base md:text-lg text-blue-900 tracking-wider" id="displayPlayerAcc">...</p>
                     </div>
                 </div>
 
                 <!-- Instant Play Controls (Visible in Guest Mode) -->
                 <div id="instantControls" class="hidden flex-col h-full">
                     <div class="flex justify-between items-center mb-4">
-                        <h3 class="text-lg font-bold text-gray-800">Cài đặt vòng quay</h3>
+                        <h3 class="text-base md:text-lg font-bold text-gray-800">Cài đặt vòng quay</h3>
                         <button id="instantModeBtn" onclick="toggleInstantMode()" class="px-3 py-1.5 text-xs bg-indigo-100 text-indigo-700 rounded-full hover:bg-indigo-200 font-bold transition-colors shadow-sm">
                             <i class="fas fa-sync-alt mr-1"></i> Đổi chế độ
                         </button>
                     </div>
                     
-                    <!-- Text Area for Name Mode -->
-                    <div id="nameInputContainer" class="hidden flex-1 flex flex-col">
-                        <label class="text-xs font-bold text-gray-500 mb-2 uppercase">Nhập danh sách (Mỗi tên 1 dòng)</label>
+                    <!-- Text Area for Editing Prizes/Names -->
+                    <div id="nameInputContainer" class="flex-1 flex flex-col min-h-[150px]">
+                        <label class="text-xs font-bold text-gray-500 mb-2 uppercase" id="inputLabel">Danh sách giải thưởng</label>
                         <div class="relative flex-1">
-                            <textarea id="instantNamesInput" class="w-full h-full p-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none resize-none text-base font-sans bg-white/50" placeholder="Lan&#10;Hoa&#10;Tuan..."></textarea>
+                            <textarea id="instantInput" class="w-full h-full p-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none resize-none text-sm md:text-base font-sans bg-white/50" placeholder="..."></textarea>
                             <div class="absolute bottom-3 right-3 text-xs bg-white px-2 py-1 rounded shadow text-gray-500 font-medium" id="nameCount">0 mục</div>
                         </div>
                     </div>
                 </div>
                 
-                <!-- Prize/Name List Display (Shared area) -->
-                <div id="prizeListContainer" class="flex-1 overflow-y-auto mt-2 pr-2">
+                <!-- Prize List Display (Session Mode - Read Only) -->
+                <div id="prizeListContainer" class="flex-1 overflow-y-auto mt-2 pr-2 hidden max-h-[300px] md:max-h-none">
                     <h4 class="font-bold text-gray-700 mb-3 flex items-center gap-2" id="listTitle">
                         <i class="fas fa-list-ul text-red-500"></i> Cơ cấu giải thưởng
                     </h4>
-                    <ul class="space-y-2 text-sm text-gray-600" id="prizeListDisplay">
+                    <ul class="space-y-2 text-sm text-gray-600 pb-10 md:pb-0" id="prizeListDisplay">
                         <!-- Filled by JS -->
                     </ul>
                 </div>
@@ -320,24 +339,31 @@
 
     <!-- MODAL: Create Session -->
     <div id="createSessionModal" class="modal fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-6 transform transition-all scale-100">
-            <h3 class="text-xl font-extrabold text-red-800 mb-4 border-b pb-2">Tạo Đợt Lì Xì Mới</h3>
-            <form onsubmit="handleCreateSession(event)" class="space-y-4">
-                <div>
-                    <label class="block text-sm font-bold text-gray-700 mb-1">Tên đợt (Duy nhất)</label>
-                    <input type="text" name="name" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 outline-none" placeholder="VD: Lì xì Team Tech 2026" required>
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-6 transform transition-all scale-100 h-[80vh] md:h-[90vh] flex flex-col">
+            <h3 class="text-lg md:text-xl font-extrabold text-red-800 mb-4 border-b pb-2">Tạo Đợt Lì Xì Mới</h3>
+            <form onsubmit="handleCreateSession(event)" class="space-y-4 flex-1 flex flex-col overflow-hidden">
+                <div class="overflow-y-auto pr-2 space-y-4 flex-1">
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-1">Tên đợt (Duy nhất)</label>
+                        <input type="text" name="name" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 outline-none text-sm" placeholder="VD: Lì xì Team Tech 2026" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-1">Mã PIN bảo vệ (Tùy chọn)</label>
+                        <input type="text" name="pin" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 outline-none text-sm" placeholder="VD: 1234">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-1">Thể lệ / Lời chúc</label>
+                        <textarea name="description" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 outline-none text-sm" rows="2" placeholder="Nhập nội dung hiển thị cho người chơi..."></textarea>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-1">Danh sách giải thưởng</label>
+                        <textarea name="prizes" id="sessionPrizeInput" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 outline-none font-mono text-xs md:text-sm" rows="6" placeholder="1.000 VND&#10;2.000 VND..."></textarea>
+                        <p class="text-[10px] md:text-xs text-gray-500 mt-1">Gợi ý: Nhập đúng "500.000 VND" để hiện ảnh tiền.</p>
+                    </div>
                 </div>
-                <div>
-                    <label class="block text-sm font-bold text-gray-700 mb-1">Mã PIN bảo vệ (Tùy chọn)</label>
-                    <input type="text" name="pin" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 outline-none" placeholder="VD: 1234">
-                </div>
-                <div>
-                    <label class="block text-sm font-bold text-gray-700 mb-1">Thể lệ / Lời chúc</label>
-                    <textarea name="description" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 outline-none" rows="3" placeholder="Nhập nội dung hiển thị cho người chơi..."></textarea>
-                </div>
-                <div class="flex justify-end gap-3 mt-6 pt-4 border-t">
-                    <button type="button" onclick="closeModal('createSessionModal')" class="px-5 py-2.5 text-gray-600 hover:bg-gray-100 rounded-lg font-medium">Hủy</button>
-                    <button type="submit" class="px-5 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 font-bold shadow-lg">Tạo ngay</button>
+                <div class="flex justify-end gap-3 mt-4 pt-4 border-t shrink-0">
+                    <button type="button" onclick="closeModal('createSessionModal')" class="px-4 py-2 md:px-5 md:py-2.5 text-gray-600 hover:bg-gray-100 rounded-lg font-medium text-sm">Hủy</button>
+                    <button type="submit" class="px-4 py-2 md:px-5 md:py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 font-bold shadow-lg text-sm">Tạo ngay</button>
                 </div>
             </form>
         </div>
@@ -346,44 +372,44 @@
     <!-- MODAL: Statistics -->
     <div id="statsModal" class="modal fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-5xl h-[85vh] flex flex-col overflow-hidden">
-            <div class="p-5 border-b bg-gray-50 flex justify-between items-center">
+            <div class="p-4 md:p-5 border-b bg-gray-50 flex justify-between items-center">
                 <div>
-                    <h3 class="text-xl font-extrabold text-gray-800" id="statsTitle">Thống kê</h3>
-                    <p class="text-sm text-gray-500 mt-1" id="statsSubtitle">...</p>
+                    <h3 class="text-lg md:text-xl font-extrabold text-gray-800" id="statsTitle">Thống kê</h3>
+                    <p class="text-xs md:text-sm text-gray-500 mt-1" id="statsSubtitle">...</p>
                 </div>
                 <button onclick="closeModal('statsModal')" class="w-8 h-8 rounded-full bg-gray-200 hover:bg-red-100 hover:text-red-500 flex items-center justify-center transition-colors"><i class="fas fa-times"></i></button>
             </div>
             
-            <div class="flex-1 overflow-auto p-6 bg-white">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                    <div class="bg-gradient-to-r from-green-50 to-emerald-50 p-6 rounded-xl border border-green-100 shadow-sm">
+            <div class="flex-1 overflow-auto p-4 md:p-6 bg-white">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 mb-6 md:mb-8">
+                    <div class="bg-gradient-to-r from-green-50 to-emerald-50 p-4 md:p-6 rounded-xl border border-green-100 shadow-sm">
                         <div class="flex items-center gap-4">
-                            <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center text-green-600 text-xl"><i class="fas fa-users"></i></div>
+                            <div class="w-10 h-10 md:w-12 md:h-12 bg-green-100 rounded-full flex items-center justify-center text-green-600 text-lg md:text-xl"><i class="fas fa-users"></i></div>
                             <div>
-                                <p class="text-sm text-gray-500 font-medium uppercase">Tổng người chơi</p>
-                                <p class="text-3xl font-extrabold text-green-700" id="statsTotalPlayers">0</p>
+                                <p class="text-xs md:text-sm text-gray-500 font-medium uppercase">Tổng người chơi</p>
+                                <p class="text-2xl md:text-3xl font-extrabold text-green-700" id="statsTotalPlayers">0</p>
                             </div>
                         </div>
                     </div>
-                    <div class="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-xl border border-blue-100 shadow-sm">
+                    <div class="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 md:p-6 rounded-xl border border-blue-100 shadow-sm">
                         <div class="flex items-center gap-4">
-                            <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 text-xl"><i class="fas fa-coins"></i></div>
+                            <div class="w-10 h-10 md:w-12 md:h-12 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 text-lg md:text-xl"><i class="fas fa-coins"></i></div>
                             <div>
-                                <p class="text-sm text-gray-500 font-medium uppercase">Tổng tiền đã trao</p>
-                                <p class="text-3xl font-extrabold text-blue-700" id="statsTotalMoney">0 VND</p>
+                                <p class="text-xs md:text-sm text-gray-500 font-medium uppercase">Tổng tiền đã trao</p>
+                                <p class="text-2xl md:text-3xl font-extrabold text-blue-700" id="statsTotalMoney">0 VND</p>
                             </div>
                         </div>
                     </div>
                 </div>
 
                 <div class="overflow-x-auto rounded-xl border border-gray-200">
-                    <table class="w-full text-left">
+                    <table class="w-full text-left min-w-[500px]">
                         <thead>
                             <tr class="bg-gray-100 text-gray-600 text-xs uppercase tracking-wider font-bold">
-                                <th class="p-4 border-b">Thời gian</th>
-                                <th class="p-4 border-b">Họ Tên</th>
-                                <th class="p-4 border-b">STK BIDV</th>
-                                <th class="p-4 border-b text-right">Giải thưởng</th>
+                                <th class="p-3 md:p-4 border-b">Thời gian</th>
+                                <th class="p-3 md:p-4 border-b">Họ Tên</th>
+                                <th class="p-3 md:p-4 border-b">STK BIDV</th>
+                                <th class="p-3 md:p-4 border-b text-right">Giải thưởng</th>
                             </tr>
                         </thead>
                         <tbody id="statsTableBody" class="text-sm text-gray-700 divide-y divide-gray-100">
@@ -394,8 +420,8 @@
             </div>
 
             <div class="p-4 border-t bg-gray-50 flex justify-end">
-                <button onclick="exportToCSV()" class="px-5 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 font-bold shadow flex items-center gap-2">
-                    <i class="fas fa-file-excel"></i> Xuất Báo Cáo (CSV)
+                <button onclick="exportToCSV()" class="px-4 py-2 md:px-5 md:py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 font-bold shadow flex items-center gap-2 text-sm md:text-base">
+                    <i class="fas fa-file-excel"></i> Xuất CSV
                 </button>
             </div>
         </div>
@@ -407,24 +433,24 @@
             <!-- Decorative Confetti BG -->
             <div class="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/confetti.png')]"></div>
             
-            <div class="relative bg-gradient-to-b from-red-600 to-red-500 p-8 text-center text-white">
-                <div class="w-16 h-16 bg-yellow-400 rounded-full flex items-center justify-center text-red-600 text-3xl mx-auto mb-4 shadow-lg border-4 border-white/30">
+            <div class="relative bg-gradient-to-b from-red-600 to-red-500 p-6 md:p-8 text-center text-white">
+                <div class="w-14 h-14 md:w-16 md:h-16 bg-yellow-400 rounded-full flex items-center justify-center text-red-600 text-2xl md:text-3xl mx-auto mb-3 md:mb-4 shadow-lg border-4 border-white/30">
                     <i class="fas fa-star"></i>
                 </div>
-                <h2 class="text-3xl font-extrabold mb-1">CHÚC MỪNG!</h2>
-                <div class="text-red-100 text-sm font-medium" id="winSubtext">Lộc xuân đã về ví của bạn</div>
+                <h2 class="text-2xl md:text-3xl font-extrabold mb-1">CHÚC MỪNG!</h2>
+                <div class="text-red-100 text-xs md:text-sm font-medium" id="winSubtext">Lộc xuân đã về ví của bạn</div>
             </div>
             
-            <div class="p-8 text-center bg-white">
-                <div class="text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-red-600 to-orange-500 mb-6 break-words leading-tight" id="winnerText">
+            <div class="p-6 md:p-8 text-center bg-white">
+                <div class="text-3xl md:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-red-600 to-orange-500 mb-6 break-words leading-tight" id="winnerText">
                     ...
                 </div>
                 
-                <div id="winnerImageContainer" class="mb-8 flex justify-center h-40">
+                <div id="winnerImageContainer" class="mb-6 md:mb-8 flex justify-center h-32 md:h-40">
                      <img id="winnerImage" src="" class="h-full shadow-xl rounded-lg object-contain border-4 border-yellow-100 transform hover:scale-105 transition-transform duration-300">
                 </div>
                 
-                <button onclick="finishGameAndExit()" class="w-full py-4 bg-red-600 text-white font-bold text-lg rounded-xl hover:bg-red-700 shadow-xl shadow-red-200 transition-all transform hover:-translate-y-1">
+                <button onclick="finishGameAndExit()" class="w-full py-3 md:py-4 bg-red-600 text-white font-bold text-base md:text-lg rounded-xl hover:bg-red-700 shadow-xl shadow-red-200 transition-all transform hover:-translate-y-1">
                     NHẬN QUÀ NGAY
                 </button>
             </div>
@@ -448,10 +474,11 @@
             "200.000 VND": baseUrl + "200K.jpg",
             "500.000 VND": baseUrl + "500K.jpg" // Updated to jpg
         };
-        const moneyList = [
+        const defaultMoneyList = [
             "1.000 VND", "2.000 VND", "5.000 VND", "10.000 VND", "20.000 VND", 
             "50.000 VND", "100.000 VND", "200.000 VND", "500.000 VND"
         ];
+        const defaultNameList = ['Lan', 'Hoa', 'Tuan', 'Hung', 'Mai', 'Linh', 'Dat', 'Cuong'];
         
         // Colors for Name Mode & fallback
         const segmentColors = ["#e53935", "#fb8c00", "#fdd835", "#43a047", "#1e88e5", "#8e24aa", "#ffb74d", "#ef5350"];
@@ -468,7 +495,7 @@
             localStorage.setItem(DB_KEY, JSON.stringify(sessions));
         }
 
-        function createSession(name, pin, description) {
+        function createSession(name, pin, description, prizes) {
             const sessions = getSessions();
             if (sessions.some(s => s.name.toLowerCase() === name.toLowerCase())) {
                 alert('Tên đợt lì xì này đã tồn tại! Vui lòng chọn tên khác.');
@@ -480,6 +507,7 @@
                 name: name,
                 pin: pin,
                 description: description,
+                prizes: prizes,
                 createdAt: new Date().toISOString(),
                 winners: [] 
             };
@@ -512,7 +540,11 @@
         let currentSession = null;
         let currentPlayer = null;
         let isMoneyMode = true; 
-        let nameList = ['Lan', 'Hoa', 'Tuan', 'Hung', 'Mai', 'Linh', 'Dat', 'Cuong'];
+        
+        // Dynamic lists for Instant Play
+        let currentWheelItems = [];
+        let customMoneyList = [...defaultMoneyList];
+        let customNameList = [...defaultNameList];
 
         // --- VIEW NAVIGATION ---
         function showView(viewId) {
@@ -530,15 +562,26 @@
         // --- ORGANIZER LOGIC ---
         function openCreateSessionModal() {
             document.getElementById('createSessionModal').classList.add('active');
+            // Pre-fill prize list with default money list
+            document.getElementById('sessionPrizeInput').value = defaultMoneyList.join('\n');
         }
 
         function handleCreateSession(e) {
             e.preventDefault();
             const formData = new FormData(e.target);
+            const prizeText = formData.get('prizes') || "";
+            const prizes = prizeText.split('\n').filter(n => n.trim() !== '');
+
+            if(prizes.length === 0) {
+                alert("Vui lòng nhập ít nhất một giải thưởng!");
+                return;
+            }
+
             const success = createSession(
                 formData.get('name'),
                 formData.get('pin'),
-                formData.get('description')
+                formData.get('description'),
+                prizes
             );
             
             if (success) {
@@ -573,16 +616,16 @@
                 card.className = "bg-white p-5 rounded-xl border border-gray-100 hover:shadow-lg transition-shadow";
                 card.innerHTML = `
                     <div class="flex justify-between items-start mb-3">
-                        <h3 class="font-bold text-lg text-gray-800">${s.name}</h3>
-                        <span class="bg-gray-100 text-xs font-semibold px-2 py-1 rounded text-gray-500">${date}</span>
+                        <h3 class="font-bold text-base md:text-lg text-gray-800">${s.name}</h3>
+                        <span class="bg-gray-100 text-[10px] md:text-xs font-semibold px-2 py-1 rounded text-gray-500">${date}</span>
                     </div>
-                    <p class="text-sm text-gray-500 mb-4 line-clamp-2 h-10">${s.description || 'Không có mô tả'}</p>
-                    <div class="flex justify-between items-center text-sm mb-5 bg-gray-50 p-3 rounded-lg">
+                    <p class="text-xs md:text-sm text-gray-500 mb-4 line-clamp-2 h-8 md:h-10">${s.description || 'Không có mô tả'}</p>
+                    <div class="flex justify-between items-center text-xs md:text-sm mb-5 bg-gray-50 p-3 rounded-lg">
                         <div class="flex items-center gap-1 font-semibold text-gray-700"><i class="fas fa-users text-blue-500"></i> ${playerCount}</div>
                         <div class="flex items-center gap-1 font-bold text-yellow-600"><i class="fas fa-coins text-yellow-500"></i> ${totalMoney.toLocaleString('vi-VN')} đ</div>
                     </div>
                     <div class="flex gap-2">
-                        <button onclick="viewStats('${s.id}')" class="flex-1 py-2.5 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 font-bold text-sm transition-colors">
+                        <button onclick="viewStats('${s.id}')" class="flex-1 py-2.5 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 font-bold text-xs md:text-sm transition-colors">
                             <i class="fas fa-chart-bar mr-1"></i> Thống kê
                         </button>
                          <button onclick="deleteSession('${s.id}')" class="px-4 py-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors">
@@ -626,13 +669,13 @@
                  const tr = document.createElement('tr');
                  tr.className = "border-b border-gray-50 hover:bg-gray-50";
                  tr.innerHTML = `
-                    <td class="p-4 text-gray-500 text-xs">
+                    <td class="p-3 md:p-4 text-gray-500 text-[10px] md:text-xs">
                         <div class="font-semibold">${new Date(w.time).toLocaleDateString()}</div>
                         <div>${new Date(w.time).toLocaleTimeString()}</div>
                     </td>
-                    <td class="p-4 font-bold text-gray-800">${w.name}</td>
-                    <td class="p-4 font-mono text-blue-600 bg-blue-50/50 rounded">${w.account}</td>
-                    <td class="p-4 text-right font-extrabold text-red-600">${w.prize}</td>
+                    <td class="p-3 md:p-4 font-bold text-gray-800 text-xs md:text-sm">${w.name}</td>
+                    <td class="p-3 md:p-4 font-mono text-blue-600 bg-blue-50/50 rounded text-xs md:text-sm">${w.account}</td>
+                    <td class="p-3 md:p-4 text-right font-extrabold text-red-600 text-xs md:text-sm">${w.prize}</td>
                  `;
                  tbody.appendChild(tr);
             });
@@ -703,14 +746,22 @@
 
             currentSession = session;
             currentPlayer = { name, account };
-            isMoneyMode = true;
+            
+            // Load prizes from session or fallback to default
+            currentWheelItems = (session.prizes && session.prizes.length > 0) ? session.prizes : [...defaultMoneyList];
+            
+            isMoneyMode = true; // For sessions we assume money mode context for now
             startGame();
         }
 
         function startInstantPlay() {
             currentSession = { id: null, name: "Khách - Chơi Tự Do" };
             currentPlayer = { name: "Khách", account: "Vui chơi" };
+            
+            // In instant play, we load from our custom temporary lists
             isMoneyMode = true; 
+            currentWheelItems = [...customMoneyList];
+            
             startGame();
         }
 
@@ -735,15 +786,31 @@
 
         function toggleInstantMode() {
             isMoneyMode = !isMoneyMode;
+            // Swap lists
+            if (isMoneyMode) {
+                currentWheelItems = [...customMoneyList];
+            } else {
+                currentWheelItems = [...customNameList];
+            }
             updateGameUI();
             drawWheel();
         }
         
-        document.getElementById('instantNamesInput').addEventListener('input', (e) => {
+        // Handle input changes in Instant Mode
+        document.getElementById('instantInput').addEventListener('input', (e) => {
             const val = e.target.value;
-            nameList = val.split('\n').filter(n => n.trim() !== '');
-            document.getElementById('nameCount').innerText = `${nameList.length} mục`;
-            if(!isMoneyMode) drawWheel();
+            const list = val.split('\n').filter(n => n.trim() !== '');
+            currentWheelItems = list;
+            
+            // Save to temp memory
+            if (isMoneyMode) {
+                customMoneyList = list;
+            } else {
+                customNameList = list;
+            }
+            
+            document.getElementById('nameCount').innerText = `${list.length} mục`;
+            drawWheel();
         });
 
         function startGame() {
@@ -753,16 +820,18 @@
             document.getElementById('displayPlayerAcc').innerText = currentPlayer.account;
             
             if (currentSession.id === null) {
+                // Instant Play -> Show Editable Controls
                 document.getElementById('gamePlayerInfo').classList.add('hidden');
                 document.getElementById('instantControls').classList.remove('hidden');
                 document.getElementById('instantControls').classList.add('flex');
+                document.getElementById('prizeListContainer').classList.add('hidden');
                 
-                const textArea = document.getElementById('instantNamesInput');
-                if(!textArea.value) textArea.value = nameList.join('\n');
             } else {
+                // Session Play -> Show Read Only Info
                 document.getElementById('gamePlayerInfo').classList.remove('hidden');
                 document.getElementById('instantControls').classList.add('hidden');
                 document.getElementById('instantControls').classList.remove('flex');
+                document.getElementById('prizeListContainer').classList.remove('hidden');
             }
 
             showView('view-game');
@@ -779,29 +848,33 @@
 
         function updateGameUI() {
             const btn = document.getElementById('instantModeBtn');
-            const nameInput = document.getElementById('nameInputContainer');
-            const prizeListContainer = document.getElementById('prizeListContainer');
+            const inputLabel = document.getElementById('inputLabel');
+            const textArea = document.getElementById('instantInput');
             const prizeListDisplay = document.getElementById('prizeListDisplay');
-            const listTitle = document.getElementById('listTitle');
 
-            if (isMoneyMode) {
-                btn.innerHTML = '<i class="fas fa-font"></i> Chuyển Quay Tên';
-                nameInput.classList.add('hidden');
-                prizeListContainer.classList.remove('hidden');
-                listTitle.innerHTML = '<i class="fas fa-coins text-yellow-500"></i> Cơ cấu giải thưởng';
-                
+            // If Session Mode, just render list
+            if (currentSession.id) {
                 prizeListDisplay.innerHTML = '';
-                moneyList.forEach(m => {
+                currentWheelItems.forEach(m => {
                     const li = document.createElement('li');
                     li.className = "flex items-center gap-2 p-2 bg-gray-50 rounded border border-gray-100";
-                    li.innerHTML = `<i class="fas fa-money-bill-wave text-green-500"></i> <span class="font-bold text-gray-700">${m}</span>`;
+                    li.innerHTML = `<i class="fas fa-gift text-green-500 mr-2"></i> <span class="font-bold text-gray-700">${m}</span>`;
                     prizeListDisplay.appendChild(li);
                 });
+                return;
+            }
+
+            // Instant Mode UI
+            if (isMoneyMode) {
+                btn.innerHTML = '<i class="fas fa-font"></i> Chuyển Quay Tên';
+                inputLabel.innerText = "Danh sách giải thưởng (Tiền/Quà)";
+                textArea.value = customMoneyList.join('\n');
             } else {
                 btn.innerHTML = '<i class="fas fa-money-bill-wave"></i> Chuyển Quay Tiền';
-                nameInput.classList.remove('hidden');
-                prizeListContainer.classList.add('hidden');
+                inputLabel.innerText = "Danh sách tên người chơi";
+                textArea.value = customNameList.join('\n');
             }
+            document.getElementById('nameCount').innerText = `${currentWheelItems.length} mục`;
         }
 
         function resizeCanvas() {
@@ -826,7 +899,7 @@
             let radius = width / 2 - 10; 
             if (radius <= 0) return;
 
-            const items = isMoneyMode ? moneyList : nameList;
+            const items = currentWheelItems; // Use dynamic items
 
             ctx.clearRect(0, 0, width, height);
             
@@ -854,7 +927,9 @@
                 
                 const val = items[i];
                 
-                if (isMoneyMode && loadedMoneyImages[val]) {
+                // Try to load image if text matches known money key
+                // Or if we eventually support custom images, we'd check here
+                if (loadedMoneyImages[val]) {
                     const img = loadedMoneyImages[val];
                     const aspectRatio = img.width / img.height;
                     const drawHeight = radius * 0.35; 
@@ -884,7 +959,7 @@
         }
 
         function startSpin() {
-            const items = isMoneyMode ? moneyList : nameList;
+            const items = currentWheelItems;
             if (isSpinning || items.length === 0) return;
             
             isSpinning = true;
@@ -916,7 +991,7 @@
                 const prevRotation = currentRotation;
                 currentRotation = startAngle + (totalRotationNeeded * ease);
 
-                const itemsCount = isMoneyMode ? moneyList.length : nameList.length;
+                const itemsCount = currentWheelItems.length;
                 const step = (2 * Math.PI) / itemsCount;
                 const normalizedRot = currentRotation % (2 * Math.PI);
                 const currentIndex = Math.floor((2 * Math.PI - normalizedRot) / step) % itemsCount;
@@ -939,7 +1014,7 @@
         }
 
         function finishSpin() {
-            const items = isMoneyMode ? moneyList : nameList;
+            const items = currentWheelItems;
             const step = (2 * Math.PI) / items.length;
             const normalizedRotation = currentRotation % (2 * Math.PI);
             let winningIndex = Math.floor(((2 * Math.PI) - normalizedRotation) / step) % items.length;
@@ -962,7 +1037,8 @@
 
             const imgContainer = document.getElementById('winnerImageContainer');
             
-            if (isMoneyMode && loadedMoneyImages[prize]) {
+            // Check based on image loaded status
+            if (loadedMoneyImages[prize]) {
                 document.getElementById('winnerImage').src = loadedMoneyImages[prize].src;
                 imgContainer.classList.remove('hidden');
             } else {
