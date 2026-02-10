@@ -8,6 +8,8 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Canvas Confetti -->
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <!-- Supabase JS -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Google Fonts -->
@@ -17,96 +19,69 @@
         body {
             font-family: 'Montserrat', 'Segoe UI', sans-serif;
             overflow: hidden; 
-            /* 2.1 Background Design */
             background: url('https://raw.githubusercontent.com/quantrh/Strava/main/Picture/nenquayso.png');
             background-size: cover;
             background-position: center;
             background-attachment: fixed;
         }
         
-        /* Custom Scrollbar */
         ::-webkit-scrollbar { width: 4px; height: 4px; }
         ::-webkit-scrollbar-track { background: rgba(255,255,255,0.2); }
         ::-webkit-scrollbar-thumb { background: #d32f2f; border-radius: 4px; }
 
         .wheel-shadow { box-shadow: 0 0 25px rgba(0,0,0,0.15); }
 
-        /* Desktop Pointer (Right side) - Fixed position for ALL screens */
         .pointer {
             position: absolute;
-            right: -25px; /* Luôn nằm bên phải */
+            right: -25px;
             top: 50%;
             transform: translateY(-50%);
             width: 0; height: 0; 
             border-top: 25px solid transparent;
             border-bottom: 25px solid transparent;
-            border-right: 50px solid #c62828; /* Tet Red */
+            border-right: 50px solid #c62828;
             z-index: 10;
             filter: drop-shadow(-2px 2px 2px rgba(0,0,0,0.3));
         }
 
-        /* Mobile Responsive Adjustments */
         @media (max-width: 768px) {
             body { 
-                overflow-y: auto; /* Allow scrolling on mobile body */
+                overflow-y: auto;
                 height: auto;
                 min-height: 100vh;
             }
-            
-            /* Removed pointer repositioning code to keep it on the Right */
-
-            /* Adjust Wheel Container spacing */
-            #wheel-container {
-                /* Add padding right to ensure pointer doesn't get cut off on small screens */
-                padding-right: 35px !important; 
-            }
-            
-            /* Game layout specific */
-            #view-game {
-                height: auto !important;
-                min-height: 100vh;
-                display: block; /* Break flex height constraint */
-            }
-            
-            .mobile-full-height {
-                min-height: 100vh;
-            }
+            #wheel-container { padding-right: 35px !important; }
+            #view-game { height: auto !important; min-height: 100vh; display: block; }
         }
 
-        /* Views Management */
-        .view-section {
-            display: none;
-            width: 100%;
-            height: 100%;
-            overflow-y: auto;
-        }
-        .view-section.active {
-            display: flex;
+        .view-section { display: none; width: 100%; height: 100%; overflow-y: auto; }
+        .view-section.active { display: flex; flex-direction: column; }
+
+        .modal { transition: opacity 0.3s ease; opacity: 0; pointer-events: none; }
+        .modal.active { opacity: 1; pointer-events: auto; }
+
+        /* Loading Overlay */
+        #loading-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(255,255,255,0.8); z-index: 100;
+            display: none; justify-content: center; align-items: center;
             flex-direction: column;
         }
-
-        /* Animation */
-        @keyframes float {
-            0% { transform: translateY(0px); }
-            50% { transform: translateY(-10px); }
-            100% { transform: translateY(0px); }
+        .spinner {
+            border: 4px solid #f3f3f3; border-top: 4px solid #d32f2f;
+            border-radius: 50%; width: 40px; height: 40px;
+            animation: spin 1s linear infinite;
         }
-        .floating-icon {
-            animation: float 3s ease-in-out infinite;
-        }
-
-        .modal {
-            transition: opacity 0.3s ease;
-            opacity: 0;
-            pointer-events: none;
-        }
-        .modal.active {
-            opacity: 1;
-            pointer-events: auto;
-        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body class="h-screen w-screen text-gray-800">
+
+    <!-- Loading Overlay -->
+    <div id="loading-overlay">
+        <div class="spinner mb-2"></div>
+        <p class="text-red-600 font-bold">Đang xử lý dữ liệu...</p>
+    </div>
 
     <!-- View 1: HOME SCREEN -->
     <div id="view-home" class="view-section active items-center justify-center p-4">
@@ -126,9 +101,7 @@
             
             <div class="space-y-3 md:space-y-4">
                 <button onclick="showView('view-organizer')" class="group w-full py-3 bg-white border-2 border-red-100 text-red-700 rounded-xl font-bold hover:bg-red-50 hover:border-red-200 transition-all flex items-center justify-center gap-3 shadow-sm hover:shadow text-sm md:text-base">
-                    <div class="w-8 h-8 rounded-full bg-red-50 flex items-center justify-center group-hover:bg-red-100 transition-colors">
-                        <i class="fas fa-user-tie text-lg"></i>
-                    </div>
+                    <div class="w-8 h-8 rounded-full bg-red-50 flex items-center justify-center group-hover:bg-red-100 transition-colors"><i class="fas fa-user-tie text-lg"></i></div>
                     <span>TÔI LÀ NGƯỜI TỔ CHỨC</span>
                 </button>
 
@@ -145,9 +118,15 @@
 
             <div class="mt-6 md:mt-8 pt-4 md:pt-6 border-t border-gray-100 text-center">
                 <p class="text-xs text-gray-400 font-medium tracking-wide mb-3">Minh bạch – Công bằng – Vui vẻ</p>
-                <span class="inline-block px-3 py-1 bg-red-50 text-red-600 text-[10px] font-bold uppercase tracking-wider rounded-full border border-red-100">
+                <span class="inline-block px-3 py-1 bg-red-50 text-red-600 text-[10px] font-bold uppercase tracking-wider rounded-full border border-red-100 mb-2">
                     🧧 Tết Bính Ngọ 2026
                 </span>
+                <!-- Visit Counter -->
+                <div class="mt-3 flex justify-center items-center gap-2 text-[10px] text-gray-500 bg-gray-50 py-1 px-3 rounded-full mx-auto w-fit">
+                    <i class="fas fa-eye text-blue-400"></i>
+                    <span>Lượt truy cập: <b id="visit-count">...</b></span>
+                </div>
+                <p class="text-[10px] text-gray-400 mt-2 font-medium">© Trương Hồng Quân (Quantrhvn@gmail.com)</p>
             </div>
         </div>
     </div>
@@ -165,9 +144,7 @@
                 <!-- Session cards injected here -->
             </div>
             <div id="empty-session-msg" class="text-center text-gray-400 mt-20 hidden">
-                <div class="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <i class="fas fa-folder-open text-3xl"></i>
-                </div>
+                <i class="fas fa-folder-open text-3xl mb-2"></i>
                 <p>Chưa có đợt lì xì nào. Hãy tạo mới!</p>
             </div>
         </div>
@@ -190,10 +167,9 @@
                     <label class="block text-sm font-bold text-gray-700 mb-1">Chọn đợt lì xì</label>
                     <div class="relative">
                         <select id="loginSessionId" class="w-full p-3 pl-10 border border-gray-300 rounded-xl bg-gray-50 outline-none focus:ring-2 focus:ring-red-500 appearance-none transition-all text-sm md:text-base" required>
-                            <option value="">-- Chọn đợt đang mở --</option>
+                            <option value="">-- Đang tải danh sách --</option>
                         </select>
                         <i class="fas fa-gift absolute left-3 top-3.5 text-gray-400"></i>
-                        <i class="fas fa-chevron-down absolute right-3 top-3.5 text-gray-400 text-xs"></i>
                     </div>
                 </div>
                 
@@ -234,7 +210,7 @@
         </div>
     </div>
 
-    <!-- View 4: GAME INTERFACE (Responsive Layout) -->
+    <!-- View 4: GAME INTERFACE -->
     <div id="view-game" class="view-section flex-col h-full bg-white/30">
         <!-- Game Navbar -->
         <nav class="bg-white/90 backdrop-blur-md shadow-sm p-3 flex justify-between items-center z-20 sticky top-0">
@@ -252,25 +228,20 @@
             </button>
         </nav>
 
-        <!-- Wheel Content: Mobile (Col) -> Desktop (Row) -->
+        <!-- Wheel Content -->
         <div class="flex flex-col md:flex-row flex-1 relative w-full h-full md:overflow-hidden overflow-y-auto">
             
             <!-- Left (Top on Mobile): Wheel -->
-            <!-- Adjusted height for mobile to fit screen better -->
             <div class="w-full md:w-3/5 flex items-center justify-center relative p-4 shrink-0 bg-transparent min-h-[350px] md:min-h-full" id="wheel-container">
                 <div class="relative w-[280px] h-[280px] sm:w-[350px] sm:h-[350px] md:w-[500px] md:h-[500px] lg:w-[600px] lg:h-[600px] max-w-full max-h-full transition-all">
                     <canvas id="wheelCanvas" class="w-full h-full cursor-pointer wheel-shadow rounded-full border-4 border-white/50"></canvas>
-                    <!-- Center Hub -->
                     <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-16 h-16 md:w-20 md:h-20 bg-white rounded-full shadow-lg border-4 border-red-100 z-10 flex items-center justify-center pointer-events-none">
                         <div class="w-12 h-12 md:w-16 md:h-16 bg-red-50 rounded-full overflow-hidden flex items-center justify-center">
                              <span class="text-2xl md:text-3xl">🧧</span>
                         </div>
                     </div>
-                    <!-- Pointer -->
                     <div class="pointer"></div>
                 </div>
-                
-                <!-- Instruction Toast -->
                 <div id="spin-instruction" class="absolute bottom-4 md:bottom-10 bg-white/90 backdrop-blur text-red-600 px-4 py-2 md:px-6 md:py-3 rounded-full text-xs md:text-sm font-bold shadow-lg pointer-events-none animate-bounce border border-red-100 text-center whitespace-nowrap">
                     <i class="fas fa-hand-pointer mr-2"></i> Chạm để quay!
                 </div>
@@ -278,11 +249,8 @@
 
             <!-- Right (Bottom on Mobile): Info & Controls -->
             <div class="w-full md:w-2/5 bg-white/80 backdrop-blur-md shadow-[0_-10px_20px_rgba(0,0,0,0.1)] md:shadow-2xl z-10 flex flex-col md:border-l border-white/50 min-h-[40vh] md:h-full p-4 md:p-6 rounded-t-[2rem] md:rounded-none relative">
-                
-                <!-- Handle bar for mobile feel -->
                 <div class="w-12 h-1 bg-gray-300 rounded-full mx-auto mb-4 md:hidden"></div>
 
-                <!-- Player Info Box (Visible in Session Mode) -->
                 <div id="gamePlayerInfo" class="hidden">
                     <h3 class="text-base md:text-lg font-bold text-gray-800 mb-3 flex items-center gap-2">
                         <i class="fas fa-id-card text-orange-500"></i> Thông tin người nhận
@@ -296,7 +264,6 @@
                     </div>
                 </div>
 
-                <!-- Instant Play Controls (Visible in Guest Mode) -->
                 <div id="instantControls" class="hidden flex-col h-full">
                     <div class="flex justify-between items-center mb-4">
                         <h3 class="text-base md:text-lg font-bold text-gray-800">Cài đặt vòng quay</h3>
@@ -304,8 +271,6 @@
                             <i class="fas fa-sync-alt mr-1"></i> Đổi chế độ
                         </button>
                     </div>
-                    
-                    <!-- Text Area for Editing Prizes/Names -->
                     <div id="nameInputContainer" class="flex-1 flex flex-col min-h-[150px]">
                         <label class="text-xs font-bold text-gray-500 mb-2 uppercase" id="inputLabel">Danh sách giải thưởng</label>
                         <div class="relative flex-1">
@@ -315,7 +280,6 @@
                     </div>
                 </div>
                 
-                <!-- Prize List Display (Session Mode - Read Only) -->
                 <div id="prizeListContainer" class="flex-1 overflow-y-auto mt-2 pr-2 hidden max-h-[300px] md:max-h-none">
                     <h4 class="font-bold text-gray-700 mb-3 flex items-center gap-2" id="listTitle">
                         <i class="fas fa-list-ul text-red-500"></i> Cơ cấu giải thưởng
@@ -348,7 +312,7 @@
                     </div>
                     <div>
                         <label class="block text-sm font-bold text-gray-700 mb-1">Danh sách giải thưởng</label>
-                        <textarea name="prizes" id="sessionPrizeInput" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 outline-none font-mono text-xs md:text-sm" rows="6" placeholder="1.000 VND&#10;2.000 VND..."></textarea>
+                        <textarea name="prizes" id="sessionPrizeInput" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 outline-none font-mono text-xs md:text-sm" rows="6"></textarea>
                         <p class="text-[10px] md:text-xs text-gray-500 mt-1">Gợi ý: Nhập đúng "500.000 VND" để hiện ảnh tiền.</p>
                     </div>
                 </div>
@@ -357,6 +321,56 @@
                     <button type="submit" class="px-4 py-2 md:px-5 md:py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 font-bold shadow-lg text-sm">Tạo ngay</button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <!-- MODAL: Edit Session (New) -->
+    <div id="editSessionModal" class="modal fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-6 transform transition-all scale-100 h-[80vh] md:h-[90vh] flex flex-col">
+            <h3 class="text-lg md:text-xl font-extrabold text-blue-800 mb-4 border-b pb-2">Chỉnh Sửa Đợt Lì Xì</h3>
+            <form onsubmit="handleEditSession(event)" class="space-y-4 flex-1 flex flex-col overflow-hidden">
+                <input type="hidden" id="editSessionId" name="id">
+                <div class="overflow-y-auto pr-2 space-y-4 flex-1">
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-1">Tên đợt</label>
+                        <input type="text" id="editName" name="name" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-1">Mã PIN bảo vệ</label>
+                        <input type="text" id="editPin" name="pin" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-1">Thể lệ / Lời chúc</label>
+                        <textarea id="editDescription" name="description" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm" rows="2"></textarea>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-1">Danh sách giải thưởng</label>
+                        <textarea id="editPrizes" name="prizes" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none font-mono text-xs md:text-sm" rows="6"></textarea>
+                    </div>
+                </div>
+                <div class="flex justify-end gap-3 mt-4 pt-4 border-t shrink-0">
+                    <button type="button" onclick="closeModal('editSessionModal')" class="px-4 py-2 md:px-5 md:py-2.5 text-gray-600 hover:bg-gray-100 rounded-lg font-medium text-sm">Hủy</button>
+                    <button type="submit" class="px-4 py-2 md:px-5 md:py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-bold shadow-lg text-sm">Cập nhật</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: Authentication (New) -->
+    <div id="authModal" class="modal fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6 transform transition-all scale-100">
+            <div class="text-center mb-4">
+                <div class="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center text-red-600 text-xl mx-auto mb-3">
+                    <i class="fas fa-lock"></i>
+                </div>
+                <h3 class="text-lg font-bold text-gray-800">Yêu cầu xác thực</h3>
+                <p class="text-xs text-gray-500 mt-1">Nhập PIN của đợt quay hoặc Mật khẩu Admin</p>
+            </div>
+            <input type="password" id="authPinInput" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 outline-none text-center text-lg tracking-widest mb-4" placeholder="••••">
+            <div class="flex gap-2">
+                <button onclick="closeModal('authModal')" class="flex-1 py-2 text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 text-sm font-bold">Hủy</button>
+                <button onclick="confirmAuth()" class="flex-1 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm font-bold shadow">Xác nhận</button>
+            </div>
         </div>
     </div>
 
@@ -403,9 +417,7 @@
                                 <th class="p-3 md:p-4 border-b text-right">Giải thưởng</th>
                             </tr>
                         </thead>
-                        <tbody id="statsTableBody" class="text-sm text-gray-700 divide-y divide-gray-100">
-                            <!-- Rows injected here -->
-                        </tbody>
+                        <tbody id="statsTableBody" class="text-sm text-gray-700 divide-y divide-gray-100"></tbody>
                     </table>
                 </div>
             </div>
@@ -421,9 +433,7 @@
     <!-- MODAL: Winner Celebration -->
     <div id="winnerModal" class="modal fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
         <div class="bg-white rounded-2xl shadow-2xl transform scale-100 w-full max-w-lg overflow-hidden animate-[bounceIn_0.5s_ease-out] relative">
-            <!-- Decorative Confetti BG -->
             <div class="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/confetti.png')]"></div>
-            
             <div class="relative bg-gradient-to-b from-red-600 to-red-500 p-6 md:p-8 text-center text-white">
                 <div class="w-14 h-14 md:w-16 md:h-16 bg-yellow-400 rounded-full flex items-center justify-center text-red-600 text-2xl md:text-3xl mx-auto mb-3 md:mb-4 shadow-lg border-4 border-white/30">
                     <i class="fas fa-star"></i>
@@ -431,16 +441,11 @@
                 <h2 class="text-2xl md:text-3xl font-extrabold mb-1">CHÚC MỪNG!</h2>
                 <div class="text-red-100 text-xs md:text-sm font-medium" id="winSubtext">Lộc xuân đã về ví của bạn</div>
             </div>
-            
             <div class="p-6 md:p-8 text-center bg-white">
-                <div class="text-3xl md:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-red-600 to-orange-500 mb-6 break-words leading-tight" id="winnerText">
-                    ...
-                </div>
-                
+                <div class="text-3xl md:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-red-600 to-orange-500 mb-6 break-words leading-tight" id="winnerText">...</div>
                 <div id="winnerImageContainer" class="mb-6 md:mb-8 flex justify-center h-32 md:h-40">
                      <img id="winnerImage" src="" class="h-full shadow-xl rounded-lg object-contain border-4 border-yellow-100 transform hover:scale-105 transition-transform duration-300">
                 </div>
-                
                 <button onclick="finishGameAndExit()" class="w-full py-3 md:py-4 bg-red-600 text-white font-bold text-base md:text-lg rounded-xl hover:bg-red-700 shadow-xl shadow-red-200 transition-all transform hover:-translate-y-1">
                     NHẬN QUÀ NGAY
                 </button>
@@ -450,92 +455,117 @@
 
     <!-- Javascript Logic -->
     <script>
-        // --- ASSET CONFIGURATION ---
+        // --- SUPABASE CONFIG ---
+        const supabaseUrl = 'https://rmbsxccrwrktbjlnezpu.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJtYnN4Y2Nyd3JrdGJqbG5lenB1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg2MjczNjQsImV4cCI6MjA2NDIwMzM2NH0.ydCqificftdtn1niRciFCifeuo8aX6SDGti-hCY5Z_Y';
+        const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
+
+        // --- ASSETS ---
         const baseUrl = "https://raw.githubusercontent.com/quantrh/Strava/main/Picture/";
-        
-        // Cập nhật tên file ảnh theo yêu cầu
         const moneyImageFiles = {
-            "1.000 VND": baseUrl + "1k.jpg",
-            "2.000 VND": baseUrl + "2k.jpg",
-            "5.000 VND": baseUrl + "5K.jpg",
-            "10.000 VND": baseUrl + "10k.jpg",
-            "20.000 VND": baseUrl + "20K.jpg",
-            "50.000 VND": baseUrl + "50k.jpg",
-            "100.000 VND": baseUrl + "100k.jpg",
-            "200.000 VND": baseUrl + "200K.jpg",
-            "500.000 VND": baseUrl + "500K.jpg" // Updated to jpg
+            "Nụ hôn": baseUrl + "hon.jpg", "Rượu": baseUrl + "ruou.jpg",
+            "1.000 VND": baseUrl + "1k.jpg", "2.000 VND": baseUrl + "2k.jpg", "5.000 VND": baseUrl + "5K.jpg",
+            "10.000 VND": baseUrl + "10k.jpg", "20.000 VND": baseUrl + "20K.jpg", "50.000 VND": baseUrl + "50k.jpg",
+            "100.000 VND": baseUrl + "100k.jpg", "200.000 VND": baseUrl + "200K.jpg", "500.000 VND": baseUrl + "500K.jpg" 
         };
-        const defaultMoneyList = [
-            "1.000 VND", "2.000 VND", "5.000 VND", "10.000 VND", "20.000 VND", 
-            "50.000 VND", "100.000 VND", "200.000 VND", "500.000 VND"
-        ];
+        const defaultMoneyList = ["Nụ hôn", "5.000 VND", "10.000 VND", "20.000 VND", "Rượu", "50.000 VND", "100.000 VND", "200.000 VND", "500.000 VND"];
         const defaultNameList = ['Lan', 'Hoa', 'Tuan', 'Hung', 'Mai', 'Linh', 'Dat', 'Cuong'];
-        
-        // Colors for Name Mode & fallback
         const segmentColors = ["#e53935", "#fb8c00", "#fdd835", "#43a047", "#1e88e5", "#8e24aa", "#ffb74d", "#ef5350"];
 
-        // --- DATA MANAGEMENT (LOCAL STORAGE) ---
-        const DB_KEY = 'lixi_2026_data';
-        
-        function getSessions() {
-            const data = localStorage.getItem(DB_KEY);
-            return data ? JSON.parse(data) : [];
+        // --- DATABASE HELPERS ---
+        function showLoading() { document.getElementById('loading-overlay').style.display = 'flex'; }
+        function hideLoading() { document.getElementById('loading-overlay').style.display = 'none'; }
+
+        async function fetchSessionsFromSupabase() {
+            showLoading();
+            const { data, error } = await supabaseClient.from('lixi_sessions').select('*, lixi_winners(*)').order('created_at', { ascending: false });
+            hideLoading();
+            if (error) { console.error(error); return []; }
+            return data.map(s => ({
+                id: s.id,
+                name: s.name,
+                pin: s.pin,
+                description: s.description,
+                prizes: s.prizes || [],
+                createdAt: s.created_at,
+                winners: s.lixi_winners.map(w => ({
+                    name: w.name,
+                    account: w.account,
+                    prize: w.prize,
+                    time: w.created_at
+                }))
+            }));
         }
 
-        function saveSessions(sessions) {
-            localStorage.setItem(DB_KEY, JSON.stringify(sessions));
+        async function insertSessionToSupabase(session) {
+            showLoading();
+            const { error } = await supabaseClient.from('lixi_sessions').insert({
+                name: session.name,
+                pin: session.pin,
+                description: session.description,
+                prizes: session.prizes
+            });
+            hideLoading();
+            return !error;
         }
 
-        function createSession(name, pin, description, prizes) {
-            const sessions = getSessions();
-            if (sessions.some(s => s.name.toLowerCase() === name.toLowerCase())) {
-                alert('Tên đợt lì xì này đã tồn tại! Vui lòng chọn tên khác.');
-                return false;
+        async function updateSessionInSupabase(id, data) {
+            showLoading();
+            const { error } = await supabaseClient.from('lixi_sessions').update(data).eq('id', id);
+            hideLoading();
+            return !error;
+        }
+
+        async function insertWinnerToSupabase(sessionId, winner) {
+            const { error } = await supabaseClient.from('lixi_winners').insert({
+                session_id: sessionId,
+                name: winner.name,
+                account: winner.account,
+                prize: winner.prize
+            });
+            if(error) console.error("Error saving winner:", error);
+        }
+
+        async function checkHasPlayed(sessionId, account) {
+            showLoading();
+            const { data, error } = await supabaseClient.from('lixi_winners')
+                .select('id')
+                .eq('session_id', sessionId)
+                .eq('account', account);
+            hideLoading();
+            if (error) return false;
+            return data.length > 0;
+        }
+
+        async function deleteSessionFromSupabase(id) {
+            showLoading();
+            await supabaseClient.from('lixi_winners').delete().eq('session_id', id);
+            const { error } = await supabaseClient.from('lixi_sessions').delete().eq('id', id);
+            hideLoading();
+            return !error;
+        }
+
+        async function updateLoginStats() {
+            const { data, error } = await supabaseClient.from('lixi_stats').select('login_count').eq('id', 1).single();
+            if (data) {
+                const newCount = (data.login_count || 0) + 1;
+                await supabaseClient.from('lixi_stats').update({ login_count: newCount }).eq('id', 1);
+                document.getElementById('visit-count').innerText = newCount.toLocaleString();
             }
-
-            const newSession = {
-                id: crypto.randomUUID(),
-                name: name,
-                pin: pin,
-                description: description,
-                prizes: prizes,
-                createdAt: new Date().toISOString(),
-                winners: [] 
-            };
-            sessions.unshift(newSession);
-            saveSessions(sessions);
-            return true;
-        }
-
-        function getSessionById(id) {
-            return getSessions().find(s => s.id === id);
-        }
-
-        function recordWinner(sessionId, winnerData) {
-            const sessions = getSessions();
-            const sessionIndex = sessions.findIndex(s => s.id === sessionId);
-            if (sessionIndex !== -1) {
-                sessions[sessionIndex].winners.push(winnerData);
-                saveSessions(sessions);
-            }
-        }
-
-        function hasPlayed(sessionId, account) {
-            const session = getSessionById(sessionId);
-            if (!session) return false;
-            const cleanAcc = account.replace(/\s/g, '');
-            return session.winners.some(w => w.account.replace(/\s/g, '') === cleanAcc);
         }
 
         // --- GLOBAL STATE ---
         let currentSession = null;
         let currentPlayer = null;
         let isMoneyMode = true; 
-        
-        // Dynamic lists for Instant Play
         let currentWheelItems = [];
         let customMoneyList = [...defaultMoneyList];
         let customNameList = [...defaultNameList];
+        let cachedSessions = [];
+        
+        // Auth State
+        let authPendingAction = null; // 'delete' or 'edit'
+        let authTargetId = null;
 
         // --- VIEW NAVIGATION ---
         function showView(viewId) {
@@ -553,37 +583,56 @@
         // --- ORGANIZER LOGIC ---
         function openCreateSessionModal() {
             document.getElementById('createSessionModal').classList.add('active');
-            // Pre-fill prize list with default money list
             document.getElementById('sessionPrizeInput').value = defaultMoneyList.join('\n');
         }
 
-        function handleCreateSession(e) {
+        async function handleCreateSession(e) {
             e.preventDefault();
             const formData = new FormData(e.target);
-            const prizeText = formData.get('prizes') || "";
-            const prizes = prizeText.split('\n').filter(n => n.trim() !== '');
+            const name = formData.get('name').trim();
+            const prizes = (formData.get('prizes') || "").split('\n').filter(n => n.trim() !== '');
 
-            if(prizes.length === 0) {
-                alert("Vui lòng nhập ít nhất một giải thưởng!");
+            if (!name) { alert("Vui lòng nhập tên đợt lì xì!"); return; }
+            if (prizes.length === 0) { alert("Vui lòng nhập ít nhất một giải thưởng!"); return; }
+
+            // KIỂM TRA TRÙNG TÊN (CREATE)
+            showLoading();
+            const { data: existingSessions, error: checkError } = await supabaseClient
+                .from('lixi_sessions')
+                .select('id')
+                .ilike('name', name); // ilike: so sánh không phân biệt hoa thường
+            hideLoading();
+
+            if (checkError) {
+                console.error(checkError);
+                alert("Lỗi kiểm tra dữ liệu. Vui lòng thử lại.");
                 return;
             }
 
-            const success = createSession(
-                formData.get('name'),
-                formData.get('pin'),
-                formData.get('description'),
-                prizes
-            );
+            if (existingSessions && existingSessions.length > 0) {
+                alert(`Tên đợt lì xì "${name}" đã tồn tại! Vui lòng đặt tên khác để tránh nhầm lẫn.`);
+                return;
+            }
+
+            const success = await insertSessionToSupabase({
+                name: name,
+                pin: formData.get('pin'),
+                description: formData.get('description'),
+                prizes: prizes
+            });
             
             if (success) {
                 e.target.reset();
                 closeModal('createSessionModal');
                 renderSessionList();
+            } else {
+                alert("Lỗi khi tạo đợt lì xì. Vui lòng thử lại.");
             }
         }
 
-        function renderSessionList() {
-            const sessions = getSessions();
+        async function renderSessionList() {
+            const sessions = await fetchSessionsFromSupabase();
+            cachedSessions = sessions;
             const container = document.getElementById('session-list');
             const emptyMsg = document.getElementById('empty-session-msg');
             
@@ -619,7 +668,10 @@
                         <button onclick="viewStats('${s.id}')" class="flex-1 py-2.5 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 font-bold text-xs md:text-sm transition-colors">
                             <i class="fas fa-chart-bar mr-1"></i> Thống kê
                         </button>
-                         <button onclick="deleteSession('${s.id}')" class="px-4 py-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors">
+                        <button onclick="requestAction('edit', '${s.id}')" class="px-3 py-2 text-orange-500 hover:bg-orange-50 rounded-lg transition-colors border border-orange-200">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                         <button onclick="requestAction('delete', '${s.id}')" class="px-3 py-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors border border-red-200">
                             <i class="fas fa-trash-alt"></i>
                         </button>
                     </div>
@@ -628,21 +680,104 @@
             });
         }
 
-        function deleteSession(id) {
-            if(confirm("Bạn có chắc muốn xóa đợt lì xì này và toàn bộ dữ liệu người chơi không?")) {
-                let sessions = getSessions();
-                sessions = sessions.filter(s => s.id !== id);
-                saveSessions(sessions);
+        // --- AUTH & EDIT/DELETE LOGIC ---
+        function requestAction(action, sessionId) {
+            authPendingAction = action;
+            authTargetId = sessionId;
+            document.getElementById('authPinInput').value = '';
+            document.getElementById('authModal').classList.add('active');
+        }
+
+        function confirmAuth() {
+            const inputPin = document.getElementById('authPinInput').value;
+            const session = cachedSessions.find(s => s.id === authTargetId);
+            
+            if (!session) return;
+
+            // Check PIN or Admin Password
+            if (inputPin === session.pin || inputPin === '1a2b') {
+                closeModal('authModal');
+                if (authPendingAction === 'delete') {
+                    performDelete(authTargetId);
+                } else if (authPendingAction === 'edit') {
+                    openEditModal(authTargetId);
+                }
+            } else {
+                alert("Mã PIN hoặc Mật khẩu không chính xác!");
+            }
+        }
+
+        async function performDelete(id) {
+            await deleteSessionFromSupabase(id);
+            renderSessionList();
+        }
+
+        function openEditModal(sessionId) {
+            const session = cachedSessions.find(s => s.id === sessionId);
+            if(!session) return;
+
+            document.getElementById('editSessionId').value = session.id;
+            document.getElementById('editName').value = session.name;
+            document.getElementById('editPin').value = session.pin || '';
+            document.getElementById('editDescription').value = session.description || '';
+            document.getElementById('editPrizes').value = session.prizes.join('\n');
+            
+            document.getElementById('editSessionModal').classList.add('active');
+        }
+
+        async function handleEditSession(e) {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const id = formData.get('id');
+            const name = formData.get('name').trim();
+            const prizes = (formData.get('prizes') || "").split('\n').filter(n => n.trim() !== '');
+
+            if (!name) { alert("Vui lòng nhập tên đợt lì xì!"); return; }
+            if (prizes.length === 0) { alert("Vui lòng nhập ít nhất một giải thưởng!"); return; }
+
+            // KIỂM TRA TRÙNG TÊN (EDIT - loại trừ chính nó)
+            showLoading();
+            const { data: existingSessions, error: checkError } = await supabaseClient
+                .from('lixi_sessions')
+                .select('id')
+                .ilike('name', name)
+                .neq('id', id); // Loại trừ id hiện tại
+            hideLoading();
+
+            if (checkError) {
+                console.error(checkError);
+                alert("Lỗi kiểm tra tên. Vui lòng thử lại.");
+                return;
+            }
+
+            if (existingSessions && existingSessions.length > 0) {
+                alert(`Tên đợt lì xì "${name}" đã được sử dụng bởi đợt khác! Vui lòng chọn tên khác.`);
+                return;
+            }
+
+            const success = await updateSessionInSupabase(id, {
+                name: name,
+                pin: formData.get('pin'),
+                description: formData.get('description'),
+                prizes: prizes
+            });
+
+            if (success) {
+                closeModal('editSessionModal');
                 renderSessionList();
+            } else {
+                alert("Cập nhật thất bại!");
             }
         }
 
         // --- STATS LOGIC ---
         let currentStatsSessionId = null;
 
-        function viewStats(sessionId) {
+        async function viewStats(sessionId) {
             currentStatsSessionId = sessionId;
-            const session = getSessionById(sessionId);
+            const sessions = await fetchSessionsFromSupabase(); // Refresh data
+            cachedSessions = sessions;
+            const session = sessions.find(s => s.id === sessionId);
             if (!session) return;
 
             document.getElementById('statsTitle').innerText = session.name;
@@ -677,7 +812,7 @@
 
         function exportToCSV() {
             if (!currentStatsSessionId) return;
-            const session = getSessionById(currentStatsSessionId);
+            const session = cachedSessions.find(s => s.id === currentStatsSessionId);
             let csvContent = "data:text/csv;charset=utf-8,";
             csvContent += "Thoi gian,Ho Ten,So Tai Khoan BIDV,Giai Thuong\n"; 
 
@@ -701,8 +836,9 @@
         }
 
         // --- PLAYER LOGIC ---
-        function loadSessionDropdown() {
-            const sessions = getSessions();
+        async function loadSessionDropdown() {
+            const sessions = await fetchSessionsFromSupabase();
+            cachedSessions = sessions;
             const select = document.getElementById('loginSessionId');
             select.innerHTML = '<option value="">-- Chọn đợt đang mở --</option>';
             sessions.forEach(s => {
@@ -713,7 +849,7 @@
             });
             select.onchange = (e) => {
                 const infoBox = document.getElementById('sessionInfoDisplay');
-                const sess = getSessionById(e.target.value);
+                const sess = sessions.find(s => s.id === e.target.value);
                 if (sess && sess.description) {
                     document.getElementById('sessionDescText').innerText = sess.description;
                     infoBox.classList.remove('hidden');
@@ -723,36 +859,33 @@
             };
         }
 
-        function handlePlayerLogin(e) {
+        async function handlePlayerLogin(e) {
             e.preventDefault();
             const sessionId = document.getElementById('loginSessionId').value;
             const pin = document.getElementById('loginPin').value;
             const name = document.getElementById('loginName').value.trim();
             const account = document.getElementById('loginAccount').value.trim();
 
-            const session = getSessionById(sessionId);
+            const session = cachedSessions.find(s => s.id === sessionId);
             if (!session) { alert("Vui lòng chọn đợt lì xì"); return; }
             if (session.pin && session.pin !== pin) { alert("Mã PIN không chính xác!"); return; }
-            if (hasPlayed(sessionId, account)) { alert(`TK ${account} đã quay rồi!`); return; }
+            
+            const played = await checkHasPlayed(sessionId, account);
+            if (played) { alert(`TK ${account} đã tham gia quay số trong đợt này rồi. Mỗi người chỉ được quay 1 lần!`); return; }
 
             currentSession = session;
             currentPlayer = { name, account };
             
-            // Load prizes from session or fallback to default
             currentWheelItems = (session.prizes && session.prizes.length > 0) ? session.prizes : [...defaultMoneyList];
-            
-            isMoneyMode = true; // For sessions we assume money mode context for now
+            isMoneyMode = true; 
             startGame();
         }
 
         function startInstantPlay() {
             currentSession = { id: null, name: "Khách - Chơi Tự Do" };
             currentPlayer = { name: "Khách", account: "Vui chơi" };
-            
-            // In instant play, we load from our custom temporary lists
             isMoneyMode = true; 
             currentWheelItems = [...customMoneyList];
-            
             startGame();
         }
 
@@ -777,29 +910,17 @@
 
         function toggleInstantMode() {
             isMoneyMode = !isMoneyMode;
-            // Swap lists
-            if (isMoneyMode) {
-                currentWheelItems = [...customMoneyList];
-            } else {
-                currentWheelItems = [...customNameList];
-            }
+            if (isMoneyMode) { currentWheelItems = [...customMoneyList]; } 
+            else { currentWheelItems = [...customNameList]; }
             updateGameUI();
             drawWheel();
         }
         
-        // Handle input changes in Instant Mode
         document.getElementById('instantInput').addEventListener('input', (e) => {
             const val = e.target.value;
             const list = val.split('\n').filter(n => n.trim() !== '');
             currentWheelItems = list;
-            
-            // Save to temp memory
-            if (isMoneyMode) {
-                customMoneyList = list;
-            } else {
-                customNameList = list;
-            }
-            
+            if (isMoneyMode) { customMoneyList = list; } else { customNameList = list; }
             document.getElementById('nameCount').innerText = `${list.length} mục`;
             drawWheel();
         });
@@ -827,13 +948,7 @@
 
             showView('view-game');
             updateGameUI();
-            
-            // Wait for transition before sizing canvas
-            setTimeout(() => {
-                resizeCanvas();
-                drawWheel();
-            }, 100);
-            
+            setTimeout(() => { resizeCanvas(); drawWheel(); }, 100);
             canvas.onclick = startSpin;
         }
 
@@ -843,7 +958,6 @@
             const textArea = document.getElementById('instantInput');
             const prizeListDisplay = document.getElementById('prizeListDisplay');
 
-            // If Session Mode, just render list
             if (currentSession.id) {
                 prizeListDisplay.innerHTML = '';
                 currentWheelItems.forEach(m => {
@@ -855,10 +969,9 @@
                 return;
             }
 
-            // Instant Mode UI
             if (isMoneyMode) {
                 btn.innerHTML = '<i class="fas fa-font"></i> Chuyển Quay Tên';
-                inputLabel.innerText = "Danh sách giải thưởng (Tiền/Quà)";
+                inputLabel.innerText = "Danh sách giải thưởng";
                 textArea.value = customMoneyList.join('\n');
             } else {
                 btn.innerHTML = '<i class="fas fa-money-bill-wave"></i> Chuyển Quay Tiền';
@@ -890,14 +1003,11 @@
             let radius = width / 2 - 10; 
             if (radius <= 0) return;
 
-            const items = currentWheelItems; // Use dynamic items
-
+            const items = currentWheelItems;
             ctx.clearRect(0, 0, width, height);
-            
             if (items.length === 0) return;
 
             const step = (2 * Math.PI) / items.length;
-
             ctx.save();
             ctx.translate(centerX, centerY);
             ctx.rotate(currentRotation);
@@ -917,23 +1027,14 @@
                 ctx.rotate(i * step + step / 2);
                 
                 const val = items[i];
-                
-                // Try to load image if text matches known money key
-                // Or if we eventually support custom images, we'd check here
                 if (loadedMoneyImages[val]) {
                     const img = loadedMoneyImages[val];
                     const aspectRatio = img.width / img.height;
                     const drawHeight = radius * 0.35; 
                     const drawWidth = drawHeight * aspectRatio;
                     const startX = radius * 0.2;
-                    let finalWidth = drawWidth;
-                    let finalHeight = drawHeight;
-                    
-                    if (startX + finalWidth > radius - 10) {
-                        const scale = (radius - 10 - startX) / finalWidth;
-                        finalWidth *= scale;
-                        finalHeight *= scale;
-                    }
+                    let finalWidth = drawWidth; let finalHeight = drawHeight;
+                    if (startX + finalWidth > radius - 10) { const scale = (radius - 10 - startX) / finalWidth; finalWidth *= scale; finalHeight *= scale; }
                     ctx.drawImage(img, startX, -finalHeight/2, finalWidth, finalHeight);
                 } else {
                     ctx.textAlign = "right";
@@ -950,9 +1051,7 @@
         }
 
         function startSpin() {
-            const items = currentWheelItems;
-            if (isSpinning || items.length === 0) return;
-            
+            if (isSpinning || currentWheelItems.length === 0) return;
             isSpinning = true;
             document.getElementById('spin-instruction').style.opacity = '0';
             
@@ -987,19 +1086,11 @@
                 const normalizedRot = currentRotation % (2 * Math.PI);
                 const currentIndex = Math.floor((2 * Math.PI - normalizedRot) / step) % itemsCount;
                 
-                if (currentIndex !== lastSegmentIndex && progress < 1) {
-                    playTick();
-                    lastSegmentIndex = currentIndex;
-                }
+                if (currentIndex !== lastSegmentIndex && progress < 1) { playTick(); lastSegmentIndex = currentIndex; }
 
                 drawWheel();
 
-                if (progress < 1) {
-                    requestAnimationFrame(animate);
-                } else {
-                    isSpinning = false;
-                    finishSpin();
-                }
+                if (progress < 1) { requestAnimationFrame(animate); } else { isSpinning = false; finishSpin(); }
             }
             requestAnimationFrame(animate);
         }
@@ -1017,37 +1108,27 @@
                 const winnerData = {
                     name: currentPlayer.name,
                     account: currentPlayer.account,
-                    prize: prize,
-                    time: new Date().toISOString()
+                    prize: prize
                 };
-                recordWinner(currentSession.id, winnerData);
+                insertWinnerToSupabase(currentSession.id, winnerData);
             }
 
             document.getElementById('winnerText').innerText = prize;
             document.getElementById('winSubtext').innerText = isMoneyMode ? "Lộc xuân đã về ví của bạn" : "Người chiến thắng là";
 
             const imgContainer = document.getElementById('winnerImageContainer');
-            
-            // Check based on image loaded status
-            if (loadedMoneyImages[prize]) {
+            if (isMoneyMode && loadedMoneyImages[prize]) {
                 document.getElementById('winnerImage').src = loadedMoneyImages[prize].src;
                 imgContainer.classList.remove('hidden');
-            } else {
-                imgContainer.classList.add('hidden');
-            }
+            } else { imgContainer.classList.add('hidden'); }
             
             document.getElementById('winnerModal').classList.add('active');
-            
             confetti({ particleCount: 200, spread: 120, origin: { y: 0.6 }, colors: ['#e53935', '#ffeb3b', '#43a047'] });
         }
 
         function finishGameAndExit() {
             document.getElementById('winnerModal').classList.remove('active');
-            if (currentSession.id) {
-                exitGame();
-            } else {
-                document.getElementById('spin-instruction').style.opacity = '1';
-            }
+            if (currentSession.id) { exitGame(); } else { document.getElementById('spin-instruction').style.opacity = '1'; }
         }
 
         function exitGame() {
@@ -1059,6 +1140,8 @@
             document.getElementById('playerForm').reset();
         }
 
+        // Init App
+        updateLoginStats();
         resizeCanvas();
     </script>
 </body>
