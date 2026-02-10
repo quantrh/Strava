@@ -735,7 +735,8 @@
                         <div class="flex items-center gap-1 font-bold text-yellow-600"><i class="fas fa-coins text-yellow-500"></i> ${totalMoney.toLocaleString('vi-VN')} đ</div>
                     </div>
                     <div class="flex gap-2">
-                        <button onclick="viewStats('${s.id}')" class="flex-1 py-2.5 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 font-bold text-xs md:text-sm transition-colors">
+                        <!-- Đã thay đổi onclick để yêu cầu xác thực trước khi xem -->
+                        <button onclick="requestAction('viewStats', '${s.id}')" class="flex-1 py-2.5 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 font-bold text-xs md:text-sm transition-colors">
                             <i class="fas fa-chart-bar mr-1"></i> Thống kê
                         </button>
                         <button onclick="requestAction('edit', '${s.id}')" class="px-3 py-2 text-orange-500 hover:bg-orange-50 rounded-lg transition-colors border border-orange-200">
@@ -767,10 +768,15 @@
             // Check PIN or Admin Password
             if (inputPin === session.pin || inputPin === '1a2b') {
                 closeModal('authModal');
+                
+                // Xử lý các hành động sau khi xác thực thành công
                 if (authPendingAction === 'delete') {
                     performDelete(authTargetId);
                 } else if (authPendingAction === 'edit') {
                     openEditModal(authTargetId);
+                } else if (authPendingAction === 'viewStats') {
+                    // Mới: Xem thống kê sau khi nhập đúng PIN
+                    viewStats(authTargetId);
                 }
             } else {
                 alert("Mã PIN hoặc Mật khẩu không chính xác!");
