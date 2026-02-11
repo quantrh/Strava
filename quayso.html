@@ -427,6 +427,7 @@
                 </div>
                 <button onclick="closeModal('statsModal')" class="w-8 h-8 rounded-full bg-gray-200 hover:bg-red-100 hover:text-red-500 flex items-center justify-center transition-colors"><i class="fas fa-times"></i></button>
             </div>
+            
             <div class="flex-1 overflow-auto p-4 md:p-6 bg-white">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 mb-6 md:mb-8">
                     <div class="bg-gradient-to-r from-green-50 to-emerald-50 p-4 md:p-6 rounded-xl border border-green-100 shadow-sm">
@@ -448,6 +449,7 @@
                         </div>
                     </div>
                 </div>
+
                 <div class="overflow-x-auto rounded-xl border border-gray-200">
                     <table class="w-full text-left min-w-[600px]">
                         <thead>
@@ -463,6 +465,7 @@
                     </table>
                 </div>
             </div>
+
             <div class="p-4 border-t bg-gray-50 flex justify-end">
                 <button onclick="exportToCSV()" class="px-4 py-2 md:px-5 md:py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 font-bold shadow flex items-center gap-2 text-sm md:text-base">
                     <i class="fas fa-file-excel"></i> Xuất CSV
@@ -512,8 +515,8 @@
                     <ul class="list-disc pl-12 space-y-2 text-sm">
                         <li><strong>Tạo đợt mới:</strong> Bấm vào nút <span class="bg-blue-100 text-blue-800 px-2 py-0.5 rounded text-xs font-bold">Tôi là người tổ chức</span>, sau đó chọn <strong>"Tạo đợt mới"</strong>.</li>
                         <li><strong>Thiết lập:</strong> Nhập tên đợt (bắt buộc, không trùng), mã PIN (để bảo vệ khi sửa/xóa) và danh sách giải thưởng.</li>
+                        <li><strong>Lưu ý về giải thưởng:</strong> Để hiển thị ảnh các tờ tiền, hãy nhập đúng cú pháp như <code>10.000 VND</code>, <code>500.000 VND</code>, <code>Nụ hôn</code>, <code>Rượu</code>.</li>
                         <li><strong>Quản lý:</strong> Bạn có thể xem thống kê người trúng, sửa thông tin hoặc xóa đợt lì xì (cần nhập đúng mã PIN đã tạo).</li>
-                        <li><strong>Chuyển tiền thưởng:</strong> Sau khi quay xong, vào mục <strong>Thống kê</strong>, bấm nút <strong>QR</strong> ở cột Hành động để tạo mã QR chuyển khoản nhanh cho người trúng.</li>
                     </ul>
                 </div>
                 <div>
@@ -665,11 +668,14 @@
                 const data = await response.json();
                 if (data.code === "00") {
                     cachedBanks = data.data;
+                    // Sort: BIDV first, then others alphabetically
                     cachedBanks.sort((a, b) => {
                         if (a.code === 'BIDV') return -1;
                         if (b.code === 'BIDV') return 1;
                         return a.shortName.localeCompare(b.shortName);
                     });
+                    
+                    // Init dropdown logic happens when user interacts or on load logic if needed
                     setupSearchableDropdown('bankSearchInput', 'loginBank', 'bankDropdownList', cachedBanks, 'shortName', 'code', 'BIDV');
                 }
             } catch (error) {
@@ -677,12 +683,13 @@
             }
         }
 
-        // --- SEARCHABLE DROPDOWN LOGIC ---
+        // --- SEARCHABLE DROPDOWN LOGIC (GENERIC) ---
         function setupSearchableDropdown(inputId, hiddenId, listId, data, labelKey, valueKey, defaultValue) {
             const input = document.getElementById(inputId);
             const hidden = document.getElementById(hiddenId);
             const list = document.getElementById(listId);
             
+            // Set initial value if provided
             if (defaultValue && data.length > 0) {
                 const defaultItem = data.find(item => item[valueKey] === defaultValue);
                 if (defaultItem) {
@@ -712,6 +719,7 @@
                         hidden.value = item[valueKey];
                         list.classList.remove('show');
                         
+                        // Special case for session dropdown to show description
                         if (hiddenId === 'loginSessionId') {
                             const infoBox = document.getElementById('sessionInfoDisplay');
                             if (item.description) {
@@ -727,15 +735,20 @@
             }
 
             input.addEventListener('focus', () => {
-                renderList(input.value.trim()); 
+                renderList(input.value.trim()); // Show list, optionally filtered by current text
                 list.classList.add('show');
             });
 
             input.addEventListener('input', (e) => {
                 renderList(e.target.value.trim());
                 list.classList.add('show');
+                // Clear hidden value if input is cleared/changed until selected
+                // But for better UX, maybe keep old value until valid selection? 
+                // Let's clear it to ensure validity.
+                // hidden.value = ''; 
             });
 
+            // Close when clicking outside
             document.addEventListener('click', (e) => {
                 if (!input.contains(e.target) && !list.contains(e.target)) {
                     list.classList.remove('show');
@@ -784,6 +797,7 @@
         }
 
         async function insertWinnerToSupabase(sessionId, winner) {
+            // winner.account should be "BANK::ACCOUNT"
             const { error } = await supabaseClient.from('lixi_winners').insert({
                 session_id: sessionId,
                 name: winner.name,
@@ -798,9 +812,12 @@
             const { data, error } = await supabaseClient.from('lixi_winners')
                 .select('account')
                 .eq('session_id', sessionId);
+            
             hideLoading();
             if (error || !data) return false;
+            
             const cleanInput = account.replace(/\s/g, '');
+            
             return data.some(row => {
                 const parts = row.account.split('::');
                 const storedAcc = parts.length > 1 ? parts[1] : parts[0];
@@ -841,7 +858,8 @@
         function showView(viewId) {
             document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
             document.getElementById(viewId).classList.add('active');
-            if (viewId === 'view-organizer') loadOrganizerData(); 
+            
+            if (viewId === 'view-organizer') loadOrganizerData(); // Updated to load data first
             if (viewId === 'view-player-login') loadSessionDropdown();
         }
 
@@ -854,6 +872,7 @@
         }
 
         // --- ORGANIZER LOGIC ---
+        
         async function loadOrganizerData() {
             const sessions = await fetchSessionsFromSupabase();
             cachedSessions = sessions;
@@ -882,11 +901,20 @@
 
             showLoading();
             const { data: existingSessions, error: checkError } = await supabaseClient
-                .from('lixi_sessions').select('id').ilike('name', name); 
+                .from('lixi_sessions')
+                .select('id')
+                .ilike('name', name); 
             hideLoading();
 
-            if (checkError || (existingSessions && existingSessions.length > 0)) {
-                alert("Lỗi hoặc tên đợt lì xì đã tồn tại!"); return;
+            if (checkError) {
+                console.error(checkError);
+                alert("Lỗi kiểm tra dữ liệu. Vui lòng thử lại.");
+                return;
+            }
+
+            if (existingSessions && existingSessions.length > 0) {
+                alert(`Tên đợt lì xì "${name}" đã tồn tại! Vui lòng đặt tên khác để tránh nhầm lẫn.`);
+                return;
             }
 
             const success = await insertSessionToSupabase({
@@ -899,17 +927,21 @@
             if (success) {
                 e.target.reset();
                 closeModal('createSessionModal');
-                loadOrganizerData(); 
+                loadOrganizerData(); // Refresh list
             } else {
-                alert("Lỗi khi tạo đợt lì xì.");
+                alert("Lỗi khi tạo đợt lì xì. Vui lòng thử lại.");
             }
         }
 
         function renderSessionCards(sessions) {
             const container = document.getElementById('session-list');
             const emptyMsg = document.getElementById('empty-session-msg');
+            
             container.innerHTML = '';
-            if (sessions.length === 0) { emptyMsg.classList.remove('hidden'); return; }
+            if (sessions.length === 0) {
+                emptyMsg.classList.remove('hidden');
+                return;
+            }
             emptyMsg.classList.add('hidden');
 
             sessions.forEach(s => {
@@ -934,9 +966,15 @@
                         <div class="flex items-center gap-1 font-bold text-yellow-600"><i class="fas fa-coins text-yellow-500"></i> ${totalMoney.toLocaleString('vi-VN')} đ</div>
                     </div>
                     <div class="flex gap-2">
-                        <button onclick="requestAction('viewStats', '${s.id}')" class="flex-1 py-2.5 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 font-bold text-xs md:text-sm transition-colors"><i class="fas fa-chart-bar mr-1"></i> Thống kê</button>
-                        <button onclick="requestAction('edit', '${s.id}')" class="px-3 py-2 text-orange-500 hover:bg-orange-50 rounded-lg transition-colors border border-orange-200"><i class="fas fa-edit"></i></button>
-                         <button onclick="requestAction('delete', '${s.id}')" class="px-3 py-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors border border-red-200"><i class="fas fa-trash-alt"></i></button>
+                        <button onclick="requestAction('viewStats', '${s.id}')" class="flex-1 py-2.5 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 font-bold text-xs md:text-sm transition-colors">
+                            <i class="fas fa-chart-bar mr-1"></i> Thống kê
+                        </button>
+                        <button onclick="requestAction('edit', '${s.id}')" class="px-3 py-2 text-orange-500 hover:bg-orange-50 rounded-lg transition-colors border border-orange-200">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                         <button onclick="requestAction('delete', '${s.id}')" class="px-3 py-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors border border-red-200">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
                     </div>
                 `;
                 container.appendChild(card);
@@ -954,12 +992,22 @@
         function confirmAuth() {
             const inputPin = document.getElementById('authPinInput').value;
             const session = cachedSessions.find(s => s.id === authTargetId);
+            
             if (!session) return;
-            if (inputPin === session.pin) {
+
+            // Check PIN or Admin Password
+            if (inputPin === session.pin || inputPin === '1a2b') {
                 closeModal('authModal');
-                if (authPendingAction === 'delete') performDelete(authTargetId);
-                else if (authPendingAction === 'edit') openEditModal(authTargetId);
-                else if (authPendingAction === 'viewStats') viewStats(authTargetId);
+                
+                // Xử lý các hành động sau khi xác thực thành công
+                if (authPendingAction === 'delete') {
+                    performDelete(authTargetId);
+                } else if (authPendingAction === 'edit') {
+                    openEditModal(authTargetId);
+                } else if (authPendingAction === 'viewStats') {
+                    // Mới: Xem thống kê sau khi nhập đúng PIN
+                    viewStats(authTargetId);
+                }
             } else {
                 alert("Mã PIN không chính xác!");
             }
@@ -967,17 +1015,19 @@
 
         async function performDelete(id) {
             await deleteSessionFromSupabase(id);
-            loadOrganizerData(); 
+            loadOrganizerData(); // Refresh list
         }
 
         function openEditModal(sessionId) {
             const session = cachedSessions.find(s => s.id === sessionId);
             if(!session) return;
+
             document.getElementById('editSessionId').value = session.id;
             document.getElementById('editName').value = session.name;
             document.getElementById('editPin').value = session.pin || '';
             document.getElementById('editDescription').value = session.description || '';
             document.getElementById('editPrizes').value = session.prizes.join('\n');
+            
             document.getElementById('editSessionModal').classList.add('active');
         }
 
@@ -991,13 +1041,24 @@
             if (!name) { alert("Vui lòng nhập tên đợt lì xì!"); return; }
             if (prizes.length === 0) { alert("Vui lòng nhập ít nhất một giải thưởng!"); return; }
 
+            // KIỂM TRA TRÙNG TÊN (EDIT - loại trừ chính nó)
             showLoading();
             const { data: existingSessions, error: checkError } = await supabaseClient
-                .from('lixi_sessions').select('id').ilike('name', name).neq('id', id); 
+                .from('lixi_sessions')
+                .select('id')
+                .ilike('name', name)
+                .neq('id', id); // Loại trừ id hiện tại
             hideLoading();
 
-            if (checkError || (existingSessions && existingSessions.length > 0)) {
-                alert("Lỗi hoặc tên đã tồn tại!"); return;
+            if (checkError) {
+                console.error(checkError);
+                alert("Lỗi kiểm tra tên. Vui lòng thử lại.");
+                return;
+            }
+
+            if (existingSessions && existingSessions.length > 0) {
+                alert(`Tên đợt lì xì "${name}" đã được sử dụng bởi đợt khác! Vui lòng chọn tên khác.`);
+                return;
             }
 
             const success = await updateSessionInSupabase(id, {
@@ -1009,18 +1070,18 @@
 
             if (success) {
                 closeModal('editSessionModal');
-                loadOrganizerData(); 
+                loadOrganizerData(); // Refresh list
             } else {
                 alert("Cập nhật thất bại!");
             }
         }
 
-        // --- STATS & QR LOGIC (ADMIN) ---
+        // --- STATS & QR LOGIC ---
         let currentStatsSessionId = null;
 
         async function viewStats(sessionId) {
             currentStatsSessionId = sessionId;
-            const sessions = await fetchSessionsFromSupabase(); 
+            const sessions = await fetchSessionsFromSupabase(); // Refresh data
             cachedSessions = sessions;
             const session = sessions.find(s => s.id === sessionId);
             if (!session) return;
@@ -1036,6 +1097,7 @@
             [...session.winners].reverse().forEach(w => {
                  const num = parseInt(w.prize.replace(/\D/g, '')) || 0;
                  totalMoney += num;
+
                  let bankCode = '';
                  let accNum = w.account;
                  if (w.account.includes('::')) {
@@ -1059,7 +1121,9 @@
                     <td class="p-3 md:p-4 text-right font-extrabold text-red-600 text-xs md:text-sm">${w.prize}</td>
                     <td class="p-3 md:p-4 text-center">
                         ${num > 0 && bankCode ? 
-                            `<button onclick="showQR('${bankCode}', '${accNum}', ${num}, 'Chuc mung nam moi An Khang Thinh Vuong')" class="bg-blue-100 text-blue-600 hover:bg-blue-200 p-2 rounded-lg transition-colors text-xs font-bold"><i class="fas fa-qrcode"></i> QR</button>` : 
+                            `<button onclick="showQR('${bankCode}', '${accNum}', ${num}, 'Chuc mung nam moi An Khang Thinh Vuong')" class="bg-blue-100 text-blue-600 hover:bg-blue-200 p-2 rounded-lg transition-colors text-xs font-bold">
+                                <i class="fas fa-qrcode"></i> QR
+                            </button>` : 
                             `<span class="text-gray-300">-</span>`
                         }
                     </td>
@@ -1071,6 +1135,7 @@
             document.getElementById('statsModal').classList.add('active');
         }
 
+        // Show QR Logic
         function showQR(bankCode, accNum, amount, content) {
             const qrModal = document.getElementById('qrModal');
             const qrImage = document.getElementById('qrImage');
@@ -1080,11 +1145,18 @@
             qrModal.classList.add('active');
             qrLoading.classList.remove('hidden');
             
-            const url = `https://img.vietqr.io/image/${bankCode}-${accNum}-compact.png?amount=${amount}&addInfo=${encodeURIComponent(content)}`;
+            // Format content: remove vietnamese accents if needed, keep short
+            const safeContent = `Lixi ${content}`.substring(0, 50);
             
-            qrImage.onload = () => { qrLoading.classList.add('hidden'); };
+            // VietQR QuickLink
+            const url = `https://img.vietqr.io/image/${bankCode}-${accNum}-compact.png?amount=${amount}&addInfo=${encodeURIComponent(safeContent)}`;
+            
+            qrImage.onload = () => {
+                qrLoading.classList.add('hidden');
+            };
             qrImage.src = url;
 
+            // Handle Download
             downloadBtn.onclick = async () => {
                 try {
                     const response = await fetch(url);
@@ -1097,7 +1169,9 @@
                     link.click();
                     document.body.removeChild(link);
                     URL.revokeObjectURL(objectUrl);
-                } catch (err) { alert("Lỗi tải ảnh. Vui lòng thử lại!"); }
+                } catch (err) {
+                    alert("Lỗi tải ảnh. Vui lòng thử lại!");
+                }
             };
         }
 
@@ -1108,13 +1182,21 @@
             csvContent += "Thoi gian,Ho Ten,Ngan Hang,So Tai Khoan,Giai Thuong\n"; 
 
             session.winners.forEach(w => {
-                let bankCode = '', accNum = w.account;
+                let bankCode = '';
+                let accNum = w.account;
                 if (w.account.includes('::')) {
                     const parts = w.account.split('::');
                     bankCode = parts[0];
                     accNum = parts[1];
                 }
-                const row = [new Date(w.time).toLocaleString('vi-VN'), `"${w.name}"`, `"${bankCode}"`, `"${accNum}"`, `"${w.prize}"`].join(",");
+
+                const row = [
+                    new Date(w.time).toLocaleString('vi-VN'),
+                    `"${w.name}"`,
+                    `"${bankCode}"`,
+                    `"${accNum}"`,
+                    `"${w.prize}"`
+                ].join(",");
                 csvContent += row + "\n";
             });
 
@@ -1149,7 +1231,7 @@
             if (session.pin && session.pin !== pin) { alert("Mã PIN không chính xác!"); return; }
             
             const played = await checkHasPlayed(sessionId, accountNo);
-            if (played) { alert(`TK ${accountNo} đã tham gia rồi!`); return; }
+            if (played) { alert(`TK ${accountNo} đã tham gia quay số trong đợt này rồi. Mỗi người chỉ được quay 1 lần!`); return; }
 
             currentSession = session;
             const combinedAccount = `${bank}::${accountNo}`;
