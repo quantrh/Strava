@@ -334,7 +334,7 @@
         </div>
     </div>
 
-    <!-- Modals (Create, Edit, Auth, Stats, QR, Guide) -->
+    <!-- Modals -->
     <!-- MODAL: Create Session -->
     <div id="createSessionModal" class="modal fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-6 transform transition-all scale-100 h-[80vh] md:h-[90vh] flex flex-col">
@@ -345,9 +345,17 @@
                         <label class="block text-sm font-bold text-gray-700 mb-1">Tên đợt (Duy nhất)</label>
                         <input type="text" name="name" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 outline-none text-sm" placeholder="VD: Lì xì Team Tech 2026" required>
                     </div>
-                    <div>
-                        <label class="block text-sm font-bold text-gray-700 mb-1">Mã PIN bảo vệ (Tùy chọn)</label>
-                        <input type="text" name="pin" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 outline-none text-sm" placeholder="VD: 1234">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-1 text-red-600">PIN Quản lý (Admin)</label>
+                            <input type="text" name="admin_pin" class="w-full p-3 border border-red-200 bg-red-50 rounded-lg focus:ring-2 focus:ring-red-500 outline-none text-sm" placeholder="VD: 9999" required>
+                            <p class="text-[10px] text-gray-500 mt-1">Dùng để Sửa/Xóa</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-1 text-blue-600">PIN Tham gia (User)</label>
+                            <input type="text" name="pin" class="w-full p-3 border border-blue-200 bg-blue-50 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm" placeholder="VD: 1234" required>
+                            <p class="text-[10px] text-gray-500 mt-1">Gửi cho người chơi</p>
+                        </div>
                     </div>
                     <div>
                         <label class="block text-sm font-bold text-gray-700 mb-1">Thể lệ / Lời chúc</label>
@@ -378,9 +386,15 @@
                         <label class="block text-sm font-bold text-gray-700 mb-1">Tên đợt</label>
                         <input type="text" id="editName" name="name" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm" required>
                     </div>
-                    <div>
-                        <label class="block text-sm font-bold text-gray-700 mb-1">Mã PIN bảo vệ</label>
-                        <input type="text" id="editPin" name="pin" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-1 text-red-600">PIN Admin</label>
+                            <input type="text" id="editAdminPin" name="admin_pin" class="w-full p-3 border border-red-200 bg-red-50 rounded-lg focus:ring-2 focus:ring-red-500 outline-none text-sm" required>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-1 text-blue-600">PIN User</label>
+                            <input type="text" id="editPin" name="pin" class="w-full p-3 border border-blue-200 bg-blue-50 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm" required>
+                        </div>
                     </div>
                     <div>
                         <label class="block text-sm font-bold text-gray-700 mb-1">Thể lệ / Lời chúc</label>
@@ -407,7 +421,7 @@
                     <i class="fas fa-lock"></i>
                 </div>
                 <h3 class="text-lg font-bold text-gray-800">Yêu cầu xác thực</h3>
-                <p class="text-xs text-gray-500 mt-1">Nhập PIN của đợt quay</p>
+                <p class="text-xs text-gray-500 mt-1">Nhập Mã PIN Quản lý (Admin)</p>
             </div>
             <input type="password" id="authPinInput" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 outline-none text-center text-lg tracking-widest mb-4" placeholder="••••">
             <div class="flex gap-2">
@@ -506,31 +520,50 @@
                 </div>
                 <button onclick="closeModal('guideModal')" class="w-8 h-8 rounded-full bg-white hover:bg-red-200 text-red-500 hover:text-red-700 flex items-center justify-center transition-colors shadow-sm"><i class="fas fa-times"></i></button>
             </div>
+            
             <div class="flex-1 overflow-auto p-6 bg-white space-y-8 text-gray-700">
+                <!-- Section 1 -->
                 <div>
                     <h4 class="flex items-center gap-2 font-bold text-lg text-blue-800 mb-3">
                         <span class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-sm">1</span>
                         Dành cho Người Tổ Chức (Admin)
                     </h4>
                     <ul class="list-disc pl-12 space-y-2 text-sm">
-                        <li><strong>Tạo đợt mới:</strong> Bấm vào nút <span class="bg-blue-100 text-blue-800 px-2 py-0.5 rounded text-xs font-bold">Tôi là người tổ chức</span>, sau đó chọn <strong>"Tạo đợt mới"</strong>.</li>
-                        <li><strong>Thiết lập:</strong> Nhập tên đợt (bắt buộc, không trùng), mã PIN (để bảo vệ khi sửa/xóa) và danh sách giải thưởng.</li>
-                        <li><strong>Lưu ý về giải thưởng:</strong> Để hiển thị ảnh các tờ tiền, hãy nhập đúng cú pháp như <code>10.000 VND</code>, <code>500.000 VND</code>, <code>Nụ hôn</code>, <code>Rượu</code>.</li>
-                        <li><strong>Quản lý:</strong> Bạn có thể xem thống kê người trúng, sửa thông tin hoặc xóa đợt lì xì (cần nhập đúng mã PIN đã tạo).</li>
+                        <li><strong>Tạo đợt mới:</strong> Bấm vào nút <span class="bg-blue-100 text-blue-800 px-2 py-0.5 rounded text-xs font-bold">Tôi là người tổ chức</span> &rarr; <strong>"Tạo đợt mới"</strong>.</li>
+                        <li><strong>Thiết lập Bảo mật (2 Mã PIN):</strong>
+                            <ul class="list-disc pl-4 mt-1 text-gray-600">
+                                <li><strong class="text-red-600">PIN Quản lý:</strong> Giữ bí mật! Dùng để Sửa/Xóa đợt lì xì và Xem thống kê nhạy cảm.</li>
+                                <li><strong class="text-blue-600">PIN Tham gia:</strong> Chia sẻ công khai cho mọi người để họ đăng nhập vào quay số.</li>
+                            </ul>
+                        </li>
+                        <li><strong>Cấu hình giải thưởng:</strong> Nhập theo cú pháp <code>10.000 VND</code>, <code>500.000 VND</code> để hiện ảnh tiền, hoặc nhập tên quà (ví dụ: <code>Nụ hôn</code>).</li>
+                        <li><strong>Trao giải bằng VietQR:</strong>
+                             Vào mục <strong>Thống kê</strong> (cần nhập PIN Quản lý), danh sách người trúng sẽ hiện ra. Bấm nút <span class="bg-blue-100 text-blue-600 px-1 rounded text-xs font-bold"><i class="fas fa-qrcode"></i> QR</span> tương ứng với người chơi để tạo mã chuyển khoản nhanh với nội dung và số tiền đã điền sẵn.
+                        </li>
                     </ul>
                 </div>
+
+                <!-- Section 2 -->
                 <div>
                     <h4 class="flex items-center gap-2 font-bold text-lg text-orange-700 mb-3">
                         <span class="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center text-orange-600 text-sm">2</span>
                         Dành cho Người Chơi
                     </h4>
                     <ul class="list-disc pl-12 space-y-2 text-sm">
-                        <li><strong>Bước 1:</strong> Bấm <span class="bg-orange-100 text-orange-800 px-2 py-0.5 rounded text-xs font-bold">Tham gia quay số</span> từ màn hình chính.</li>
-                        <li><strong>Bước 2:</strong> Chọn tên đợt lì xì mà bạn tham gia (có thể tìm kiếm).</li>
-                        <li><strong>Bước 3:</strong> Nhập <strong>Mã PIN</strong> (nếu BTC yêu cầu), <strong>Họ tên</strong>, <strong>Ngân hàng</strong> và <strong>Số tài khoản</strong>.</li>
-                        <li><strong>Bước 4:</strong> Bấm xác nhận để vào màn hình quay. Chạm vào vòng quay để thử vận may.</li>
+                        <li><strong>Bước 1:</strong> Bấm <span class="bg-orange-100 text-orange-800 px-2 py-0.5 rounded text-xs font-bold">Tham gia quay số</span>.</li>
+                        <li><strong>Bước 2:</strong> Tìm và chọn tên đợt lì xì của nhóm bạn.</li>
+                        <li><strong>Bước 3:</strong> Nhập thông tin tham gia:
+                            <ul class="list-disc pl-4 mt-1 text-gray-600">
+                                <li><strong>Mã PIN:</strong> Nhập mã PIN Tham gia do BTC cung cấp.</li>
+                                <li><strong>Ngân hàng & STK:</strong> Chọn ngân hàng (hỗ trợ tìm kiếm) và nhập chính xác số tài khoản để nhận tiền thưởng qua VietQR.</li>
+                            </ul>
+                        </li>
+                        <li><strong>Bước 4:</strong> Quay và chờ vận may! Nếu trúng, mã QR nhận tiền của bạn sẽ hiện ra để BTC quét, hoặc bạn có thể chia sẻ niềm vui lên mạng xã hội.</li>
+                        <li class="italic text-red-500">Lưu ý: Mỗi số tài khoản chỉ được tham gia quay 1 lần duy nhất trong mỗi đợt.</li>
                     </ul>
                 </div>
+
+                <!-- Section 3 -->
                 <div>
                     <h4 class="flex items-center gap-2 font-bold text-lg text-green-700 mb-3">
                         <span class="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center text-green-600 text-sm">3</span>
@@ -539,10 +572,11 @@
                     <p class="pl-12 text-sm mb-2">Dành cho khách vãng lai hoặc chơi vui vẻ, không cần lưu kết quả.</p>
                     <ul class="list-disc pl-12 space-y-2 text-sm">
                         <li>Bấm <span class="bg-green-100 text-green-800 px-2 py-0.5 rounded text-xs font-bold">Chơi ngay</span>.</li>
-                        <li>Bạn có thể tự do chỉnh sửa các ô trên vòng quay (nhập tên người hoặc mệnh giá tiền tùy thích).</li>
+                        <li>Bạn có thể tự do chỉnh sửa các ô trên vòng quay (nhập tên người hoặc mệnh giá tiền tùy thích) ngay trên màn hình quay số.</li>
                     </ul>
                 </div>
             </div>
+
             <div class="p-4 border-t bg-gray-50 flex justify-end">
                 <button onclick="closeModal('guideModal')" class="px-6 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 font-bold shadow transition-colors">Đã Hiểu</button>
             </div>
@@ -668,14 +702,11 @@
                 const data = await response.json();
                 if (data.code === "00") {
                     cachedBanks = data.data;
-                    // Sort: BIDV first, then others alphabetically
                     cachedBanks.sort((a, b) => {
                         if (a.code === 'BIDV') return -1;
                         if (b.code === 'BIDV') return 1;
                         return a.shortName.localeCompare(b.shortName);
                     });
-                    
-                    // Init dropdown logic happens when user interacts or on load logic if needed
                     setupSearchableDropdown('bankSearchInput', 'loginBank', 'bankDropdownList', cachedBanks, 'shortName', 'code', 'BIDV');
                 }
             } catch (error) {
@@ -689,7 +720,6 @@
             const hidden = document.getElementById(hiddenId);
             const list = document.getElementById(listId);
             
-            // Set initial value if provided
             if (defaultValue && data.length > 0) {
                 const defaultItem = data.find(item => item[valueKey] === defaultValue);
                 if (defaultItem) {
@@ -719,7 +749,6 @@
                         hidden.value = item[valueKey];
                         list.classList.remove('show');
                         
-                        // Special case for session dropdown to show description
                         if (hiddenId === 'loginSessionId') {
                             const infoBox = document.getElementById('sessionInfoDisplay');
                             if (item.description) {
@@ -735,20 +764,15 @@
             }
 
             input.addEventListener('focus', () => {
-                renderList(input.value.trim()); // Show list, optionally filtered by current text
+                renderList(input.value.trim()); 
                 list.classList.add('show');
             });
 
             input.addEventListener('input', (e) => {
                 renderList(e.target.value.trim());
                 list.classList.add('show');
-                // Clear hidden value if input is cleared/changed until selected
-                // But for better UX, maybe keep old value until valid selection? 
-                // Let's clear it to ensure validity.
-                // hidden.value = ''; 
             });
 
-            // Close when clicking outside
             document.addEventListener('click', (e) => {
                 if (!input.contains(e.target) && !list.contains(e.target)) {
                     list.classList.remove('show');
@@ -758,13 +782,15 @@
 
         async function fetchSessionsFromSupabase() {
             showLoading();
+            // IMPORTANT: Select 'admin_pin' and 'pin' properly
             const { data, error } = await supabaseClient.from('lixi_sessions').select('*, lixi_winners(*)').order('created_at', { ascending: false });
             hideLoading();
             if (error) { console.error(error); return []; }
             return data.map(s => ({
                 id: s.id,
                 name: s.name,
-                pin: s.pin,
+                pin: s.pin, // Player PIN
+                admin_pin: s.admin_pin, // Admin PIN (might be null for old records)
                 description: s.description,
                 prizes: s.prizes || [],
                 createdAt: s.created_at,
@@ -781,7 +807,8 @@
             showLoading();
             const { error } = await supabaseClient.from('lixi_sessions').insert({
                 name: session.name,
-                pin: session.pin,
+                pin: session.pin, // Player PIN
+                admin_pin: session.admin_pin, // Admin PIN
                 description: session.description,
                 prizes: session.prizes
             });
@@ -797,7 +824,6 @@
         }
 
         async function insertWinnerToSupabase(sessionId, winner) {
-            // winner.account should be "BANK::ACCOUNT"
             const { error } = await supabaseClient.from('lixi_winners').insert({
                 session_id: sessionId,
                 name: winner.name,
@@ -852,14 +878,14 @@
         let cachedSessions = [];
         let authPendingAction = null; 
         let authTargetId = null;
-        let currentWinnerPrize = null; // Store for sharing
+        let currentWinnerPrize = null; 
 
         // --- VIEW NAVIGATION ---
         function showView(viewId) {
             document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
             document.getElementById(viewId).classList.add('active');
             
-            if (viewId === 'view-organizer') loadOrganizerData(); // Updated to load data first
+            if (viewId === 'view-organizer') loadOrganizerData(); 
             if (viewId === 'view-player-login') loadSessionDropdown();
         }
 
@@ -894,9 +920,14 @@
             e.preventDefault();
             const formData = new FormData(e.target);
             const name = formData.get('name').trim();
+            const pin = formData.get('pin').trim(); // User PIN
+            const adminPin = formData.get('admin_pin').trim(); // Admin PIN
             const prizes = (formData.get('prizes') || "").split('\n').filter(n => n.trim() !== '');
 
             if (!name) { alert("Vui lòng nhập tên đợt lì xì!"); return; }
+            if (!adminPin) { alert("Vui lòng nhập PIN Quản lý!"); return; }
+            if (!pin) { alert("Vui lòng nhập PIN Người chơi!"); return; }
+            if (adminPin === pin) { alert("Mã PIN Quản lý và Người chơi không được trùng nhau!"); return; }
             if (prizes.length === 0) { alert("Vui lòng nhập ít nhất một giải thưởng!"); return; }
 
             showLoading();
@@ -913,13 +944,14 @@
             }
 
             if (existingSessions && existingSessions.length > 0) {
-                alert(`Tên đợt lì xì "${name}" đã tồn tại! Vui lòng đặt tên khác để tránh nhầm lẫn.`);
+                alert(`Tên đợt lì xì "${name}" đã tồn tại! Vui lòng đặt tên khác.`);
                 return;
             }
 
             const success = await insertSessionToSupabase({
                 name: name,
-                pin: formData.get('pin'),
+                pin: pin,
+                admin_pin: adminPin,
                 description: formData.get('description'),
                 prizes: prizes
             });
@@ -927,7 +959,7 @@
             if (success) {
                 e.target.reset();
                 closeModal('createSessionModal');
-                loadOrganizerData(); // Refresh list
+                loadOrganizerData(); 
             } else {
                 alert("Lỗi khi tạo đợt lì xì. Vui lòng thử lại.");
             }
@@ -995,21 +1027,19 @@
             
             if (!session) return;
 
-            // Check PIN or Admin Password
-            if (inputPin === session.pin || inputPin === '1a2b') {
+            // Check ADMIN PIN or MASTER KEY
+            if (inputPin === session.admin_pin || inputPin === '1a2b') {
                 closeModal('authModal');
                 
-                // Xử lý các hành động sau khi xác thực thành công
                 if (authPendingAction === 'delete') {
                     performDelete(authTargetId);
                 } else if (authPendingAction === 'edit') {
                     openEditModal(authTargetId);
                 } else if (authPendingAction === 'viewStats') {
-                    // Mới: Xem thống kê sau khi nhập đúng PIN
                     viewStats(authTargetId);
                 }
             } else {
-                alert("Mã PIN không chính xác!");
+                alert("Mã PIN Quản lý không chính xác!");
             }
         }
 
@@ -1024,7 +1054,8 @@
 
             document.getElementById('editSessionId').value = session.id;
             document.getElementById('editName').value = session.name;
-            document.getElementById('editPin').value = session.pin || '';
+            document.getElementById('editPin').value = session.pin || ''; // Player PIN
+            document.getElementById('editAdminPin').value = session.admin_pin || ''; // Admin PIN
             document.getElementById('editDescription').value = session.description || '';
             document.getElementById('editPrizes').value = session.prizes.join('\n');
             
@@ -1036,18 +1067,21 @@
             const formData = new FormData(e.target);
             const id = formData.get('id');
             const name = formData.get('name').trim();
+            const adminPin = formData.get('admin_pin').trim();
+            const pin = formData.get('pin').trim();
             const prizes = (formData.get('prizes') || "").split('\n').filter(n => n.trim() !== '');
 
             if (!name) { alert("Vui lòng nhập tên đợt lì xì!"); return; }
             if (prizes.length === 0) { alert("Vui lòng nhập ít nhất một giải thưởng!"); return; }
+            if (adminPin === pin) { alert("Mã PIN Quản lý và Người chơi không được trùng nhau!"); return; }
 
-            // KIỂM TRA TRÙNG TÊN (EDIT - loại trừ chính nó)
+            // KIỂM TRA TRÙNG TÊN
             showLoading();
             const { data: existingSessions, error: checkError } = await supabaseClient
                 .from('lixi_sessions')
                 .select('id')
                 .ilike('name', name)
-                .neq('id', id); // Loại trừ id hiện tại
+                .neq('id', id); 
             hideLoading();
 
             if (checkError) {
@@ -1057,20 +1091,21 @@
             }
 
             if (existingSessions && existingSessions.length > 0) {
-                alert(`Tên đợt lì xì "${name}" đã được sử dụng bởi đợt khác! Vui lòng chọn tên khác.`);
+                alert(`Tên đợt lì xì "${name}" đã được sử dụng! Vui lòng chọn tên khác.`);
                 return;
             }
 
             const success = await updateSessionInSupabase(id, {
                 name: name,
-                pin: formData.get('pin'),
+                pin: pin,
+                admin_pin: adminPin,
                 description: formData.get('description'),
                 prizes: prizes
             });
 
             if (success) {
                 closeModal('editSessionModal');
-                loadOrganizerData(); // Refresh list
+                loadOrganizerData(); 
             } else {
                 alert("Cập nhật thất bại!");
             }
