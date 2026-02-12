@@ -109,7 +109,7 @@
     <!-- Loading Overlay -->
     <div id="loading-overlay">
         <div class="spinner mb-2"></div>
-        <p class="text-red-600 font-bold">Đang xử lý dữ liệu...</p>
+        <p class="text-red-600 font-bold" id="loading-text">Đang xử lý dữ liệu...</p>
     </div>
 
     <!-- View 1: HOME SCREEN -->
@@ -171,7 +171,7 @@
             <button onclick="openCreateSessionModal()" class="bg-red-600 text-white px-3 py-1.5 md:px-4 md:py-2 rounded-lg hover:bg-red-700 text-xs md:text-sm font-bold shadow flex items-center gap-2"><i class="fas fa-plus"></i> <span class="hidden md:inline">Tạo đợt mới</span><span class="md:hidden">Tạo mới</span></button>
         </nav>
 
-        <div class="container mx-auto p-4 max-w-4xl h-full flex flex-col">
+        <div class="container mx-auto p-4 max-w-5xl h-full flex flex-col">
             <div class="mb-4">
                 <div class="relative">
                     <input type="text" id="orgSearchInput" oninput="handleOrgSearch()" class="w-full pl-10 p-3 rounded-xl border shadow-sm focus:ring-2 focus:ring-red-500 outline-none text-sm md:text-base" placeholder="Tìm kiếm đợt lì xì...">
@@ -179,7 +179,7 @@
                 </div>
             </div>
 
-            <div id="session-list" class="grid grid-cols-1 md:grid-cols-2 gap-4 pb-20 overflow-y-auto"></div>
+            <div id="session-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4 pb-20 overflow-y-auto"></div>
             <div id="empty-session-msg" class="text-center text-gray-400 mt-20 hidden">
                 <i class="fas fa-folder-open text-3xl mb-2"></i>
                 <p>Chưa có đợt lì xì nào. Hãy tạo mới!</p>
@@ -287,6 +287,13 @@
                     </div>
                     <div class="pointer"></div>
                 </div>
+                <!-- Out of stock message -->
+                <div id="out-of-stock-overlay" class="absolute inset-0 bg-white/80 backdrop-blur flex flex-col items-center justify-center rounded-full z-20 hidden">
+                    <i class="fas fa-box-open text-4xl md:text-6xl text-gray-400 mb-2"></i>
+                    <h3 class="font-bold text-red-600 text-lg md:text-xl">HẾT QUỸ LÌ XÌ</h3>
+                    <p class="text-xs md:text-sm text-gray-500 text-center px-4">Đợt lì xì này đã trao hết các phần quà.<br>Hẹn gặp bạn lần sau!</p>
+                </div>
+                
                 <div id="spin-instruction" class="absolute bottom-4 md:bottom-10 bg-white/90 backdrop-blur text-red-600 px-4 py-2 md:px-6 md:py-3 rounded-full text-xs md:text-sm font-bold shadow-lg pointer-events-none animate-bounce border border-red-100 text-center whitespace-nowrap">
                     <i class="fas fa-hand-pointer mr-2"></i> Chạm để quay!
                 </div>
@@ -326,7 +333,7 @@
                 
                 <div id="prizeListContainer" class="flex-1 overflow-y-auto mt-2 pr-2 hidden max-h-[300px] md:max-h-none">
                     <h4 class="font-bold text-gray-700 mb-3 flex items-center gap-2" id="listTitle">
-                        <i class="fas fa-list-ul text-red-500"></i> Cơ cấu giải thưởng
+                        <i class="fas fa-list-ul text-red-500"></i> Quỹ Lì Xì Còn Lại
                     </h4>
                     <ul class="space-y-2 text-sm text-gray-600 pb-10 md:pb-0" id="prizeListDisplay"></ul>
                 </div>
@@ -337,19 +344,23 @@
     <!-- Modals (Create, Edit, Auth, Stats, QR, Guide) -->
     <!-- MODAL: Create Session -->
     <div id="createSessionModal" class="modal fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-6 transform transition-all scale-100 h-[80vh] md:h-[90vh] flex flex-col">
-            <h3 class="text-lg md:text-xl font-extrabold text-red-800 mb-4 border-b pb-2">Tạo Đợt Lì Xì Mới</h3>
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-4xl p-6 transform transition-all scale-100 h-[90vh] flex flex-col">
+            <h3 class="text-lg md:text-xl font-extrabold text-red-800 mb-4 border-b pb-2">Tạo Đợt Lì Xì & Ngân Sách Mới</h3>
             <form onsubmit="handleCreateSession(event)" class="space-y-4 flex-1 flex flex-col overflow-hidden">
                 <div class="overflow-y-auto pr-2 space-y-4 flex-1">
-                    <div>
-                        <label class="block text-sm font-bold text-gray-700 mb-1">Tên đợt (Duy nhất)</label>
-                        <input type="text" name="name" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 outline-none text-sm" placeholder="VD: Lì xì Team Tech 2026" required>
-                    </div>
-                    <div class="grid grid-cols-2 gap-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-1">Tên đợt (Duy nhất)</label>
+                            <input type="text" name="name" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 outline-none text-sm" placeholder="VD: Lì xì Team Tech 2026" required>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-1">Thể lệ / Lời chúc</label>
+                            <input type="text" name="description" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 outline-none text-sm" placeholder="Nhập nội dung hiển thị cho người chơi...">
+                        </div>
                         <div>
                             <label class="block text-sm font-bold text-gray-700 mb-1 text-red-600">PIN Quản lý (Admin)</label>
                             <input type="text" name="admin_pin" class="w-full p-3 border border-red-200 bg-red-50 rounded-lg focus:ring-2 focus:ring-red-500 outline-none text-sm" placeholder="VD: 9999" required>
-                            <p class="text-[10px] text-gray-500 mt-1">Dùng để Sửa/Xóa</p>
+                            <p class="text-[10px] text-gray-500 mt-1">Dùng để Sửa/Xóa và Xem chi tiết</p>
                         </div>
                         <div>
                             <label class="block text-sm font-bold text-gray-700 mb-1 text-blue-600">PIN Tham gia (User)</label>
@@ -357,19 +368,38 @@
                             <p class="text-[10px] text-gray-500 mt-1">Gửi cho người chơi</p>
                         </div>
                     </div>
-                    <div>
-                        <label class="block text-sm font-bold text-gray-700 mb-1">Thể lệ / Lời chúc</label>
-                        <textarea name="description" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 outline-none text-sm" rows="2" placeholder="Nhập nội dung hiển thị cho người chơi..."></textarea>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-bold text-gray-700 mb-1">Danh sách giải thưởng</label>
-                        <textarea name="prizes" id="sessionPrizeInput" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 outline-none font-mono text-xs md:text-sm" rows="6"></textarea>
-                        <p class="text-[10px] md:text-xs text-gray-500 mt-1">Gợi ý: Nhập đúng "500.000 VND" để hiện ảnh tiền.</p>
+
+                    <!-- Quản lý ngân sách / Giải thưởng -->
+                    <div class="mt-4 border-t pt-4">
+                        <div class="flex justify-between items-center mb-2">
+                            <label class="block text-sm font-bold text-gray-800">Quản lý Ngân Sách / Giải Thưởng</label>
+                            <button type="button" onclick="addPrizeRow('createPrizeContainer')" class="bg-green-100 text-green-700 px-3 py-1 rounded hover:bg-green-200 text-xs font-bold transition-colors">
+                                <i class="fas fa-plus"></i> Thêm Hạng Mục
+                            </button>
+                        </div>
+                        <div class="bg-gray-50 rounded-xl p-4 border border-gray-200 overflow-x-auto">
+                            <table class="w-full text-sm text-left min-w-[500px]">
+                                <thead>
+                                    <tr class="text-gray-500 uppercase text-xs border-b">
+                                        <th class="pb-2 w-1/3">Mệnh giá / Quà</th>
+                                        <th class="pb-2 w-1/4">Số lượng (tờ)</th>
+                                        <th class="pb-2 w-1/4">Thành tiền (VND)</th>
+                                        <th class="pb-2 w-12 text-center">Xóa</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="createPrizeContainer">
+                                    <!-- Rows will be added here by JS -->
+                                </tbody>
+                            </table>
+                            <div class="text-right mt-3 font-bold text-red-600">
+                                Tổng ngân sách: <span id="createTotalBudget">0</span> VND
+                            </div>
+                        </div>
                     </div>
                 </div>
                 <div class="flex justify-end gap-3 mt-4 pt-4 border-t shrink-0">
                     <button type="button" onclick="closeModal('createSessionModal')" class="px-4 py-2 md:px-5 md:py-2.5 text-gray-600 hover:bg-gray-100 rounded-lg font-medium text-sm">Hủy</button>
-                    <button type="submit" class="px-4 py-2 md:px-5 md:py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 font-bold shadow-lg text-sm">Tạo ngay</button>
+                    <button type="submit" class="px-4 py-2 md:px-5 md:py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 font-bold shadow-lg text-sm">Tạo & Lưu Ngân Sách</button>
                 </div>
             </form>
         </div>
@@ -377,16 +407,23 @@
 
     <!-- MODAL: Edit Session -->
     <div id="editSessionModal" class="modal fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-6 transform transition-all scale-100 h-[80vh] md:h-[90vh] flex flex-col">
-            <h3 class="text-lg md:text-xl font-extrabold text-blue-800 mb-4 border-b pb-2">Chỉnh Sửa Đợt Lì Xì</h3>
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-4xl p-6 transform transition-all scale-100 h-[90vh] flex flex-col">
+            <h3 class="text-lg md:text-xl font-extrabold text-blue-800 mb-4 border-b pb-2">Sửa Đợt Lì Xì & Ngân Sách</h3>
+            <div class="bg-yellow-50 text-yellow-800 text-xs p-2 rounded mb-3 border border-yellow-200">
+                <i class="fas fa-exclamation-triangle"></i> Lưu ý: Chỉnh sửa ngân sách có thể ảnh hưởng đến những người đã trúng giải. Số lượng "còn lại" sẽ được tính lại dựa trên "Số lượng ban đầu" mới trừ đi số lượng đã phát ra.
+            </div>
             <form onsubmit="handleEditSession(event)" class="space-y-4 flex-1 flex flex-col overflow-hidden">
                 <input type="hidden" id="editSessionId" name="id">
                 <div class="overflow-y-auto pr-2 space-y-4 flex-1">
-                    <div>
-                        <label class="block text-sm font-bold text-gray-700 mb-1">Tên đợt</label>
-                        <input type="text" id="editName" name="name" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm" required>
-                    </div>
-                    <div class="grid grid-cols-2 gap-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-1">Tên đợt</label>
+                            <input type="text" id="editName" name="name" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm" required>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-1">Thể lệ / Lời chúc</label>
+                            <input type="text" id="editDescription" name="description" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm">
+                        </div>
                         <div>
                             <label class="block text-sm font-bold text-gray-700 mb-1 text-red-600">PIN Admin</label>
                             <input type="text" id="editAdminPin" name="admin_pin" class="w-full p-3 border border-red-200 bg-red-50 rounded-lg focus:ring-2 focus:ring-red-500 outline-none text-sm" required>
@@ -396,18 +433,38 @@
                             <input type="text" id="editPin" name="pin" class="w-full p-3 border border-blue-200 bg-blue-50 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm" required>
                         </div>
                     </div>
-                    <div>
-                        <label class="block text-sm font-bold text-gray-700 mb-1">Thể lệ / Lời chúc</label>
-                        <textarea id="editDescription" name="description" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm" rows="2"></textarea>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-bold text-gray-700 mb-1">Danh sách giải thưởng</label>
-                        <textarea id="editPrizes" name="prizes" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none font-mono text-xs md:text-sm" rows="6"></textarea>
+                    
+                    <!-- Quản lý ngân sách / Giải thưởng -->
+                    <div class="mt-4 border-t pt-4">
+                        <div class="flex justify-between items-center mb-2">
+                            <label class="block text-sm font-bold text-gray-800">Cập nhật Ngân Sách</label>
+                            <button type="button" onclick="addPrizeRow('editPrizeContainer')" class="bg-green-100 text-green-700 px-3 py-1 rounded hover:bg-green-200 text-xs font-bold transition-colors">
+                                <i class="fas fa-plus"></i> Thêm Hạng Mục
+                            </button>
+                        </div>
+                        <div class="bg-gray-50 rounded-xl p-4 border border-gray-200 overflow-x-auto">
+                            <table class="w-full text-sm text-left min-w-[500px]">
+                                <thead>
+                                    <tr class="text-gray-500 uppercase text-xs border-b">
+                                        <th class="pb-2 w-1/3">Mệnh giá / Quà</th>
+                                        <th class="pb-2 w-1/4">SL Ban đầu</th>
+                                        <th class="pb-2 w-1/4">Thành tiền (VND)</th>
+                                        <th class="pb-2 w-12 text-center">Xóa</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="editPrizeContainer">
+                                    <!-- Rows will be added here by JS -->
+                                </tbody>
+                            </table>
+                            <div class="text-right mt-3 font-bold text-blue-600">
+                                Tổng ngân sách mới: <span id="editTotalBudget">0</span> VND
+                            </div>
+                        </div>
                     </div>
                 </div>
                 <div class="flex justify-end gap-3 mt-4 pt-4 border-t shrink-0">
                     <button type="button" onclick="closeModal('editSessionModal')" class="px-4 py-2 md:px-5 md:py-2.5 text-gray-600 hover:bg-gray-100 rounded-lg font-medium text-sm">Hủy</button>
-                    <button type="submit" class="px-4 py-2 md:px-5 md:py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-bold shadow-lg text-sm">Cập nhật</button>
+                    <button type="submit" class="px-4 py-2 md:px-5 md:py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-bold shadow-lg text-sm">Cập nhật Ngân Sách</button>
                 </div>
             </form>
         </div>
@@ -436,43 +493,61 @@
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-6xl h-[90vh] flex flex-col overflow-hidden">
             <div class="p-4 md:p-5 border-b bg-gray-50 flex justify-between items-center">
                 <div>
-                    <h3 class="text-lg md:text-xl font-extrabold text-gray-800" id="statsTitle">Thống kê</h3>
+                    <h3 class="text-lg md:text-xl font-extrabold text-gray-800" id="statsTitle">Thống kê & Ngân sách</h3>
                     <p class="text-xs md:text-sm text-gray-500 mt-1" id="statsSubtitle">...</p>
                 </div>
                 <button onclick="closeModal('statsModal')" class="w-8 h-8 rounded-full bg-gray-200 hover:bg-red-100 hover:text-red-500 flex items-center justify-center transition-colors"><i class="fas fa-times"></i></button>
             </div>
             
             <div class="flex-1 overflow-auto p-4 md:p-6 bg-white">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 mb-6 md:mb-8">
-                    <div class="bg-gradient-to-r from-green-50 to-emerald-50 p-4 md:p-6 rounded-xl border border-green-100 shadow-sm">
-                        <div class="flex items-center gap-4">
-                            <div class="w-10 h-10 md:w-12 md:h-12 bg-green-100 rounded-full flex items-center justify-center text-green-600 text-lg md:text-xl"><i class="fas fa-users"></i></div>
-                            <div>
-                                <p class="text-xs md:text-sm text-gray-500 font-medium uppercase">Tổng người chơi</p>
-                                <p class="text-2xl md:text-3xl font-extrabold text-green-700" id="statsTotalPlayers">0</p>
-                            </div>
-                        </div>
+                <!-- BÁO CÁO NGÂN SÁCH -->
+                <h4 class="font-bold text-gray-700 mb-3 border-b pb-2"><i class="fas fa-wallet text-orange-500"></i> Tình hình Ngân Sách</h4>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                    <div class="bg-blue-50 p-4 rounded-xl border border-blue-100 shadow-sm">
+                        <p class="text-xs text-gray-500 font-medium uppercase">Tổng ngân sách cấp</p>
+                        <p class="text-2xl font-extrabold text-blue-700" id="statsTotalBudget">0 VND</p>
+                        <p class="text-xs text-blue-600 mt-1" id="statsInitialCount">0 phần quà</p>
                     </div>
-                    <div class="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 md:p-6 rounded-xl border border-blue-100 shadow-sm">
-                        <div class="flex items-center gap-4">
-                            <div class="w-10 h-10 md:w-12 md:h-12 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 text-lg md:text-xl"><i class="fas fa-coins"></i></div>
-                            <div>
-                                <p class="text-xs md:text-sm text-gray-500 font-medium uppercase">Tổng tiền sẽ trao</p>
-                                <p class="text-2xl md:text-3xl font-extrabold text-blue-700" id="statsTotalMoney">0 VND</p>
-                            </div>
-                        </div>
+                    <div class="bg-green-50 p-4 rounded-xl border border-green-100 shadow-sm">
+                        <p class="text-xs text-gray-500 font-medium uppercase">Đã chi thưởng</p>
+                        <p class="text-2xl font-extrabold text-green-700" id="statsTotalMoney">0 VND</p>
+                        <p class="text-xs text-green-600 mt-1" id="statsTotalPlayers">0 người trúng</p>
+                    </div>
+                    <div class="bg-red-50 p-4 rounded-xl border border-red-100 shadow-sm">
+                        <p class="text-xs text-gray-500 font-medium uppercase">Quỹ Còn lại</p>
+                        <p class="text-2xl font-extrabold text-red-700" id="statsRemainingBudget">0 VND</p>
+                        <p class="text-xs text-red-600 mt-1" id="statsRemainingCount">0 phần quà</p>
                     </div>
                 </div>
 
+                <!-- BẢNG THEO DÕI TỪNG MỆNH GIÁ -->
+                <h4 class="font-bold text-gray-700 mb-3 mt-6 border-b pb-2"><i class="fas fa-money-bill-wave text-green-500"></i> Chi tiết các hạng mục giải</h4>
+                <div class="overflow-x-auto rounded-xl border border-gray-200 mb-8">
+                    <table class="w-full text-left min-w-[600px]">
+                        <thead>
+                            <tr class="bg-gray-100 text-gray-600 text-xs uppercase tracking-wider font-bold">
+                                <th class="p-3 border-b">Hạng mục (Mệnh giá)</th>
+                                <th class="p-3 border-b text-center">Ban đầu (Tờ)</th>
+                                <th class="p-3 border-b text-center text-green-600">Đã trúng (Tờ)</th>
+                                <th class="p-3 border-b text-center text-red-600">Còn lại (Tờ)</th>
+                                <th class="p-3 border-b text-right">Tổng chi (VND)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="statsPrizeBody" class="text-sm text-gray-700 divide-y divide-gray-100"></tbody>
+                    </table>
+                </div>
+
+                <!-- BẢNG NGƯỜI TRÚNG -->
+                <h4 class="font-bold text-gray-700 mb-3 border-b pb-2"><i class="fas fa-list-ol text-blue-500"></i> Danh sách người trúng</h4>
                 <div class="overflow-x-auto rounded-xl border border-gray-200">
                     <table class="w-full text-left min-w-[600px]">
                         <thead>
                             <tr class="bg-gray-100 text-gray-600 text-xs uppercase tracking-wider font-bold">
-                                <th class="p-3 md:p-4 border-b">Thời gian</th>
-                                <th class="p-3 md:p-4 border-b">Họ Tên</th>
-                                <th class="p-3 md:p-4 border-b">Ngân hàng & STK</th>
-                                <th class="p-3 md:p-4 border-b text-right">Giải thưởng</th>
-                                <th class="p-3 md:p-4 border-b text-center">Hành động</th>
+                                <th class="p-3 border-b">Thời gian</th>
+                                <th class="p-3 border-b">Họ Tên</th>
+                                <th class="p-3 border-b">Ngân hàng & STK</th>
+                                <th class="p-3 border-b text-right">Giải thưởng</th>
+                                <th class="p-3 border-b text-center">Hành động</th>
                             </tr>
                         </thead>
                         <tbody id="statsTableBody" class="text-sm text-gray-700 divide-y divide-gray-100"></tbody>
@@ -516,7 +591,7 @@
             <div class="p-5 border-b bg-red-50 flex justify-between items-center">
                 <div>
                     <h3 class="text-xl font-extrabold text-red-800">HƯỚNG DẪN SỬ DỤNG</h3>
-                    <p class="text-xs text-red-600 mt-1">Lì xì 2026 - Tết Bính Ngọ</p>
+                    <p class="text-xs text-red-600 mt-1">Lì xì 2026 - Tính năng Ngân sách</p>
                 </div>
                 <button onclick="closeModal('guideModal')" class="w-8 h-8 rounded-full bg-white hover:bg-red-200 text-red-500 hover:text-red-700 flex items-center justify-center transition-colors shadow-sm"><i class="fas fa-times"></i></button>
             </div>
@@ -526,20 +601,13 @@
                 <div>
                     <h4 class="flex items-center gap-2 font-bold text-lg text-blue-800 mb-3">
                         <span class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-sm">1</span>
-                        Dành cho Người Tổ Chức (Admin)
+                        Quản lý Ngân sách (MỚI)
                     </h4>
                     <ul class="list-disc pl-12 space-y-2 text-sm">
-                        <li><strong>Tạo đợt mới:</strong> Bấm vào nút <span class="bg-blue-100 text-blue-800 px-2 py-0.5 rounded text-xs font-bold">Tôi là người tổ chức</span>, sau đó chọn <strong>"Tạo đợt mới"</strong>.</li>
-                        <li><strong>Thiết lập:</strong>
-                            <ul class="list-disc pl-4 mt-1">
-                                <li><strong>Tên đợt:</strong> Phải là duy nhất.</li>
-                                <li><strong>PIN Quản lý (Admin):</strong> Dùng để Sửa/Xóa đợt lì xì và Xem thống kê nhạy cảm. Hãy giữ bí mật!</li>
-                                <li><strong>PIN Tham gia (User):</strong> Cung cấp cho người chơi để họ đăng nhập vào quay số.</li>
-                            </ul>
-                        </li>
-                        <li><strong>Lưu ý về giải thưởng:</strong> Để hiển thị ảnh các tờ tiền, hãy nhập đúng cú pháp như <code>10.000 VND</code>, <code>500.000 VND</code>, <code>Nụ hôn</code>, <code>Rượu</code>.</li>
-                        <li><strong>Quản lý:</strong> Bạn có thể xem thống kê người trúng, sửa thông tin hoặc xóa đợt lì xì (cần nhập đúng PIN Quản lý).</li>
-                        <li><strong>Chuyển tiền thưởng:</strong> Sau khi quay xong, vào mục <strong>Thống kê</strong>, bấm nút <strong>QR</strong> ở cột Hành động để tạo mã QR chuyển khoản nhanh cho người trúng.</li>
+                        <li>Khi tạo/sửa đợt lì xì, bạn sẽ thêm từng hạng mục giải thưởng (VD: 50.000 VND).</li>
+                        <li><strong>Tính năng tự động:</strong> Khi nhập số lượng tờ, hệ thống tự nhân mệnh giá ra Tổng Tiền. Ngược lại, nhập Tổng Tiền, hệ thống sẽ tự chia mệnh giá ra Số Tờ.</li>
+                        <li>Hệ thống quản lý chặt chẽ ngân sách online: Giải nào hết tờ sẽ bị loại khỏi vòng quay. Nếu hết toàn bộ các giải có giá trị, hệ thống sẽ thông báo "Hết quỹ lì xì".</li>
+                        <li>Xem Thống kê để biết rõ số tờ đã trao, số tờ còn lại và tình hình quỹ chi tiết.</li>
                     </ul>
                 </div>
 
@@ -550,23 +618,8 @@
                         Dành cho Người Chơi
                     </h4>
                     <ul class="list-disc pl-12 space-y-2 text-sm">
-                        <li><strong>Bước 1:</strong> Bấm <span class="bg-orange-100 text-orange-800 px-2 py-0.5 rounded text-xs font-bold">Tham gia quay số</span> từ màn hình chính.</li>
-                        <li><strong>Bước 2:</strong> Chọn tên đợt lì xì mà bạn tham gia (có thể tìm kiếm).</li>
-                        <li><strong>Bước 3:</strong> Nhập <strong>Mã PIN Tham gia</strong> (do người tổ chức cung cấp), <strong>Họ tên</strong>, <strong>Ngân hàng</strong> và <strong>Số tài khoản</strong> (để nhận tiền).</li>
-                        <li><strong>Bước 4:</strong> Bấm xác nhận để vào màn hình quay. Chạm vào vòng quay để thử vận may.</li>
-                    </ul>
-                </div>
-
-                <!-- Section 3 -->
-                <div>
-                    <h4 class="flex items-center gap-2 font-bold text-lg text-green-700 mb-3">
-                        <span class="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center text-green-600 text-sm">3</span>
-                        Chế độ Chơi Tự Do
-                    </h4>
-                    <p class="pl-12 text-sm mb-2">Dành cho khách vãng lai hoặc chơi vui vẻ, không cần lưu kết quả.</p>
-                    <ul class="list-disc pl-12 space-y-2 text-sm">
-                        <li>Bấm <span class="bg-green-100 text-green-800 px-2 py-0.5 rounded text-xs font-bold">Chơi ngay</span>.</li>
-                        <li>Bạn có thể tự do chỉnh sửa các ô trên vòng quay (nhập tên người hoặc mệnh giá tiền tùy thích).</li>
+                        <li>Tham gia bình thường bằng Mã PIN và Số Tài Khoản.</li>
+                        <li>Chỉ những quà tặng/mệnh giá <strong>còn số lượng</strong> mới hiện lên vòng quay.</li>
                     </ul>
                 </div>
             </div>
@@ -577,18 +630,17 @@
         </div>
     </div>
 
-    <!-- MODAL: Winner Celebration (Enhanced) -->
+    <!-- MODAL: Winner Celebration -->
     <div id="winnerModal" class="modal fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
         <div class="bg-white rounded-2xl shadow-2xl transform scale-100 w-full max-w-lg overflow-hidden animate-[bounceIn_0.5s_ease-out] relative flex flex-col max-h-[90vh]">
             <div class="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/confetti.png')] pointer-events-none"></div>
             
-            <!-- Step 1: Animation & Prize -->
             <div id="winnerStep1" class="w-full flex flex-col">
                 <div class="relative bg-gradient-to-b from-red-600 to-red-500 p-6 md:p-8 text-center text-white shrink-0">
                     <div class="w-14 h-14 md:w-16 md:h-16 bg-yellow-400 rounded-full flex items-center justify-center text-red-600 text-2xl md:text-3xl mx-auto mb-3 md:mb-4 shadow-lg border-4 border-white/30">
-                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star" id="winnerIcon"></i>
                     </div>
-                    <h2 class="text-2xl md:text-3xl font-extrabold mb-1">CHÚC MỪNG!</h2>
+                    <h2 class="text-2xl md:text-3xl font-extrabold mb-1" id="winnerTitle">CHÚC MỪNG!</h2>
                     <div class="text-red-100 text-xs md:text-sm font-medium" id="winSubtext">Lộc xuân đã về ví của bạn</div>
                 </div>
                 
@@ -597,13 +649,16 @@
                     <div id="winnerImageContainer" class="mb-6 md:mb-8 flex justify-center h-32 md:h-40">
                          <img id="winnerImage" src="" class="h-full shadow-xl rounded-lg object-contain border-4 border-yellow-100 transform hover:scale-105 transition-transform duration-300">
                     </div>
-                    <button onclick="showWinnerActions()" class="w-full py-3 md:py-4 bg-red-600 text-white font-bold text-base md:text-lg rounded-xl hover:bg-red-700 shadow-xl shadow-red-200 transition-all transform hover:-translate-y-1">
+                    <button id="claimBtn" onclick="showWinnerActions()" class="w-full py-3 md:py-4 bg-red-600 text-white font-bold text-base md:text-lg rounded-xl hover:bg-red-700 shadow-xl shadow-red-200 transition-all transform hover:-translate-y-1">
                         NHẬN QUÀ NGAY
+                    </button>
+                    <button id="closeFailBtn" onclick="finishGameAndExit()" class="w-full py-3 hidden bg-gray-500 text-white font-bold rounded-xl hover:bg-gray-600 transition-all">
+                        Đóng
                     </button>
                 </div>
             </div>
 
-            <!-- Step 2: QR & Share (Hidden by default) -->
+            <!-- Step 2: QR & Share -->
             <div id="winnerStep2" class="w-full flex-col hidden h-full">
                 <div class="p-4 bg-red-600 text-white text-center font-bold text-lg shrink-0">
                     <i class="fas fa-gift mr-2"></i> NHẬN LÌ XÌ
@@ -624,7 +679,7 @@
 
                     <div id="winnerNoQrMessage" class="hidden text-center mb-6 p-4 bg-yellow-50 rounded-lg border border-yellow-200 text-yellow-800 text-sm">
                         <i class="fas fa-hand-holding-heart text-2xl mb-2 block"></i>
-                        Vui lòng liên hệ trực tiếp với người tổ chức để nhận phần quà hiện vật này!
+                        Vui lòng liên hệ trực tiếp với người tổ chức để nhận phần quà này!
                     </div>
 
                     <!-- Share Section -->
@@ -667,10 +722,9 @@
         // --- SUPABASE CONFIG ---
         const supabaseUrl = 'https://rmbsxccrwrktbjlnezpu.supabase.co';
         const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJtYnN4Y2Nyd3JrdGJqbG5lenB1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg2MjczNjQsImV4cCI6MjA2NDIwMzM2NH0.ydCqificftdtn1niRciFCifeuo8aX6SDGti-hCY5Z_Y';
-        // Changed variable name to avoid conflict
         const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
 
-        // --- ASSETS ---
+        // --- ASSETS & CONSTANTS ---
         const baseUrl = "https://raw.githubusercontent.com/quantrh/Strava/main/Picture/";
         const moneyImageFiles = {
             "Nụ hôn": baseUrl + "hon.jpg", "Rượu": baseUrl + "ruou.jpg",
@@ -678,21 +732,49 @@
             "10.000 VND": baseUrl + "10k.jpg", "20.000 VND": baseUrl + "20K.jpg", "50.000 VND": baseUrl + "50k.jpg",
             "100.000 VND": baseUrl + "100k.jpg", "200.000 VND": baseUrl + "200K.jpg", "500.000 VND": baseUrl + "500K.jpg" 
         };
-        const defaultMoneyList = ["Nụ hôn", "5.000 VND", "10.000 VND", "20.000 VND", "Rượu", "50.000 VND", "100.000 VND", "200.000 VND", "500.000 VND"];
+        const standardPrizeOptions = ["1.000 VND", "2.000 VND", "5.000 VND", "10.000 VND", "20.000 VND", "50.000 VND", "100.000 VND", "200.000 VND", "500.000 VND", "Nụ hôn", "Rượu", "Khác..."];
+        
         const defaultNameList = ['Lan', 'Hoa', 'Tuan', 'Hung', 'Mai', 'Linh', 'Dat', 'Cuong'];
         const segmentColors = ["#e53935", "#fb8c00", "#fdd835", "#43a047", "#1e88e5", "#8e24aa", "#ffb74d", "#ef5350"];
 
-        // --- VIETQR CONFIG ---
-        const VIETQR_BANKS_API = 'https://api.vietqr.io/v2/banks';
+        // --- GLOBAL STATE ---
+        let currentSession = null;
+        let currentSessionPrizes = []; // Mảng chứa object quản lý kho (budget)
+        let currentPlayer = null;
+        let isMoneyMode = true; 
+        let currentWheelItems = []; // Danh sách (string) để vẽ trên vòng
+        let customNameList = [...defaultNameList];
+        let cachedSessions = [];
+        let authPendingAction = null; 
+        let authTargetId = null;
+        let currentWinnerPrize = null; 
         let cachedBanks = [];
 
-        // --- DATABASE HELPERS ---
-        function showLoading() { document.getElementById('loading-overlay').style.display = 'flex'; }
+        // --- HELPERS ---
+        function showLoading(msg = "Đang xử lý dữ liệu...") { 
+            document.getElementById('loading-text').innerText = msg;
+            document.getElementById('loading-overlay').style.display = 'flex'; 
+        }
         function hideLoading() { document.getElementById('loading-overlay').style.display = 'none'; }
+        
+        function parseValueFromName(name) {
+            if (!name) return 0;
+            const upper = name.toUpperCase();
+            // Bỏ qua nếu chuỗi chứa số nhưng không phải định dạng tiền tệ (VD: "1 nụ hôn", "5 cái kẹo")
+            if (!upper.includes('VND') && !upper.includes('VNĐ') && !upper.includes('Đ') && !/^\d+$/.test(name.trim().replace(/\./g, ''))) {
+                return 0;
+            }
+            const num = parseInt(name.replace(/\D/g, ''));
+            return isNaN(num) ? 0 : num;
+        }
+
+        function formatMoney(num) {
+            return num.toLocaleString('vi-VN');
+        }
 
         async function fetchBanks() {
             try {
-                const response = await fetch(VIETQR_BANKS_API);
+                const response = await fetch('https://api.vietqr.io/v2/banks');
                 const data = await response.json();
                 if (data.code === "00") {
                     cachedBanks = data.data;
@@ -703,12 +785,10 @@
                     });
                     setupSearchableDropdown('bankSearchInput', 'loginBank', 'bankDropdownList', cachedBanks, 'shortName', 'code', 'BIDV');
                 }
-            } catch (error) {
-                console.error("Error fetching banks:", error);
-            }
+            } catch (error) { console.error("Error fetching banks:", error); }
         }
 
-        // --- SEARCHABLE DROPDOWN LOGIC (GENERIC) ---
+        // Searchable dropdown logic
         function setupSearchableDropdown(inputId, hiddenId, listId, data, labelKey, valueKey, defaultValue) {
             const input = document.getElementById(inputId);
             const hidden = document.getElementById(hiddenId);
@@ -742,7 +822,6 @@
                         input.value = `${item[labelKey]} - ${item.name || ''}`;
                         hidden.value = item[valueKey];
                         list.classList.remove('show');
-                        
                         if (hiddenId === 'loginSessionId') {
                             const infoBox = document.getElementById('sessionInfoDisplay');
                             if (item.description) {
@@ -757,88 +836,149 @@
                 });
             }
 
-            input.addEventListener('focus', () => {
-                renderList(input.value.trim()); 
-                list.classList.add('show');
-            });
-
-            input.addEventListener('input', (e) => {
-                renderList(e.target.value.trim());
-                list.classList.add('show');
-            });
-
-            document.addEventListener('click', (e) => {
-                if (!input.contains(e.target) && !list.contains(e.target)) {
-                    list.classList.remove('show');
-                }
-            });
+            input.addEventListener('focus', () => { renderList(input.value.trim()); list.classList.add('show'); });
+            input.addEventListener('input', (e) => { renderList(e.target.value.trim()); list.classList.add('show'); });
+            document.addEventListener('click', (e) => { if (!input.contains(e.target) && !list.contains(e.target)) list.classList.remove('show'); });
         }
 
+        // --- DATABASE FUNCTIONS ---
         async function fetchSessionsFromSupabase() {
-            showLoading();
-            // IMPORTANT: Select 'admin_pin' and 'pin' properly
-            const { data, error } = await supabaseClient.from('lixi_sessions').select('*, lixi_winners(*)').order('created_at', { ascending: false });
+            showLoading("Đang tải dữ liệu đợt lì xì...");
+            const { data, error } = await supabaseClient
+                .from('lixi_sessions')
+                .select('*, lixi_winners(*), lixi_prizes(*)')
+                .order('created_at', { ascending: false });
             hideLoading();
             if (error) { console.error(error); return []; }
             return data.map(s => ({
                 id: s.id,
                 name: s.name,
-                pin: s.pin, // Player PIN
-                admin_pin: s.admin_pin, // Admin PIN (might be null for old records)
+                pin: s.pin,
+                admin_pin: s.admin_pin,
                 description: s.description,
-                prizes: s.prizes || [],
                 createdAt: s.created_at,
+                prizes: s.lixi_prizes || [], // Bảng ngân sách mới
                 winners: s.lixi_winners.map(w => ({
                     name: w.name,
-                    account: w.account, // Stored as BANK_CODE::ACCOUNT_NO
+                    account: w.account,
                     prize: w.prize,
                     time: w.created_at
                 }))
             }));
         }
 
-        async function insertSessionToSupabase(session) {
-            showLoading();
-            const { error } = await supabaseClient.from('lixi_sessions').insert({
-                name: session.name,
-                pin: session.pin, // Player PIN
-                admin_pin: session.admin_pin, // Admin PIN
-                description: session.description,
-                prizes: session.prizes
+        async function insertSessionWithPrizes(sessionData, prizeList) {
+            showLoading("Đang tạo đợt mới...");
+            
+            // 1. Tạo session
+            const { data: sessionRes, error: sErr } = await supabaseClient.from('lixi_sessions').insert({
+                name: sessionData.name,
+                pin: sessionData.pin,
+                admin_pin: sessionData.admin_pin,
+                description: sessionData.description
+            }).select();
+
+            if (sErr || !sessionRes || sessionRes.length === 0) {
+                hideLoading();
+                alert("Lỗi khi tạo đợt lì xì.");
+                return false;
+            }
+
+            const newSessionId = sessionRes[0].id;
+
+            // 2. Insert budget (prizes)
+            const prizeInserts = prizeList.map(p => ({
+                session_id: newSessionId,
+                name: p.name,
+                value: p.value,
+                initial_quantity: p.qty,
+                remaining_quantity: p.qty
+            }));
+
+            if (prizeInserts.length > 0) {
+                await supabaseClient.from('lixi_prizes').insert(prizeInserts);
+            }
+            hideLoading();
+            return true;
+        }
+
+        async function updateSessionWithPrizes(sessionId, sessionData, prizeList) {
+            showLoading("Đang cập nhật ngân sách...");
+            
+            // Cập nhật session info
+            const { error: sErr } = await supabaseClient.from('lixi_sessions').update({
+                name: sessionData.name,
+                pin: sessionData.pin,
+                admin_pin: sessionData.admin_pin,
+                description: sessionData.description
+            }).eq('id', sessionId);
+
+            if (sErr) return false;
+
+            // Lấy danh sách giải hiện tại để bảo toàn số lượng đã phát
+            const { data: currentPrizes } = await supabaseClient.from('lixi_prizes').select('*').eq('session_id', sessionId);
+            
+            // Xóa ngân sách cũ
+            await supabaseClient.from('lixi_prizes').delete().eq('session_id', sessionId);
+
+            // Thêm mới với việc tính lại lượng còn lại = SL ban đầu mới - (SL ban đầu cũ - SL còn lại cũ)
+            const prizeInserts = prizeList.map(p => {
+                let used = 0;
+                if (currentPrizes) {
+                    const oldP = currentPrizes.find(op => op.name === p.name);
+                    if (oldP) used = oldP.initial_quantity - oldP.remaining_quantity;
+                }
+                const newRemaining = Math.max(0, p.qty - used); // Tránh số âm nếu giảm số lượng quá lố
+                return {
+                    session_id: sessionId,
+                    name: p.name,
+                    value: p.value,
+                    initial_quantity: p.qty,
+                    remaining_quantity: newRemaining
+                };
             });
+
+            if (prizeInserts.length > 0) {
+                await supabaseClient.from('lixi_prizes').insert(prizeInserts);
+            }
             hideLoading();
-            return !error;
+            return true;
         }
 
-        async function updateSessionInSupabase(id, data) {
-            showLoading();
-            const { error } = await supabaseClient.from('lixi_sessions').update(data).eq('id', id);
-            hideLoading();
-            return !error;
+        async function fetchLivePrizes(sessionId) {
+            const { data, error } = await supabaseClient.from('lixi_prizes').select('*').eq('session_id', sessionId);
+            if (error) return [];
+            return data;
         }
 
-        async function insertWinnerToSupabase(sessionId, winner) {
-            // winner.account should be "BANK::ACCOUNT"
-            const { error } = await supabaseClient.from('lixi_winners').insert({
+        async function claimPrizeAndRecordWinner(sessionId, winnerData, prizeRecordId, currentRemaining) {
+            // Giảm 1 số lượng (có rủi ro race condition nhỏ nhưng phù hợp cho Web API thường)
+            const newQty = currentRemaining - 1;
+            
+            // 1. Cập nhật số lượng
+            const { error: pErr } = await supabaseClient.from('lixi_prizes')
+                .update({ remaining_quantity: newQty })
+                .eq('id', prizeRecordId);
+            
+            if (pErr) return false;
+
+            // 2. Lưu người thắng
+            const { error: wErr } = await supabaseClient.from('lixi_winners').insert({
                 session_id: sessionId,
-                name: winner.name,
-                account: winner.account,
-                prize: winner.prize
+                name: winnerData.name,
+                account: winnerData.account,
+                prize: winnerData.prize
             });
-            if(error) console.error("Error saving winner:", error);
+
+            return !wErr;
         }
 
         async function checkHasPlayed(sessionId, account) {
-            showLoading();
-            const { data, error } = await supabaseClient.from('lixi_winners')
-                .select('account')
-                .eq('session_id', sessionId);
-            
+            showLoading("Kiểm tra điều kiện...");
+            const { data, error } = await supabaseClient.from('lixi_winners').select('account').eq('session_id', sessionId);
             hideLoading();
             if (error || !data) return false;
-            
             const cleanInput = account.replace(/\s/g, '');
-            
             return data.some(row => {
                 const parts = row.account.split('::');
                 const storedAcc = parts.length > 1 ? parts[1] : parts[0];
@@ -847,15 +987,16 @@
         }
 
         async function deleteSessionFromSupabase(id) {
-            showLoading();
+            showLoading("Đang xóa...");
             await supabaseClient.from('lixi_winners').delete().eq('session_id', id);
+            await supabaseClient.from('lixi_prizes').delete().eq('session_id', id);
             const { error } = await supabaseClient.from('lixi_sessions').delete().eq('id', id);
             hideLoading();
             return !error;
         }
 
         async function updateLoginStats() {
-            const { data, error } = await supabaseClient.from('lixi_stats').select('login_count').eq('id', 1).single();
+            const { data } = await supabaseClient.from('lixi_stats').select('login_count').eq('id', 1).single();
             if (data) {
                 const newCount = (data.login_count || 0) + 1;
                 await supabaseClient.from('lixi_stats').update({ login_count: newCount }).eq('id', 1);
@@ -863,37 +1004,185 @@
             }
         }
 
-        // --- GLOBAL STATE ---
-        let currentSession = null;
-        let currentPlayer = null;
-        let isMoneyMode = true; 
-        let currentWheelItems = [];
-        let customMoneyList = [...defaultMoneyList];
-        let customNameList = [...defaultNameList];
-        let cachedSessions = [];
-        let authPendingAction = null; 
-        let authTargetId = null;
-        let currentWinnerPrize = null; // Store for sharing
+        // --- DYNAMIC FORM (BUDGET) LOGIC ---
+        function getSelectOptionsHTML(selectedValue) {
+            let opts = '';
+            let isCustom = true;
+            standardPrizeOptions.forEach(opt => {
+                if (opt === selectedValue) isCustom = false;
+                opts += `<option value="${opt}" ${opt === selectedValue ? 'selected' : ''}>${opt}</option>`;
+            });
+            if (selectedValue && isCustom) {
+                opts += `<option value="${selectedValue}" selected>${selectedValue}</option>`;
+            }
+            return opts;
+        }
+
+        function addPrizeRow(containerId, name = standardPrizeOptions[0], qty = 1) {
+            const container = document.getElementById(containerId);
+            const tr = document.createElement('tr');
+            
+            // Nếu không phải giải mặc định hoặc chọn "Khác..." thì là giải Custom (Không tính ngân sách tiền)
+            const isStandard = standardPrizeOptions.includes(name);
+            const isCustom = !isStandard || name === "Khác...";
+            
+            const val = isCustom ? 0 : parseValueFromName(name);
+            const total = val * qty;
+            
+            tr.className = "border-b prize-row";
+            tr.innerHTML = `
+                <td class="py-2 pr-2">
+                    <select class="prize-name w-full p-2 border rounded text-xs bg-white" onchange="calcRow(this)">
+                        ${getSelectOptionsHTML(isCustom ? "Khác..." : name)}
+                    </select>
+                    <input type="text" class="custom-name w-full p-2 border rounded text-xs mt-1 ${isCustom ? '' : 'hidden'}" placeholder="Nhập tên quà..." value="${isCustom && name !== 'Khác...' ? name : ''}" oninput="calcRow(this)">
+                </td>
+                <td class="py-2 pr-2">
+                    <input type="number" min="1" class="prize-qty w-full p-2 border rounded text-xs text-center" value="${qty}" oninput="calcRowQty(this)">
+                </td>
+                <td class="py-2 pr-2">
+                    <input type="text" class="prize-total w-full p-2 border rounded text-xs text-right font-bold ${isCustom ? 'text-gray-400 bg-gray-100 cursor-not-allowed' : 'text-blue-600'}" value="${isCustom ? '-' : formatMoney(total)}" oninput="calcRowTotal(this)" ${isCustom ? 'disabled' : ''}>
+                </td>
+                <td class="py-2 text-center">
+                    <button type="button" onclick="removePrizeRow(this)" class="text-red-500 hover:bg-red-50 p-1.5 rounded"><i class="fas fa-trash"></i></button>
+                </td>
+            `;
+            container.appendChild(tr);
+            calcOverallBudget(containerId.replace('PrizeContainer', 'TotalBudget'), containerId);
+            
+            // Xử lý ẩn hiện input custom và khoá cột thành tiền
+            const select = tr.querySelector('.prize-name');
+            const customInput = tr.querySelector('.custom-name');
+            const totalInput = tr.querySelector('.prize-total');
+            const qtyInput = tr.querySelector('.prize-qty');
+            
+            select.addEventListener('change', function() {
+                if(this.value === "Khác...") {
+                    customInput.classList.remove('hidden');
+                    totalInput.disabled = true;
+                    totalInput.classList.add('text-gray-400', 'bg-gray-100', 'cursor-not-allowed');
+                    totalInput.classList.remove('text-blue-600');
+                    totalInput.value = "-";
+                } else {
+                    customInput.classList.add('hidden');
+                    totalInput.disabled = false;
+                    totalInput.classList.remove('text-gray-400', 'bg-gray-100', 'cursor-not-allowed');
+                    totalInput.classList.add('text-blue-600');
+                }
+                calcRowQty(qtyInput);
+            });
+        }
+
+        function removePrizeRow(btn) {
+            const tbody = btn.closest('tbody');
+            const totalId = tbody.id.replace('PrizeContainer', 'TotalBudget');
+            btn.closest('tr').remove();
+            calcOverallBudget(totalId, tbody.id);
+        }
+
+        // Auto tính Total = Qty * Value (Bỏ qua với giải Khác)
+        function calcRowQty(input) {
+            const row = input.closest('tr');
+            const selectVal = row.querySelector('.prize-name').value;
+            const isCustom = selectVal === "Khác...";
+            
+            const qty = parseInt(input.value) || 0;
+            const totalInput = row.querySelector('.prize-total');
+            
+            if (isCustom) {
+                totalInput.value = "-";
+            } else {
+                const val = parseValueFromName(selectVal);
+                totalInput.value = formatMoney(val * qty);
+            }
+            
+            const tbody = row.closest('tbody');
+            calcOverallBudget(tbody.id.replace('PrizeContainer', 'TotalBudget'), tbody.id);
+        }
+
+        // Auto tính Qty = Total / Value (Không áp dụng với giải Khác)
+        function calcRowTotal(input) {
+            const row = input.closest('tr');
+            const selectVal = row.querySelector('.prize-name').value;
+            const isCustom = selectVal === "Khác...";
+            
+            if (isCustom) return; // Không tính cho quà hiện vật
+            
+            // Clean format
+            let rawTotal = input.value.replace(/\D/g, '');
+            input.value = rawTotal ? formatMoney(parseInt(rawTotal)) : "0";
+            
+            const val = parseValueFromName(selectVal);
+            const total = parseInt(rawTotal) || 0;
+            
+            if (val > 0) {
+                const qtyInput = row.querySelector('.prize-qty');
+                qtyInput.value = Math.floor(total / val);
+            }
+            
+            const tbody = row.closest('tbody');
+            calcOverallBudget(tbody.id.replace('PrizeContainer', 'TotalBudget'), tbody.id);
+        }
+
+        // Tính lại value nếu đổi select
+        function calcRow(el) {
+            const row = el.closest('tr');
+            const qtyInput = row.querySelector('.prize-qty');
+            calcRowQty(qtyInput); // Trigger recalc based on qty
+        }
+
+        function calcOverallBudget(totalLabelId, containerId) {
+            let total = 0;
+            const rows = document.getElementById(containerId).querySelectorAll('.prize-row');
+            rows.forEach(r => {
+                const selectVal = r.querySelector('.prize-name').value;
+                const isCustom = selectVal === "Khác...";
+                
+                if (!isCustom) {
+                    const val = parseValueFromName(selectVal);
+                    const qty = parseInt(r.querySelector('.prize-qty').value) || 0;
+                    total += (val * qty);
+                }
+            });
+            document.getElementById(totalLabelId).innerText = formatMoney(total);
+        }
+
+        function getPrizeDataFromForm(containerId) {
+            const prizes = [];
+            const rows = document.getElementById(containerId).querySelectorAll('.prize-row');
+            rows.forEach(r => {
+                const selectVal = r.querySelector('.prize-name').value;
+                const isCustom = selectVal === "Khác...";
+                
+                let name = selectVal;
+                let val = 0;
+                
+                if (isCustom) {
+                    name = r.querySelector('.custom-name').value;
+                } else {
+                    val = parseValueFromName(name);
+                }
+                
+                const qty = parseInt(r.querySelector('.prize-qty').value) || 1;
+                
+                if (name.trim() !== '') {
+                    prizes.push({ name: name.trim(), value: val, qty: qty });
+                }
+            });
+            return prizes;
+        }
 
         // --- VIEW NAVIGATION ---
         function showView(viewId) {
             document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
             document.getElementById(viewId).classList.add('active');
-            
-            if (viewId === 'view-organizer') loadOrganizerData(); // Updated to load data first
+            if (viewId === 'view-organizer') loadOrganizerData(); 
             if (viewId === 'view-player-login') loadSessionDropdown();
         }
-
-        function closeModal(modalId) {
-            document.getElementById(modalId).classList.remove('active');
-        }
-
-        function openGuideModal() {
-            document.getElementById('guideModal').classList.add('active');
-        }
+        function closeModal(modalId) { document.getElementById(modalId).classList.remove('active'); }
+        function openGuideModal() { document.getElementById('guideModal').classList.add('active'); }
 
         // --- ORGANIZER LOGIC ---
-        
         async function loadOrganizerData() {
             const sessions = await fetchSessionsFromSupabase();
             cachedSessions = sessions;
@@ -908,93 +1197,91 @@
 
         function openCreateSessionModal() {
             document.getElementById('createSessionModal').classList.add('active');
-            document.getElementById('sessionPrizeInput').value = defaultMoneyList.join('\n');
+            document.getElementById('createPrizeContainer').innerHTML = '';
+            // Khởi tạo vài dòng mẫu
+            addPrizeRow('createPrizeContainer', '10.000 VND', 5);
+            addPrizeRow('createPrizeContainer', '50.000 VND', 2);
+            addPrizeRow('createPrizeContainer', 'Nụ hôn', 3);
         }
 
         async function handleCreateSession(e) {
             e.preventDefault();
             const formData = new FormData(e.target);
-            const name = formData.get('name').trim();
-            const pin = formData.get('pin').trim(); // User PIN
-            const adminPin = formData.get('admin_pin').trim(); // Admin PIN
-            const prizes = (formData.get('prizes') || "").split('\n').filter(n => n.trim() !== '');
+            const sessionData = {
+                name: formData.get('name').trim(),
+                admin_pin: formData.get('admin_pin').trim(),
+                pin: formData.get('pin').trim(),
+                description: formData.get('description').trim()
+            };
+            const prizeList = getPrizeDataFromForm('createPrizeContainer');
 
-            if (!name) { alert("Vui lòng nhập tên đợt lì xì!"); return; }
-            if (!adminPin) { alert("Vui lòng nhập PIN Quản lý!"); return; }
-            if (!pin) { alert("Vui lòng nhập PIN Người chơi!"); return; }
-            if (adminPin === pin) { alert("Mã PIN Quản lý và Người chơi không được trùng nhau!"); return; }
-            if (prizes.length === 0) { alert("Vui lòng nhập ít nhất một giải thưởng!"); return; }
+            if (sessionData.admin_pin === sessionData.pin) { alert("PIN Admin và User phải khác nhau!"); return; }
+            if (prizeList.length === 0) { alert("Vui lòng thêm ít nhất 1 giải thưởng!"); return; }
 
-            showLoading();
-            const { data: existingSessions, error: checkError } = await supabaseClient
-                .from('lixi_sessions')
-                .select('id')
-                .ilike('name', name); 
+            showLoading("Kiểm tra trùng tên...");
+            const { data: exist } = await supabaseClient.from('lixi_sessions').select('id').ilike('name', sessionData.name); 
             hideLoading();
+            if (exist && exist.length > 0) { alert(`Tên "${sessionData.name}" đã tồn tại!`); return; }
 
-            if (checkError) {
-                console.error(checkError);
-                alert("Lỗi kiểm tra dữ liệu. Vui lòng thử lại.");
-                return;
-            }
-
-            if (existingSessions && existingSessions.length > 0) {
-                alert(`Tên đợt lì xì "${name}" đã tồn tại! Vui lòng đặt tên khác.`);
-                return;
-            }
-
-            const success = await insertSessionToSupabase({
-                name: name,
-                pin: pin,
-                admin_pin: adminPin,
-                description: formData.get('description'),
-                prizes: prizes
-            });
-            
+            const success = await insertSessionWithPrizes(sessionData, prizeList);
             if (success) {
                 e.target.reset();
                 closeModal('createSessionModal');
                 loadOrganizerData(); 
-            } else {
-                alert("Lỗi khi tạo đợt lì xì. Vui lòng thử lại.");
             }
         }
 
         function renderSessionCards(sessions) {
             const container = document.getElementById('session-list');
             const emptyMsg = document.getElementById('empty-session-msg');
-            
             container.innerHTML = '';
-            if (sessions.length === 0) {
-                emptyMsg.classList.remove('hidden');
-                return;
-            }
+            if (sessions.length === 0) { emptyMsg.classList.remove('hidden'); return; }
             emptyMsg.classList.add('hidden');
 
             sessions.forEach(s => {
                 const date = new Date(s.createdAt).toLocaleString('vi-VN');
-                const playerCount = s.winners.length;
-                let totalMoney = 0;
-                s.winners.forEach(w => {
-                    const num = parseInt(w.prize.replace(/\D/g, '')) || 0;
-                    totalMoney += num;
+                
+                // Tính toán ngân sách từ lixi_prizes
+                let initialBudget = 0, initialItems = 0;
+                let usedBudget = 0, usedItems = 0;
+
+                s.prizes.forEach(p => {
+                    initialItems += p.initial_quantity;
+                    initialBudget += (p.initial_quantity * p.value);
+                    
+                    const spent = p.initial_quantity - p.remaining_quantity;
+                    usedItems += spent;
+                    usedBudget += (spent * p.value);
                 });
 
+                const remainBudget = initialBudget - usedBudget;
+                const remainItems = initialItems - usedItems;
+
                 const card = document.createElement('div');
-                card.className = "bg-white p-5 rounded-xl border border-gray-100 hover:shadow-lg transition-shadow";
+                card.className = "bg-white p-5 rounded-xl border border-gray-100 hover:shadow-lg transition-shadow flex flex-col";
                 card.innerHTML = `
-                    <div class="flex justify-between items-start mb-3">
-                        <h3 class="font-bold text-base md:text-lg text-gray-800">${s.name}</h3>
+                    <div class="flex justify-between items-start mb-2">
+                        <h3 class="font-bold text-lg text-gray-800">${s.name}</h3>
                         <span class="bg-gray-100 text-[10px] md:text-xs font-semibold px-2 py-1 rounded text-gray-500">${date}</span>
                     </div>
-                    <p class="text-xs md:text-sm text-gray-500 mb-4 line-clamp-2 h-8 md:h-10">${s.description || 'Không có mô tả'}</p>
-                    <div class="flex justify-between items-center text-xs md:text-sm mb-5 bg-gray-50 p-3 rounded-lg">
-                        <div class="flex items-center gap-1 font-semibold text-gray-700"><i class="fas fa-users text-blue-500"></i> ${playerCount}</div>
-                        <div class="flex items-center gap-1 font-bold text-yellow-600"><i class="fas fa-coins text-yellow-500"></i> ${totalMoney.toLocaleString('vi-VN')} đ</div>
+                    <p class="text-xs text-gray-500 mb-3 line-clamp-1 italic">${s.description || 'Không có mô tả'}</p>
+                    
+                    <div class="grid grid-cols-2 gap-2 mb-4">
+                        <div class="bg-blue-50 p-2 rounded border border-blue-100">
+                            <p class="text-[10px] text-gray-500 font-bold uppercase">Ngân sách (Ban đầu)</p>
+                            <p class="font-bold text-blue-700 text-sm">${formatMoney(initialBudget)} đ</p>
+                            <p class="text-[10px] text-blue-500">${initialItems} phần quà</p>
+                        </div>
+                        <div class="bg-green-50 p-2 rounded border border-green-100">
+                            <p class="text-[10px] text-gray-500 font-bold uppercase">Còn lại (Hiện tại)</p>
+                            <p class="font-bold text-green-700 text-sm">${formatMoney(remainBudget)} đ</p>
+                            <p class="text-[10px] text-green-500">${remainItems} phần quà</p>
+                        </div>
                     </div>
-                    <div class="flex gap-2">
-                        <button onclick="requestAction('viewStats', '${s.id}')" class="flex-1 py-2.5 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 font-bold text-xs md:text-sm transition-colors">
-                            <i class="fas fa-chart-bar mr-1"></i> Thống kê
+
+                    <div class="flex gap-2 mt-auto">
+                        <button onclick="requestAction('viewStats', '${s.id}')" class="flex-1 py-2 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-100 font-bold text-xs md:text-sm transition-colors">
+                            <i class="fas fa-chart-pie mr-1"></i> Báo Cáo
                         </button>
                         <button onclick="requestAction('edit', '${s.id}')" class="px-3 py-2 text-orange-500 hover:bg-orange-50 rounded-lg transition-colors border border-orange-200">
                             <i class="fas fa-edit"></i>
@@ -1008,7 +1295,7 @@
             });
         }
 
-        // --- AUTH & EDIT/DELETE LOGIC ---
+        // --- AUTH & EDIT LOGIC ---
         function requestAction(action, sessionId) {
             authPendingAction = action;
             authTargetId = sessionId;
@@ -1016,31 +1303,21 @@
             document.getElementById('authModal').classList.add('active');
         }
 
+        async function performDelete(id) {
+            await deleteSessionFromSupabase(id);
+            loadOrganizerData(); // Làm mới lại danh sách sau khi xóa
+        }
+
         function confirmAuth() {
             const inputPin = document.getElementById('authPinInput').value;
             const session = cachedSessions.find(s => s.id === authTargetId);
-            
             if (!session) return;
-
-            // Check ADMIN PIN or MASTER KEY
             if (inputPin === session.admin_pin || inputPin === '1a2b') {
                 closeModal('authModal');
-                
-                if (authPendingAction === 'delete') {
-                    performDelete(authTargetId);
-                } else if (authPendingAction === 'edit') {
-                    openEditModal(authTargetId);
-                } else if (authPendingAction === 'viewStats') {
-                    viewStats(authTargetId);
-                }
-            } else {
-                alert("Mã PIN Quản lý không chính xác!");
-            }
-        }
-
-        async function performDelete(id) {
-            await deleteSessionFromSupabase(id);
-            loadOrganizerData(); // Refresh list
+                if (authPendingAction === 'delete') performDelete(authTargetId);
+                else if (authPendingAction === 'edit') openEditModal(authTargetId);
+                else if (authPendingAction === 'viewStats') viewStats(authTargetId);
+            } else alert("Mã PIN Quản lý không chính xác!");
         }
 
         function openEditModal(sessionId) {
@@ -1049,10 +1326,19 @@
 
             document.getElementById('editSessionId').value = session.id;
             document.getElementById('editName').value = session.name;
-            document.getElementById('editPin').value = session.pin || ''; // Player PIN
-            document.getElementById('editAdminPin').value = session.admin_pin || ''; // Admin PIN
+            document.getElementById('editPin').value = session.pin || ''; 
+            document.getElementById('editAdminPin').value = session.admin_pin || ''; 
             document.getElementById('editDescription').value = session.description || '';
-            document.getElementById('editPrizes').value = session.prizes.join('\n');
+            
+            document.getElementById('editPrizeContainer').innerHTML = '';
+            
+            if (session.prizes && session.prizes.length > 0) {
+                session.prizes.forEach(p => addPrizeRow('editPrizeContainer', p.name, p.initial_quantity));
+            } else {
+                // Fallback nếu data cũ (lấy mảng JSON củ chuyển sang logic mới)
+                let tempPrizes = session.prizes_old_array || ["10.000 VND", "Nụ hôn"];
+                tempPrizes.forEach(name => addPrizeRow('editPrizeContainer', name, 1));
+            }
             
             document.getElementById('editSessionModal').classList.add('active');
         }
@@ -1061,202 +1347,111 @@
             e.preventDefault();
             const formData = new FormData(e.target);
             const id = formData.get('id');
-            const name = formData.get('name').trim();
-            const adminPin = formData.get('admin_pin').trim();
-            const pin = formData.get('pin').trim();
-            const prizes = (formData.get('prizes') || "").split('\n').filter(n => n.trim() !== '');
+            const sessionData = {
+                name: formData.get('name').trim(),
+                admin_pin: formData.get('admin_pin').trim(),
+                pin: formData.get('pin').trim(),
+                description: formData.get('description').trim()
+            };
+            const prizeList = getPrizeDataFromForm('editPrizeContainer');
 
-            if (!name) { alert("Vui lòng nhập tên đợt lì xì!"); return; }
-            if (prizes.length === 0) { alert("Vui lòng nhập ít nhất một giải thưởng!"); return; }
-            if (adminPin === pin) { alert("Mã PIN Quản lý và Người chơi không được trùng nhau!"); return; }
+            if (sessionData.admin_pin === sessionData.pin) { alert("PIN Admin và User phải khác nhau!"); return; }
+            if (prizeList.length === 0) { alert("Vui lòng thêm ít nhất 1 giải thưởng!"); return; }
 
-            // KIỂM TRA TRÙNG TÊN
-            showLoading();
-            const { data: existingSessions, error: checkError } = await supabaseClient
-                .from('lixi_sessions')
-                .select('id')
-                .ilike('name', name)
-                .neq('id', id); 
-            hideLoading();
+            const { data: exist } = await supabaseClient.from('lixi_sessions').select('id').ilike('name', sessionData.name).neq('id', id); 
+            if (exist && exist.length > 0) { alert(`Tên đợt "${sessionData.name}" đã được sử dụng!`); return; }
 
-            if (checkError) {
-                console.error(checkError);
-                alert("Lỗi kiểm tra tên. Vui lòng thử lại.");
-                return;
-            }
-
-            if (existingSessions && existingSessions.length > 0) {
-                alert(`Tên đợt lì xì "${name}" đã được sử dụng! Vui lòng chọn tên khác.`);
-                return;
-            }
-
-            const success = await updateSessionInSupabase(id, {
-                name: name,
-                pin: pin,
-                admin_pin: adminPin,
-                description: formData.get('description'),
-                prizes: prizes
-            });
-
+            const success = await updateSessionWithPrizes(id, sessionData, prizeList);
             if (success) {
                 closeModal('editSessionModal');
                 loadOrganizerData(); 
-            } else {
-                alert("Cập nhật thất bại!");
             }
         }
 
-        // --- STATS & QR LOGIC ---
+        // --- STATS LOGIC ---
         let currentStatsSessionId = null;
 
         async function viewStats(sessionId) {
             currentStatsSessionId = sessionId;
-            const sessions = await fetchSessionsFromSupabase(); // Refresh data
+            const sessions = await fetchSessionsFromSupabase(); 
             cachedSessions = sessions;
             const session = sessions.find(s => s.id === sessionId);
             if (!session) return;
 
             document.getElementById('statsTitle').innerText = session.name;
-            document.getElementById('statsSubtitle').innerText = session.description || "Chi tiết kết quả quay thưởng";
-            document.getElementById('statsTotalPlayers').innerText = session.winners.length;
+            document.getElementById('statsSubtitle').innerText = session.description || "Chi tiết kết quả quay thưởng & ngân sách";
+            document.getElementById('statsTotalPlayers').innerText = `${session.winners.length} người trúng`;
 
-            let totalMoney = 0;
+            // Calculate budget
+            let initialBudget = 0, initialItems = 0;
+            let usedBudget = 0, usedItems = 0;
+            const prizeBody = document.getElementById('statsPrizeBody');
+            prizeBody.innerHTML = '';
+
+            session.prizes.forEach(p => {
+                initialItems += p.initial_quantity;
+                initialBudget += (p.initial_quantity * p.value);
+                const spent = p.initial_quantity - p.remaining_quantity;
+                usedItems += spent;
+                usedBudget += (spent * p.value);
+
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="p-3 font-bold text-gray-800">${p.name}</td>
+                    <td class="p-3 text-center">${p.initial_quantity}</td>
+                    <td class="p-3 text-center font-bold text-green-600">${spent}</td>
+                    <td class="p-3 text-center font-bold text-red-600">${p.remaining_quantity}</td>
+                    <td class="p-3 text-right text-gray-600 font-mono">${p.value > 0 ? formatMoney(spent * p.value) : '-'}</td>
+                `;
+                prizeBody.appendChild(tr);
+            });
+
+            document.getElementById('statsTotalBudget').innerText = formatMoney(initialBudget) + " VND";
+            document.getElementById('statsInitialCount').innerText = `${initialItems} phần quà`;
+            document.getElementById('statsTotalMoney').innerText = formatMoney(usedBudget) + " VND";
+            document.getElementById('statsRemainingBudget').innerText = formatMoney(initialBudget - usedBudget) + " VND";
+            document.getElementById('statsRemainingCount').innerText = `${initialItems - usedItems} phần quà`;
+
+            // Render Winners
             const tbody = document.getElementById('statsTableBody');
             tbody.innerHTML = '';
-
             [...session.winners].reverse().forEach(w => {
-                 const num = parseInt(w.prize.replace(/\D/g, '')) || 0;
-                 totalMoney += num;
-
-                 let bankCode = '';
-                 let accNum = w.account;
+                 const prizeObj = session.prizes.find(p => p.name === w.prize);
+                 const num = prizeObj ? prizeObj.value : parseValueFromName(w.prize);
+                 let bankCode = '', accNum = w.account;
                  if (w.account.includes('::')) {
                      const parts = w.account.split('::');
-                     bankCode = parts[0];
-                     accNum = parts[1];
+                     bankCode = parts[0]; accNum = parts[1];
                  }
 
                  const tr = document.createElement('tr');
                  tr.className = "border-b border-gray-50 hover:bg-gray-50";
                  tr.innerHTML = `
-                    <td class="p-3 md:p-4 text-gray-500 text-[10px] md:text-xs">
+                    <td class="p-3 text-gray-500 text-[10px] md:text-xs">
                         <div class="font-semibold">${new Date(w.time).toLocaleDateString()}</div>
                         <div>${new Date(w.time).toLocaleTimeString()}</div>
                     </td>
-                    <td class="p-3 md:p-4 font-bold text-gray-800 text-xs md:text-sm">${w.name}</td>
-                    <td class="p-3 md:p-4 text-xs md:text-sm">
+                    <td class="p-3 font-bold text-gray-800 text-xs md:text-sm">${w.name}</td>
+                    <td class="p-3 text-xs md:text-sm">
                         <span class="font-bold text-blue-700">${bankCode}</span>
                         <div class="font-mono text-gray-600">${accNum}</div>
                     </td>
-                    <td class="p-3 md:p-4 text-right font-extrabold text-red-600 text-xs md:text-sm">${w.prize}</td>
-                    <td class="p-3 md:p-4 text-center">
+                    <td class="p-3 text-right font-extrabold text-red-600 text-xs md:text-sm">${w.prize}</td>
+                    <td class="p-3 text-center">
                         ${num > 0 && bankCode ? 
                             `<button onclick="showQR('${bankCode}', '${accNum}', ${num}, 'Chuc Mung Nam Moi An Khang Thinh Vuong')" class="bg-blue-100 text-blue-600 hover:bg-blue-200 p-2 rounded-lg transition-colors text-xs font-bold">
                                 <i class="fas fa-qrcode"></i> QR
-                            </button>` : 
-                            `<span class="text-gray-300">-</span>`
+                            </button>` : `<span class="text-gray-300">-</span>`
                         }
                     </td>
                  `;
                  tbody.appendChild(tr);
             });
 
-            document.getElementById('statsTotalMoney').innerText = totalMoney.toLocaleString('vi-VN') + ' VND';
             document.getElementById('statsModal').classList.add('active');
         }
 
-        // Show QR Logic
-        function showQR(bankCode, accNum, amount, content) {
-            const qrModal = document.getElementById('qrModal');
-            const qrImage = document.getElementById('qrImage');
-            const qrLoading = document.getElementById('qrLoading');
-            const downloadBtn = document.getElementById('downloadQrBtn');
-            
-            qrModal.classList.add('active');
-            qrLoading.classList.remove('hidden');
-            
-            // Format content: keep exact content without "Lixi"
-            const safeContent = content.substring(0, 50);
-            
-            // VietQR QuickLink
-            const url = `https://img.vietqr.io/image/${bankCode}-${accNum}-compact.png?amount=${amount}&addInfo=${encodeURIComponent(safeContent)}`;
-            
-            qrImage.onload = () => {
-                qrLoading.classList.add('hidden');
-            };
-            qrImage.src = url;
-
-            // Handle Download
-            downloadBtn.onclick = async () => {
-                try {
-                    const response = await fetch(url);
-                    const blob = await response.blob();
-                    
-                    // NEW: Try Web Share API first for mobile
-                    const file = new File([blob], `QR_Lixi_${accNum}.png`, { type: blob.type });
-                    if (navigator.canShare && navigator.canShare({ files: [file] })) {
-                        try {
-                            await navigator.share({
-                                files: [file],
-                                title: 'QR Lì Xì',
-                                text: 'Mã QR nhận tiền lì xì'
-                            });
-                            return; // Stop if shared successfully
-                        } catch (shareErr) {
-                            console.log('Share failed, falling back to download');
-                        }
-                    }
-
-                    // Fallback: Anchor download
-                    const objectUrl = URL.createObjectURL(blob);
-                    const link = document.createElement('a');
-                    link.href = objectUrl;
-                    link.download = `QR_Lixi_${accNum}.png`;
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
-                    URL.revokeObjectURL(objectUrl);
-                } catch (err) {
-                    alert("Lỗi tải ảnh. Vui lòng thử lại!");
-                }
-            };
-        }
-
-        function exportToCSV() {
-            if (!currentStatsSessionId) return;
-            const session = cachedSessions.find(s => s.id === currentStatsSessionId);
-            let csvContent = "data:text/csv;charset=utf-8,";
-            csvContent += "Thoi gian,Ho Ten,Ngan Hang,So Tai Khoan,Giai Thuong\n"; 
-
-            session.winners.forEach(w => {
-                let bankCode = '';
-                let accNum = w.account;
-                if (w.account.includes('::')) {
-                    const parts = w.account.split('::');
-                    bankCode = parts[0];
-                    accNum = parts[1];
-                }
-
-                const row = [
-                    new Date(w.time).toLocaleString('vi-VN'),
-                    `"${w.name}"`,
-                    `"${bankCode}"`,
-                    `"${accNum}"`,
-                    `"${w.prize}"`
-                ].join(",");
-                csvContent += row + "\n";
-            });
-
-            const encodedUri = encodeURI(csvContent);
-            const link = document.createElement("a");
-            link.setAttribute("href", encodedUri);
-            link.setAttribute("download", `Lixi_Report_${session.name}.csv`);
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-        }
-
-        // --- PLAYER LOGIC ---
+        // --- PLAYER / GAME LOGIC ---
         async function loadSessionDropdown() {
             const sessions = await fetchSessionsFromSupabase();
             cachedSessions = sessions;
@@ -1284,7 +1479,6 @@
             const combinedAccount = `${bank}::${accountNo}`;
             currentPlayer = { name, account: combinedAccount, displayAccount: `${bank} - ${accountNo}`, bankCode: bank, accountNo: accountNo };
             
-            currentWheelItems = (session.prizes && session.prizes.length > 0) ? session.prizes : [...defaultMoneyList];
             isMoneyMode = true; 
             startGame();
         }
@@ -1297,7 +1491,85 @@
             startGame();
         }
 
-        // --- GAME LOGIC ---
+        async function startGame() {
+            document.getElementById('gamePlayerName').innerText = currentPlayer.name;
+            document.getElementById('gameSessionName').innerText = currentSession.name;
+            document.getElementById('displayPlayerName').innerText = currentPlayer.name;
+            document.getElementById('displayPlayerAcc').innerText = currentPlayer.displayAccount || currentPlayer.account;
+            
+            if (currentSession.id === null) {
+                document.getElementById('gamePlayerInfo').classList.add('hidden');
+                document.getElementById('instantControls').classList.remove('hidden');
+                document.getElementById('instantControls').classList.add('flex');
+                document.getElementById('prizeListContainer').classList.add('hidden');
+                document.getElementById('out-of-stock-overlay').classList.add('hidden');
+                updateGameUI();
+                setTimeout(() => { resizeCanvas(); drawWheel(); }, 100);
+            } else {
+                document.getElementById('gamePlayerInfo').classList.remove('hidden');
+                document.getElementById('instantControls').classList.add('hidden');
+                document.getElementById('instantControls').classList.remove('flex');
+                document.getElementById('prizeListContainer').classList.remove('hidden');
+                
+                // Fetch fresh prizes to filter out 0 quantity
+                showLoading("Đang nạp quỹ lì xì...");
+                currentSessionPrizes = await fetchLivePrizes(currentSession.id);
+                hideLoading();
+                
+                updateGameUIPrizes();
+                setTimeout(() => { resizeCanvas(); drawWheel(); }, 100);
+            }
+            showView('view-game');
+            canvas.onclick = startSpin;
+        }
+
+        function updateGameUIPrizes() {
+            // Hiển thị TẤT CẢ các giải trên vòng quay, không ẩn giải đã hết
+            currentWheelItems = currentSessionPrizes.map(p => p.name);
+            
+            // Lọc xem còn giải nào không để hiển thị thông báo hết quỹ
+            const available = currentSessionPrizes.filter(p => p.remaining_quantity > 0);
+            const overlay = document.getElementById('out-of-stock-overlay');
+            if (available.length === 0) {
+                overlay.classList.remove('hidden');
+            } else {
+                overlay.classList.add('hidden');
+            }
+
+            // Render list bên phải (Ẩn số lượng, chỉ hiện danh sách quà)
+            const listDisplay = document.getElementById('prizeListDisplay');
+            listDisplay.innerHTML = '';
+            document.getElementById('listTitle').innerHTML = '<i class="fas fa-list-ul text-red-500"></i> Danh sách phần quà';
+            
+            currentSessionPrizes.forEach(p => {
+                const li = document.createElement('li');
+                li.className = 'flex justify-between items-center p-3 rounded-lg border bg-gray-50 border-gray-100 shadow-sm mb-2';
+                li.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center text-red-500">
+                            <i class="fas fa-gift"></i>
+                        </div>
+                        <span class="font-bold text-gray-700 text-sm">${p.name}</span>
+                    </div>
+                    <span class="text-green-500 text-lg"><i class="fas fa-check-circle"></i></span>
+                `;
+                listDisplay.appendChild(li);
+            });
+        }
+
+        function updateGameUI() { // For instant mode
+            const btn = document.getElementById('instantModeBtn');
+            const inputLabel = document.getElementById('inputLabel');
+            const textArea = document.getElementById('instantInput');
+            if (isMoneyMode) {
+                btn.innerHTML = '<i class="fas fa-font"></i> Chuyển Quay Tên'; inputLabel.innerText = "Danh sách giải thưởng"; textArea.value = customMoneyList.join('\n');
+            } else {
+                btn.innerHTML = '<i class="fas fa-money-bill-wave"></i> Chuyển Quay Tiền'; inputLabel.innerText = "Danh sách tên người chơi"; textArea.value = customNameList.join('\n');
+            }
+            document.getElementById('nameCount').innerText = `${currentWheelItems.length} mục`;
+        }
+
+        // --- WHEEL RENDER & SPIN LOGIC ---
         const canvas = document.getElementById('wheelCanvas');
         const ctx = canvas.getContext('2d');
         let currentRotation = 0;
@@ -1316,96 +1588,11 @@
         }
         preloadImages();
 
-        function toggleInstantMode() {
-            isMoneyMode = !isMoneyMode;
-            if (isMoneyMode) { currentWheelItems = [...customMoneyList]; } 
-            else { currentWheelItems = [...customNameList]; }
-            updateGameUI();
-            drawWheel();
-        }
-        
-        document.getElementById('instantInput').addEventListener('input', (e) => {
-            const val = e.target.value;
-            const list = val.split('\n').filter(n => n.trim() !== '');
-            currentWheelItems = list;
-            if (isMoneyMode) { customMoneyList = list; } else { customNameList = list; }
-            document.getElementById('nameCount').innerText = `${list.length} mục`;
-            drawWheel();
-        });
-
-        function startGame() {
-            document.getElementById('gamePlayerName').innerText = currentPlayer.name;
-            document.getElementById('gameSessionName').innerText = currentSession.name;
-            document.getElementById('displayPlayerName').innerText = currentPlayer.name;
-            // Use displayAccount to show friendly bank info
-            document.getElementById('displayPlayerAcc').innerText = currentPlayer.displayAccount || currentPlayer.account;
-            
-            if (currentSession.id === null) {
-                document.getElementById('gamePlayerInfo').classList.add('hidden');
-                document.getElementById('instantControls').classList.remove('hidden');
-                document.getElementById('instantControls').classList.add('flex');
-                document.getElementById('prizeListContainer').classList.add('hidden');
-            } else {
-                document.getElementById('gamePlayerInfo').classList.remove('hidden');
-                document.getElementById('instantControls').classList.add('hidden');
-                document.getElementById('instantControls').classList.remove('flex');
-                document.getElementById('prizeListContainer').classList.remove('hidden');
-            }
-
-            showView('view-game');
-            updateGameUI();
-            setTimeout(() => { resizeCanvas(); drawWheel(); }, 100);
-            canvas.onclick = startSpin;
-        }
-
-        function updateGameUI() {
-            const btn = document.getElementById('instantModeBtn');
-            const inputLabel = document.getElementById('inputLabel');
-            const textArea = document.getElementById('instantInput');
-            const prizeListDisplay = document.getElementById('prizeListDisplay');
-
-            if (currentSession.id) {
-                prizeListDisplay.innerHTML = '';
-                currentWheelItems.forEach(m => {
-                    const li = document.createElement('li');
-                    li.className = "flex items-center gap-2 p-2 bg-gray-50 rounded border border-gray-100";
-                    li.innerHTML = `<i class="fas fa-gift text-green-500 mr-2"></i> <span class="font-bold text-gray-700">${m}</span>`;
-                    prizeListDisplay.appendChild(li);
-                });
-                return;
-            }
-
-            if (isMoneyMode) {
-                btn.innerHTML = '<i class="fas fa-font"></i> Chuyển Quay Tên';
-                inputLabel.innerText = "Danh sách giải thưởng";
-                textArea.value = customMoneyList.join('\n');
-            } else {
-                btn.innerHTML = '<i class="fas fa-money-bill-wave"></i> Chuyển Quay Tiền';
-                inputLabel.innerText = "Danh sách tên người chơi";
-                textArea.value = customNameList.join('\n');
-            }
-            document.getElementById('nameCount').innerText = `${currentWheelItems.length} mục`;
-        }
-
-        function resizeCanvas() {
-            const container = document.getElementById('wheel-container');
-            const size = Math.min(container.clientWidth, container.clientHeight) * 0.9;
-            const dpr = window.devicePixelRatio || 1;
-            const rect = canvas.getBoundingClientRect();
-            if (rect.width === 0) return;
-            canvas.width = rect.width * dpr;
-            canvas.height = rect.height * dpr;
-            ctx.scale(dpr, dpr);
-        }
-        window.onresize = () => { if(document.getElementById('view-game').classList.contains('active')) { resizeCanvas(); drawWheel(); }};
-
         function drawWheel() {
             const rect = canvas.getBoundingClientRect();
             if (rect.width === 0) return;
-            const width = rect.width;
-            const height = rect.height;
-            const centerX = width / 2;
-            const centerY = height / 2;
+            const width = rect.width, height = rect.height;
+            const centerX = width / 2, centerY = height / 2;
             let radius = width / 2 - 10; 
             if (radius <= 0) return;
 
@@ -1425,30 +1612,23 @@
                 ctx.closePath();
                 ctx.fillStyle = segmentColors[i % segmentColors.length];
                 ctx.fill();
-                ctx.lineWidth = 1;
-                ctx.strokeStyle = "#fff";
-                ctx.stroke();
+                ctx.lineWidth = 1; ctx.strokeStyle = "#fff"; ctx.stroke();
 
                 ctx.save();
                 ctx.rotate(i * step + step / 2);
-                
                 const val = items[i];
                 if (loadedMoneyImages[val]) {
                     const img = loadedMoneyImages[val];
-                    const aspectRatio = img.width / img.height;
-                    const drawHeight = radius * 0.35; 
-                    const drawWidth = drawHeight * aspectRatio;
+                    const drawHeight = radius * 0.35, drawWidth = drawHeight * (img.width / img.height);
                     const startX = radius * 0.2;
-                    let finalWidth = drawWidth; let finalHeight = drawHeight;
+                    let finalWidth = drawWidth, finalHeight = drawHeight;
                     if (startX + finalWidth > radius - 10) { const scale = (radius - 10 - startX) / finalWidth; finalWidth *= scale; finalHeight *= scale; }
                     ctx.drawImage(img, startX, -finalHeight/2, finalWidth, finalHeight);
                 } else {
-                    ctx.textAlign = "right";
-                    ctx.fillStyle = "#fff";
+                    ctx.textAlign = "right"; ctx.fillStyle = "#fff";
                     const fontSize = Math.min(20 + 200/items.length, 28);
                     ctx.font = `bold ${fontSize}px Montserrat, Arial`;
-                    ctx.shadowColor = "rgba(0,0,0,0.3)";
-                    ctx.shadowBlur = 2;
+                    ctx.shadowColor = "rgba(0,0,0,0.3)"; ctx.shadowBlur = 2;
                     ctx.fillText(val, radius - 20, 8);
                 }
                 ctx.restore();
@@ -1456,15 +1636,48 @@
             ctx.restore();
         }
 
-        function startSpin() {
+        function resizeCanvas() {
+            const container = document.getElementById('wheel-container');
+            const dpr = window.devicePixelRatio || 1;
+            const rect = canvas.getBoundingClientRect();
+            if (rect.width === 0) return;
+            canvas.width = rect.width * dpr; canvas.height = rect.height * dpr;
+            ctx.scale(dpr, dpr);
+        }
+        window.onresize = () => { if(document.getElementById('view-game').classList.contains('active')) { resizeCanvas(); drawWheel(); }};
+
+        async function startSpin() {
             if (isSpinning || currentWheelItems.length === 0) return;
+            
+            let winningIndex = -1;
+
+            if (currentSession && currentSession.id !== null) {
+                showLoading("Đang chuẩn bị vòng quay...");
+                currentSessionPrizes = await fetchLivePrizes(currentSession.id);
+                updateGameUIPrizes();
+                hideLoading();
+                
+                const availablePrizes = currentSessionPrizes.filter(p => p.remaining_quantity > 0);
+                if (availablePrizes.length === 0) return; // Đã hiện overlay Hết quỹ ở updateGameUIPrizes
+
+                // THUẬT TOÁN QUAY: Chọn trước phần quà (chỉ bốc ngẫu nhiên từ những quà CÒN SỐ LƯỢNG)
+                let pool = [];
+                availablePrizes.forEach(p => {
+                    for(let i=0; i<p.remaining_quantity; i++) pool.push(p.name);
+                });
+                const selectedPrize = pool[Math.floor(Math.random() * pool.length)];
+                winningIndex = currentWheelItems.indexOf(selectedPrize);
+            } else {
+                // Instant play mode
+                winningIndex = Math.floor(Math.random() * currentWheelItems.length);
+            }
+
             isSpinning = true;
             document.getElementById('spin-instruction').style.opacity = '0';
             
             const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
             function playTick() {
-                 const osc = audioCtx.createOscillator();
-                 const gain = audioCtx.createGain();
+                 const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
                  osc.frequency.setValueAtTime(600, audioCtx.currentTime);
                  gain.gain.setValueAtTime(0.05, audioCtx.currentTime);
                  gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.05);
@@ -1474,8 +1687,19 @@
 
             const duration = 7000; 
             const startTimestamp = performance.now();
-            const randomOffset = Math.random() * 2 * Math.PI;
-            const totalRotationNeeded = (15 * Math.PI * 2) + randomOffset; 
+            
+            // TÍNH TOÁN GÓC QUAY: Phải dừng ĐÚNG vào ô winningIndex đã được bốc sẵn
+            const step = (2 * Math.PI) / currentWheelItems.length;
+            // Chọn ngẫu nhiên 1 điểm neo an toàn trong ô (từ 10% đến 90% diện tích ô, tránh chạm ngay vạch ranh giới)
+            const randomOffsetWithinStep = (Math.random() * 0.8 + 0.1) * step; 
+            const targetNormalizedRotation = (2 * Math.PI - (winningIndex * step) - randomOffsetWithinStep) % (2 * Math.PI);
+            
+            const extraSpins = 15 * 2 * Math.PI; // Quay tối thiểu 15 vòng
+            const currentNorm = currentRotation % (2 * Math.PI);
+            let diff = targetNormalizedRotation - currentNorm;
+            if (diff < 0) diff += 2 * Math.PI;
+
+            const totalRotationNeeded = extraSpins + diff; 
             const startAngle = currentRotation;
             let lastSegmentIndex = -1;
 
@@ -1484,42 +1708,53 @@
                 const progress = Math.min(elapsed / duration, 1);
                 const ease = 1 - Math.pow(1 - progress, 3);
                 
-                const prevRotation = currentRotation;
                 currentRotation = startAngle + (totalRotationNeeded * ease);
 
-                const itemsCount = currentWheelItems.length;
-                const step = (2 * Math.PI) / itemsCount;
+                const step = (2 * Math.PI) / currentWheelItems.length;
                 const normalizedRot = currentRotation % (2 * Math.PI);
-                const currentIndex = Math.floor((2 * Math.PI - normalizedRot) / step) % itemsCount;
+                const currentIndex = Math.floor((2 * Math.PI - normalizedRot) / step) % currentWheelItems.length;
                 
                 if (currentIndex !== lastSegmentIndex && progress < 1) { playTick(); lastSegmentIndex = currentIndex; }
-
                 drawWheel();
-
-                if (progress < 1) { requestAnimationFrame(animate); } else { isSpinning = false; finishSpin(); }
+                if (progress < 1) requestAnimationFrame(animate); else finishSpin();
             }
             requestAnimationFrame(animate);
         }
 
-        function finishSpin() {
-            const items = currentWheelItems;
-            const step = (2 * Math.PI) / items.length;
+        async function finishSpin() {
+            const step = (2 * Math.PI) / currentWheelItems.length;
             const normalizedRotation = currentRotation % (2 * Math.PI);
-            let winningIndex = Math.floor(((2 * Math.PI) - normalizedRotation) / step) % items.length;
-            if (winningIndex < 0) winningIndex += items.length;
+            let winningIndex = Math.floor(((2 * Math.PI) - normalizedRotation) / step) % currentWheelItems.length;
+            if (winningIndex < 0) winningIndex += currentWheelItems.length;
 
-            const prize = items[winningIndex];
-            currentWinnerPrize = prize;
+            let prize = currentWheelItems[winningIndex];
             
+            // Cập nhật DB online và kiểm tra lần cuối
             if (currentSession && currentSession.id) {
-                const winnerData = {
-                    name: currentPlayer.name,
-                    account: currentPlayer.account, // Stored as BANK::ACC
-                    prize: prize
-                };
-                insertWinnerToSupabase(currentSession.id, winnerData);
+                showLoading("Đang ghi nhận giải thưởng...");
+                // Fetch again to be 100% sure it wasn't taken during the 7 seconds spin
+                const latestPrizes = await fetchLivePrizes(currentSession.id);
+                const targetPrize = latestPrizes.find(p => p.name === prize);
+
+                if (targetPrize && targetPrize.remaining_quantity > 0) {
+                    const winnerData = { name: currentPlayer.name, account: currentPlayer.account, prize: prize };
+                    const success = await claimPrizeAndRecordWinner(currentSession.id, winnerData, targetPrize.id, targetPrize.remaining_quantity);
+                    if (!success) prize = "Lỗi ghi nhận"; 
+                } else {
+                    // Xảy ra race condition: Vừa hết trong lúc quay
+                    alert("Rất tiếc! Phần quà này vừa được người khác nhận trước bạn vài giây. Vòng quay sẽ được làm mới!");
+                    isSpinning = false;
+                    hideLoading();
+                    currentSessionPrizes = latestPrizes;
+                    updateGameUIPrizes();
+                    drawWheel();
+                    document.getElementById('spin-instruction').style.opacity = '1';
+                    return; // Ngưng
+                }
+                hideLoading();
             }
 
+            currentWinnerPrize = prize;
             document.getElementById('winnerText').innerText = prize;
             document.getElementById('winSubtext').innerText = isMoneyMode ? "Lộc xuân đã về ví của bạn" : "Người chiến thắng là";
 
@@ -1527,25 +1762,36 @@
             if (isMoneyMode && loadedMoneyImages[prize]) {
                 document.getElementById('winnerImage').src = loadedMoneyImages[prize].src;
                 imgContainer.classList.remove('hidden');
-            } else { imgContainer.classList.add('hidden'); }
+            } else imgContainer.classList.add('hidden');
             
             document.getElementById('winnerModal').classList.add('active');
+            
+            // Re-fetch UI list softly so background list is updated
+            if (currentSession && currentSession.id) {
+                fetchLivePrizes(currentSession.id).then(d => { currentSessionPrizes = d; updateGameUIPrizes(); drawWheel(); });
+            }
             confetti({ particleCount: 200, spread: 120, origin: { y: 0.6 }, colors: ['#e53935', '#ffeb3b', '#43a047'] });
         }
 
+        // --- WINNER ACTIONS & SHARE ---
         function showWinnerActions() {
             document.getElementById('winnerStep1').classList.add('hidden');
             document.getElementById('winnerStep2').classList.remove('hidden');
             document.getElementById('winnerStep2').classList.add('flex');
             
-            // Generate QR for Winner's Account so Organizer can scan
-            const amount = parseInt(currentWinnerPrize.replace(/\D/g, '')) || 0;
+            let amount = 0;
+            if (currentSession && currentSession.id && currentSessionPrizes) {
+                const prizeObj = currentSessionPrizes.find(p => p.name === currentWinnerPrize);
+                amount = prizeObj ? prizeObj.value : 0;
+            } else {
+                amount = parseValueFromName(currentWinnerPrize);
+            }
+            
             const qrSection = document.getElementById('winnerQrSection');
             const noQrMsg = document.getElementById('winnerNoQrMessage');
 
             if (amount > 0 && currentPlayer && currentPlayer.bankCode) {
-                qrSection.classList.remove('hidden');
-                noQrMsg.classList.add('hidden');
+                qrSection.classList.remove('hidden'); noQrMsg.classList.add('hidden');
                 document.getElementById('winnerBankName').innerText = `${currentPlayer.bankCode} - ${currentPlayer.accountNo}`;
                 
                 const qrImage = document.getElementById('winnerQrImage');
@@ -1558,74 +1804,77 @@
                 qrImage.onload = () => qrLoading.classList.add('hidden');
                 qrImage.src = url;
             } else {
-                qrSection.classList.add('hidden');
-                noQrMsg.classList.remove('hidden');
+                qrSection.classList.add('hidden'); noQrMsg.classList.remove('hidden');
             }
         }
 
         function shareWin(type) {
             const text = `Tôi vừa trúng ${currentWinnerPrize} tại Lì xì 2026! Chúc mừng năm mới!`;
             const url = window.location.href;
-
-            if (type === 'zalo') {
-                window.open(`https://zalo.me/share/?url=${encodeURIComponent(url)}&title=${encodeURIComponent(text)}`);
-            } else if (type === 'facebook') {
-                window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}&quote=${encodeURIComponent(text)}`);
-            } else if (type === 'copy') {
-                navigator.clipboard.writeText(text + " " + url);
-                alert("Đã sao chép nội dung!");
-            } else if (type === 'download') {
-                // Download QR
+            if (type === 'zalo') window.open(`https://zalo.me/share/?url=${encodeURIComponent(url)}&title=${encodeURIComponent(text)}`);
+            else if (type === 'copy') { navigator.clipboard.writeText(text + " " + url); alert("Đã sao chép nội dung!"); }
+            else if (type === 'download') {
                 const img = document.getElementById('winnerQrImage');
                 if (img.src) {
-                    // NEW: Try Web Share API for native "Save Image" experience on mobile
-                    fetch(img.src)
-                        .then(response => response.blob())
-                        .then(blob => {
-                            const file = new File([blob], `Lixi_QR_${currentPlayer.accountNo}.png`, { type: blob.type });
-                            if (navigator.canShare && navigator.canShare({ files: [file] })) {
-                                navigator.share({
-                                    files: [file],
-                                    title: 'QR Lì Xì',
-                                    text: 'Mã QR nhận tiền lì xì'
-                                }).catch((error) => console.log('Sharing failed', error));
-                            } else {
-                                // Fallback for desktop or unsupported browsers
-                                const objectUrl = URL.createObjectURL(blob);
-                                const link = document.createElement('a');
-                                link.href = objectUrl;
-                                link.download = `Lixi_QR_${currentPlayer.accountNo}.png`;
-                                document.body.appendChild(link);
-                                link.click();
-                                document.body.removeChild(link);
-                                URL.revokeObjectURL(objectUrl);
-                            }
-                        })
-                        .catch(() => alert("Lỗi tải ảnh!"));
-                } else {
-                    alert("Không có mã QR để tải!");
+                    fetch(img.src).then(res => res.blob()).then(blob => {
+                        const file = new File([blob], `Lixi_QR_${currentPlayer.accountNo}.png`, { type: blob.type });
+                        if (navigator.canShare && navigator.canShare({ files: [file] })) navigator.share({ files: [file], title: 'QR Lì Xì' }).catch(()=>{});
+                        else {
+                            const link = document.createElement('a'); link.href = URL.createObjectURL(blob); link.download = `Lixi_QR_${currentPlayer.accountNo}.png`;
+                            document.body.appendChild(link); link.click(); document.body.removeChild(link);
+                        }
+                    }).catch(() => alert("Lỗi tải ảnh!"));
                 }
             }
         }
 
+        function showQR(bankCode, accNum, amount, content) {
+            const qrModal = document.getElementById('qrModal');
+            const qrImage = document.getElementById('qrImage');
+            const qrLoading = document.getElementById('qrLoading');
+            qrModal.classList.add('active'); qrLoading.classList.remove('hidden');
+            const safeContent = content.substring(0, 50);
+            const url = `https://img.vietqr.io/image/${bankCode}-${accNum}-compact.png?amount=${amount}&addInfo=${encodeURIComponent(safeContent)}`;
+            qrImage.onload = () => qrLoading.classList.add('hidden'); qrImage.src = url;
+            document.getElementById('downloadQrBtn').onclick = async () => {
+                try {
+                    const res = await fetch(url); const blob = await res.blob();
+                    const file = new File([blob], `QR_Lixi_${accNum}.png`, { type: blob.type });
+                    if (navigator.canShare && navigator.canShare({ files: [file] })) { navigator.share({ files: [file], title: 'QR Lì Xì' }).catch(()=>{}); }
+                    else {
+                        const link = document.createElement('a'); link.href = URL.createObjectURL(blob); link.download = `QR_Lixi_${accNum}.png`;
+                        document.body.appendChild(link); link.click(); document.body.removeChild(link);
+                    }
+                } catch(err) { alert("Lỗi tải ảnh"); }
+            };
+        }
+
+        function exportToCSV() {
+            if (!currentStatsSessionId) return;
+            const session = cachedSessions.find(s => s.id === currentStatsSessionId);
+            let csvContent = "data:text/csv;charset=utf-8,Thoi gian,Ho Ten,Ngan Hang,So Tai Khoan,Giai Thuong\n"; 
+            session.winners.forEach(w => {
+                let bankCode = '', accNum = w.account;
+                if (w.account.includes('::')) { const parts = w.account.split('::'); bankCode = parts[0]; accNum = parts[1]; }
+                csvContent += `${new Date(w.time).toLocaleString('vi-VN')},"${w.name}","${bankCode}","${accNum}","${w.prize}"\n`;
+            });
+            const link = document.createElement("a"); link.href = encodeURI(csvContent); link.download = `Lixi_Report_${session.name}.csv`;
+            document.body.appendChild(link); link.click(); document.body.removeChild(link);
+        }
+
         function finishGameAndExit() {
             document.getElementById('winnerModal').classList.remove('active');
-            if (currentSession && currentSession.id) { exitGame(); } else { document.getElementById('spin-instruction').style.opacity = '1'; }
+            if (currentSession && currentSession.id) exitGame(); else document.getElementById('spin-instruction').style.opacity = '1';
         }
 
         function exitGame() {
-            currentSession = null;
-            currentPlayer = null;
-            isSpinning = false;
+            currentSession = null; currentPlayer = null; isSpinning = false;
             document.getElementById('spin-instruction').style.opacity = '1';
-            showView('view-home');
-            document.getElementById('playerForm').reset();
+            showView('view-home'); document.getElementById('playerForm').reset();
         }
 
-        // Init App
-        updateLoginStats();
-        resizeCanvas();
-        fetchBanks(); 
+        // INIT
+        updateLoginStats(); resizeCanvas(); fetchBanks(); 
     </script>
 </body>
 </html>
