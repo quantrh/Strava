@@ -1815,10 +1815,15 @@
             document.getElementById('winnerStep2').classList.add('flex');
             
             let amount = 0;
+            // Ưu tiên 1: Lấy giá trị chính xác từ cơ sở dữ liệu
             if (currentSession && currentSession.id && currentSessionPrizes) {
                 const prizeObj = currentSessionPrizes.find(p => p.name === currentWinnerPrize);
                 amount = prizeObj ? prizeObj.value : 0;
-            } else {
+            }
+            
+            // Ưu tiên 2 (Fix lỗi): Nếu DB trả về 0 hoặc bị lỗi mạng/chậm cập nhật, 
+            // tự động phân tích số tiền từ tên giải thưởng để đảm bảo QR luôn hiện với giải tiền.
+            if (amount === 0) {
                 amount = parseValueFromName(currentWinnerPrize);
             }
             
@@ -1826,7 +1831,8 @@
             const noQrMsg = document.getElementById('winnerNoQrMessage');
 
             if (amount > 0 && currentPlayer && currentPlayer.bankCode) {
-                qrSection.classList.remove('hidden'); noQrMsg.classList.add('hidden');
+                qrSection.classList.remove('hidden');
+                noQrMsg.classList.add('hidden');
                 document.getElementById('winnerBankName').innerText = `${currentPlayer.bankCode} - ${currentPlayer.accountNo}`;
                 
                 const qrImage = document.getElementById('winnerQrImage');
@@ -1838,8 +1844,11 @@
                 
                 qrImage.onload = () => qrLoading.classList.add('hidden');
                 qrImage.src = url;
+                // Fix lỗi hiển thị ảnh nếu ảnh đã được cache sẵn
+                if (qrImage.complete) qrLoading.classList.add('hidden');
             } else {
-                qrSection.classList.add('hidden'); noQrMsg.classList.remove('hidden');
+                qrSection.classList.add('hidden');
+                noQrMsg.classList.remove('hidden');
             }
         }
 
