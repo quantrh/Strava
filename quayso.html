@@ -23,6 +23,8 @@
             background-size: cover;
             background-position: center;
             background-attachment: fixed;
+            height: 100vh; /* Force fixed height */
+            width: 100vw;
         }
         
         ::-webkit-scrollbar { width: 4px; height: 4px; }
@@ -46,16 +48,40 @@
 
         @media (max-width: 768px) {
             body { 
+                /* Allow scroll on content but keep background fixed */
+                height: 100vh;
                 overflow-y: auto;
-                height: auto;
-                min-height: 100vh;
             }
             #wheel-container { padding-right: 35px !important; }
-            #view-game { height: auto !important; min-height: 100vh; display: block; }
+            /* Ensure active view takes full height */
+            .view-section.active {
+                min-height: 100vh;
+                position: absolute;
+                top: 0;
+                left: 0;
+            }
         }
 
-        .view-section { display: none; width: 100%; height: 100%; overflow-y: auto; }
-        .view-section.active { display: flex; flex-direction: column; }
+        /* View Section Logic - Critical Fix */
+        .view-section { 
+            display: none; 
+            width: 100%; 
+            height: 100%; 
+            overflow-y: auto; 
+            position: absolute; /* Stack views on top of each other */
+            top: 0; 
+            left: 0;
+            transition: opacity 0.3s ease;
+            opacity: 0;
+            z-index: 0;
+        }
+        
+        .view-section.active { 
+            display: flex; 
+            flex-direction: column;
+            opacity: 1;
+            z-index: 10; /* Bring active view to front */
+        }
 
         .modal { transition: opacity 0.3s ease; opacity: 0; pointer-events: none; }
         .modal.active { opacity: 1; pointer-events: auto; }
@@ -104,7 +130,7 @@
         }
     </style>
 </head>
-<body class="h-screen w-screen text-gray-800">
+<body class="text-gray-800">
 
     <!-- Loading Overlay -->
     <div id="loading-overlay">
@@ -131,12 +157,12 @@
             <div class="space-y-3 md:space-y-4">
                 <button onclick="showView('view-organizer')" class="group w-full py-3 bg-white border-2 border-red-100 text-red-700 rounded-xl font-bold hover:bg-red-50 hover:border-red-200 transition-all flex items-center justify-center gap-3 shadow-sm hover:shadow text-sm md:text-base">
                     <div class="w-8 h-8 rounded-full bg-red-50 flex items-center justify-center group-hover:bg-red-100 transition-colors"><i class="fas fa-user-tie text-lg"></i></div>
-                    <span>QUẢN LÝ CÁC ĐỢT QUAY SỐ</span>
+                    <span>TÔI LÀ NGƯỜI TỔ CHỨC</span>
                 </button>
 
                 <button onclick="showView('view-player-login')" class="w-full py-4 bg-gradient-to-r from-red-600 to-orange-500 text-white rounded-2xl font-extrabold text-base md:text-lg shadow-lg hover:shadow-orange-500/40 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-3 transform">
                     <i class="fas fa-gamepad text-xl md:text-2xl animate-pulse"></i>
-                    THAM GIA ĐỢT QUAY SỐ
+                    THAM GIA QUAY SỐ
                 </button>
 
                 <button onclick="startInstantPlay()" class="group w-full py-3 bg-white border-2 border-green-500 text-green-600 rounded-xl font-bold hover:bg-green-50 transition-all flex items-center justify-center gap-3 shadow-sm hover:shadow text-sm md:text-base">
@@ -146,7 +172,7 @@
 
                 <!-- Guide Button -->
                 <button onclick="openGuideModal()" class="w-full py-2 text-gray-500 hover:text-blue-600 font-semibold text-xs md:text-sm flex items-center justify-center gap-2 transition-colors">
-                    <i class="fas fa-question-circle"></i> HƯỚNG DẪN SỬ DỤNG CHI TIẾT
+                    <i class="fas fa-question-circle"></i> HƯỚNG DẪN SỬ DỤNG
                 </button>
             </div>
 
@@ -648,6 +674,11 @@
     <!-- MODAL: Winner Celebration -->
     <div id="winnerModal" class="modal fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
         <div class="bg-white rounded-2xl shadow-2xl transform scale-100 w-full max-w-lg overflow-hidden animate-[bounceIn_0.5s_ease-out] relative flex flex-col max-h-[90vh]">
+            <!-- Close Button for Instant Play -->
+            <button onclick="finishGameAndExit()" class="absolute top-4 right-4 text-gray-400 hover:text-red-500 z-50 text-2xl transition-colors w-10 h-10 flex items-center justify-center rounded-full bg-white/80 backdrop-blur hover:bg-white shadow-sm">
+                <i class="fas fa-times"></i>
+            </button>
+
             <div class="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/confetti.png')] pointer-events-none"></div>
             
             <div id="winnerStep1" class="w-full flex flex-col">
@@ -732,7 +763,7 @@
                 </div>
 
                 <div class="p-4 bg-gray-50 border-t shrink-0">
-                    <button onclick="finishGameAndExit()" class="w-full py-3 bg-gray-800 text-white font-bold rounded-lg hover:bg-gray-900 shadow transition-all">
+                    <button id="finishBtn" onclick="finishGameAndExit()" class="w-full py-3 bg-gray-800 text-white font-bold rounded-lg hover:bg-gray-900 shadow transition-all">
                         Hoàn tất & Thoát
                     </button>
                 </div>
@@ -755,7 +786,8 @@
             "10.000 VND": baseUrl + "10k.jpg", "20.000 VND": baseUrl + "20K.jpg", "50.000 VND": baseUrl + "50k.jpg",
             "100.000 VND": baseUrl + "100k.jpg", "200.000 VND": baseUrl + "200K.jpg", "500.000 VND": baseUrl + "500K.jpg" 
         };
-        const standardPrizeOptions = ["1.000 VND", "2.000 VND", "5.000 VND", "10.000 VND", "20.000 VND", "50.000 VND", "100.000 VND", "200.000 VND", "500.000 VND", "Nụ hôn", "Rượu", "Khác..."];
+        const standardPrizeOptions = ["1.000 VND", "2.000 VND", "5.000 VND", "10.000 VND", "20.000 VND", "50.000 VND", "Nụ hôn", "100.000 VND", "200.000 VND", "500.000 VND", "Rượu", "Khác..."];
+        const defaultMoneyList = ["10.000 VND", "20.000 VND", "50.000 VND", "Nụ hôn", "100.000 VND", "200.000 VND", "500.000 VND", "Rượu"];
         
         const defaultNameList = ['Lan', 'Hoa', 'Tuan', 'Hung', 'Mai', 'Linh', 'Dat', 'Cuong'];
         const segmentColors = ["#e53935", "#fb8c00", "#fdd835", "#43a047", "#1e88e5", "#8e24aa", "#ffb74d", "#ef5350"];
@@ -766,12 +798,14 @@
         let currentPlayer = null;
         let isMoneyMode = true; 
         let currentWheelItems = []; // Danh sách (string) để vẽ trên vòng
+        let customMoneyList = [...defaultMoneyList];
         let customNameList = [...defaultNameList];
         let cachedSessions = [];
         let authPendingAction = null; 
         let authTargetId = null;
         let currentWinnerPrize = null; 
         let cachedBanks = [];
+        let hasSpun = false; // Add variable to track spinning state
 
         // --- HELPERS ---
         function showLoading(msg = "Đang xử lý dữ liệu...") { 
@@ -1206,15 +1240,60 @@
             return prizes;
         }
 
+        function toggleInstantMode() {
+            isMoneyMode = !isMoneyMode;
+            if (isMoneyMode) {
+                currentWheelItems = [...customMoneyList];
+            } else {
+                currentWheelItems = [...customNameList];
+            }
+            updateGameUI();
+            drawWheel();
+        }
+
+        document.getElementById('instantInput').addEventListener('input', (e) => {
+            const val = e.target.value;
+            const list = val.split('\n').filter(n => n.trim() !== '');
+            currentWheelItems = list;
+            if (isMoneyMode) {
+                customMoneyList = list;
+            } else {
+                customNameList = list;
+            }
+            document.getElementById('nameCount').innerText = `${list.length} mục`;
+            drawWheel();
+        });
+
         // --- VIEW NAVIGATION ---
         function showView(viewId) {
-            document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
-            document.getElementById(viewId).classList.add('active');
+            // Hide all views first
+            document.querySelectorAll('.view-section').forEach(el => {
+                el.classList.remove('active');
+                // Ensure hidden views are truly hidden
+                el.style.display = 'none';
+            });
+            
+            // Show selected view
+            const target = document.getElementById(viewId);
+            target.classList.add('active');
+            target.style.display = 'flex'; // Or proper display type
+            
+            // Scroll to top
+            window.scrollTo(0,0);
+            
             if (viewId === 'view-organizer') loadOrganizerData(); 
             if (viewId === 'view-player-login') loadSessionDropdown();
+            
+            // Trigger resize to fix wheel if going to game view
+            if (viewId === 'view-game') {
+                setTimeout(() => {
+                    resizeCanvas();
+                    drawWheel();
+                }, 100);
+            }
         }
         function closeModal(modalId) { document.getElementById(modalId).classList.remove('active'); }
-        function openGuideModal() { document.getElementById('guideModal').classList.add('active'); }
+        function openGuideModal() { document.getElementById(modalId).classList.add('active'); }
 
         // --- ORGANIZER LOGIC ---
         async function loadOrganizerData() {
@@ -1298,15 +1377,15 @@
                     <p class="text-xs text-gray-500 mb-3 line-clamp-1 italic">${s.description || 'Không có mô tả'}</p>
                     
                     <div class="grid grid-cols-2 gap-2 mb-4">
-                        <div class="bg-blue-50 p-2 rounded border border-blue-100">
-                            <p class="text-[10px] text-gray-500 font-bold uppercase">Ngân sách (Ban đầu)</p>
-                            <p class="font-bold text-blue-700 text-sm">${formatMoney(initialBudget)} đ</p>
-                            <p class="text-[10px] text-blue-500">${initialItems} phần quà</p>
+                        <div class="bg-gray-50 p-2 rounded border border-gray-200">
+                            <p class="text-[10px] text-gray-500 font-bold uppercase"><i class="fas fa-gift text-gray-400"></i> Tổng quà</p>
+                            <p class="font-bold text-gray-800 text-sm mt-1">******</p>
+                            <p class="text-[10px] text-gray-500">${initialItems} phần</p>
                         </div>
-                        <div class="bg-green-50 p-2 rounded border border-green-100">
-                            <p class="text-[10px] text-gray-500 font-bold uppercase">Còn lại (Hiện tại)</p>
-                            <p class="font-bold text-green-700 text-sm">${formatMoney(remainBudget)} đ</p>
-                            <p class="text-[10px] text-green-500">${remainItems} phần quà</p>
+                        <div class="bg-gray-50 p-2 rounded border border-gray-200">
+                            <p class="text-[10px] text-gray-500 font-bold uppercase"><i class="fas fa-box-open text-gray-400"></i> Còn lại</p>
+                            <p class="font-bold text-gray-800 text-sm mt-1">******</p>
+                            <p class="text-[10px] text-gray-500">${remainItems} phần</p>
                         </div>
                     </div>
 
@@ -1522,6 +1601,7 @@
             currentPlayer = { name, account: combinedAccount, displayAccount: `${bank} - ${accountNo}`, bankCode: bank, accountNo: accountNo };
             
             isMoneyMode = true; 
+            hasSpun = false; // Reset spin state
             startGame();
         }
 
@@ -1530,6 +1610,7 @@
             currentPlayer = { name: "Khách", account: "Vui chơi", displayAccount: "Không lưu" };
             isMoneyMode = true; 
             currentWheelItems = [...customMoneyList];
+            hasSpun = false;
             startGame();
         }
 
@@ -1686,6 +1767,8 @@
 
         async function startSpin() {
             if (isSpinning || currentWheelItems.length === 0) return;
+            // Prevent spin if already spun in this session (unless instant play)
+            if (currentSession && currentSession.id && hasSpun) return;
             
             let winningIndex = -1;
 
@@ -1764,6 +1847,9 @@
             let prize = currentWheelItems[winningIndex];
             
             if (currentSession && currentSession.id) {
+                // Lock further spins immediately
+                hasSpun = true;
+                
                 showLoading("Đang ghi nhận giải thưởng...");
                 const latestPrizes = await fetchLivePrizes(currentSession.id);
                 const targetPrize = latestPrizes.find(p => p.name === prize);
@@ -1775,6 +1861,7 @@
                 } else {
                     alert("Rất tiếc! Phần quà này vừa được người khác nhận trước bạn vài giây. Vòng quay sẽ được làm mới!");
                     isSpinning = false;
+                    hasSpun = false; // Unlock to try again
                     hideLoading();
                     currentSessionPrizes = latestPrizes;
                     updateGameUIPrizes();
@@ -1785,22 +1872,37 @@
                 hideLoading();
             }
 
+            // Reset spinning flag immediately after logic completes
+            isSpinning = false; 
+
             currentWinnerPrize = prize;
-            document.getElementById('winnerText').innerText = prize;
-            document.getElementById('winSubtext').innerText = isMoneyMode ? "Lộc xuân đã về ví của bạn" : "Người chiến thắng là";
+            
+            // Fix for TypeError: Cannot set properties of null
+            const winnerTextEl = document.getElementById('winnerText');
+            if (winnerTextEl) winnerTextEl.innerText = prize;
+            
+            const winSubtextEl = document.getElementById('winSubtext');
+            if (winSubtextEl) winSubtextEl.innerText = isMoneyMode ? "Lộc xuân đã về ví của bạn" : "Người chiến thắng là";
 
             const imgContainer = document.getElementById('winnerImageContainer');
             if (isMoneyMode && loadedMoneyImages[prize]) {
-                document.getElementById('winnerImage').src = loadedMoneyImages[prize].src;
-                imgContainer.classList.remove('hidden');
-            } else imgContainer.classList.add('hidden');
+                const img = document.getElementById('winnerImage');
+                if (img) img.src = loadedMoneyImages[prize].src;
+                if (imgContainer) imgContainer.classList.remove('hidden');
+            } else if (imgContainer) imgContainer.classList.add('hidden');
             
             // RESET MÀN HÌNH MODAL VỀ TRẠNG THÁI HIỂN THỊ QUÀ (STEP 1)
-            document.getElementById('winnerStep1').classList.remove('hidden');
-            document.getElementById('winnerStep2').classList.add('hidden');
-            document.getElementById('winnerStep2').classList.remove('flex');
+            const step1 = document.getElementById('winnerStep1');
+            const step2 = document.getElementById('winnerStep2');
             
-            document.getElementById('winnerModal').classList.add('active');
+            if (step1) step1.classList.remove('hidden');
+            if (step2) {
+                step2.classList.add('hidden');
+                step2.classList.remove('flex');
+            }
+            
+            const modal = document.getElementById('winnerModal');
+            if (modal) modal.classList.add('active');
             
             if (currentSession && currentSession.id) {
                 fetchLivePrizes(currentSession.id).then(d => { currentSessionPrizes = d; updateGameUIPrizes(); drawWheel(); });
@@ -1814,15 +1916,24 @@
             document.getElementById('winnerStep2').classList.remove('hidden');
             document.getElementById('winnerStep2').classList.add('flex');
             
+            // Cập nhật tên nút bấm dựa trên chế độ
+            const finishBtn = document.getElementById('finishBtn');
+            if (currentSession && currentSession.id) {
+                finishBtn.innerText = "Hoàn tất & Thoát";
+                finishBtn.classList.remove("bg-green-600", "hover:bg-green-700");
+                finishBtn.classList.add("bg-gray-800", "hover:bg-gray-900");
+            } else {
+                finishBtn.innerText = "Quay tiếp";
+                finishBtn.classList.remove("bg-gray-800", "hover:bg-gray-900");
+                finishBtn.classList.add("bg-green-600", "hover:bg-green-700");
+            }
+            
             let amount = 0;
-            // Ưu tiên 1: Lấy giá trị chính xác từ cơ sở dữ liệu
             if (currentSession && currentSession.id && currentSessionPrizes) {
                 const prizeObj = currentSessionPrizes.find(p => p.name === currentWinnerPrize);
                 amount = prizeObj ? prizeObj.value : 0;
             }
             
-            // Ưu tiên 2 (Fix lỗi): Nếu DB trả về 0 hoặc bị lỗi mạng/chậm cập nhật, 
-            // tự động phân tích số tiền từ tên giải thưởng để đảm bảo QR luôn hiện với giải tiền.
             if (amount === 0) {
                 amount = parseValueFromName(currentWinnerPrize);
             }
@@ -1844,7 +1955,6 @@
                 
                 qrImage.onload = () => qrLoading.classList.add('hidden');
                 qrImage.src = url;
-                // Fix lỗi hiển thị ảnh nếu ảnh đã được cache sẵn
                 if (qrImage.complete) qrLoading.classList.add('hidden');
             } else {
                 qrSection.classList.add('hidden');
@@ -1916,7 +2026,7 @@
         }
 
         function exitGame() {
-            currentSession = null; currentPlayer = null; isSpinning = false;
+            currentSession = null; currentPlayer = null; isSpinning = false; hasSpun = false;
             document.getElementById('spin-instruction').style.opacity = '1';
             showView('view-home'); document.getElementById('playerForm').reset();
         }
