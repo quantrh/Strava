@@ -369,6 +369,7 @@
 
     <!-- Modals (Create, Edit, Auth, Stats, QR, Guide) -->
     <!-- MODAL: Create Session -->
+    <!-- ... (existing code for Create Session Modal) ... -->
     <div id="createSessionModal" class="modal fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-4xl p-6 transform transition-all scale-100 h-[90vh] flex flex-col">
             <h3 class="text-lg md:text-xl font-extrabold text-red-800 mb-4 border-b pb-2">Tạo Đợt Lì Xì & Ngân Sách Mới</h3>
@@ -432,6 +433,7 @@
     </div>
 
     <!-- MODAL: Edit Session -->
+    <!-- ... (existing code for Edit Session Modal) ... -->
     <div id="editSessionModal" class="modal fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-4xl p-6 transform transition-all scale-100 h-[90vh] flex flex-col">
             <h3 class="text-lg md:text-xl font-extrabold text-blue-800 mb-4 border-b pb-2">Sửa Đợt Lì Xì & Ngân Sách</h3>
@@ -497,6 +499,7 @@
     </div>
 
     <!-- MODAL: Authentication -->
+    <!-- ... (existing code for Auth Modal) ... -->
     <div id="authModal" class="modal fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
         <div class="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6 transform transition-all scale-100">
             <div class="text-center mb-4">
@@ -515,6 +518,7 @@
     </div>
 
     <!-- MODAL: Statistics -->
+    <!-- ... (existing code for Statistics Modal) ... -->
     <div id="statsModal" class="modal fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-6xl h-[90vh] flex flex-col overflow-hidden">
             <div class="p-4 md:p-5 border-b bg-gray-50 flex justify-between items-center">
@@ -591,6 +595,7 @@
     </div>
 
     <!-- MODAL: QR Display -->
+    <!-- ... (existing code for QR Modal) ... -->
     <div id="qrModal" class="modal fixed inset-0 z-[80] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden animate-[bounceIn_0.3s_ease-out]">
             <div class="p-4 border-b flex justify-between items-center bg-blue-600 text-white">
@@ -613,6 +618,7 @@
     </div>
 
     <!-- MODAL: Guide (CẬP NHẬT MỚI TOÀN BỘ) -->
+    <!-- ... (existing code for Guide Modal) ... -->
     <div id="guideModal" class="modal fixed inset-0 z-[70] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-3xl h-[85vh] flex flex-col overflow-hidden animate-[bounceIn_0.3s_ease-out]">
             <div class="p-5 border-b bg-red-50 flex justify-between items-center">
@@ -845,16 +851,26 @@
             } catch (error) { console.error("Error fetching banks:", error); }
         }
 
-        // Searchable dropdown logic
+        // Searchable dropdown logic - FIX: Match display format with filter logic
         function setupSearchableDropdown(inputId, hiddenId, listId, data, labelKey, valueKey, defaultValue) {
             const input = document.getElementById(inputId);
             const hidden = document.getElementById(hiddenId);
             const list = document.getElementById(listId);
             
+            // Helper to consistently format display string
+            function getDisplayString(item) {
+                if (!item) return '';
+                const label = item[labelKey];
+                // For sessions (name-name), avoid duplication. For banks (short-long), keep both.
+                const subLabel = (item.name && item.name !== label) ? item.name : '';
+                return subLabel ? `${label} - ${subLabel}` : label;
+            }
+            
+            // Initial value logic
             if (defaultValue && data.length > 0) {
                 const defaultItem = data.find(item => item[valueKey] === defaultValue);
                 if (defaultItem) {
-                    input.value = `${defaultItem[labelKey]} - ${defaultItem.name || ''}`;
+                    input.value = getDisplayString(defaultItem);
                     hidden.value = defaultValue;
                 }
             }
@@ -862,7 +878,8 @@
             function renderList(filterText = '') {
                 list.innerHTML = '';
                 const filtered = data.filter(item => {
-                    const text = `${item[labelKey]} ${item.name || ''}`.toLowerCase();
+                    // Fix: Use the exact same format as input value for filtering
+                    const text = getDisplayString(item).toLowerCase();
                     return text.includes(filterText.toLowerCase());
                 });
 
@@ -874,9 +891,10 @@
                 filtered.forEach(item => {
                     const div = document.createElement('div');
                     div.className = 'custom-dropdown-item';
-                    div.textContent = `${item[labelKey]} - ${item.name || ''}`;
+                    const displayStr = getDisplayString(item);
+                    div.textContent = displayStr;
                     div.onclick = () => {
-                        input.value = `${item[labelKey]} - ${item.name || ''}`;
+                        input.value = displayStr;
                         hidden.value = item[valueKey];
                         list.classList.remove('show');
                         if (hiddenId === 'loginSessionId') {
@@ -1266,25 +1284,20 @@
 
         // --- VIEW NAVIGATION ---
         function showView(viewId) {
-            // Hide all views first
             document.querySelectorAll('.view-section').forEach(el => {
                 el.classList.remove('active');
-                // Ensure hidden views are truly hidden
                 el.style.display = 'none';
             });
             
-            // Show selected view
             const target = document.getElementById(viewId);
             target.classList.add('active');
-            target.style.display = 'flex'; // Or proper display type
+            target.style.display = 'flex'; 
             
-            // Scroll to top
             window.scrollTo(0,0);
             
             if (viewId === 'view-organizer') loadOrganizerData(); 
             if (viewId === 'view-player-login') loadSessionDropdown();
             
-            // Trigger resize to fix wheel if going to game view
             if (viewId === 'view-game') {
                 setTimeout(() => {
                     resizeCanvas();
