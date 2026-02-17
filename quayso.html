@@ -1081,12 +1081,40 @@
             return !error;
         }
 
+        // --- UPDATED VISIT COUNT LOGIC (SAFE INCREMENT) ---
         async function updateLoginStats() {
-            const { data } = await supabaseClient.from('lixi_stats').select('login_count').eq('id', 1).single();
-            if (data) {
-                const newCount = (data.login_count || 0) + 1;
-                await supabaseClient.from('lixi_stats').update({ login_count: newCount }).eq('id', 1);
-                document.getElementById('visit-count').innerText = newCount.toLocaleString();
+            try {
+                // ƯU TIÊN 1: Sử dụng RPC (Stored Procedure)
+                // Đây là cách an toàn nhất: Database tự cộng, không bao giờ bị ghi đè số nhỏ hơn.
+                // Yêu cầu: Bạn phải chạy SQL tạo hàm increment_login_count trong Supabase.
+                const { data: rpcData, error: rpcError } = await supabaseClient.rpc('increment_login_count');
+                
+                if (!rpcError && rpcData !== null) {
+                    // Nếu RPC thành công, cập nhật giao diện
+                    document.getElementById('visit-count').innerText = rpcData.toLocaleString();
+                    return; 
+                }
+
+                // FALLBACK: Nếu chưa có hàm RPC (hoặc lỗi), dùng logic cũ nhưng thêm kiểm tra
+                // console.warn("Chưa cấu hình RPC, quay về logic cũ...", rpcError);
+                
+                const { data: currentData } = await supabaseClient
+                    .from('lixi_stats')
+                    .select('login_count')
+                    .eq('id', 1)
+                    .single();
+
+                if (currentData) {
+                    const currentVal = currentData.login_count || 0;
+                    const newCount = currentVal + 1;
+                    
+                    // Logic này vẫn có rủi ro Race Condition nhỏ, nhưng tốt hơn là không có gì
+                    await supabaseClient.from('lixi_stats').update({ login_count: newCount }).eq('id', 1);
+                    document.getElementById('visit-count').innerText = newCount.toLocaleString();
+                }
+            } catch (err) {
+                console.error("Lỗi cập nhật lượt truy cập:", err);
+                document.getElementById('visit-count').innerText = "...";
             }
         }
 
