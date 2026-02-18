@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lịch Trình Seoul 2025</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
+        .tab-active { border-bottom: 3px solid #3b82f6; color: #3b82f6; font-weight: 700; }
+        .timeline-line::before {
+            content: '';
+            position: absolute;
+            left: 20px;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: #e2e8f0;
+            z-index: 0;
+        }
+    </style>
+</head>
+<body class="pb-10">
+
+    <!-- Header -->
+    <header class="sticky top-0 z-50 bg-white shadow-sm">
+        <div class="max-w-md mx-auto px-4 py-4 flex items-center justify-between">
+            <h1 class="text-xl font-bold text-slate-800 flex items-center gap-2">
+                <i data-lucide="map-pin" class="text-blue-500"></i> Seoul Trip 2025
+            </h1>
+            <div class="text-xs font-medium bg-blue-100 text-blue-600 px-2 py-1 rounded-full uppercase tracking-wider">
+                18/02 - 22/02
+            </div>
+        </div>
+        
+        <!-- Day Navigation -->
+        <div class="flex overflow-x-auto no-scrollbar border-b bg-white" id="day-tabs">
+            <button onclick="switchDay('day18')" class="tab-btn flex-shrink-0 px-6 py-3 text-sm font-medium transition-all" data-day="day18">Ngày 18</button>
+            <button onclick="switchDay('day19')" class="tab-btn flex-shrink-0 px-6 py-3 text-sm font-medium transition-all" data-day="day19">Ngày 19</button>
+            <button onclick="switchDay('day20')" class="tab-btn flex-shrink-0 px-6 py-3 text-sm font-medium transition-all" data-day="day20">Ngày 20</button>
+            <button onclick="switchDay('day21')" class="tab-btn flex-shrink-0 px-6 py-3 text-sm font-medium transition-all" data-day="day21">Ngày 21</button>
+            <button onclick="switchDay('day22')" class="tab-btn flex-shrink-0 px-6 py-3 text-sm font-medium transition-all" data-day="day22">Ngày 22</button>
+        </div>
+    </header>
+
+    <main class="max-w-md mx-auto px-4 mt-6">
+        <div id="content-area" class="relative timeline-line">
+            <!-- Content will be injected here by JS -->
+        </div>
+    </main>
+
+    <script>
+        const itinerary = {
+            day18: {
+                title: "NGÀY 18/02 – HÀ NỘI → SEOUL",
+                items: [
+                    { time: "19:30 → 20:15", duration: "45 phút", title: "Nhà → Nội Bài", type: "transport", icon: "car" },
+                    { time: "20:15 → 22:00", duration: "1 giờ 45 phút", title: "Check-in – xuất cảnh", type: "airport", icon: "log-in" },
+                    { time: "22:50 → 05:25 (+1)", duration: "4 giờ 35 phút", title: "Hà Nội → Incheon", type: "flight", icon: "plane-takeoff" }
+                ]
+            },
+            day19: {
+                title: "NGÀY 19 – HONGDAE / YEONNAM / JONGNO / ...",
+                items: [
+                    { time: "05:25 → 06:45", duration: "1 giờ 20 phút", title: "ICN – Nhập cảnh & nhận hành lý", type: "airport", icon: "luggage" },
+                    { time: "07:00 → 08:15", duration: "1 giờ 15 phút", title: "Xe Klook → Western Co-op Hotel", type: "transport", icon: "car" },
+                    { time: "08:30 → 09:05", duration: "35 phút", title: "Dongdaemun → Hongik Univ. (Line 2)", type: "transport", icon: "train-front" },
+                    { 
+                        time: "09:05 → 09:30", 
+                        duration: "25 phút", 
+                        title: "T1 Base Camp – Hongdae", 
+                        type: "visit", 
+                        icon: "gamepad-2",
+                        desc: "Không gian trải nghiệm của thương hiệu e-sports T1 (đội tuyển LMHT nổi tiếng Hàn Quốc). Phù hợp check-in nhanh, tham quan khoảng 20–30 phút."
+                    },
+                    { 
+                        time: "09:30 → 12:30", 
+                        duration: "3 giờ", 
+                        title: "Khu vực Yeonnam", 
+                        type: "visit", 
+                        icon: "camera",
+                        desc: "Khu phố cafe và lifestyle sát Hongdae, nổi tiếng với cafe concept độc đáo, Photobooth (máy chụp ảnh tự động kiểu Hàn) và cửa hàng thời trang local.<br><br><b>Koriko Cafe:</b> Quán cafe phong cách màu sắc nổi bật, trang trí trẻ trung.<br><b>Cafe Layered:</b> Quán bánh phong cách châu Âu cổ điển, nổi tiếng với bánh ngọt nhiều lớp."
+                    },
+                    { time: "12:30 → 13:10", duration: "40 phút", title: "Hongik Univ → Jongno 3-ga (L2 → L3)", type: "transport", icon: "train-front" },
+                    { 
+                        time: "13:10 → 14:40", 
+                        duration: "1 giờ 30 phút", 
+                        title: "Yeonghwa Ru – Ăn trưa", 
+                        type: "food", 
+                        icon: "utensils",
+                        desc: "Nhà hàng lâu đời tại Jongno. Gồm Jajangmyeon (mì trộn sốt tương đen) và Tangsuyuk (thịt chiên giòn sốt chua ngọt). Jongno là khu phố cổ trung tâm Seoul, gần nhiều cung điện."
+                    },
+                    { time: "14:40 → 15:05", duration: "25 phút", title: "Jongno 3-ga → Sinsa (Line 3)", type: "transport", icon: "train-front" },
+                    { 
+                        time: "15:05 → 16:30", 
+                        duration: "1 giờ 25 phút", 
+                        title: "Garosu-gil – Sinsadong", 
+                        type: "visit", 
+                        icon: "shopping-bag",
+                        desc: "Garosu-gil nghĩa là “con đường cây ngân hạnh”. Phố nổi tiếng với boutique thời trang và cafe đẹp.<br><b>Stussy:</b> Thương hiệu streetwear nổi tiếng toàn cầu, phong cách trẻ trung, năng động."
+                    },
+                    { time: "16:30 → 16:55", duration: "25 phút", title: "Sinsa → Gangnam (L3 → L2)", type: "transport", icon: "train-front" },
+                    { 
+                        time: "16:55 → 18:00", 
+                        duration: "1 giờ 05 phút", 
+                        title: "T1 Coffee & Arena", 
+                        type: "visit", 
+                        icon: "coffee",
+                        desc: "Quán cafe hiện đại, không gian rộng, phù hợp nghỉ chân."
+                    },
+                    { time: "18:00 → 18:10", duration: "10 phút", title: "Gangnam → Samseong (Line 2)", type: "transport", icon: "train-front" },
+                    { 
+                        time: "18:10 → 19:30", 
+                        duration: "1 giờ 20 phút", 
+                        title: "Starfield COEX Mall", 
+                        type: "visit", 
+                        icon: "book-open",
+                        desc: "Trung tâm thương mại ngầm lớn tại Seoul. Điểm nổi bật là <b>Starfield Library</b> (thư viện cao tầng rất đẹp để chụp ảnh) và nhiều thương hiệu quốc tế."
+                    },
+                    { 
+                        time: "19:30 → 20:30", 
+                        duration: "1 giờ", 
+                        title: "Yeongdonggyojip – BBQ", 
+                        type: "food", 
+                        icon: "flame",
+                        desc: "Nhà hàng thịt nướng Hàn Quốc. Khách tự nướng thịt tại bàn, ăn kèm kimchi và các món phụ."
+                    },
+                    { time: "20:30 → 21:00", duration: "30 phút", title: "Gangnam → Dongdaemun", type: "transport", icon: "train-front" }
+                ]
+            },
+            day20: {
+                title: "NGÀY 20 – EVERLAND / SEONGSU",
+                items: [
+                    { time: "07:30 → 07:55", duration: "25 phút", title: "Dongdaemun → Gangnam", type: "transport", icon: "train-front" },
+                    { time: "08:20 → 09:15", duration: "55 phút", title: "Bus 5002 → Everland", type: "transport", icon: "bus" },
+                    { 
+                        time: "09:30 → 14:30", 
+                        duration: "5 giờ", 
+                        title: "Everland", 
+                        type: "visit", 
+                        icon: "ticket",
+                        desc: "Công viên giải trí lớn nhất Hàn Quốc. Có Safari World (ngồi xe bus giữa thú hoang), T-Express (tàu lượn gỗ nổi tiếng) và vườn hoa theo mùa."
+                    },
+                    { time: "14:30 → 15:20", duration: "50 phút", title: "Everland → Gangnam", type: "transport", icon: "bus" },
+                    { time: "15:30 → 15:50", duration: "20 phút", title: "Gangnam → Seongsu", type: "transport", icon: "train-front" },
+                    { 
+                        time: "16:00 → 19:30", 
+                        duration: "3 giờ 30 phút", 
+                        title: "Khu vực Seongsu", 
+                        type: "visit", 
+                        icon: "factory",
+                        desc: "Khu nhà máy cũ được cải tạo thành khu sáng tạo, được gọi là “Brooklyn của Seoul”.<br><br><b>Dalim Bread:</b> Tiệm bánh artisan nổi tiếng.<br><b>Idang Club:</b> Cửa hàng thời trang / lifestyle local.<br><b>Brandy Melville:</b> Thương hiệu thời trang nữ phong cách trẻ.<br><b>Eternalog:</b> Local brand Hàn Quốc phong cách tối giản."
+                    },
+                    { time: "19:30 → 19:50", duration: "20 phút", title: "Seongsu → Dongdaemun", type: "transport", icon: "train-front" }
+                ]
+            },
+            day21: {
+                title: "NGÀY 21 – MANGWON / MYEONGDONG / LOTTE MALL",
+                items: [
+                    { time: "09:00 → 09:35", duration: "35 phút", title: "Dongdaemun → Mangwon", type: "transport", icon: "train-front" },
+                    { 
+                        time: "09:35 → 11:30", 
+                        duration: "1 giờ 55 phút", 
+                        title: "Mangwon Market", 
+                        type: "visit", 
+                        icon: "shopping-cart",
+                        desc: "Chợ truyền thống địa phương. Phù hợp ăn vặt, trải nghiệm đời sống Seoul."
+                    },
+                    { time: "11:30 → 12:00", duration: "30 phút", title: "Mangwon → Myeongdong", type: "transport", icon: "train-front" },
+                    { 
+                        time: "12:00 → 16:00", 
+                        duration: "4 giờ", 
+                        title: "Khu vực Myeongdong", 
+                        type: "visit", 
+                        icon: "shopping-bag",
+                        desc: "<b>Odarijip:</b> Nhà hàng BBQ bò nổi tiếng.<br><b>Olive Young:</b> Chuỗi cửa hàng mỹ phẩm và chăm sóc da lớn nhất HQ.<br><b>LINE Friends:</b> Cửa hàng bán đồ lưu niệm nhân vật LINE.<br><b>Daiso:</b> Chuỗi cửa hàng đồ gia dụng giá rẻ."
+                    },
+                    { 
+                        time: "16:00 → 19:00", 
+                        duration: "3 giờ", 
+                        title: "Lotte World Mall", 
+                        type: "visit", 
+                        icon: "building-2",
+                        desc: "Trung tâm thương mại lớn tại Jamsil, cạnh Lotte Tower. Có khu mua sắm, aquarium và đài quan sát Seoul Sky."
+                    },
+                    { time: "19:00 → 19:30", duration: "30 phút", title: "Về khách sạn", type: "transport", icon: "hotel" }
+                ]
+            },
+            day22: {
+                title: "NGÀY 22 – SEOUL → HÀ NỘI",
+                items: [
+                    { time: "02:45 → 03:00", duration: "15 phút", title: "Check-out", type: "hotel", icon: "key" },
+                    { time: "03:00 → 04:15", duration: "1 giờ 15 phút", title: "Xe Klook → ICN", type: "transport", icon: "car" },
+                    { time: "04:15 → 06:25", duration: "2 giờ 10 phút", title: "Làm thủ tục", type: "airport", icon: "file-check" },
+                    { time: "06:25 → 09:30", duration: "3 giờ 05 phút", title: "Bay về Hà Nội", type: "flight", icon: "plane-landing" }
+                ]
+            }
+        };
+
+        function switchDay(dayId) {
+            // Update UI tabs
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('tab-active');
+                if (btn.getAttribute('data-day') === dayId) btn.classList.add('tab-active');
+            });
+
+            const dayData = itinerary[dayId];
+            const contentArea = document.getElementById('content-area');
+            
+            let html = `<h2 class="text-lg font-bold text-slate-900 mb-6 sticky top-28 bg-f8fafc py-2 z-10">${dayData.title}</h2>`;
+            
+            dayData.items.forEach((item, index) => {
+                const iconColor = {
+                    transport: 'bg-blue-100 text-blue-600',
+                    visit: 'bg-emerald-100 text-emerald-600',
+                    food: 'bg-orange-100 text-orange-600',
+                    airport: 'bg-purple-100 text-purple-600',
+                    flight: 'bg-indigo-100 text-indigo-600',
+                    hotel: 'bg-slate-100 text-slate-600'
+                }[item.type] || 'bg-slate-100 text-slate-600';
+
+                html += `
+                    <div class="relative pl-12 mb-8 animate-fade-in">
+                        <!-- Icon Circle -->
+                        <div class="absolute left-0 top-0 z-10 w-10 h-10 rounded-full ${iconColor} flex items-center justify-center border-4 border-white shadow-sm">
+                            <i data-lucide="${item.icon}" class="w-5 h-5"></i>
+                        </div>
+                        
+                        <!-- Card Content -->
+                        <div class="bg-white rounded-xl p-4 shadow-sm border border-slate-100">
+                            <div class="flex items-center justify-between mb-1">
+                                <span class="text-xs font-semibold text-blue-500 uppercase">${item.time}</span>
+                                <span class="text-[10px] text-slate-400 bg-slate-50 px-1.5 py-0.5 rounded">${item.duration}</span>
+                            </div>
+                            <h3 class="text-base font-bold text-slate-800 mb-2">${item.title}</h3>
+                            ${item.desc ? `
+                                <div class="mt-3 text-sm text-slate-600 bg-slate-50 rounded-lg p-3 border-l-4 border-blue-400">
+                                    <p class="leading-relaxed italic">${item.desc}</p>
+                                </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                `;
+            });
+
+            contentArea.innerHTML = html;
+            lucide.createIcons();
+            
+            // Scroll to top
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // Initialize with first day
+        window.onload = () => {
+            switchDay('day18');
+        };
+    </script>
+</body>
+</html>
