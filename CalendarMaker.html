@@ -494,7 +494,7 @@
                 });
             } else if (documentPayload.type === 'text') {
                 // Với văn bản thuần túy (Word), dùng gpt-4o-mini vì giá text cực kỳ rẻ
-                selectedModel = "gpt-4o-mini";
+                selectedModel = "gpt-4o";
                 contentArray[0].text = prompt + "\n\n--- NỘI DUNG TÀI LIỆU CẦN ĐỌC ---\n" + documentPayload.data;
             }
 
@@ -582,21 +582,25 @@
 
             let startTime = null;
             let endTime = null;
+            let timeWarning = "";
 
-            try {
-                startTime = new Date(meetingData["Thời gian bắt đầu"]);
-                if (isNaN(startTime.getTime())) throw new Error("Thời gian bắt đầu không hợp lệ.");
+            // Đảm bảo an toàn kiểu dữ liệu và đổi khoảng trắng thành chữ T theo chuẩn ISO để trình duyệt dễ đọc
+            let startStr = String(meetingData["Thời gian bắt đầu"] || "").trim().replace(' ', 'T');
+            startTime = new Date(startStr);
 
-                if (meetingData["Thời gian kết thúc"]) {
-                    endTime = new Date(meetingData["Thời gian kết thúc"]);
-                    if (isNaN(endTime.getTime())) throw new Error("Thời gian kết thúc không hợp lệ.");
-                } else {
-                    endTime = new Date(startTime.getTime() + 2 * 60 * 60 * 1000);
-                }
-            } catch (e) {
-                showError(`Lỗi định dạng thời gian: ${e.message}. Vui lòng đảm bảo "Thời gian bắt đầu/kết thúc" đúng định dạng YYYY-MM-DD HH:MM.`);
-                extractedInfoSection.classList.add('hidden');
-                return;
+            // Xử lý ngoại lệ: Nếu AI không tìm thấy thời gian hoặc trả về định dạng lạ ("Chưa rõ")
+            if (isNaN(startTime.getTime())) {
+                startTime = new Date();
+                startTime.setDate(startTime.getDate() + 1); // Mặc định là ngày mai
+                startTime.setHours(8, 0, 0, 0); // 8:00 Sáng
+                timeWarning = "\\n⚠️ LƯU Ý: AI không đọc được thời gian chính xác từ tài liệu. Hệ thống tự động đặt lịch tạm vào 8:00 sáng ngày mai. Bạn hãy tự điều chỉnh lại giờ nhé!";
+            }
+
+            let endStr = String(meetingData["Thời gian kết thúc"] || "").trim().replace(' ', 'T');
+            endTime = new Date(endStr);
+
+            if (isNaN(endTime.getTime())) {
+                endTime = new Date(startTime.getTime() + 2 * 60 * 60 * 1000); // Mặc định kéo dài 2 tiếng
             }
 
             const formatIcsDateTime = (date) => {
@@ -623,7 +627,14 @@
             descriptionParts.push(`\\n🏢 Đơn vị tổ chức: ${organizer || 'Chưa rõ'}`);
             if (onlineLink) descriptionParts.push(`\\nĐường dẫn trực tuyến: ${onlineLink}`);
             descriptionParts.push(`\\nĐịa điểm: ${location}`);
-            descriptionParts.push(`Thời gian: Từ ${meetingData["Thời gian bắt đầu"]} đến ${meetingData["Thời gian kết thúc"]}`);
+            
+            // Ghi lại thời gian gốc mà AI đọc được để người dùng đối chiếu
+            descriptionParts.push(`Thời gian gốc theo tài liệu: Từ ${meetingData["Thời gian bắt đầu"] || 'Không rõ'} đến ${meetingData["Thời gian kết thúc"] || 'Không rõ'}`);
+            
+            // Chèn cảnh báo nếu phải dùng thời gian mượn tạm
+            if (timeWarning) {
+                descriptionParts.push(timeWarning);
+            }
 
             const icsDescription = descriptionParts.join('\\n');
 
