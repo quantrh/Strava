@@ -6,6 +6,17 @@
     <title>Ứng dụng Thư ký Cuộc họp</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- PDF.js cho việc đọc PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script>
+        // Cấu hình worker cho PDF.js
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    </script>
+    
+    <!-- Mammoth.js cho việc đọc Word (.docx) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+
     <style>
         /* Custom styles for Inter font */
         body {
@@ -17,30 +28,32 @@
         }
         /* Style for custom file input button */
         .custom-file-upload {
-            border: 2px dashed #006B68; /* Use BIDV primary color */
-            background-color: #E6F3E6; /* Lighter shade of primary for background */
-            color: #006B68; /* Use BIDV primary color for text */
-            padding: 1rem 1.5rem;
-            border-radius: 0.5rem; /* rounded-lg */
+            border: 2px dashed #006B68;
+            background-color: #E6F3E6;
+            color: #006B68;
+            padding: 1.5rem;
+            border-radius: 0.5rem;
             cursor: pointer;
             display: flex;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
-            gap: 0.5rem;
+            gap: 0.75rem;
             transition: all 0.2s ease-in-out;
+            text-align: center;
         }
         .custom-file-upload:hover {
-            border-color: #005A58; /* Darker shade for hover */
-            background-color: #D0E6D0; /* Slightly darker shade for hover */
+            border-color: #005A58;
+            background-color: #D0E6D0;
         }
         .custom-file-upload.has-file {
-            border-color: #FFC62F; /* Use BIDV accent yellow for success */
-            background-color: #FFFBEB; /* Lighter shade of accent yellow */
-            color: #D97706; /* Darker yellow/orange for text (tailwind yellow-700 equivalent) */
+            border-color: #FFC62F;
+            background-color: #FFFBEB;
+            color: #D97706;
         }
         .loading-spinner {
             border: 4px solid rgba(0, 0, 0, 0.1);
-            border-left-color: #006B68; /* Use BIDV primary color for spinner */
+            border-left-color: #006B68;
             border-radius: 50%;
             width: 24px;
             height: 24px;
@@ -51,21 +64,20 @@
             100% { transform: rotate(360deg); }
         }
 
-        /* Styles for the main buttons using direct hex codes */
         .btn-bidv-primary {
             background-color: #006B68;
             color: white;
             font-weight: 600;
-            padding: 0.75rem 1.5rem; /* py-3 px-6 */
-            border-radius: 0.5rem; /* rounded-lg */
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1); /* shadow-md */
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
             transition: background-color 300ms ease-in-out;
             display: flex;
             align-items: center;
             gap: 0.5rem;
         }
         .btn-bidv-primary:hover:not(:disabled) {
-            background-color: #005A58; /* Darker shade for hover */
+            background-color: #005A58;
         }
         .btn-bidv-primary:disabled {
             opacity: 0.6;
@@ -77,20 +89,48 @@
     <div class="bg-white p-8 rounded-xl shadow-lg w-full max-w-3xl space-y-6">
         <h1 class="text-3xl font-bold text-gray-800 text-center mb-6">Tạo Lịch Họp từ Tài liệu</h1>
 
+        <!-- PIN Authentication Section -->
+        <div id="pin-section" class="flex flex-col items-center justify-center space-y-4 py-8 border-b border-gray-100">
+            <h2 class="text-lg font-medium text-gray-700">Vui lòng nhập mã PIN để sử dụng ứng dụng</h2>
+            <div class="flex items-center gap-2">
+                <input type="password" id="pin-input" class="border border-gray-300 rounded-lg px-4 py-2 text-center focus:outline-none focus:border-[#006B68] focus:ring-1 focus:ring-[#006B68]" placeholder="Nhập mã PIN">
+                <button id="pin-submit" class="btn-bidv-primary px-4 py-2 !shadow-none">Xác nhận</button>
+            </div>
+            <p id="pin-error" class="text-red-500 text-sm hidden">Mã PIN không chính xác!</p>
+        </div>
+
+        <!-- Main App Section (Hidden by default) -->
+        <div id="main-app-section" class="hidden space-y-6">
+
         <!-- File Upload Section -->
         <div class="border-b pb-6 mb-6">
             <label for="file-upload" class="custom-file-upload" id="file-upload-label">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5" />
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-10 h-10">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m3.75 9v6m3-3H9m1.5-12H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
                 </svg>
-                <span id="file-upload-text">Tải lên hoặc chụp ảnh tài liệu (JPG, PNG)</span>
-                <div id="file-upload-spinner" class="loading-spinner hidden"></div>
+                <div>
+                    <span id="file-upload-text" class="block font-semibold">Tải lên tài liệu cuộc họp</span>
+                    <span class="text-xs mt-1 block opacity-80">(Hỗ trợ: Ảnh JPG/PNG, File PDF, Word DOCX)</span>
+                </div>
+                <div id="file-upload-spinner" class="loading-spinner hidden mt-2"></div>
             </label>
-            <input id="file-upload" type="file" accept="image/jpeg,image/png" />
+            <input id="file-upload" type="file" accept=".jpg,.jpeg,.png,.pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document" />
+            
+            <!-- Preview cho Ảnh -->
             <div id="image-preview-container" class="mt-4 hidden">
-                <img id="image-preview" class="max-w-full h-auto rounded-lg shadow-md mx-auto" src="#" alt="Xem trước ảnh" />
+                <img id="image-preview" class="max-w-full h-auto rounded-lg shadow-md mx-auto max-h-64 object-contain" src="#" alt="Xem trước ảnh" />
             </div>
-            <p id="file-error" class="text-red-500 text-sm mt-2 hidden">Kích thước tệp quá lớn. Vui lòng chọn tệp dưới 4MB.</p>
+
+            <!-- Preview cho Tài liệu (PDF/Word) -->
+            <div id="doc-preview-container" class="mt-4 hidden bg-blue-50 border border-blue-200 rounded-lg p-6 flex-col items-center justify-center text-center">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-12 h-12 text-blue-500 mb-2 mx-auto">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
+                </svg>
+                <span id="doc-preview-name" class="font-medium text-blue-700 block break-all"></span>
+                <span id="doc-preview-meta" class="text-xs text-blue-500 mt-1 block"></span>
+            </div>
+
+            <p id="file-error" class="text-red-500 text-sm mt-2 hidden text-center"></p>
         </div>
 
         <!-- Process Button -->
@@ -125,32 +165,70 @@
 
         <!-- Instructions Section -->
         <div class="mt-8 p-4 bg-blue-50 rounded-lg border border-blue-200 text-blue-800">
-            <h2 class="text-xl font-semibold mb-2">Hướng dẫn sử dụng (Version 3 - Supabase Edge):</h2>
+            <h2 class="text-xl font-semibold mb-2">Hướng dẫn sử dụng:</h2>
             <ol class="list-decimal list-inside space-y-1 text-sm">
-                <li>Nhấp vào nút "Tải lên hoặc chụp ảnh tài liệu" để chọn tệp ảnh (.JPG, .PNG) của tài liệu cuộc họp.</li>
-                <li>Đảm bảo kích thước tệp không quá 4MB. Ứng dụng sẽ tự động nén nếu cần.</li>
-                <li>Sau khi tệp được tải lên và xem trước hiển thị, nút "Trích xuất thông tin & Tạo lịch" sẽ được kích hoạt.</li>
-                <li>Nhấp vào nút đó để AI trích xuất các thông tin chi tiết về cuộc họp từ tài liệu thông qua hệ thống bảo mật Supabase.</li>
-                <li>Thông tin đã trích xuất sẽ hiển thị bên dưới, cùng với một nút để "Tải xuống tệp ICS".</li>
+                <li>Nhập mã PIN để truy cập hệ thống.</li>
+                <li>Nhấp vào khu vực tải lên để chọn tệp (Hỗ trợ Ảnh JPG/PNG, tệp PDF, tệp Word .docx).</li>
+                <li>Với PDF, ứng dụng sẽ quét tự động (tối đa 10 trang đầu tiên) để tìm thông tin lịch họp.</li>
+                <li>Hệ thống sử dụng AI thông qua Supabase để đọc và phân tích ngôn ngữ tự nhiên thành lịch trình.</li>
+                <li>Xem lại thông tin và tải xuống tệp ICS để thêm vào lịch cá nhân (Google Calendar, Outlook,...).</li>
             </ol>
         </div>
+        
+        </div> <!-- End of Main App Section -->
     </div>
 
-    <script type="module">
-        // CẤU HÌNH SUPABASE EDGE FUNCTION URL (Thay thế bằng URL thật của bạn)
-        // Ví dụ: https://<project-ref>.supabase.co/functions/v1/gemini-proxy
-        const SUPABASE_EDGE_FUNCTION_URL = "https://YOUR_PROJECT_REF.supabase.co/functions/v1/gemini-proxy"; 
-        
-        // Nếu Edge Function của bạn yêu cầu xác thực, thêm Anon Key vào đây
-        const SUPABASE_ANON_KEY = "YOUR_SUPABASE_ANON_KEY"; 
+    <script>
+        // CẤU HÌNH SUPABASE
+        const SUPABASE_EDGE_FUNCTION_URL = "https://rmbsxccrwrktbjlnezpu.supabase.co/functions/v1/gemini-proxy"; 
+        const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJtYnN4Y2Nyd3JrdGJqbG5lenB1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg2MjczNjQsImV4cCI6MjA2NDIwMzM2NH0.ydCqificftdtn1niRciFCifeuo8aX6SDGti-hCY5Z_Y"; 
 
-        // UI elements
+        // Mã PIN bảo mật
+        const SECRET_PIN = "123a";
+
+        // UI elements cho PIN
+        const pinSection = document.getElementById('pin-section');
+        const mainAppSection = document.getElementById('main-app-section');
+        const pinInput = document.getElementById('pin-input');
+        const pinSubmit = document.getElementById('pin-submit');
+        const pinError = document.getElementById('pin-error');
+
+        // Logic kiểm tra mã PIN
+        function verifyPin() {
+            if (pinInput.value === SECRET_PIN) {
+                pinSection.classList.add('hidden');
+                mainAppSection.classList.remove('hidden');
+            } else {
+                pinError.classList.remove('hidden');
+                pinInput.focus();
+            }
+        }
+
+        pinSubmit.addEventListener('click', verifyPin);
+        pinInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                verifyPin();
+            }
+        });
+
+        // Hủy thông báo lỗi khi người dùng bắt đầu nhập lại
+        pinInput.addEventListener('input', function() {
+            pinError.classList.add('hidden');
+        });
+
+        // UI elements chính
         const fileUpload = document.getElementById('file-upload');
         const fileUploadLabel = document.getElementById('file-upload-label');
         const fileUploadText = document.getElementById('file-upload-text');
         const fileUploadSpinner = document.getElementById('file-upload-spinner');
+        
         const imagePreviewContainer = document.getElementById('image-preview-container');
         const imagePreview = document.getElementById('image-preview');
+        
+        const docPreviewContainer = document.getElementById('doc-preview-container');
+        const docPreviewName = document.getElementById('doc-preview-name');
+        const docPreviewMeta = document.getElementById('doc-preview-meta');
+
         const fileError = document.getElementById('file-error');
         const processButton = document.getElementById('process-button');
         const buttonText = document.getElementById('button-text');
@@ -161,9 +239,10 @@
         const errorMessageDiv = document.getElementById('error-message');
         const errorTextP = document.getElementById('error-text');
 
-        let uploadedImageBase64 = null;
-        let mimeTypeForGemini = 'image/jpeg';
+        // State lưu trữ dữ liệu đã xử lý để gửi đi
+        let documentPayload = null; 
 
+        // Hàm nén ảnh giữ nguyên như cũ
         async function compressImage(file) {
             return new Promise((resolve, reject) => {
                 const reader = new FileReader();
@@ -172,7 +251,6 @@
                     img.onload = () => {
                         const canvas = document.createElement('canvas');
                         const ctx = canvas.getContext('2d');
-
                         let width = img.width;
                         let height = img.height;
                         const MAX_DIMENSION = 2000;
@@ -186,27 +264,18 @@
                                 height = MAX_DIMENSION;
                             }
                         }
-
                         canvas.width = width;
                         canvas.height = height;
                         ctx.drawImage(img, 0, 0, width, height);
 
                         let quality = 0.9;
-                        let compressedDataUrl = '';
-                        let compressedBase64 = '';
                         let outputMimeType = 'image/jpeg';
-
-                        if (file.type === 'image/png' && file.size > 4 * 1024 * 1024) {
-                            outputMimeType = 'image/jpeg';
-                        } else if (file.type === 'image/jpeg') {
-                            outputMimeType = 'image/jpeg';
-                        } else {
-                            outputMimeType = 'image/jpeg';
-                        }
+                        if (file.type === 'image/png' && file.size > 4 * 1024 * 1024) outputMimeType = 'image/jpeg';
+                        else if (file.type === 'image/jpeg') outputMimeType = 'image/jpeg';
 
                         const attemptCompression = () => {
-                            compressedDataUrl = canvas.toDataURL(outputMimeType, quality);
-                            compressedBase64 = compressedDataUrl.split(',')[1];
+                            let compressedDataUrl = canvas.toDataURL(outputMimeType, quality);
+                            let compressedBase64 = compressedDataUrl.split(',')[1];
                             const sizeInBytes = (compressedBase64.length * 0.75);
 
                             if (sizeInBytes <= 4 * 1024 * 1024 || quality <= 0.1) {
@@ -217,7 +286,6 @@
                                 setTimeout(attemptCompression, 0);
                             }
                         };
-
                         attemptCompression();
                     };
                     img.onerror = () => reject(new Error("Không thể tải ảnh để nén."));
@@ -228,92 +296,148 @@
             });
         }
 
+        // Xử lý sự kiện khi chọn file
         fileUpload.addEventListener('change', async function(event) {
             const file = event.target.files[0];
             if (!file) {
-                imagePreviewContainer.classList.add('hidden');
-                processButton.disabled = true;
-                fileUploadLabel.classList.remove('has-file');
-                fileUploadText.textContent = 'Tải lên hoặc chụp ảnh tài liệu (JPG, PNG)';
-                uploadedImageBase64 = null;
-                hideResults();
-                hideError();
+                resetUI();
                 return;
             }
 
+            // Giao diện loading
             fileUploadLabel.classList.add('has-file');
             fileUploadText.textContent = `Đang xử lý: ${file.name}`;
             fileUploadSpinner.classList.remove('hidden');
             processButton.disabled = true;
             hideResults();
             hideError();
+            fileError.classList.add('hidden');
+            imagePreviewContainer.classList.add('hidden');
+            docPreviewContainer.classList.add('hidden');
 
             try {
-                let finalBase64 = null;
-                let finalMimeType = file.type;
+                const fileNameLower = file.name.toLowerCase();
 
-                if (file.size <= 4 * 1024 * 1024) {
-                    const reader = new FileReader();
-                    await new Promise((resolve) => {
-                        reader.onload = (e) => {
-                            finalBase64 = e.target.result.split(',')[1];
-                            resolve();
-                        };
-                        reader.readAsDataURL(file);
-                    });
-                } else {
-                    fileUploadText.textContent = `Đang nén ảnh: ${file.name}`;
-                    const compressedResult = await compressImage(file);
-                    finalBase64 = compressedResult.base64;
-                    finalMimeType = compressedResult.mimeType;
+                // 1. XỬ LÝ FILE PDF
+                if (file.type === 'application/pdf' || fileNameLower.endsWith('.pdf')) {
+                    const arrayBuffer = await file.arrayBuffer();
+                    const pdf = await pdfjsLib.getDocument(new Uint8Array(arrayBuffer)).promise;
+                    
+                    // Chỉ render tối đa 10 trang để tránh quá tải API và chi phí
+                    const numPages = Math.min(pdf.numPages, 10);
+                    let images = [];
 
-                    const compressedSizeInBytes = (finalBase64.length * 0.75);
-                    if (compressedSizeInBytes > 4 * 1024 * 1024) {
-                        throw new Error('Kích thước tệp sau khi nén vẫn quá lớn (>4MB).');
+                    for (let i = 1; i <= numPages; i++) {
+                        const page = await pdf.getPage(i);
+                        // Scale 1.5 là đủ để AI đọc chữ nét
+                        const viewport = page.getViewport({ scale: 1.5 });
+                        const canvas = document.createElement('canvas');
+                        const ctx = canvas.getContext('2d');
+                        canvas.width = viewport.width;
+                        canvas.height = viewport.height;
+                        
+                        await page.render({ canvasContext: ctx, viewport: viewport }).promise;
+                        const base64 = canvas.toDataURL('image/jpeg', 0.8).split(',')[1];
+                        images.push({ mimeType: 'image/jpeg', data: base64 });
                     }
+
+                    documentPayload = { type: 'images', data: images };
+                    showDocPreview(file.name, `PDF - Đã trích xuất ${numPages} trang`);
+                } 
+                // 2. XỬ LÝ FILE WORD (DOCX)
+                else if (file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' || fileNameLower.endsWith('.docx')) {
+                    const arrayBuffer = await file.arrayBuffer();
+                    const result = await mammoth.extractRawText({ arrayBuffer: arrayBuffer });
+                    
+                    if (!result.value || result.value.trim() === '') {
+                        throw new Error("Không tìm thấy chữ trong file Word này hoặc file bị lỗi.");
+                    }
+                    
+                    documentPayload = { type: 'text', data: result.value };
+                    showDocPreview(file.name, `Word Document - Đã trích xuất văn bản`);
+                } 
+                // 3. XỬ LÝ FILE ẢNH
+                else if (file.type.startsWith('image/')) {
+                    let finalBase64 = null;
+                    let finalMimeType = file.type || 'image/jpeg'; 
+                    if (finalMimeType === 'image/jpg') finalMimeType = 'image/jpeg';
+                    else if (!['image/jpeg', 'image/png', 'image/webp', 'image/gif'].includes(finalMimeType)) finalMimeType = 'image/jpeg';
+
+                    if (file.size <= 4 * 1024 * 1024) {
+                        const reader = new FileReader();
+                        await new Promise((resolve) => {
+                            reader.onload = (e) => {
+                                finalBase64 = e.target.result.split(',')[1];
+                                resolve();
+                            };
+                            reader.readAsDataURL(file);
+                        });
+                    } else {
+                        fileUploadText.textContent = `Đang nén ảnh...`;
+                        const compressedResult = await compressImage(file);
+                        finalBase64 = compressedResult.base64;
+                        finalMimeType = compressedResult.mimeType;
+
+                        if ((finalBase64.length * 0.75) > 4 * 1024 * 1024) {
+                            throw new Error('Kích thước ảnh sau nén vẫn quá lớn (>4MB).');
+                        }
+                    }
+
+                    documentPayload = { type: 'images', data: [{ mimeType: finalMimeType, data: finalBase64 }] };
+                    imagePreview.src = `data:${finalMimeType};base64,${finalBase64}`;
+                    imagePreviewContainer.classList.remove('hidden');
+                } else {
+                    throw new Error('Định dạng tệp không được hỗ trợ. Vui lòng chọn JPG, PNG, PDF hoặc DOCX.');
                 }
 
-                imagePreview.src = `data:${finalMimeType};base64,${finalBase64}`;
-                imagePreviewContainer.classList.remove('hidden');
-                uploadedImageBase64 = finalBase64;
-                mimeTypeForGemini = finalMimeType;
                 processButton.disabled = false;
-                fileError.classList.add('hidden');
-                fileUploadText.textContent = file.name;
+                fileUploadText.textContent = "Tải tài liệu thành công";
 
             } catch (error) {
-                console.error('Lỗi khi xử lý tệp ảnh:', error);
-                fileError.textContent = `Lỗi: ${error.message || 'Không thể xử lý tệp ảnh.'} Vui lòng chọn tệp khác.`;
+                console.error('Lỗi khi xử lý tệp:', error);
+                fileError.textContent = `Lỗi: ${error.message}`;
                 fileError.classList.remove('hidden');
-                imagePreviewContainer.classList.add('hidden');
-                processButton.disabled = true;
-                uploadedImageBase64 = null;
-                fileUploadLabel.classList.remove('has-file');
-                fileUploadText.textContent = 'Tải lên hoặc chụp ảnh tài liệu (JPG, PNG)';
+                resetUI();
             } finally {
                 fileUploadSpinner.classList.add('hidden');
             }
         });
 
+        function showDocPreview(filename, meta) {
+            docPreviewContainer.classList.remove('hidden');
+            docPreviewContainer.classList.add('flex');
+            docPreviewName.textContent = filename;
+            docPreviewMeta.textContent = meta;
+        }
+
+        function resetUI() {
+            documentPayload = null;
+            processButton.disabled = true;
+            fileUploadLabel.classList.remove('has-file');
+            fileUploadText.innerHTML = 'Tải lên tài liệu cuộc họp<br><span class="text-xs opacity-80 font-normal">(Hỗ trợ: Ảnh JPG/PNG, File PDF, Word DOCX)</span>';
+            imagePreviewContainer.classList.add('hidden');
+            docPreviewContainer.classList.add('hidden');
+        }
+
         processButton.addEventListener('click', async () => {
-            if (!uploadedImageBase64) {
-                showError('Vui lòng tải lên một tệp ảnh trước.');
+            if (!documentPayload) {
+                showError('Vui lòng tải lên tài liệu hợp lệ trước.');
                 return;
             }
 
-            buttonText.textContent = 'Đang xử lý...';
+            buttonText.textContent = 'Đang phân tích dữ liệu...';
             loadingSpinner.classList.remove('hidden');
             processButton.disabled = true;
             hideResults();
             hideError();
 
             try {
-                const meetingData = await sendImageToSupabaseFunction(uploadedImageBase64);
+                const meetingData = await sendDataToSupabaseFunction();
                 displayMeetingInfo(meetingData);
                 generateIcsFile(meetingData);
             } catch (error) {
-                console.error('Lỗi khi xử lý tài liệu:', error);
-                showError(`Lỗi: ${error.message || 'Không thể trích xuất thông tin hoặc tạo tệp ICS. Vui lòng thử lại hoặc kiểm tra định dạng tài liệu.'}`);
+                console.error('Lỗi khi xử lý API:', error);
+                showError(`${error.message || 'Không thể trích xuất thông tin. Vui lòng thử lại.'}`);
             } finally {
                 buttonText.textContent = 'Trích xuất thông tin & Tạo lịch';
                 loadingSpinner.classList.add('hidden');
@@ -322,16 +446,12 @@
         });
 
         /**
-         * Sends the payload to Supabase Edge Function instead of direct Gemini API.
+         * Xây dựng payload linh hoạt cho OpenAI (Image Array hoặc Text) gửi qua Supabase Proxy
          */
-        async function sendImageToSupabaseFunction(base64ImageData) {
-            if(SUPABASE_EDGE_FUNCTION_URL === "https://YOUR_PROJECT_REF.supabase.co/functions/v1/gemini-proxy") {
-                throw new Error("Vui lòng cấu hình SUPABASE_EDGE_FUNCTION_URL trong mã nguồn (dòng 101) trước khi sử dụng.");
-            }
-
+        async function sendDataToSupabaseFunction() {
             const prompt = `Bạn là trợ lý AI chuyên hỗ trợ tạo và quản lý lịch họp, có khả năng đọc hiểu tài liệu và trích xuất thông tin chính xác để xây dựng lịch họp chuyên nghiệp.
             
-            Dựa trên tài liệu hình ảnh được cung cấp, hãy trích xuất các thông tin sau và trả về dưới dạng JSON. Nếu thông tin không có, hãy để trống hoặc sử dụng giá trị mặc định theo quy tắc.
+            Dựa trên nội dung tài liệu (văn bản hoặc hình ảnh) được cung cấp, hãy trích xuất các thông tin sau và bắt buộc trả về dưới dạng JSON hợp lệ (không kèm theo code block markdown nào, chỉ output JSON gốc). Nếu thông tin không có, hãy để trống hoặc sử dụng giá trị mặc định theo quy tắc.
 
             Quy tắc trích xuất:
             - "Chủ đề cuộc họp": Tiêu đề cuộc họp. **Bắt buộc kèm theo số công văn hoặc số thông báo (nếu có) vào cuối tiêu đề, trong dấu ngoặc đơn (Ví dụ: "Tiêu đề cuộc họp (CV-2024/001)"). Nếu không có số, chỉ ghi tiêu đề.**
@@ -345,63 +465,53 @@
             - "Đường dẫn họp trực tuyến (Zoom/Teams/Meet)": (Tùy chọn) Đường dẫn họp trực tuyến (Zoom/Teams/Meet).
             - "Yêu cầu nhắc lịch trước": (Tùy chọn) Yêu cầu nhắc lịch trước (ví dụ: "1 NGÀY", "30 PHÚT"). Nếu không có, mặc định là "1 NGÀY".
 
-            Đảm bảo rằng tất cả các trường được liệt kê trong schema đều có mặt trong JSON đầu ra, ngay cả khi chúng trống hoặc là giá trị mặc định.
+            JSON Schema mong đợi:
+            {
+              "Chủ đề cuộc họp": "string",
+              "Địa điểm họp": "string",
+              "Thời gian bắt đầu": "string",
+              "Thời gian kết thúc": "string",
+              "Thành phần tham dự": ["string"],
+              "Nội dung làm việc chính": "string",
+              "Đơn vị chủ trì hoặc tổ chức thực hiện": "string",
+              "Người chủ trì cuộc họp": "string | null",
+              "Đường dẫn họp trực tuyến (Zoom/Teams/Meet)": "string | null",
+              "Yêu cầu nhắc lịch trước": "string | null"
+            }
             `;
 
-            // Vẫn giữ nguyên cấu trúc payload của Gemini, nhưng gửi qua Supabase Proxy
+            let contentArray = [{ type: "text", text: prompt }];
+            let selectedModel = "gpt-4o"; // Mặc định
+
+            if (documentPayload.type === 'images') {
+                // Với ảnh và PDF (chuyển thành ảnh), dùng gpt-4o để tối ưu chi phí token hình ảnh
+                selectedModel = "gpt-4o";
+                documentPayload.data.forEach(img => {
+                    contentArray.push({
+                        type: "image_url",
+                        image_url: { url: `data:${img.mimeType};base64,${img.data}` }
+                    });
+                });
+            } else if (documentPayload.type === 'text') {
+                // Với văn bản thuần túy (Word), dùng gpt-4o-mini vì giá text cực kỳ rẻ
+                selectedModel = "gpt-4o-mini";
+                contentArray[0].text = prompt + "\n\n--- NỘI DUNG TÀI LIỆU CẦN ĐỌC ---\n" + documentPayload.data;
+            }
+
             const payload = {
-                contents: [
+                model: selectedModel, // Tự động chọn model dựa vào định dạng file tải lên
+                messages: [
                     {
                         role: "user",
-                        parts: [
-                            { text: prompt },
-                            {
-                                inlineData: {
-                                    mimeType: mimeTypeForGemini,
-                                    data: base64ImageData
-                                }
-                            }
-                        ]
+                        content: contentArray
                     }
                 ],
-                generationConfig: {
-                    responseMimeType: "application/json",
-                    responseSchema: {
-                        type: "OBJECT",
-                        properties: {
-                            "Chủ đề cuộc họp": { "type": "STRING" },
-                            "Địa điểm họp": { "type": "STRING" },
-                            "Thời gian bắt đầu": { "type": "STRING" },
-                            "Thời gian kết thúc": { "type": "STRING" },
-                            "Thành phần tham dự": {
-                                "type": "ARRAY",
-                                "items": { "type": "STRING" }
-                            },
-                            "Nội dung làm việc chính": { "type": "STRING" },
-                            "Đơn vị chủ trì hoặc tổ chức thực hiện": { "type": "STRING" },
-                            "Người chủ trì cuộc họp": { "type": "STRING", "nullable": true },
-                            "Đường dẫn họp trực tuyến (Zoom/Teams/Meet)": { "type": "STRING", "nullable": true },
-                            "Yêu cầu nhắc lịch trước": { "type": "STRING", "nullable": true }
-                        },
-                        "required": [
-                            "Chủ đề cuộc họp",
-                            "Địa điểm họp",
-                            "Thời gian bắt đầu",
-                            "Thời gian kết thúc",
-                            "Thành phần tham dự",
-                            "Nội dung làm việc chính",
-                            "Đơn vị chủ trì hoặc tổ chức thực hiện"
-                        ]
-                    }
-                }
+                response_format: { type: "json_object" },
+                temperature: 0.2
             };
 
-            const headers = {
-                'Content-Type': 'application/json'
-            };
-
-            // Tùy chọn: Nếu Supabase Function không cấu hình public, cần truyền Authorization header
-            if (SUPABASE_ANON_KEY && SUPABASE_ANON_KEY !== "YOUR_SUPABASE_ANON_KEY") {
+            const headers = { 'Content-Type': 'application/json' };
+            if (SUPABASE_ANON_KEY) {
                  headers['Authorization'] = `Bearer ${SUPABASE_ANON_KEY}`;
             }
 
@@ -411,22 +521,44 @@
                 body: JSON.stringify(payload)
             });
 
+            // Lấy dữ liệu dạng thô (text) trước để bắt lỗi HTML 5xx gây ra crash
+            const responseText = await response.text();
+
             if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(`Lỗi kết nối Server: ${response.status} ${response.statusText} - ${errorData.error || errorData.message || 'Unknown error'}`);
+                let errorMessage = 'Lỗi không xác định từ Server Proxy';
+                try {
+                    const errorData = JSON.parse(responseText);
+                    if (errorData.error && errorData.error.message) errorMessage = errorData.error.message;
+                    else if (errorData.error && typeof errorData.error === 'string') errorMessage = errorData.error;
+                    else errorMessage = JSON.stringify(errorData);
+                } catch (e) {
+                    // Nếu lỗi trả về là mã HTML (Lỗi mạng Supabase/OpenAI 500, 502)
+                    errorMessage = `Lỗi máy chủ (${response.status} ${response.statusText}). Vui lòng kiểm tra lại cấu hình Supabase Edge Function hoặc mạng của bạn.`;
+                    console.error("HTML Error Response:", responseText);
+                }
+
+                if (response.status === 429) throw new Error(`Bạn đã vượt quá hạn mức sử dụng (Lỗi 429).`);
+                else if (response.status === 401) throw new Error(`Lỗi xác thực (401). Vui lòng kiểm tra lại thiết lập khóa ANON KEY.`);
+                else if (response.status === 400) throw new Error(`Lỗi dữ liệu (400): ${errorMessage}`);
+                
+                throw new Error(errorMessage);
             }
 
-            const result = await response.json();
+            // Parsing cẩn thận dữ liệu trả về để tránh lỗi 'Unexpected token <'
+            let result;
+            try {
+                result = JSON.parse(responseText);
+            } catch (parseError) {
+                console.error("Lỗi parse phản hồi (Không phải JSON):", responseText);
+                throw new Error("Hệ thống trả về định dạng lạ (không phải JSON). Vui lòng thử lại sau.");
+            }
 
-            if (result.candidates && result.candidates.length > 0 &&
-                result.candidates[0].content && result.candidates[0].content.parts &&
-                result.candidates[0].content.parts.length > 0) {
-                const jsonString = result.candidates[0].content.parts[0].text;
+            if (result.choices && result.choices.length > 0 && result.choices[0].message) {
+                const jsonString = result.choices[0].message.content;
                 try {
-                    const parsedJson = JSON.parse(jsonString);
-                    return parsedJson;
+                    return JSON.parse(jsonString);
                 } catch (parseError) {
-                    throw new Error("Phản hồi từ AI không phải là JSON hợp lệ.");
+                    throw new Error("Phản hồi từ AI không đúng cấu trúc yêu cầu.");
                 }
             } else {
                 throw new Error("Không nhận được phản hồi hợp lệ từ máy chủ AI.");
@@ -453,82 +585,56 @@
 
             try {
                 startTime = new Date(meetingData["Thời gian bắt đầu"]);
-                if (isNaN(startTime.getTime())) {
-                    throw new Error("Thời gian bắt đầu không hợp lệ.");
-                }
+                if (isNaN(startTime.getTime())) throw new Error("Thời gian bắt đầu không hợp lệ.");
 
                 if (meetingData["Thời gian kết thúc"]) {
                     endTime = new Date(meetingData["Thời gian kết thúc"]);
-                    if (isNaN(endTime.getTime())) {
-                        throw new Error("Thời gian kết thúc không hợp lệ.");
-                    }
+                    if (isNaN(endTime.getTime())) throw new Error("Thời gian kết thúc không hợp lệ.");
                 } else {
                     endTime = new Date(startTime.getTime() + 2 * 60 * 60 * 1000);
                 }
             } catch (e) {
-                showError(`Lỗi định dạng thời gian: ${e.message}. Vui lòng đảm bảo "Thời gian bắt đầu" và "Thời gian kết thúc" đúng định dạng YYYY-MM-DD HH:MM.`);
+                showError(`Lỗi định dạng thời gian: ${e.message}. Vui lòng đảm bảo "Thời gian bắt đầu/kết thúc" đúng định dạng YYYY-MM-DD HH:MM.`);
                 extractedInfoSection.classList.add('hidden');
                 return;
             }
 
             const formatIcsDateTime = (date) => {
-                const year = date.getFullYear();
-                const month = String(date.getMonth() + 1).padStart(2, '0');
-                const day = String(date.getDate()).padStart(2, '0');
-                const hours = String(date.getHours()).padStart(2, '0');
-                const minutes = String(date.getMinutes()).padStart(2, '0');
-                const seconds = String(date.getSeconds()).padStart(2, '0');
-                return `${year}${month}${day}T${hours}${minutes}${seconds}`;
+                const pad = n => String(n).padStart(2, '0');
+                return `${date.getFullYear()}${pad(date.getMonth() + 1)}${pad(date.getDate())}T${pad(date.getHours())}${pad(date.getMinutes())}${pad(date.getSeconds())}`;
             };
 
             const dtStartIcs = formatIcsDateTime(startTime);
             const dtEndIcs = formatIcsDateTime(endTime);
             const dtStampIcs = formatIcsDateTime(new Date());
-            const uid = `${dtStampIcs}-${Math.random().toString(36).substring(2, 15)}@${window.location.hostname || 'meeting-secretary-app'}`;
+            const uid = `${dtStampIcs}-${Math.random().toString(36).substring(2, 15)}@meeting-secretary`;
 
-            const icsSummary = subjectRaw;
             let descriptionParts = [];
-
             if (mainContent) {
                 descriptionParts.push('📌 Nội dung làm việc:');
                 descriptionParts.push(mainContent.split('\n').map(line => `- ${line.trim()}`).join('\\n'));
             } else {
                 descriptionParts.push('📌 Nội dung làm việc:\\n- Không có nội dung chính.');
             }
-
             descriptionParts.push(`\\n👤 Chủ trì: ${chair || 'Chưa rõ'}`);
             descriptionParts.push(`\\n👥 Thành phần:`);
-            if (attendees.length > 0) {
-                descriptionParts.push(attendees.map(att => `- ${att.trim()}`).join('\\n'));
-            } else {
-                descriptionParts.push(`- Không có thành phần tham dự cụ thể.`);
-            }
-
+            if (attendees.length > 0) descriptionParts.push(attendees.map(att => `- ${att.trim()}`).join('\\n'));
+            else descriptionParts.push(`- Không có thành phần cụ thể.`);
             descriptionParts.push(`\\n🏢 Đơn vị tổ chức: ${organizer || 'Chưa rõ'}`);
-
-            if (onlineLink) {
-                descriptionParts.push(`\\nĐường dẫn trực tuyến: ${onlineLink}`);
-            }
-            
+            if (onlineLink) descriptionParts.push(`\\nĐường dẫn trực tuyến: ${onlineLink}`);
             descriptionParts.push(`\\nĐịa điểm: ${location}`);
             descriptionParts.push(`Thời gian: Từ ${meetingData["Thời gian bắt đầu"]} đến ${meetingData["Thời gian kết thúc"]}`);
 
             const icsDescription = descriptionParts.join('\\n');
 
-            let alarmTrigger = '';
+            let alarmTrigger = '-P1D';
             const reminderMatch = reminder.match(/(\d+)\s*(NGÀY|GIỜ|PHÚT)/i);
             if (reminderMatch) {
-                const reminderValue = parseInt(reminderMatch[1]);
-                const reminderUnit = reminderMatch[2].toUpperCase();
-
-                switch (reminderUnit) {
-                    case 'NGÀY': alarmTrigger = `-P${reminderValue}D`; break;
-                    case 'GIỜ': alarmTrigger = `-PT${reminderValue}H`; break;
-                    case 'PHÚT': alarmTrigger = `-PT${reminderValue}M`; break;
-                    default: alarmTrigger = `-P1D`;
-                }
-            } else {
-                alarmTrigger = `-P1D`;
+                const val = parseInt(reminderMatch[1]);
+                const unit = reminderMatch[2].toUpperCase();
+                if (unit === 'NGÀY') alarmTrigger = `-P${val}D`;
+                else if (unit === 'GIỜ') alarmTrigger = `-PT${val}H`;
+                else if (unit === 'PHÚT') alarmTrigger = `-PT${val}M`;
             }
 
             const icsContent = `BEGIN:VCALENDAR
@@ -551,12 +657,12 @@ UID:${uid}
 DTSTAMP:${dtStampIcs}
 DTSTART;TZID=Asia/Ho_Chi_Minh:${dtStartIcs}
 DTEND;TZID=Asia/Ho_Chi_Minh:${dtEndIcs}
-SUMMARY:${icsSummary}
+SUMMARY:${subjectRaw}
 LOCATION:${location}
 DESCRIPTION:${icsDescription}
 BEGIN:VALARM
 ACTION:DISPLAY
-DESCRIPTION:Nhắc nhở cuộc họp: ${icsSummary}
+DESCRIPTION:Nhắc nhở cuộc họp: ${subjectRaw}
 TRIGGER:${alarmTrigger}
 END:VALARM
 END:VEVENT
@@ -564,7 +670,6 @@ END:VCALENDAR`;
 
             const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
             const url = URL.createObjectURL(blob);
-
             downloadIcsLink.href = url;
             downloadIcsLink.download = `${subjectRaw.replace(/[^a-z0-9]/gi, '_')}.ics`;
             downloadIcsLink.style.display = 'flex';
