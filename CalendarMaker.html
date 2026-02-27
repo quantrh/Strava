@@ -125,46 +125,45 @@
 
         <!-- Instructions Section -->
         <div class="mt-8 p-4 bg-blue-50 rounded-lg border border-blue-200 text-blue-800">
-            <h2 class="text-xl font-semibold mb-2">Hướng dẫn sử dụng (Version 2):</h2>
+            <h2 class="text-xl font-semibold mb-2">Hướng dẫn sử dụng (Version 3 - Supabase Edge):</h2>
             <ol class="list-decimal list-inside space-y-1 text-sm">
                 <li>Nhấp vào nút "Tải lên hoặc chụp ảnh tài liệu" để chọn tệp ảnh (.JPG, .PNG) của tài liệu cuộc họp.</li>
                 <li>Đảm bảo kích thước tệp không quá 4MB. Ứng dụng sẽ tự động nén nếu cần.</li>
                 <li>Sau khi tệp được tải lên và xem trước hiển thị, nút "Trích xuất thông tin & Tạo lịch" sẽ được kích hoạt.</li>
-                <li>Nhấp vào nút đó để AI trích xuất các thông tin chi tiết về cuộc họp từ tài liệu.</li>
+                <li>Nhấp vào nút đó để AI trích xuất các thông tin chi tiết về cuộc họp từ tài liệu thông qua hệ thống bảo mật Supabase.</li>
                 <li>Thông tin đã trích xuất sẽ hiển thị bên dưới, cùng với một nút để "Tải xuống tệp ICS".</li>
-                <li>Tệp ICS có thể được nhập vào các ứng dụng lịch như Google Calendar, Outlook Calendar, Apple Calendar, v.v.</li>
-                <li>Trong trường hợp có lỗi, thông báo lỗi sẽ hiển thị ở cuối màn hình.</li>
             </ol>
         </div>
     </div>
 
     <script type="module">
+        // CẤU HÌNH SUPABASE EDGE FUNCTION URL (Thay thế bằng URL thật của bạn)
+        // Ví dụ: https://<project-ref>.supabase.co/functions/v1/gemini-proxy
+        const SUPABASE_EDGE_FUNCTION_URL = "https://YOUR_PROJECT_REF.supabase.co/functions/v1/gemini-proxy"; 
+        
+        // Nếu Edge Function của bạn yêu cầu xác thực, thêm Anon Key vào đây
+        const SUPABASE_ANON_KEY = "YOUR_SUPABASE_ANON_KEY"; 
+
         // UI elements
         const fileUpload = document.getElementById('file-upload');
         const fileUploadLabel = document.getElementById('file-upload-label');
         const fileUploadText = document.getElementById('file-upload-text');
-        const fileUploadSpinner = document.getElementById('file-upload-spinner'); // New spinner for file upload label
+        const fileUploadSpinner = document.getElementById('file-upload-spinner');
         const imagePreviewContainer = document.getElementById('image-preview-container');
         const imagePreview = document.getElementById('image-preview');
         const fileError = document.getElementById('file-error');
         const processButton = document.getElementById('process-button');
         const buttonText = document.getElementById('button-text');
-        const loadingSpinner = document.getElementById('loading-spinner'); // Spinner for process button
+        const loadingSpinner = document.getElementById('loading-spinner');
         const extractedInfoSection = document.getElementById('extracted-info-section');
         const extractedInfoDiv = document.getElementById('extracted-info');
         const downloadIcsLink = document.getElementById('download-ics');
         const errorMessageDiv = document.getElementById('error-message');
         const errorTextP = document.getElementById('error-text');
 
-        let uploadedImageBase64 = null; // Stores the Base64 representation of the uploaded image
-        let mimeTypeForGemini = 'image/jpeg'; // Global variable to store the mime type for Gemini API
+        let uploadedImageBase64 = null;
+        let mimeTypeForGemini = 'image/jpeg';
 
-        /**
-         * Compresses an image file to be under 4MB, optionally resizing it.
-         * Converts PNG to JPEG if necessary for compression.
-         * @param {File} file The image file to compress.
-         * @returns {Promise<{base64: string, mimeType: string}>} A promise that resolves with the compressed base64 data and its mime type.
-         */
         async function compressImage(file) {
             return new Promise((resolve, reject) => {
                 const reader = new FileReader();
@@ -176,9 +175,8 @@
 
                         let width = img.width;
                         let height = img.height;
-                        const MAX_DIMENSION = 2000; // Max dimension for width/height to prevent excessively large canvases
+                        const MAX_DIMENSION = 2000;
 
-                        // Resize if image is too large in dimensions
                         if (width > MAX_DIMENSION || height > MAX_DIMENSION) {
                             if (width > height) {
                                 height = Math.round(height * (MAX_DIMENSION / width));
@@ -193,49 +191,43 @@
                         canvas.height = height;
                         ctx.drawImage(img, 0, 0, width, height);
 
-                        let quality = 0.9; // Start with high quality for JPEG compression
+                        let quality = 0.9;
                         let compressedDataUrl = '';
                         let compressedBase64 = '';
-                        let outputMimeType = 'image/jpeg'; // Default output to JPEG for compression
+                        let outputMimeType = 'image/jpeg';
 
-                        // If original is PNG and it's large, we'll convert it to JPEG for compression.
-                        // Otherwise, try to maintain original type if it's JPEG.
                         if (file.type === 'image/png' && file.size > 4 * 1024 * 1024) {
                             outputMimeType = 'image/jpeg';
                         } else if (file.type === 'image/jpeg') {
                             outputMimeType = 'image/jpeg';
                         } else {
-                            // Fallback for other image types, though accept="image/jpeg,image/png" limits this
                             outputMimeType = 'image/jpeg';
                         }
 
                         const attemptCompression = () => {
                             compressedDataUrl = canvas.toDataURL(outputMimeType, quality);
                             compressedBase64 = compressedDataUrl.split(',')[1];
-                            // Approximate size for base64: (length * 0.75) for typical base64 encoding
                             const sizeInBytes = (compressedBase64.length * 0.75);
 
-                            // If size is within limit or quality is too low, resolve
                             if (sizeInBytes <= 4 * 1024 * 1024 || quality <= 0.1) {
                                 resolve({ base64: compressedBase64, mimeType: outputMimeType });
                             } else {
-                                quality -= 0.1; // Reduce quality
-                                if (quality < 0.1) quality = 0.1; // Don't go below 0.1
-                                setTimeout(attemptCompression, 0); // Continue compression asynchronously
+                                quality -= 0.1;
+                                if (quality < 0.1) quality = 0.1;
+                                setTimeout(attemptCompression, 0);
                             }
                         };
 
                         attemptCompression();
                     };
-                    img.onerror = (error) => reject(new Error("Không thể tải ảnh để nén."));
+                    img.onerror = () => reject(new Error("Không thể tải ảnh để nén."));
                     img.src = event.target.result;
                 };
-                reader.onerror = (error) => reject(new Error("Không thể đọc tệp ảnh."));
+                reader.onerror = () => reject(new Error("Không thể đọc tệp ảnh."));
                 reader.readAsDataURL(file);
             });
         }
 
-        // Event listener for file input change
         fileUpload.addEventListener('change', async function(event) {
             const file = event.target.files[0];
             if (!file) {
@@ -251,16 +243,15 @@
 
             fileUploadLabel.classList.add('has-file');
             fileUploadText.textContent = `Đang xử lý: ${file.name}`;
-            fileUploadSpinner.classList.remove('hidden'); // Show loading spinner on label
-            processButton.disabled = true; // Disable button during processing
+            fileUploadSpinner.classList.remove('hidden');
+            processButton.disabled = true;
             hideResults();
             hideError();
 
             try {
                 let finalBase64 = null;
-                let finalMimeType = file.type; // Start with original mime type
+                let finalMimeType = file.type;
 
-                // If file is already small, just read it
                 if (file.size <= 4 * 1024 * 1024) {
                     const reader = new FileReader();
                     await new Promise((resolve) => {
@@ -271,13 +262,11 @@
                         reader.readAsDataURL(file);
                     });
                 } else {
-                    // Attempt to compress if larger than 4MB
                     fileUploadText.textContent = `Đang nén ảnh: ${file.name}`;
                     const compressedResult = await compressImage(file);
                     finalBase64 = compressedResult.base64;
                     finalMimeType = compressedResult.mimeType;
 
-                    // Re-check size after compression
                     const compressedSizeInBytes = (finalBase64.length * 0.75);
                     if (compressedSizeInBytes > 4 * 1024 * 1024) {
                         throw new Error('Kích thước tệp sau khi nén vẫn quá lớn (>4MB).');
@@ -287,10 +276,10 @@
                 imagePreview.src = `data:${finalMimeType};base64,${finalBase64}`;
                 imagePreviewContainer.classList.remove('hidden');
                 uploadedImageBase64 = finalBase64;
-                mimeTypeForGemini = finalMimeType; // Update global mime type for Gemini
-                processButton.disabled = false; // Enable button
-                fileError.classList.add('hidden'); // Hide any previous file error
-                fileUploadText.textContent = file.name; // Reset label text to original file name
+                mimeTypeForGemini = finalMimeType;
+                processButton.disabled = false;
+                fileError.classList.add('hidden');
+                fileUploadText.textContent = file.name;
 
             } catch (error) {
                 console.error('Lỗi khi xử lý tệp ảnh:', error);
@@ -302,18 +291,16 @@
                 fileUploadLabel.classList.remove('has-file');
                 fileUploadText.textContent = 'Tải lên hoặc chụp ảnh tài liệu (JPG, PNG)';
             } finally {
-                fileUploadSpinner.classList.add('hidden'); // Hide loading spinner on label
+                fileUploadSpinner.classList.add('hidden');
             }
         });
 
-        // Event listener for process button click
         processButton.addEventListener('click', async () => {
             if (!uploadedImageBase64) {
                 showError('Vui lòng tải lên một tệp ảnh trước.');
                 return;
             }
 
-            // Show loading state
             buttonText.textContent = 'Đang xử lý...';
             loadingSpinner.classList.remove('hidden');
             processButton.disabled = true;
@@ -321,15 +308,13 @@
             hideError();
 
             try {
-                const meetingData = await sendImageToGemini(uploadedImageBase64);
+                const meetingData = await sendImageToSupabaseFunction(uploadedImageBase64);
                 displayMeetingInfo(meetingData);
                 generateIcsFile(meetingData);
             } catch (error) {
                 console.error('Lỗi khi xử lý tài liệu:', error);
-                // Display the specific error message from the AI if available
                 showError(`Lỗi: ${error.message || 'Không thể trích xuất thông tin hoặc tạo tệp ICS. Vui lòng thử lại hoặc kiểm tra định dạng tài liệu.'}`);
             } finally {
-                // Reset button state
                 buttonText.textContent = 'Trích xuất thông tin & Tạo lịch';
                 loadingSpinner.classList.add('hidden');
                 processButton.disabled = false;
@@ -337,11 +322,13 @@
         });
 
         /**
-         * Sends the image to Gemini API for information extraction.
-         * @param {string} base64ImageData The Base64 encoded image data.
-         * @returns {Promise<Object>} A promise that resolves with the extracted meeting data.
+         * Sends the payload to Supabase Edge Function instead of direct Gemini API.
          */
-        async function sendImageToGemini(base64ImageData) {
+        async function sendImageToSupabaseFunction(base64ImageData) {
+            if(SUPABASE_EDGE_FUNCTION_URL === "https://YOUR_PROJECT_REF.supabase.co/functions/v1/gemini-proxy") {
+                throw new Error("Vui lòng cấu hình SUPABASE_EDGE_FUNCTION_URL trong mã nguồn (dòng 101) trước khi sử dụng.");
+            }
+
             const prompt = `Bạn là trợ lý AI chuyên hỗ trợ tạo và quản lý lịch họp, có khả năng đọc hiểu tài liệu và trích xuất thông tin chính xác để xây dựng lịch họp chuyên nghiệp.
             
             Dựa trên tài liệu hình ảnh được cung cấp, hãy trích xuất các thông tin sau và trả về dưới dạng JSON. Nếu thông tin không có, hãy để trống hoặc sử dụng giá trị mặc định theo quy tắc.
@@ -361,9 +348,7 @@
             Đảm bảo rằng tất cả các trường được liệt kê trong schema đều có mặt trong JSON đầu ra, ngay cả khi chúng trống hoặc là giá trị mặc định.
             `;
 
-            let chatHistory = [];
-            chatHistory.push({ role: "user", parts: [{ text: prompt }] });
-
+            // Vẫn giữ nguyên cấu trúc payload của Gemini, nhưng gửi qua Supabase Proxy
             const payload = {
                 contents: [
                     {
@@ -372,7 +357,7 @@
                             { text: prompt },
                             {
                                 inlineData: {
-                                    mimeType: mimeTypeForGemini, // Use the dynamically determined mime type
+                                    mimeType: mimeTypeForGemini,
                                     data: base64ImageData
                                 }
                             }
@@ -411,18 +396,24 @@
                 }
             };
 
-            const apiKey = "AIzaSyDRHP_XSaSCz3UGJ_VAyH_proRs4SmBF_c"; // Canvas will automatically provide it in runtime
-            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+            const headers = {
+                'Content-Type': 'application/json'
+            };
 
-            const response = await fetch(apiUrl, {
+            // Tùy chọn: Nếu Supabase Function không cấu hình public, cần truyền Authorization header
+            if (SUPABASE_ANON_KEY && SUPABASE_ANON_KEY !== "YOUR_SUPABASE_ANON_KEY") {
+                 headers['Authorization'] = `Bearer ${SUPABASE_ANON_KEY}`;
+            }
+
+            const response = await fetch(SUPABASE_EDGE_FUNCTION_URL, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: headers,
                 body: JSON.stringify(payload)
             });
 
             if (!response.ok) {
                 const errorData = await response.json();
-                throw new Error(`API error: ${response.status} ${response.statusText} - ${errorData.error?.message || 'Unknown error'}`);
+                throw new Error(`Lỗi kết nối Server: ${response.status} ${response.statusText} - ${errorData.error || errorData.message || 'Unknown error'}`);
             }
 
             const result = await response.json();
@@ -435,33 +426,23 @@
                     const parsedJson = JSON.parse(jsonString);
                     return parsedJson;
                 } catch (parseError) {
-                    console.error("Lỗi phân tích JSON từ Gemini:", parseError);
-                    console.error("Phản hồi thô từ Gemini:", jsonString);
                     throw new Error("Phản hồi từ AI không phải là JSON hợp lệ.");
                 }
             } else {
-                throw new Error("Không nhận được phản hồi hợp lệ từ Gemini.");
+                throw new Error("Không nhận được phản hồi hợp lệ từ máy chủ AI.");
             }
         }
 
-        /**
-         * Displays the extracted meeting information in a readable format.
-         * @param {Object} meetingData The extracted meeting data.
-         */
         function displayMeetingInfo(meetingData) {
             extractedInfoDiv.innerHTML = `<pre class="whitespace-pre-wrap">${JSON.stringify(meetingData, null, 2)}</pre>`;
             extractedInfoSection.classList.remove('hidden');
         }
 
-        /**
-         * Generates an ICS file from the extracted meeting data and provides a download link.
-         * @param {Object} meetingData The extracted meeting data.
-         */
         function generateIcsFile(meetingData) {
             const subjectRaw = meetingData["Chủ đề cuộc họp"] || "Cuộc họp";
             const location = meetingData["Địa điểm họp"] || "Chưa rõ – cần xác minh";
             const attendees = meetingData["Thành phần tham dự"] || [];
-            const mainContent = meetingData["Nội dung làm việc chính"] || ""; // Raw content
+            const mainContent = meetingData["Nội dung làm việc chính"] || "";
             const organizer = meetingData["Đơn vị chủ trì hoặc tổ chức thực hiện"] || "";
             const chair = meetingData["Người chủ trì cuộc họp"] || "";
             const onlineLink = meetingData["Đường dẫn họp trực tuyến (Zoom/Teams/Meet)"] || "";
@@ -506,23 +487,16 @@
             const uid = `${dtStampIcs}-${Math.random().toString(36).substring(2, 15)}@${window.location.hostname || 'meeting-secretary-app'}`;
 
             const icsSummary = subjectRaw;
-
-            // Construct description as per user's example
             let descriptionParts = [];
 
-            // Main Content
             if (mainContent) {
                 descriptionParts.push('📌 Nội dung làm việc:');
-                // Split by newline and add bullet points, then join with escaped newlines
                 descriptionParts.push(mainContent.split('\n').map(line => `- ${line.trim()}`).join('\\n'));
             } else {
                 descriptionParts.push('📌 Nội dung làm việc:\\n- Không có nội dung chính.');
             }
 
-            // Chair
             descriptionParts.push(`\\n👤 Chủ trì: ${chair || 'Chưa rõ'}`);
-
-            // Attendees
             descriptionParts.push(`\\n👥 Thành phần:`);
             if (attendees.length > 0) {
                 descriptionParts.push(attendees.map(att => `- ${att.trim()}`).join('\\n'));
@@ -530,10 +504,8 @@
                 descriptionParts.push(`- Không có thành phần tham dự cụ thể.`);
             }
 
-            // Organizer
             descriptionParts.push(`\\n🏢 Đơn vị tổ chức: ${organizer || 'Chưa rõ'}`);
 
-            // Optional fields
             if (onlineLink) {
                 descriptionParts.push(`\\nĐường dẫn trực tuyến: ${onlineLink}`);
             }
@@ -541,9 +513,8 @@
             descriptionParts.push(`\\nĐịa điểm: ${location}`);
             descriptionParts.push(`Thời gian: Từ ${meetingData["Thời gian bắt đầu"]} đến ${meetingData["Thời gian kết thúc"]}`);
 
-            const icsDescription = descriptionParts.join('\\n'); // Join all parts with escaped newlines
+            const icsDescription = descriptionParts.join('\\n');
 
-            // Handle reminder (ALARM) logic remains the same
             let alarmTrigger = '';
             const reminderMatch = reminder.match(/(\d+)\s*(NGÀY|GIỜ|PHÚT)/i);
             if (reminderMatch) {
@@ -551,17 +522,10 @@
                 const reminderUnit = reminderMatch[2].toUpperCase();
 
                 switch (reminderUnit) {
-                    case 'NGÀY':
-                        alarmTrigger = `-P${reminderValue}D`;
-                        break;
-                    case 'GIỜ':
-                        alarmTrigger = `-PT${reminderValue}H`;
-                        break;
-                    case 'PHÚT':
-                        alarmTrigger = `-PT${reminderValue}M`;
-                        break;
-                    default:
-                        alarmTrigger = `-P1D`;
+                    case 'NGÀY': alarmTrigger = `-P${reminderValue}D`; break;
+                    case 'GIỜ': alarmTrigger = `-PT${reminderValue}H`; break;
+                    case 'PHÚT': alarmTrigger = `-PT${reminderValue}M`; break;
+                    default: alarmTrigger = `-P1D`;
                 }
             } else {
                 alarmTrigger = `-P1D`;
@@ -606,40 +570,24 @@ END:VCALENDAR`;
             downloadIcsLink.style.display = 'flex';
         }
 
-        /**
-         * Shows an error message.
-         * @param {string} message The error message to display.
-         */
         function showError(message) {
             errorTextP.textContent = message;
             errorMessageDiv.classList.remove('hidden');
         }
 
-        /**
-         * Hides the error message.
-         */
         function hideError() {
             errorMessageDiv.classList.add('hidden');
             errorTextP.textContent = '';
         }
 
-        /**
-         * Hides the extracted info and download link.
-         */
         function hideResults() {
             extractedInfoSection.classList.add('hidden');
             extractedInfoDiv.innerHTML = '';
             downloadIcsLink.style.display = 'none';
         }
 
-        // Initial state setup
         hideResults();
         hideError();
     </script>
 </body>
 </html>
-
-
-
-
-
