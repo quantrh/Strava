@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="vi" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Putaleng - Lắng Nghe Hơi Thở Của Rừng Già | YOLO Discovery</title>
+    
+    <!-- Tailwind CSS cho Layout và Styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Cấu hình màu sắc tùy chỉnh cho Tailwind -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        forest: '#2d6a4f',
+                        forestLight: '#40916c',
+                        flower: '#e63946', // Màu hoa đỗ quyên
+                        bgLight: '#f8f9fa'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome cho Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        /* CSS bổ sung cho những phần Tailwind khó xử lý nội tuyến */
+        body { font-family: 'Inter', sans-serif; }
+        .bg-hero {
+            /* Đã thay đổi URL ảnh nền thành cảnh núi rừng sương mù Tây Bắc */
+            background-image: linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.4)), url('https://images.unsplash.com/photo-1596423735880-5f2a689b903e?q=80&w=2000&auto=format&fit=crop');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+        }
+        
+        /* Hiệu ứng mượt mà cho các phần tử */
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: -1px;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background-color: #e5e7eb;
+            z-index: 0;
+        }
+        .timeline-item:last-child::before { display: none; }
+        
+        /* Modal Animation */
+        .modal-enter { opacity: 0; transform: scale(0.95); }
+        .modal-enter-active { opacity: 1; transform: scale(1); transition: opacity 300ms, transform 300ms; }
+        .modal-exit { opacity: 1; transform: scale(1); }
+        .modal-exit-active { opacity: 0; transform: scale(0.95); transition: opacity 300ms, transform 300ms; }
+    </style>
+</head>
+<body class="bg-bgLight text-gray-800 antialiased">
+
+    <!-- Navbar Navigation -->
+    <nav class="fixed w-full z-50 transition-all duration-300 bg-white/95 backdrop-blur-sm shadow-md" id="navbar">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex-shrink-0 flex items-center gap-2 cursor-pointer" onclick="window.scrollTo(0,0)">
+                    <i class="fa-solid fa-mountain-sun text-forest text-2xl"></i>
+                    <span class="font-bold text-xl tracking-tight text-gray-900">YOLO Discovery</span>
+                </div>
+                <div class="hidden md:flex space-x-8">
+                    <a href="#gioi-thieu" class="text-gray-600 hover:text-forest font-medium transition">Giới thiệu</a>
+                    <a href="#lich-trinh" class="text-gray-600 hover:text-forest font-medium transition">Lịch trình</a>
+                    <a href="#chi-phi" class="text-gray-600 hover:text-forest font-medium transition">Chi phí & Chính sách</a>
+                </div>
+                <div class="flex items-center gap-4">
+                    <a href="tel:0824919222" class="hidden sm:flex items-center gap-2 text-forest font-bold">
+                        <i class="fa-solid fa-phone-volume"></i> 0824.919.222
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <header class="bg-hero min-h-screen flex items-center justify-center relative pt-16">
+        <div class="text-center px-4 max-w-4xl mx-auto z-10">
+            <span class="inline-block py-1 px-3 rounded-full bg-flower/20 text-white border border-flower/50 text-sm font-semibold tracking-wider mb-4 uppercase backdrop-blur-md">
+                Đỉnh núi cao thứ 2 Việt Nam
+            </span>
+            <h1 class="text-4xl md:text-6xl font-extrabold text-white mb-6 leading-tight drop-shadow-lg">
+                PUTALENG <br>
+                <span class="text-2xl md:text-4xl font-light italic opacity-90 block mt-2">Lắng nghe hơi thở của rừng già</span>
+            </h1>
+            <p class="text-lg md:text-xl text-gray-200 mb-8 max-w-2xl mx-auto drop-shadow-md">
+                Chinh phục độ cao 3.049m, xuyên qua những cánh rừng cổ thụ rêu phong và bước trên thảm hoa đỗ quyên đỏ rực rỡ đại ngàn Tây Bắc.
+            </p>
+            <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
+                <a href="#lich-trinh" class="w-full sm:w-auto px-8 py-4 bg-forest text-white rounded-full font-bold text-lg hover:bg-forestLight transition shadow-[0_0_20px_rgba(45,106,79,0.4)]">
+                    <i class="fa-solid fa-map-location-dot mr-2"></i> Xem Lịch Trình
+                </a>
+                <a href="https://www.youtube.com/results?search_query=trekking+putaleng+hoa+%C4%91%E1%BB%97+quy%C3%AAn" target="_blank" class="w-full sm:w-auto px-8 py-4 bg-white/10 hover:bg-white/20 backdrop-blur-md text-white border border-white/50 rounded-full font-bold text-lg transition flex items-center justify-center">
+                    <i class="fa-brands fa-youtube text-flower mr-2 text-xl"></i> Video Trải Nghiệm
+                </a>
+            </div>
+        </div>
+        
+        <!-- Scroll indicator -->
+        <div class="absolute bottom-8 left-1/2 transform -translate-x-1/2 animate-bounce">
+            <a href="#gioi-thieu" class="text-white/70 hover:text-white transition text-2xl">
+                <i class="fa-solid fa-chevron-down"></i>
+            </a>
+        </div>
+    </header>
+
+    <!-- Overview Section -->
+    <section id="gioi-thieu" class="py-20 bg-white">
+        <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-12">
+                <h2 class="text-3xl font-bold text-gray-900 mb-4 inline-block relative">
+                    Về Đỉnh Putaleng
+                    <div class="absolute -bottom-2 left-1/2 transform -translate-x-1/2 w-12 h-1 bg-forest rounded-full"></div>
+                </h2>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+                <div class="space-y-6 text-gray-600 text-lg leading-relaxed">
+                    <p>
+                        Đỉnh Putaleng nằm ở độ cao <strong class="text-forest">3.049m</strong>, tọa lạc trong dãy Hoàng Liên Sơn, thuộc xã Tả Lèng, huyện Tam Đường, tỉnh Lai Châu. Nơi đây được mệnh danh là một trong những đỉnh núi khắc nghiệt nhưng cũng đẹp bậc nhất Việt Nam.
+                    </p>
+                    <p>
+                        Hằng năm cứ đến tháng 3, đỉnh Putaleng lại hút hồn dân leo núi bởi sắc đỏ rực rỡ của loài <strong class="text-flower">hoa đỗ quyên</strong> - nữ hoàng hoa rừng Tây Bắc.
+                    </p>
+                    <p>
+                        Chinh phục Putaleng, bạn sẽ được trải qua cảm giác băng rừng, vượt suối, đi xuyên những cánh rừng già bất tận, chui qua những vòm trúc mọc tầng tầng lớp lớp. Bạn sẽ chìm đắm trong sương mù của đại ngàn hay vỡ òa khi bước chân trên thảm hoa đỗ quyên đỏ dài bất tận.
+                    </p>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="bg-gray-50 p-6 rounded-2xl text-center shadow-sm border border-gray-100 hover:shadow-md transition">
+                        <div class="w-12 h-12 mx-auto bg-forest/10 text-forest rounded-full flex items-center justify-center text-xl mb-4">
+                            <i class="fa-solid fa-arrow-up-right-dots"></i>
+                        </div>
+                        <h4 class="font-bold text-gray-900">Độ cao</h4>
+                        <p class="text-forest font-black text-xl mt-1">3.049m</p>
+                    </div>
+                    <div class="bg-gray-50 p-6 rounded-2xl text-center shadow-sm border border-gray-100 hover:shadow-md transition">
+                        <div class="w-12 h-12 mx-auto bg-flower/10 text-flower rounded-full flex items-center justify-center text-xl mb-4">
+                            <i class="fa-solid fa-camera-retro"></i>
+                        </div>
+                        <h4 class="font-bold text-gray-900">Mùa đẹp nhất</h4>
+                        <p class="text-flower font-black text-xl mt-1">Tháng 3</p>
+                    </div>
+                    <div class="bg-gray-50 p-6 rounded-2xl text-center shadow-sm border border-gray-100 hover:shadow-md transition">
+                        <div class="w-12 h-12 mx-auto bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-xl mb-4">
+                            <i class="fa-solid fa-location-dot"></i>
+                        </div>
+                        <h4 class="font-bold text-gray-900">Địa điểm</h4>
+                        <p class="text-blue-600 font-bold text-lg mt-1">Lai Châu</p>
+                    </div>
+                    <div class="bg-gray-50 p-6 rounded-2xl text-center shadow-sm border border-gray-100 hover:shadow-md transition">
+                        <div class="w-12 h-12 mx-auto bg-orange-100 text-orange-600 rounded-full flex items-center justify-center text-xl mb-4">
+                            <i class="fa-solid fa-stopwatch"></i>
+                        </div>
+                        <h4 class="font-bold text-gray-900">Thời gian</h4>
+                        <p class="text-orange-600 font-bold text-lg mt-1">3 Ngày 4 Đêm</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Itinerary Section -->
+    <section id="lich-trinh" class="py-20 bg-gray-50">
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="text-3xl font-bold text-gray-900 mb-4 inline-block relative">
+                    Lịch Trình Chi Tiết
+                    <div class="absolute -bottom-2 left-1/2 transform -translate-x-1/2 w-12 h-1 bg-forest rounded-full"></div>
+                </h2>
+                <p class="text-gray-500 mt-4">Hành trình 3 ngày chinh phục nóc nhà thứ 2 Đông Dương</p>
+            </div>
+
+            <div class="space-y-12">
+                <!-- Đêm khởi hành -->
+                <div class="relative pl-8 sm:pl-32 timeline-item">
+                    <div class="hidden sm:block absolute left-0 top-0 w-24 text-right font-bold text-forest text-lg pt-1">
+                        Đêm 0
+                    </div>
+                    <div class="absolute left-[-16px] sm:left-[104px] top-1 w-8 h-8 bg-forest text-white rounded-full flex items-center justify-center shadow-md z-10">
+                        <i class="fa-solid fa-bus text-sm"></i>
+                    </div>
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                        <h3 class="text-xl font-bold text-gray-900 mb-4 sm:hidden text-forest">Đêm Khởi Hành</h3>
+                        <ul class="space-y-3 text-gray-600">
+                            <li class="flex items-start">
+                                <i class="fa-regular fa-clock mt-1 mr-3 text-forest"></i>
+                                <span><strong>Khoảng 22h30:</strong> Tour Guide đón đoàn tập trung tại văn phòng xe. <strong>23h00</strong> xe bắt đầu di chuyển.</span>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fa-solid fa-plane-arrival mt-1 mr-3 text-forest"></i>
+                                <span>Xe sẽ đi qua khu vực sân bay sau khoảng 30 - 45 phút của giờ xuất bến nên quý khách có thể đón tại sân bay nếu muốn.</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Ngày 1 -->
+                <div class="relative pl-8 sm:pl-32 timeline-item">
+                    <div class="hidden sm:block absolute left-0 top-0 w-24 text-right font-bold text-forest text-lg pt-1">
+                        Ngày 1
+                    </div>
+                    <div class="absolute left-[-16px] sm:left-[104px] top-1 w-8 h-8 bg-forest text-white rounded-full flex items-center justify-center shadow-md z-10">
+                        <i class="fa-solid fa-person-hiking text-sm"></i>
+                    </div>
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 relative overflow-hidden">
+                        <div class="absolute top-0 right-0 bg-orange-100 text-orange-800 text-xs font-bold px-3 py-1 rounded-bl-lg">Bắt đầu Trekking</div>
+                        <h3 class="text-xl font-bold text-gray-900 mb-4 sm:hidden text-forest">Ngày 1</h3>
+                        <div class="space-y-4 text-gray-600">
+                            <div class="flex">
+                                <div class="w-16 font-bold text-gray-800 shrink-0">05h00</div>
+                                <div>Quý khách xuống xe, vệ sinh cá nhân, xếp đồ đạc và dùng bữa sáng.</div>
+                            </div>
+                            <div class="flex">
+                                <div class="w-16 font-bold text-gray-800 shrink-0">07h15</div>
+                                <div>Đoàn lên xe di chuyển sang Lai Châu.</div>
+                            </div>
+                            <div class="flex">
+                                <div class="w-16 font-bold text-gray-800 shrink-0">08h45</div>
+                                <div>Gặp các anh em porter (Người vác đồ) địa phương. Hành trình bắt đầu.</div>
+                            </div>
+                            <div class="flex">
+                                <div class="w-16 font-bold text-gray-800 shrink-0">11h00</div>
+                                <div>Nghỉ ngơi và dùng bữa trưa giữa rừng.</div>
+                            </div>
+                            <div class="flex">
+                                <div class="w-16 font-bold text-gray-800 shrink-0">17h00</div>
+                                <div>Tới điểm hạ trại ở độ cao <strong>2500m</strong>. Nghỉ ngơi, tự do dạo chơi hoặc hỗ trợ porter nấu ăn.</div>
+                            </div>
+                            <div class="flex">
+                                <div class="w-16 font-bold text-gray-800 shrink-0">18h30</div>
+                                <div>Dùng bữa tối, giao lưu bên lửa trại. Nghỉ đêm trong lán gỗ kín gió (có chăn, chiếu cách nhiệt).</div>
+                            </div>
+                        </div>
+                        <div class="mt-4 pt-4 border-t border-gray-100 flex gap-4 text-sm font-medium text-gray-500">
+                            <span><i class="fa-solid fa-utensils mr-1"></i> Ăn: Sáng, Trưa, Tối</span>
+                            <span><i class="fa-solid fa-campground mr-1"></i> Nghỉ: Lán gỗ</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Ngày 2 -->
+                <div class="relative pl-8 sm:pl-32 timeline-item">
+                    <div class="hidden sm:block absolute left-0 top-0 w-24 text-right font-bold text-forest text-lg pt-1">
+                        Ngày 2
+                    </div>
+                    <div class="absolute left-[-16px] sm:left-[104px] top-1 w-8 h-8 bg-flower text-white rounded-full flex items-center justify-center shadow-md z-10">
+                        <i class="fa-solid fa-flag text-sm"></i>
+                    </div>
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-flower/30 relative overflow-hidden ring-1 ring-flower/10">
+                        <div class="absolute top-0 right-0 bg-flower text-white text-xs font-bold px-3 py-1 rounded-bl-lg"><i class="fa-solid fa-mountain mr-1"></i> Chạm Đỉnh</div>
+                        <h3 class="text-xl font-bold text-gray-900 mb-4 sm:hidden text-forest">Ngày 2: Chạm đỉnh</h3>
+                        <div class="space-y-4 text-gray-600">
+                            <div class="flex">
+                                <div class="w-16 font-bold text-gray-800 shrink-0">05h00</div>
+                                <div>Thức giấc, dùng bữa sáng, thưởng thức cafe/trà gừng ấm nóng.</div>
+                            </div>
+                            <div class="flex">
+                                <div class="w-16 font-bold text-gray-800 shrink-0">07h00</div>
+                                <div>Bắt đầu chặng chinh phục cuối cùng. <em>(Để lại đồ tại lán, đi người không)</em>.</div>
+                            </div>
+                            <div class="flex items-start bg-red-50 p-3 rounded-lg border border-red-100">
+                                <div class="w-16 font-bold text-flower shrink-0 mt-0.5">10h30</div>
+                                <div class="text-gray-800"><strong>Chạm tới đỉnh Pu Ta Leng (3.049m).</strong> Thưởng ngoạn phong cảnh, check-in và dùng bữa trưa trên đỉnh. Sau đó quay về.</div>
+                            </div>
+                            <div class="flex">
+                                <div class="w-16 font-bold text-gray-800 shrink-0">12h45</div>
+                                <div>Về tới điểm hạ trại, thu dọn đồ, di chuyển tới điểm nghỉ đêm thứ hai (hướng Sì Thâu Chải).</div>
+                            </div>
+                            <div class="flex">
+                                <div class="w-16 font-bold text-gray-800 shrink-0">17h00</div>
+                                <div>Tới điểm hạ trại mới, nghỉ ngơi và dùng bữa tối.</div>
+                            </div>
+                        </div>
+                        <div class="mt-4 pt-4 border-t border-gray-100 flex gap-4 text-sm font-medium text-gray-500">
+                            <span><i class="fa-solid fa-utensils mr-1"></i> Ăn: Sáng, Trưa, Tối</span>
+                            <span><i class="fa-solid fa-campground mr-1"></i> Nghỉ: Lán gỗ</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Ngày 3 -->
+                <div class="relative pl-8 sm:pl-32 timeline-item">
+                    <div class="hidden sm:block absolute left-0 top-0 w-24 text-right font-bold text-forest text-lg pt-1">
+                        Ngày 3
+                    </div>
+                    <div class="absolute left-[-16px] sm:left-[104px] top-1 w-8 h-8 bg-forest text-white rounded-full flex items-center justify-center shadow-md z-10">
+                        <i class="fa-solid fa-hot-tub-person text-sm"></i>
+                    </div>
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                        <h3 class="text-xl font-bold text-gray-900 mb-4 sm:hidden text-forest">Ngày 3: Về đích</h3>
+                        <div class="space-y-4 text-gray-600">
+                            <div class="flex">
+                                <div class="w-16 font-bold text-gray-800 shrink-0">05h30</div>
+                                <div>Dậy sớm đón bình minh tuyệt đẹp và dùng bữa sáng.</div>
+                            </div>
+                            <div class="flex">
+                                <div class="w-16 font-bold text-gray-800 shrink-0">06h30</div>
+                                <div>Thu dọn đồ, tiếp tục hành trình (~6 tiếng) ra bản Sì Thâu Chải.</div>
+                            </div>
+                            <div class="flex">
+                                <div class="w-16 font-bold text-gray-800 shrink-0">12h45</div>
+                                <div>Dùng bữa trưa nhẹ, lên xe về thị trấn Sapa.</div>
+                            </div>
+                            <div class="flex">
+                                <div class="w-16 font-bold text-gray-800 shrink-0">16h00</div>
+                                <div>Về tới Sapa. <strong>Tắm lá thuốc người Dao</strong>, ngâm mình trong bồn nước nóng thư giãn phục hồi thể lực.</div>
+                            </div>
+                            <div class="flex">
+                                <div class="w-16 font-bold text-gray-800 shrink-0">19h00</div>
+                                <div>Dùng bữa tối tại Nhà hàng, thưởng thức đặc sản Sapa, nâng ly rượu táo mèo mừng thành công.</div>
+                            </div>
+                            <div class="flex">
+                                <div class="w-16 font-bold text-gray-800 shrink-0">23h00</div>
+                                <div>Lên xe giường nằm trở về Hà Nội.</div>
+                            </div>
+                        </div>
+                        <div class="mt-4 pt-4 border-t border-gray-100">
+                            <p class="text-sm font-medium text-forest text-center italic">
+                                Khoảng 04h00 sáng hôm sau về tới bến xe Mỹ Đình. Kết thúc chương trình!
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Pricing & Info Section -->
+    <section id="chi-phi" class="py-20 bg-white">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-12">
+                <h2 class="text-3xl font-bold text-gray-900 mb-4 inline-block relative">
+                    Chi Phí & Dịch Vụ
+                    <div class="absolute -bottom-2 left-1/2 transform -translate-x-1/2 w-12 h-1 bg-forest rounded-full"></div>
+                </h2>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <!-- Cột Giá & Bao gồm -->
+                <div class="lg:col-span-2 space-y-8">
+                    <div class="bg-gradient-to-br from-forest to-forestLight rounded-3xl p-8 text-white shadow-xl relative overflow-hidden">
+                        <i class="fa-solid fa-mountain text-9xl absolute -right-4 -bottom-4 opacity-10"></i>
+                        <h3 class="text-2xl font-bold mb-2">Giá Tour Trọn Gói</h3>
+                        <div class="text-5xl font-extrabold mb-2 text-yellow-300">4.350.000 <span class="text-xl font-normal text-white">VNĐ / Người</span></div>
+                        <p class="opacity-90 italic text-sm mb-6">* Áp dụng cho đoàn từ 9 người trở lên.</p>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3">
+                            <div class="flex items-start gap-2">
+                                <i class="fa-solid fa-circle-check text-yellow-300 mt-1"></i>
+                                <span class="text-sm">Xe giường nằm HN - Sapa - HN. Xe ghế ngồi đưa đón địa phương.</span>
+                            </div>
+                            <div class="flex items-start gap-2">
+                                <i class="fa-solid fa-circle-check text-yellow-300 mt-1"></i>
+                                <span class="text-sm">Hướng dẫn viên có chứng chỉ HDV & Sơ cấp cứu.</span>
+                            </div>
+                            <div class="flex items-start gap-2">
+                                <i class="fa-solid fa-circle-check text-yellow-300 mt-1"></i>
+                                <span class="text-sm">Porter mang đồ chung (Tỉ lệ 3 khách / 1 Porter).</span>
+                            </div>
+                            <div class="flex items-start gap-2">
+                                <i class="fa-solid fa-circle-check text-yellow-300 mt-1"></i>
+                                <span class="text-sm">Tất cả bữa ăn theo lịch trình & Nước uống.</span>
+                            </div>
+                            <div class="flex items-start gap-2">
+                                <i class="fa-solid fa-circle-check text-yellow-300 mt-1"></i>
+                                <span class="text-sm">Chỗ ngủ (Lán gỗ trên núi).</span>
+                            </div>
+                            <div class="flex items-start gap-2">
+                                <i class="fa-solid fa-circle-check text-yellow-300 mt-1"></i>
+                                <span class="text-sm">Dịch vụ xông hơi, tắm lá Dao tại KS 3 sao Sapa.</span>
+                            </div>
+                            <div class="flex items-start gap-2">
+                                <i class="fa-solid fa-circle-check text-yellow-300 mt-1"></i>
+                                <span class="text-sm">Bảo hiểm du lịch (Mức bồi thường 30.000.000đ/người).</span>
+                            </div>
+                            <div class="flex items-start gap-2">
+                                <i class="fa-solid fa-circle-check text-yellow-300 mt-1"></i>
+                                <span class="text-sm">Găng tay, gậy leo núi & Kỷ niệm chương chóp inox.</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-red-50 p-6 rounded-2xl border border-red-100">
+                        <h4 class="font-bold text-red-800 mb-3 flex items-center"><i class="fa-solid fa-circle-xmark mr-2"></i> Chưa bao gồm:</h4>
+                        <ul class="text-gray-700 space-y-2 list-disc list-inside">
+                            <li>Các chi phí cá nhân khác ngoài chương trình.</li>
+                            <li>Xe ôm từ bìa rừng ra Tả Lèng (Nếu quý khách mệt muốn sử dụng thêm).</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Cột Thanh Toán & Hủy -->
+                <div class="space-y-6">
+                    <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm">
+                        <h3 class="text-xl font-bold text-gray-900 mb-4 border-b pb-2"><i class="fa-regular fa-credit-card text-forest mr-2"></i> Thanh Toán</h3>
+                        <ul class="space-y-3 text-sm text-gray-600">
+                            <li><i class="fa-solid fa-caret-right text-forest mr-1"></i> Cọc <strong>1.500.000đ/Người</strong> ngay sau khi đăng ký.</li>
+                            <li><i class="fa-solid fa-caret-right text-forest mr-1"></i> Thanh toán 100% trước <strong>5 ngày</strong> khởi hành.</li>
+                        </ul>
+
+                        <div class="mt-6 bg-gray-50 p-4 rounded-xl border border-dashed border-gray-300 relative group">
+                            <p class="text-xs text-gray-500 uppercase tracking-wider font-bold mb-2">Thông tin chuyển khoản</p>
+                            <div class="font-mono text-lg font-bold text-gray-900 mb-1 flex items-center justify-between">
+                                <span id="bank-acc">863328888</span>
+                                <button onclick="copyBankAcc()" class="text-forest hover:bg-forest/10 p-1.5 rounded transition text-sm flex items-center gap-1" title="Copy số tài khoản">
+                                    <i class="fa-regular fa-copy"></i> Copy
+                                </button>
+                            </div>
+                            <p class="font-bold text-gray-700">Nguyen Manh Chien</p>
+                            <p class="text-gray-600 text-sm">Ngân hàng VIB Hà Nội</p>
+                            
+                            <div class="mt-3 text-sm">
+                                <span class="text-xs text-gray-500 block mb-1">Nội dung CK:</span>
+                                <code class="bg-white px-2 py-1 rounded border text-forest font-bold block text-center">Họ Tên - Putaleng Ngay...</code>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm">
+                        <h3 class="text-xl font-bold text-gray-900 mb-4 border-b pb-2"><i class="fa-solid fa-rotate-left text-forest mr-2"></i> Chính Sách Hủy</h3>
+                        <ul class="space-y-3 text-sm text-gray-600">
+                            <li class="flex items-start">
+                                <i class="fa-solid fa-check text-green-500 mt-1 mr-2"></i>
+                                <span><strong>Hoàn 100% cọc:</strong> Báo hủy trước 5 ngày khởi hành HOẶC do sự cố bất khả kháng (thiên tai, dịch bệnh).</span>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fa-solid fa-xmark text-red-500 mt-1 mr-2"></i>
+                                <span><strong>Không hoàn cọc:</strong> Báo hủy sau 5 ngày tính từ ngày khởi hành.</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-gray-900 text-gray-300 py-12 border-t-4 border-forest">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8 text-center md:text-left">
+                <div>
+                    <div class="flex items-center justify-center md:justify-start gap-2 mb-4">
+                        <i class="fa-solid fa-mountain-sun text-forest text-3xl"></i>
+                        <span class="font-bold text-2xl text-white">YOLO Discovery</span>
+                    </div>
+                    <p class="text-gray-400 text-sm">Chuyên tổ chức các tour trekking, leo núi chuyên nghiệp. Khám phá vẻ đẹp bất tận của thiên nhiên Tây Bắc.</p>
+                </div>
+                <div>
+                    <h4 class="text-white font-bold text-lg mb-4">Liên Hệ</h4>
+                    <ul class="space-y-2">
+                        <li><i class="fa-solid fa-user mr-2 text-forest"></i> Mr. Chiến</li>
+                        <li><i class="fa-solid fa-phone mr-2 text-forest"></i> <a href="tel:0824919222" class="hover:text-white transition font-bold text-lg">0824.919.222</a></li>
+                        <li><i class="fa-brands fa-facebook mr-2 text-forest"></i> <a href="#" class="hover:text-white transition">Fanpage YOLO</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="text-white font-bold text-lg mb-4">Chuyến đi khác</h4>
+                    <ul class="space-y-2">
+                        <li><a href="#" class="hover:text-forest transition">Fansipan (3.143m)</a></li>
+                        <li><a href="#" class="hover:text-forest transition">Ky Quan San (3.046m)</a></li>
+                        <li><a href="#" class="hover:text-forest transition">Lảo Thẩn (2.860m)</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="border-t border-gray-800 mt-8 pt-8 text-center text-sm text-gray-500">
+                &copy; 2024 YOLO Discovery. Lắng nghe hơi thở rừng già.
+            </div>
+        </div>
+    </footer>
+
+    <!-- Custom Modal/Message Box (Thay thế cho alert mặc định) -->
+    <div id="customModal" class="fixed inset-0 z-[100] hidden items-center justify-center bg-black/50 backdrop-blur-sm px-4">
+        <div class="bg-white rounded-2xl shadow-2xl p-6 sm:p-8 max-w-sm w-full text-center transition-all modal-enter" id="modalContent">
+            <div id="modalIcon" class="w-16 h-16 rounded-full mx-auto flex items-center justify-center mb-4 text-3xl">
+                <!-- Icon sẽ được chèn qua JS -->
+            </div>
+            <h3 id="modalTitle" class="text-2xl font-bold text-gray-900 mb-2">Thông báo</h3>
+            <p id="modalMessage" class="text-gray-600 mb-6"></p>
+            <button onclick="closeModal()" class="w-full bg-forest hover:bg-forestLight text-white font-bold py-3 rounded-xl transition">
+                Đóng
+            </button>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script>
+        // Copy Bank Account
+        function copyBankAcc() {
+            const acc = document.getElementById('bank-acc').innerText;
+            // Sử dụng fallback cho mobile/iframe
+            const textArea = document.createElement("textarea");
+            textArea.value = acc;
+            document.body.appendChild(textArea);
+            textArea.select();
+            try {
+                document.execCommand('copy');
+                showModal('Thành công!', 'Đã copy số tài khoản: ' + acc, 'success');
+            } catch (err) {
+                showModal('Lỗi', 'Không thể copy, vui lòng copy thủ công.', 'error');
+            }
+            document.body.removeChild(textArea);
+        }
+
+        // Custom Modal Logic
+        const modal = document.getElementById('customModal');
+        const modalContent = document.getElementById('modalContent');
+        
+        function showModal(title, message, type) {
+            document.getElementById('modalTitle').innerText = title;
+            document.getElementById('modalMessage').innerText = message;
+            
+            const iconDiv = document.getElementById('modalIcon');
+            if(type === 'success') {
+                iconDiv.className = 'w-16 h-16 rounded-full mx-auto flex items-center justify-center mb-4 text-3xl bg-green-100 text-green-500';
+                iconDiv.innerHTML = '<i class="fa-solid fa-check"></i>';
+            } else {
+                iconDiv.className = 'w-16 h-16 rounded-full mx-auto flex items-center justify-center mb-4 text-3xl bg-red-100 text-red-500';
+                iconDiv.innerHTML = '<i class="fa-solid fa-exclamation"></i>';
+            }
+
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            
+            // Trigger animation
+            setTimeout(() => {
+                modalContent.classList.remove('modal-enter');
+                modalContent.classList.add('modal-enter-active');
+            }, 10);
+        }
+
+        function closeModal() {
+            modalContent.classList.remove('modal-enter-active');
+            modalContent.classList.add('modal-exit-active');
+            
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+                modalContent.classList.remove('modal-exit-active');
+                modalContent.classList.add('modal-enter');
+            }, 300);
+        }
+
+        // Đóng modal khi click ra ngoài
+        modal.addEventListener('click', function(e) {
+            if (e.target === modal) {
+                closeModal();
+            }
+        });
+        
+        // Navbar scroll effect
+        window.addEventListener('scroll', () => {
+            const nav = document.getElementById('navbar');
+            if (window.scrollY > 20) {
+                nav.classList.add('shadow-md', 'bg-white/95');
+                nav.classList.remove('bg-transparent', 'text-white');
+            } else {
+                nav.classList.remove('shadow-md');
+            }
+        });
+    </script>
+</body>
+</html>
