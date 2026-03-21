@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Running Strength System</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,500;0,600;0,700;0,800;0,900;1,500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #f1f5f9; 
+            --card-bg: #ffffff;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --success: #10b981;
+            --border-color: #e2e8f0;
+        }
+
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: 'Nunito', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: var(--bg-color);
+            background-image: radial-gradient(circle at 100% 0%, rgba(255, 107, 107, 0.08) 0%, transparent 40%),
+                              radial-gradient(circle at 0% 100%, rgba(59, 130, 246, 0.08) 0%, transparent 40%);
+            color: var(--text-main);
+            margin: 0;
+            padding: 0;
+            line-height: 1.6;
+            padding-bottom: 3rem;
+            min-height: 100vh;
+        }
+
+        /* Progress Bar */
+        .progress-wrapper {
+            background-color: #e2e8f0;
+            height: 8px;
+            width: 100%;
+            position: sticky;
+            top: 0;
+            z-index: 50;
+        }
+        
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #ff6b6b, #f59e0b, #10b981, #8b5cf6);
+            width: 0%;
+            transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 2px 10px rgba(16, 185, 129, 0.4);
+            border-radius: 0 4px 4px 0;
+        }
+
+        header {
+            text-align: center;
+            padding: 3.5rem 1rem 2.5rem;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 2.5rem;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            background: linear-gradient(135deg, #ff6b6b, #8b5cf6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 2px 4px 10px rgba(139, 92, 246, 0.15);
+        }
+
+        h1 span {
+            color: var(--text-main);
+            -webkit-text-fill-color: var(--text-main);
+            background: none;
+        }
+
+        .subtitle {
+            font-size: 1.25rem;
+            font-weight: 800;
+            color: #334155;
+            margin: 0.75rem 0 0.25rem;
+        }
+
+        .tagline {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+            font-weight: 700;
+            margin-top: 0.2rem;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 0 1rem;
+        }
+
+        /* Grid Layout */
+        .system-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1.5rem;
+            margin-bottom: 2.5rem;
+        }
+
+        @media (min-width: 768px) {
+            .system-grid {
+                grid-template-columns: 1fr 1fr;
+                gap: 2rem;
+            }
+        }
+
+        /* System Card */
+        .system-card {
+            background: var(--card-bg);
+            border-radius: 24px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.01);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 1px solid rgba(255,255,255,0.8);
+        }
+
+        .system-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 20px 35px -10px rgba(0, 0, 0, 0.08);
+        }
+
+        /* Theme Colors per card */
+        .card-lower { --theme: #ff6b6b; --theme-light: rgba(255, 107, 107, 0.12); }
+        .card-core { --theme: #f59e0b; --theme-light: rgba(245, 158, 11, 0.12); }
+        .card-ankle { --theme: #10b981; --theme-light: rgba(16, 185, 129, 0.12); }
+        .card-explosive { --theme: #8b5cf6; --theme-light: rgba(139, 92, 246, 0.12); }
+
+        .card-header {
+            padding: 1.2rem;
+            font-size: 1.15rem;
+            font-weight: 800;
+            background: var(--theme-light);
+            color: var(--theme);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            text-transform: uppercase;
+        }
+
+        .card-header i { 
+            color: var(--theme);
+            font-size: 1.3rem;
+            background: white;
+            width: 38px;
+            height: 38px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+
+        .exercise-list {
+            padding: 0.5rem 1.2rem;
+            flex-grow: 1;
+        }
+
+        /* Exercise Item */
+        .exercise-item {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            padding: 1.2rem 0;
+            border-bottom: 2px dashed var(--border-color);
+            cursor: pointer;
+            transition: opacity 0.3s;
+        }
+
+        .exercise-item:last-child {
+            border-bottom: none;
+        }
+
+        .ex-info {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+            padding-right: 15px;
+        }
+
+        .ex-name {
+            font-weight: 800;
+            font-size: 1.1rem;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            transition: color 0.3s;
+        }
+
+        .ex-name > i:first-child {
+            color: var(--theme);
+            font-size: 1.1rem;
+            opacity: 0.9;
+            width: 20px;
+            text-align: center;
+        }
+
+        .ex-reps {
+            color: var(--theme);
+            font-weight: 800;
+            font-size: 0.9rem;
+            margin-top: 0.3rem;
+            background: var(--theme-light);
+            display: inline-block;
+            padding: 2px 12px;
+            border-radius: 20px;
+            width: fit-content;
+        }
+
+        .ex-desc {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            margin-top: 0.6rem;
+            line-height: 1.5;
+            font-weight: 600;
+        }
+
+        .ex-desc strong {
+            color: #475569;
+            font-weight: 800;
+        }
+
+        .ex-video {
+            font-size: 0.8rem;
+            color: #64748b;
+            background: #f1f5f9;
+            text-decoration: none;
+            margin-top: 3px;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-weight: 700;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+        
+        .ex-video:hover {
+            color: white;
+            background: var(--theme);
+            box-shadow: 0 4px 8px var(--theme-light);
+        }
+
+        /* Checkbox UI */
+        .checkbox-container {
+            width: 32px;
+            height: 32px;
+            border: 3px solid #cbd5e1;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            flex-shrink: 0;
+            margin-left: 0.5rem;
+            margin-top: 0.2rem;
+            background: white;
+        }
+
+        .checkbox-container i {
+            color: transparent;
+            font-size: 16px;
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            transform: scale(0);
+        }
+
+        .exercise-item:hover .checkbox-container {
+            border-color: var(--theme);
+        }
+
+        /* Completed State */
+        .exercise-item.completed {
+            opacity: 0.6;
+        }
+
+        .exercise-item.completed .ex-name {
+            text-decoration: line-through;
+            color: var(--text-muted);
+        }
+
+        .exercise-item.completed .checkbox-container {
+            background-color: var(--theme);
+            border-color: var(--theme);
+            animation: pop 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .exercise-item.completed .checkbox-container i {
+            color: white;
+            transform: scale(1);
+        }
+
+        @keyframes pop {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.3); }
+            100% { transform: scale(1); }
+        }
+
+        .card-footer {
+            padding: 1rem;
+            background: #f8fafc;
+            font-size: 0.95rem;
+            color: #64748b;
+            text-align: center;
+            border-top: 1px solid var(--border-color);
+            font-weight: 800;
+        }
+
+        /* Training Schedule Section */
+        .schedule-section {
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            border-radius: 24px;
+            padding: 3rem 2rem;
+            text-align: center;
+            margin-top: 3rem;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 15px 30px rgba(139, 92, 246, 0.2);
+            border: none;
+        }
+
+        .schedule-title {
+            color: #ffffff;
+            font-size: 1.3rem;
+            font-weight: 900;
+            letter-spacing: 1.5px;
+            margin-top: 0;
+            margin-bottom: 1.5rem;
+            display: inline-block;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.3);
+            padding-bottom: 0.5rem;
+        }
+
+        .schedule-list {
+            list-style: none;
+            padding: 0;
+            margin: 0 0 2rem 0;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .schedule-list li {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #f8fafc;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
+        }
+
+        .schedule-list li i {
+            color: #fcd34d;
+            font-size: 1rem;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 6px;
+            border-radius: 50%;
+        }
+
+        .quote {
+            font-size: 1.5rem;
+            font-weight: 900;
+            color: #fde047;
+            font-style: italic;
+            margin: 2rem 0 0 0;
+            line-height: 1.3;
+            text-shadow: none;
+        }
+
+        /* Modal Alert */
+        .modal-overlay {
+            position: fixed; 
+            top: 0; left: 0; 
+            width: 100%; height: 100%; 
+            background: rgba(15, 23, 42, 0.5); 
+            backdrop-filter: blur(4px);
+            z-index: 100; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center;
+            animation: fadeIn 0.2s;
+        }
+
+        .modal-box {
+            background: white; 
+            padding: 2.5rem; 
+            border-radius: 24px; 
+            text-align: center; 
+            max-width: 90%; 
+            width: 400px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+        .reset-btn {
+            display: block;
+            width: 100%;
+            background-color: #ffffff;
+            color: #ef4444;
+            border: 2px solid #fecaca;
+            padding: 1.2rem;
+            text-align: center;
+            border-radius: 16px;
+            margin-top: 2rem;
+            cursor: pointer;
+            font-weight: 800;
+            font-size: 1.05rem;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 6px rgba(239, 68, 68, 0.05);
+        }
+
+        .reset-btn:hover {
+            background-color: #fef2f2;
+            border-color: #ef4444;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 15px rgba(239, 68, 68, 0.1);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="progress-wrapper">
+        <div class="progress-bar" id="progressBar"></div>
+    </div>
+
+    <header>
+        <h1>ĐỀN LỪ RUNNING STRENGTH <span>SYSTEM</span></h1>
+        <div class="subtitle">Giáo trình bổ trợ toàn diện cho Runner</div>
+        <div class="tagline">Build Strength - Prevent Injury - Improve Performance<br><span style="font-size: 0.85rem; color: #64748b;">(Xây dựng sức mạnh - Phòng tránh chấn thương - Nâng cao thành tích)</span></div>
+    </header>
+
+    <div class="container">
+        
+        <div class="system-grid">
+            
+            <!-- 1. LOWER BODY POWER -->
+            <div class="system-card card-lower">
+                <div class="card-header"><i class="fas fa-running"></i> LOWER BODY POWER (Sức mạnh thân dưới)</div>
+                <div class="exercise-list">
+                    <div class="exercise-item" id="lb-1" onclick="toggleComplete('lb-1')">
+                        <div class="ex-info">
+                            <span class="ex-name"><i class="fas fa-dumbbell"></i> Squat (Ngồi xổm) <a href="https://www.youtube.com/results?search_query=hướng+dẫn+tập+squat+đúng+cách+tiếng+việt" target="_blank" class="ex-video" onclick="event.stopPropagation()"><i class="fab fa-youtube"></i> Video</a></span>
+                            <span class="ex-reps">3 hiệp x 15 lần</span>
+                            <span class="ex-desc"><strong>Cách tập:</strong> Hạ hông như ngồi ghế, lưng thẳng, gối không vượt quá mũi chân.<br><strong>Tác dụng:</strong> Tăng sức mạnh cơ đùi trước, cơ mông, đùi sau.</span>
+                        </div>
+                        <div class="checkbox-container"><i class="fas fa-check"></i></div>
+                    </div>
+                    <div class="exercise-item" id="lb-2" onclick="toggleComplete('lb-2')">
+                        <div class="ex-info">
+                            <span class="ex-name"><i class="fas fa-person-walking"></i> Lunge (Chùng chân) <a href="https://www.youtube.com/results?search_query=hướng+dẫn+tập+lunge+đúng+cách" target="_blank" class="ex-video" onclick="event.stopPropagation()"><i class="fab fa-youtube"></i> Video</a></span>
+                            <span class="ex-reps">3 hiệp x 10 lần/chân</span>
+                            <span class="ex-desc"><strong>Cách tập:</strong> Bước 1 chân lên trước, hạ trọng tâm đến khi 2 đầu gối vuông góc.<br><strong>Tác dụng:</strong> Cải thiện thăng bằng, sức mạnh từng chân, linh hoạt khớp háng.</span>
+                        </div>
+                        <div class="checkbox-container"><i class="fas fa-check"></i></div>
+                    </div>
+                    <div class="exercise-item" id="lb-3" onclick="toggleComplete('lb-3')">
+                        <div class="ex-info">
+                            <span class="ex-name"><i class="fas fa-arrow-trend-up"></i> Glute Bridge (Nâng hông) <a href="https://www.youtube.com/results?search_query=hướng+dẫn+tập+glute+bridge+cây+cầu" target="_blank" class="ex-video" onclick="event.stopPropagation()"><i class="fab fa-youtube"></i> Video</a></span>
+                            <span class="ex-reps">3 hiệp x 15 lần</span>
+                            <span class="ex-desc"><strong>Cách tập:</strong> Nằm ngửa, gập gối. Nâng hông lên cao tạo đường thẳng từ vai tới gối.<br><strong>Tác dụng:</strong> Kích hoạt cơ mông, giảm áp lực cho vùng lưng dưới và khớp gối.</span>
+                        </div>
+                        <div class="checkbox-container"><i class="fas fa-check"></i></div>
+                    </div>
+                    <div class="exercise-item" id="lb-4" onclick="toggleComplete('lb-4')">
+                        <div class="ex-info">
+                            <span class="ex-name"><i class="fas fa-scale-balanced"></i> Single-Leg Deadlift (Deadlift 1 chân) <a href="https://www.youtube.com/results?search_query=hướng+dẫn+tập+single+leg+deadlift" target="_blank" class="ex-video" onclick="event.stopPropagation()"><i class="fab fa-youtube"></i> Video</a></span>
+                            <span class="ex-reps">3 hiệp x 10 lần</span>
+                            <span class="ex-desc"><strong>Cách tập:</strong> Đứng 1 chân, cúi gập hông về trước, chân kia duỗi thẳng ra sau.<br><strong>Tác dụng:</strong> Tăng sức mạnh chuỗi cơ mặt sau, rèn luyện độ cân bằng.</span>
+                        </div>
+                        <div class="checkbox-container"><i class="fas fa-check"></i></div>
+                    </div>
+                </div>
+                <div class="card-footer">Tăng lực đẩy – Ổn định đầu gối</div>
+            </div>
+
+            <!-- 2. CORE STABILITY -->
+            <div class="system-card card-core">
+                <div class="card-header"><i class="fas fa-fire"></i> CORE STABILITY (Ổn định cơ lõi)</div>
+                <div class="exercise-list">
+                    <div class="exercise-item" id="cs-1" onclick="toggleComplete('cs-1')">
+                        <div class="ex-info">
+                            <span class="ex-name"><i class="fas fa-minus"></i> Plank (Đo ván) <a href="https://www.youtube.com/results?search_query=hướng+dẫn+tập+plank+chuẩn" target="_blank" class="ex-video" onclick="event.stopPropagation()"><i class="fab fa-youtube"></i> Video</a></span>
+                            <span class="ex-reps">3 hiệp x 60s</span>
+                            <span class="ex-desc"><strong>Cách tập:</strong> Tựa cẳng tay và mũi chân, giữ cơ thể tạo thành một đường thẳng.<br><strong>Tác dụng:</strong> Xây dựng sức bền cơ lõi, cải thiện và giữ vững tư thế chạy.</span>
+                        </div>
+                        <div class="checkbox-container"><i class="fas fa-check"></i></div>
+                    </div>
+                    <div class="exercise-item" id="cs-2" onclick="toggleComplete('cs-2')">
+                        <div class="ex-info">
+                            <span class="ex-name"><i class="fas fa-slash"></i> Side Plank (Plank nghiêng) <a href="https://www.youtube.com/results?search_query=hướng+dẫn+tập+side+plank" target="_blank" class="ex-video" onclick="event.stopPropagation()"><i class="fab fa-youtube"></i> Video</a></span>
+                            <span class="ex-reps">2 hiệp x 30s</span>
+                            <span class="ex-desc"><strong>Cách tập:</strong> Nằm nghiêng, tựa người trên 1 cẳng tay và cạnh ngoài bàn chân, nâng hông.<br><strong>Tác dụng:</strong> Tăng cường cơ chéo bụng, giữ khung xương chậu không bị sụt.</span>
+                        </div>
+                        <div class="checkbox-container"><i class="fas fa-check"></i></div>
+                    </div>
+                    <div class="exercise-item" id="cs-3" onclick="toggleComplete('cs-3')">
+                        <div class="ex-info">
+                            <span class="ex-name"><i class="fas fa-bug"></i> Dead Bug (Bọ chết) <a href="https://www.youtube.com/results?search_query=hướng+dẫn+tập+dead+bug+gập+bụng" target="_blank" class="ex-video" onclick="event.stopPropagation()"><i class="fab fa-youtube"></i> Video</a></span>
+                            <span class="ex-reps">3 hiệp x 12 lần</span>
+                            <span class="ex-desc"><strong>Cách tập:</strong> Nằm ngửa, giơ tay và gập gối lên. Duỗi tay và chân khác bên, lưng sát sàn.<br><strong>Tác dụng:</strong> Cải thiện sự phối hợp tay chân, rèn luyện cơ lõi sâu.</span>
+                        </div>
+                        <div class="checkbox-container"><i class="fas fa-check"></i></div>
+                    </div>
+                    <div class="exercise-item" id="cs-4" onclick="toggleComplete('cs-4')">
+                        <div class="ex-info">
+                            <span class="ex-name"><i class="fas fa-paw"></i> Bird Dog (Chó chim) <a href="https://www.youtube.com/results?search_query=hướng+dẫn+tập+bird+dog" target="_blank" class="ex-video" onclick="event.stopPropagation()"><i class="fab fa-youtube"></i> Video</a></span>
+                            <span class="ex-reps">3 hiệp x 12 lần</span>
+                            <span class="ex-desc"><strong>Cách tập:</strong> Quỳ chống tay, duỗi tay và chân khác bên ra xa song song với sàn.<br><strong>Tác dụng:</strong> Ổn định cột sống, tăng cường sức mạnh lưng dưới và mông.</span>
+                        </div>
+                        <div class="checkbox-container"><i class="fas fa-check"></i></div>
+                    </div>
+                </div>
+                <div class="card-footer">Giữ form – Chạy không mất lực</div>
+            </div>
+
+            <!-- 3. ANKLE CONTROL -->
+            <div class="system-card card-ankle">
+                <div class="card-header"><i class="fas fa-shoe-prints"></i> ANKLE CONTROL (Kiểm soát cổ chân)</div>
+                <div class="exercise-list">
+                    <div class="exercise-item" id="ac-1" onclick="toggleComplete('ac-1')">
+                        <div class="ex-info">
+                            <span class="ex-name"><i class="fas fa-up-long"></i> Calf Raise (Nhón gót) <a href="https://www.youtube.com/results?search_query=hướng+dẫn+tập+nhón+gót+calf+raise" target="_blank" class="ex-video" onclick="event.stopPropagation()"><i class="fab fa-youtube"></i> Video</a></span>
+                            <span class="ex-reps">3 hiệp x 20 lần</span>
+                            <span class="ex-desc"><strong>Cách tập:</strong> Đứng thẳng, nhón gót chân lên cao nhất có thể rồi hạ xuống chậm rãi.<br><strong>Tác dụng:</strong> Tăng sức mạnh bắp chân, phòng ngừa viêm gân Achilles và chuột rút.</span>
+                        </div>
+                        <div class="checkbox-container"><i class="fas fa-check"></i></div>
+                    </div>
+                    <div class="exercise-item" id="ac-2" onclick="toggleComplete('ac-2')">
+                        <div class="ex-info">
+                            <span class="ex-name"><i class="fas fa-shoe-prints"></i> Toe Walk (Đi mũi chân) <a href="https://www.youtube.com/results?search_query=bài+tập+đi+bằng+mũi+chân" target="_blank" class="ex-video" onclick="event.stopPropagation()"><i class="fab fa-youtube"></i> Video</a></span>
+                            <span class="ex-reps">Đi 20m</span>
+                            <span class="ex-desc"><strong>Cách tập:</strong> Nhón cao gót chân và đi bộ tiến về phía trước bằng mũi chân.<br><strong>Tác dụng:</strong> Tăng sức chịu đựng cho cổ chân, lòng bàn chân và bắp chân.</span>
+                        </div>
+                        <div class="checkbox-container"><i class="fas fa-check"></i></div>
+                    </div>
+                    <div class="exercise-item" id="ac-3" onclick="toggleComplete('ac-3')">
+                        <div class="ex-info">
+                            <span class="ex-name"><i class="fas fa-shoe-prints fa-flip-vertical"></i> Heel Walk (Đi gót chân) <a href="https://www.youtube.com/results?search_query=bài+tập+đi+bằng+gót+chân" target="_blank" class="ex-video" onclick="event.stopPropagation()"><i class="fab fa-youtube"></i> Video</a></span>
+                            <span class="ex-reps">Đi 20m</span>
+                            <span class="ex-desc"><strong>Cách tập:</strong> Nâng mũi chân lên cao và đi bộ tiến về phía trước chỉ bằng gót chân.<br><strong>Tác dụng:</strong> Tăng sức mạnh cơ chày trước, phòng ngừa đau ống đồng (shin splints).</span>
+                        </div>
+                        <div class="checkbox-container"><i class="fas fa-check"></i></div>
+                    </div>
+                    <div class="exercise-item" id="ac-4" onclick="toggleComplete('ac-4')">
+                        <div class="ex-info">
+                            <span class="ex-name"><i class="fas fa-rotate"></i> Mobility Drill (Xoay cổ chân) <a href="https://www.youtube.com/results?search_query=bài+tập+khởi+động+giãn+cổ+chân" target="_blank" class="ex-video" onclick="event.stopPropagation()"><i class="fab fa-youtube"></i> Video</a></span>
+                            <span class="ex-reps">Xoay và giãn cổ chân</span>
+                            <span class="ex-desc"><strong>Cách tập:</strong> Xoay tròn khớp cổ chân, gập duỗi bàn chân hoặc dùng dây kháng lực.<br><strong>Tác dụng:</strong> Tăng biên độ vận động khớp cổ chân, giúp sải bước linh hoạt hơn.</span>
+                        </div>
+                        <div class="checkbox-container"><i class="fas fa-check"></i></div>
+                    </div>
+                </div>
+                <div class="card-footer">Chống chấn thương cổ chân</div>
+            </div>
+
+            <!-- 4. EXPLOSIVE POWER -->
+            <div class="system-card card-explosive">
+                <div class="card-header"><i class="fas fa-bolt"></i> EXPLOSIVE POWER (Sức mạnh bùng nổ)</div>
+                <div class="exercise-list">
+                    <div class="exercise-item" id="ep-1" onclick="toggleComplete('ep-1')">
+                        <div class="ex-info">
+                            <span class="ex-name"><i class="fas fa-rocket"></i> Jump Squat (Bật nhảy Squat) <a href="https://www.youtube.com/results?search_query=hướng+dẫn+tập+jump+squat" target="_blank" class="ex-video" onclick="event.stopPropagation()"><i class="fab fa-youtube"></i> Video</a></span>
+                            <span class="ex-reps">3 hiệp x 8 lần</span>
+                            <span class="ex-desc"><strong>Cách tập:</strong> Hạ người xuống tư thế Squat rồi bật nhảy lên cao, tiếp đất nhẹ nhàng.<br><strong>Tác dụng:</strong> Phát triển sức mạnh bùng nổ, tăng lực đẩy khi cất bước.</span>
+                        </div>
+                        <div class="checkbox-container"><i class="fas fa-check"></i></div>
+                    </div>
+                    <div class="exercise-item" id="ep-2" onclick="toggleComplete('ep-2')">
+                        <div class="ex-info">
+                            <span class="ex-name"><i class="fas fa-person-running"></i> Skipping (Bật nảy) <a href="https://www.youtube.com/results?search_query=bài+tập+chạy+bước+nhỏ+skipping" target="_blank" class="ex-video" onclick="event.stopPropagation()"><i class="fab fa-youtube"></i> Video</a></span>
+                            <span class="ex-reps">Chạy nâng cao đùi nhẹ 20m</span>
+                            <span class="ex-desc"><strong>Cách tập:</strong> Chạy nâng cao đùi kết hợp bật nảy nhẹ tiến về phía trước.<br><strong>Tác dụng:</strong> Cải thiện nhịp độ (cadence) và sự đàn hồi của gân cơ.</span>
+                        </div>
+                        <div class="checkbox-container"><i class="fas fa-check"></i></div>
+                    </div>
+                    <div class="exercise-item" id="ep-3" onclick="toggleComplete('ep-3')">
+                        <div class="ex-info">
+                            <span class="ex-name"><i class="fas fa-forward-fast"></i> Bounding (Bật sải dài) <a href="https://www.youtube.com/results?search_query=bài+tập+bật+sải+dài+bounding" target="_blank" class="ex-video" onclick="event.stopPropagation()"><i class="fab fa-youtube"></i> Video</a></span>
+                            <span class="ex-reps">Bật cóc / Bật sải dài 20m</span>
+                            <span class="ex-desc"><strong>Cách tập:</strong> Chạy bật nhảy với những sải bước dài trên không, đánh tay mạnh.<br><strong>Tác dụng:</strong> Tối ưu hóa chiều dài sải chân (stride) và lực đạp sau.</span>
+                        </div>
+                        <div class="checkbox-container"><i class="fas fa-check"></i></div>
+                    </div>
+                </div>
+                <div class="card-footer">Tăng tốc – Cải thiện sải chân (Stride)</div>
+            </div>
+
+        </div>
+
+        <!-- Schedule -->
+        <div class="schedule-section">
+            <h3 class="schedule-title">TRAINING SCHEDULE (LỊCH TẬP LUYỆN)</h3>
+            <ul class="schedule-list">
+                <li><i class="fas fa-circle"></i> 2–3 buổi/tuần</li>
+                <li><i class="fas fa-circle"></i> Không tập trước Long Run</li>
+                <li><i class="fas fa-circle"></i> Tập sau ngày chạy nhẹ</li>
+            </ul>
+            <div class="quote">
+                "Strong runners are built, not born."
+                <div style="font-size: 1rem; color: #e2e8f0; font-weight: 700; margin-top: 0.5rem; text-shadow: none;">(Runner xuất sắc được rèn luyện mà thành, không phải do bẩm sinh)</div>
+            </div>
+        </div>
+
+        <button class="reset-btn" onclick="resetProgress()">
+            <i class="fas fa-undo-alt"></i> Xóa lịch sử và Bắt đầu buổi tập mới
+        </button>
+
+    </div>
+
+    <script>
+        const STORAGE_KEY = 'runner_strength_progress';
+        let progressData = {};
+
+        // 1. Load dữ liệu từ LocalStorage
+        function loadProgress() {
+            const savedData = localStorage.getItem(STORAGE_KEY);
+            if (savedData) {
+                progressData = JSON.parse(savedData);
+                for (const [id, isCompleted] of Object.entries(progressData)) {
+                    if (isCompleted) {
+                        const el = document.getElementById(id);
+                        if (el) el.classList.add('completed');
+                    }
+                }
+            }
+            updateProgressBar();
+        }
+
+        // 2. Toggle trạng thái Hoàn thành
+        function toggleComplete(id) {
+            const el = document.getElementById(id);
+            const isCompleted = el.classList.toggle('completed');
+            
+            progressData[id] = isCompleted;
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(progressData));
+            
+            updateProgressBar();
+        }
+
+        // 3. Reset quá trình
+        function resetProgress() {
+            const confirmBox = document.createElement('div');
+            confirmBox.className = 'modal-overlay';
+            confirmBox.innerHTML = `
+                <div class="modal-box">
+                    <h3 style="margin-top:0; color:#1e293b; font-size:1.5rem; font-weight:800;">Bắt đầu buổi mới?</h3>
+                    <p style="color:#64748b; margin-bottom:2rem; font-weight:600; font-size:1rem;">Toàn bộ dấu tick hoàn thành của buổi trước sẽ bị xóa.</p>
+                    <div style="display:flex; gap:10px; justify-content:center;">
+                        <button id="btn-cancel" style="flex:1; padding:12px; border-radius:12px; border:none; background:#f1f5f9; color:#475569; font-weight:700; cursor:pointer; font-family:'Nunito', sans-serif;">Hủy</button>
+                        <button id="btn-confirm" style="flex:1; padding:12px; border-radius:12px; border:none; background:#ef4444; color:white; font-weight:700; cursor:pointer; box-shadow:0 4px 10px rgba(239,68,68,0.3); font-family:'Nunito', sans-serif;">Đồng ý</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(confirmBox);
+
+            document.getElementById('btn-cancel').onclick = () => confirmBox.remove();
+            document.getElementById('btn-confirm').onclick = () => {
+                progressData = {};
+                localStorage.removeItem(STORAGE_KEY);
+                document.querySelectorAll('.completed').forEach(el => el.classList.remove('completed'));
+                updateProgressBar();
+                confirmBox.remove();
+            };
+        }
+
+        // 4. Cập nhật thanh tiến trình tổng
+        function updateProgressBar() {
+            const items = document.querySelectorAll('.exercise-item');
+            const completedItems = document.querySelectorAll('.exercise-item.completed');
+            
+            const total = items.length;
+            const completed = completedItems.length;
+            
+            const percentage = total === 0 ? 0 : (completed / total) * 100;
+            document.getElementById('progressBar').style.width = percentage + '%';
+        }
+
+        // Khởi chạy
+        window.onload = loadProgress;
+    </script>
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
