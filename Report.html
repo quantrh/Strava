@@ -344,7 +344,8 @@
     <header class="bg-bidv-green text-white p-4 text-center text-sm" style="background-color: #006B68;">
         <div class="container flex justify-between items-center">
             <div class="flex items-center space-x-4">
-                <img src="Running-Management-logo.png" alt="Logo Den lu Running Club" class="h-20 w-auto rounded-md">
+                <!-- Using placeholder for logo to ensure it runs independently -->
+                <img src="https://placehold.co/80x80/006b68/FFFFFF?text=Logo" alt="Logo" class="h-20 w-auto rounded-md">
                 <h1 class="text-2xl font-bold text-white">Báo cáo hoạt động chạy bộ - FOR RUNNER LOVER</h1>
             </div>
             <nav class="flex items-center space-x-4">
@@ -395,6 +396,23 @@
                             </div>
                         </div>
                     </div>
+                    
+                    <!-- NEW FILTERS START HERE -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <label for="report-min-weekly-activities" class="block text-gray-700 text-sm font-bold mb-2" title="Chỉ hiển thị các hoạt động thuộc những tuần đạt số lượng này trở lên">
+                                Số hoạt động tối thiểu/tuần:
+                            </label>
+                            <input type="number" id="report-min-weekly-activities" class="form-input" placeholder="Ví dụ: 3" step="1" min="1">
+                        </div>
+                        <div>
+                            <label for="report-min-activity-duration" class="block text-gray-700 text-sm font-bold mb-2">
+                                Thời gian tối thiểu/hoạt động (phút):
+                            </label>
+                            <input type="number" id="report-min-activity-duration" class="form-input" placeholder="Ví dụ: 60" step="1" min="1">
+                        </div>
+                    </div>
+                    <!-- NEW FILTERS END HERE -->
 
                     <div class="mb-4">
                         <label for="report-min-pace" class="block text-gray-700 text-sm font-bold mb-2">Pace (phút/km) nhỏ hơn hoặc bằng:</label>
@@ -494,7 +512,6 @@
                         <canvas id="heartRatePaceChart"></canvas>
                     </div>
                 </div>
-                <!-- New Chart: Average Heart Rate by Month -->
                 <div class="bg-white p-6 rounded-lg shadow-md border border-gray-200">
                     <h2 class="text-xl font-semibold text-gray-700 mb-4">Nhịp tim trung bình theo tháng</h2>
                     <div class="chart-container">
@@ -614,7 +631,6 @@
                 <p id="penalty-bonus-status" class="mt-4 text-sm text-gray-600 text-center">Chưa có dữ liệu để hiển thị.</p>
             </div>
 
-
         </section>
     </main>
 
@@ -622,7 +638,8 @@
         <div class="container" style="color: var(--bidv-yellow);">
             &copy; 2025 Trương Hồng Quân - Đền Lừ Running Club. All rights reserved (Dev by AIs - Gemini, GPT) - 📧quantrhvn@gmail.com - 📳+84989073739 - 248064a v2.
             <br>
-            <img src="PowerStrava.png" alt="PowerStrava Logo" style="height: 28px; margin: 5px auto 0 auto; display: block;">
+            <!-- Using placeholder for logo to ensure it runs independently -->
+            <img src="https://placehold.co/100x28/006b68/FFFFFF?text=PowerStrava" alt="PowerStrava Logo" style="height: 28px; margin: 5px auto 0 auto; display: block;">
         </div>
     </footer>
 
@@ -674,13 +691,13 @@
     <button id="scroll-to-top-btn" title="Go to top">▲</button>
 
     <script src="https://unpkg.com/xlsx/dist/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script>
         // Supabase configuration
         const SUPABASE_URL = 'https://rmbsxccrwrktbjlnezpu.supabase.co'; // Replace with your Supabase URL
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJtYnN4Y2Nyd3JrdGJqbG5lenB1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg2MjczNjQsImV4cCI6MjA2NDIwMzM2NH0.ydCqificftdtn1niRciFCifeuo8aX6SDGti-hCY5Z_Y'; // Replace with your Supabase Anon Key
 
         const ANALYZE_ACTIVITIES_EDGE_FUNCTION_URL = 'https://rmbsxccrwrktbjlnezpu.supabase.co/functions/v1/analyze-activities-with-gemini';
-
 
         let supabaseClientInstance;
         let allRunnerCredentials = []; 
@@ -693,6 +710,8 @@
         let selectedActivityTypesReport = []; 
         let minPaceFilter = null; 
         let minDistanceFilter = null; 
+        let minWeeklyActivitiesFilter = null; // New state
+        let minActivityDurationFilter = null; // New state
 
         // Chart.js instances
         let distanceChart, paceDistributionChart, heartRatePaceChart, activityTypeChart, monthlyHeartRateChart;
@@ -715,14 +734,18 @@
         const applyReportFiltersBtn = document.getElementById('apply-report-filters-btn');
         const reportFilterStatus = document.getElementById('report-filter-status');
         
+        // New Filter Elements
+        const reportMinWeeklyActivitiesInput = document.getElementById('report-min-weekly-activities');
+        const reportMinActivityDurationInput = document.getElementById('report-min-activity-duration');
+        
         // Summary stats elements
         const totalDistanceSpan = document.getElementById('totalDistance');
         const totalMovingTimeSpan = document.getElementById('totalMovingTime');
         const averageOverallPaceSpan = document.getElementById('averageOverallPace');
         const totalActivitiesSpan = document.getElementById('totalActivities');
-        const totalElevationGainSpan = document.getElementById('totalElevationGain'); // New element
-        const longestRunsList = document.getElementById('longest-runs-list'); // New element
-        const fastestRunsList = document.getElementById('fastest-runs-list'); // New element
+        const totalElevationGainSpan = document.getElementById('totalElevationGain'); 
+        const longestRunsList = document.getElementById('longest-runs-list'); 
+        const fastestRunsList = document.getElementById('fastest-runs-list'); 
 
         // New Gemini API related elements
         const getTrainingSuggestionsBtn = document.getElementById('get-training-suggestions-btn');
@@ -781,7 +804,6 @@
             'RockClimbing', 'Alpinism', 'Badminton', 'Squash', 'TableTennis', 'Tennis', 'Volleyball', 
             'Surfing', 'Pilates', 'Golf', 'WaterSport', 'Soccer', 'Basketball'
         ].sort();
-
 
         // --- Helper Functions ---
 
@@ -984,7 +1006,6 @@
             }
         });
 
-
         async function fetchAllRunnerCredentials() {
             try {
                 const { data, error } = await supabaseClientInstance
@@ -993,7 +1014,6 @@
                     .order('runner_name', { ascending: true });
                 if (error) throw error;
                 allRunnerCredentials = data;
-                console.log('Fetched all runner credentials for report:', allRunnerCredentials);
             } catch (error) {
                 console.error('Error fetching all runner credentials:', error.message);
                 showAlert(`Lỗi khi tải thông tin runner: ${error.message}`);
@@ -1009,7 +1029,6 @@
                     .order('name', { ascending: true });
                 if (error) throw error;
                 allClubs = data;
-                console.log('Fetched clubs for report:', allClubs);
             } catch (error) {
                 console.error('Error fetching clubs for report:', error.message);
                 showAlert(`Lỗi khi tải danh sách câu lạc bộ: ${error.message}`);
@@ -1036,9 +1055,11 @@
             populateActivityTypeFilter();
             updateMultiSelectDisplay(multiSelectDisplayReport, selectedActivityTypesReport, multiSelectOptionsReport, 'Chọn loại hoạt động');
 
-            // Restore pace and distance filter values
+            // Restore input values
             reportMinPaceInput.value = minPaceFilter !== null ? minPaceFilter : '';
             reportMinDistanceInput.value = minDistanceFilter !== null ? minDistanceFilter : '';
+            reportMinWeeklyActivitiesInput.value = minWeeklyActivitiesFilter !== null ? minWeeklyActivitiesFilter : '';
+            reportMinActivityDurationInput.value = minActivityDurationFilter !== null ? minActivityDurationFilter : '';
         }
 
         async function fetchAndRenderReportData() {
@@ -1089,6 +1110,11 @@
                 if (minDistanceFilter !== null && minDistanceFilter > 0) {
                     query = query.gte('distance', minDistanceFilter * 1000); 
                 }
+                
+                // --- NEW FILTER LOGIC: Minimum Duration ---
+                if (minActivityDurationFilter !== null && minActivityDurationFilter > 0) {
+                    query = query.gte('moving_time', minActivityDurationFilter * 60); // Convert minutes to seconds
+                }
 
                 if (reportStartDateInput.value) {
                     const selectedStartDate = new Date(reportStartDateInput.value);
@@ -1118,6 +1144,30 @@
                     pace_seconds_per_km_raw: (activity.average_speed !== null && activity.average_speed > 0) ? (1000 / activity.average_speed) : null,
                     pace_min_per_km_formatted: formatPaceForTable(activity.average_speed) 
                 }));
+                
+                // --- NEW FILTER LOGIC: Minimum Weekly Activities (In-Memory Processing) ---
+                if (minWeeklyActivitiesFilter !== null && minWeeklyActivitiesFilter > 0) {
+                    const weekRunnerCounts = {}; // Track activities per user per week
+                    
+                    // Count activities
+                    allActivitiesData.forEach(activity => {
+                        const isoWeek = getISOWeekString(activity.start_date);
+                        if (isoWeek) {
+                            const key = `${activity.user_id}-${isoWeek}`;
+                            weekRunnerCounts[key] = (weekRunnerCounts[key] || 0) + 1;
+                        }
+                    });
+                    
+                    // Filter the dataset: Only keep activities belonging to a runner in a week where they met the minimum count
+                    allActivitiesData = allActivitiesData.filter(activity => {
+                        const isoWeek = getISOWeekString(activity.start_date);
+                        if (isoWeek) {
+                            const key = `${activity.user_id}-${isoWeek}`;
+                            return weekRunnerCounts[key] >= minWeeklyActivitiesFilter;
+                        }
+                        return false;
+                    });
+                }
 
                 reportFilterStatus.textContent = `Đã tải ${allActivitiesData.length} hoạt động.`;
                 renderAllReports(); 
@@ -1137,18 +1187,18 @@
             let totalActivities = allActivitiesData.length;
             let totalDistance = 0; 
             let totalMovingTime = 0; 
-            let totalElevationGain = 0; // New variable
+            let totalElevationGain = 0; 
 
             allActivitiesData.forEach(activity => {
                 totalDistance += activity.distance || 0;
                 totalMovingTime += activity.moving_time || 0;
-                totalElevationGain += activity.total_elevation_gain || 0; // Sum elevation gain
+                totalElevationGain += activity.total_elevation_gain || 0; 
             });
 
             totalActivitiesSpan.textContent = totalActivities;
             totalDistanceSpan.textContent = `${(totalDistance / 1000).toFixed(2)} KM`;
             totalMovingTimeSpan.textContent = formatTime(totalMovingTime);
-            totalElevationGainSpan.textContent = `${Math.round(totalElevationGain)} m`; // Display total gain
+            totalElevationGainSpan.textContent = `${Math.round(totalElevationGain)} m`; 
 
             // Calculate overall average pace
             let averageOverallPaceFormatted = 'N/A';
@@ -1177,7 +1227,6 @@
             renderChartJSCharts(allActivitiesData);
         }
 
-        // New function to find and render top activities
         function renderTopActivities(data) {
             // Find 2 longest runs
             const longestRuns = [...data]
@@ -1229,26 +1278,52 @@
             }
         }
         
+        function renderDetailedActivitiesTable(activities) {
+            detailedActivitiesTableBody.innerHTML = '';
+            if (activities.length === 0) {
+                detailedActivitiesStatus.textContent = 'Không có hoạt động nào để hiển thị.';
+                return;
+            }
+            detailedActivitiesStatus.textContent = '';
+
+            activities.forEach(activity => {
+                const row = detailedActivitiesTableBody.insertRow();
+                const runner = allRunnerCredentials.find(rc => String(rc.athlete_id) === String(activity.user_id));
+                const runnerName = runner ? runner.runner_name : 'N/A';
+                const runnerClub = runner ? runner.running_team : 'N/A';
+
+                row.innerHTML = `
+                    <td>${runnerName}</td>
+                    <td>${runnerClub}</td>
+                    <td>${activity.name}</td>
+                    <td>${activity.type}</td>
+                    <td>${new Date(activity.start_date).toLocaleString('vi-VN', { dateStyle: 'short', timeStyle: 'short' })}</td>
+                    <td>${(activity.distance / 1000).toFixed(2)}</td>
+                    <td>${formatTime(activity.moving_time)}</td>
+                    <td>${formatPaceForTable(activity.average_speed)}</td>
+                    <td>${formatKilojoules(activity.kilojoules)}</td>
+                    <td>${activity.average_heartrate ? activity.average_heartrate.toFixed(0) : 'N/A'}</td>
+                    <td>${formatElevationGain(activity.total_elevation_gain)}</td>
+                `;
+            });
+        }
+
         function renderChartJSCharts(data) {
             renderDistanceChart(data);
             renderPaceDistributionChart(data);
             renderHeartRatePaceChart(data);
-            renderMonthlyHeartRateChart(data); // Call the new chart renderer
+            renderMonthlyHeartRateChart(data); 
             renderActivityTypeChart(data);
         }
 
-        // New function to render Monthly Heart Rate Chart
         function renderMonthlyHeartRateChart(data) {
             const ctx = document.getElementById('monthlyHeartRateChart').getContext('2d');
 
-            // 1. Group by Month (YYYY-MM) and calculate average HR
-            const monthlyStats = {}; // { '2023-10': { sum: 0, count: 0 }, ... }
+            const monthlyStats = {}; 
 
             data.forEach(activity => {
-                // Only consider activities with valid heart rate
                 if (activity.average_heartrate && activity.average_heartrate > 0) {
                     const date = new Date(activity.start_date);
-                    // Format: YYYY-MM
                     const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
 
                     if (!monthlyStats[monthKey]) {
@@ -1259,14 +1334,12 @@
                 }
             });
 
-            // 2. Prepare sorted data for chart
-            const labels = Object.keys(monthlyStats).sort(); // Sort chronological
+            const labels = Object.keys(monthlyStats).sort(); 
             const hrData = labels.map(month => {
                 const stats = monthlyStats[month];
                 return (stats.sum / stats.count).toFixed(1);
             });
 
-            // 3. Render Chart
             if (monthlyHeartRateChart) {
                 monthlyHeartRateChart.destroy();
             }
@@ -1310,20 +1383,12 @@
                     },
                     scales: {
                         x: {
-                            title: {
-                                display: true,
-                                text: 'Tháng',
-                                color: '#4b5563'
-                            },
+                            title: { display: true, text: 'Tháng', color: '#4b5563' },
                             ticks: { color: '#4b5563' }
                         },
                         y: {
-                            title: {
-                                display: true,
-                                text: 'Nhịp tim (bpm)',
-                                color: '#4b5563'
-                            },
-                            beginAtZero: false, // Often HR doesn't start at 0, looks better
+                            title: { display: true, text: 'Nhịp tim (bpm)', color: '#4b5563' },
+                            beginAtZero: false, 
                             ticks: { color: '#4b5563' }
                         }
                     }
@@ -1331,34 +1396,312 @@
             });
         }
 
-        function renderDetailedActivitiesTable(activities) {
-            detailedActivitiesTableBody.innerHTML = '';
-            if (activities.length === 0) {
-                detailedActivitiesStatus.textContent = 'Không có hoạt động nào để hiển thị.';
+        function renderDistanceChart(data) {
+            const ctx = document.getElementById('distanceChart').getContext('2d');
+
+            data.sort((a, b) => a.start_date - b.start_date);
+
+            const labels = data.map(activity => activity.start_date.toLocaleDateString('vi-VN'));
+            const distances = data.map(activity => activity.distance_km);
+
+            if (distanceChart) {
+                distanceChart.destroy(); 
+            }
+
+            distanceChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Khoảng cách (km)',
+                        data: distances,
+                        borderColor: 'rgb(75, 192, 192)',
+                        backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                        tension: 0.1,
+                        fill: true,
+                        pointBackgroundColor: 'rgb(75, 192, 192)',
+                        pointBorderColor: '#fff',
+                        pointHoverBackgroundColor: '#fff',
+                        pointHoverBorderColor: 'rgb(75, 192, 192)'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const activity = data[context.dataIndex];
+                                    return `Khoảng cách: ${activity.distance_km} km\nThời gian: ${activity.moving_time_formatted}\nTốc độ TB: ${activity.pace_min_per_km_formatted}`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: { title: { display: true, text: 'Ngày', color: '#4b5563' }, ticks: { color: '#4b5563' } },
+                        y: { title: { display: true, text: 'Khoảng cách (km)', color: '#4b5563' }, beginAtZero: true, ticks: { color: '#4b5563' } }
+                    }
+                }
+            });
+        }
+
+        function renderPaceDistributionChart(data) {
+            const ctx = document.getElementById('paceDistributionChart').getContext('2d');
+
+            const validPaces = data
+                .filter(activity => activity.pace_seconds_per_km_raw !== null && activity.pace_seconds_per_km_raw > 0)
+                .map(activity => activity.pace_seconds_per_km_raw);
+
+            if (validPaces.length === 0) {
+                if (paceDistributionChart) paceDistributionChart.destroy();
+                ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height); 
+                ctx.font = '16px Inter';
+                ctx.fillStyle = '#6b7280';
+                ctx.fillText("Không có dữ liệu tốc độ để hiển thị.", 10, 50);
                 return;
             }
-            detailedActivitiesStatus.textContent = '';
 
-            activities.forEach(activity => {
-                const row = detailedActivitiesTableBody.insertRow();
-                const runner = allRunnerCredentials.find(rc => String(rc.athlete_id) === String(activity.user_id));
-                const runnerName = runner ? runner.runner_name : 'N/A';
-                const runnerClub = runner ? runner.running_team : 'N/A';
+            const minPace = Math.min(...validPaces);
+            const maxPace = Math.max(...validPaces);
+            const binSize = 30; 
+            const bins = {};
 
-                row.innerHTML = `
-                    <td>${runnerName}</td>
-                    <td>${runnerClub}</td>
-                    <td>${activity.name}</td>
-                    <td>${activity.type}</td>
-                    <td>${new Date(activity.start_date).toLocaleString('vi-VN', { dateStyle: 'short', timeStyle: 'short' })}</td>
-                    <td>${(activity.distance / 1000).toFixed(2)}</td>
-                    <td>${formatTime(activity.moving_time)}</td>
-                    <td>${formatPaceForTable(activity.average_speed)}</td>
-                    <td>${formatKilojoules(activity.kilojoules)}</td>
-                    <td>${activity.average_heartrate ? activity.average_heartrate.toFixed(0) : 'N/A'}</td>
-                    <td>${formatElevationGain(activity.total_elevation_gain)}</td>
-                `;
+            for (let i = Math.floor(minPace / binSize) * binSize; i <= maxPace + binSize; i += binSize) {
+                bins[i.toFixed(0)] = 0;
+            }
+
+            validPaces.forEach(pace => {
+                const binKey = (Math.floor(pace / binSize) * binSize).toFixed(0);
+                if (bins[binKey] !== undefined) {
+                    bins[binKey]++;
+                }
             });
+
+            const labels = Object.keys(bins).sort((a, b) => parseFloat(a) - parseFloat(b));
+            const counts = labels.map(label => bins[label]);
+
+            if (paceDistributionChart) {
+                paceDistributionChart.destroy();
+            }
+
+            paceDistributionChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels, 
+                    datasets: [{
+                        label: 'Số lượng hoạt động',
+                        data: counts,
+                        backgroundColor: 'rgba(153, 102, 255, 0.6)',
+                        borderColor: 'rgb(153, 102, 255)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                title: function(context) {
+                                    const rawSeconds = parseFloat(context[0].label);
+                                    const startPace = formatPaceLabel(rawSeconds);
+                                    const endPace = formatPaceLabel(rawSeconds + binSize);
+                                    return `Tốc độ: ${startPace} - ${endPace} /km`;
+                                },
+                                label: function(context) { return `Số lượng hoạt động: ${context.parsed.y}`; }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            title: { display: true, text: 'Tốc độ trung bình (phút/km)', color: '#4b5563' },
+                            ticks: {
+                                color: '#4b5563',
+                                callback: function(value, index, values) {
+                                    const startSeconds = parseFloat(this.getLabelForValue(value));
+                                    const endSeconds = startSeconds + binSize;
+                                    return `${formatPaceLabel(startSeconds)} - ${formatPaceLabel(endSeconds)}`;
+                                }
+                            }
+                        },
+                        y: { title: { display: true, text: 'Số lượng hoạt động', color: '#4b5563' }, beginAtZero: true, ticks: { precision: 0, color: '#4b5563' } }
+                    }
+                }
+            });
+        }
+
+        function renderHeartRatePaceChart(data) {
+            const ctx = document.getElementById('heartRatePaceChart').getContext('2d');
+
+            const scatterData = data
+                .filter(activity => activity.average_heartrate !== null && activity.average_heartrate > 0 && activity.pace_seconds_per_km_raw !== null && activity.pace_seconds_per_km_raw > 0)
+                .map(activity => ({
+                    x: activity.pace_seconds_per_km_raw, 
+                    y: activity.average_heartrate,
+                    name: activity.name,
+                    distance_km: activity.distance_km,
+                    moving_time_formatted: activity.moving_time_formatted,
+                    pace_min_per_km_formatted: formatPaceForTable(activity.average_speed) 
+                }));
+
+            if (scatterData.length === 0) {
+                if (heartRatePaceChart) heartRatePaceChart.destroy();
+                ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height); 
+                ctx.font = '16px Inter';
+                ctx.fillStyle = '#6b7280';
+                ctx.fillText("Không có dữ liệu nhịp tim/tốc độ để hiển ý.", 10, 50);
+                return;
+            }
+
+            if (heartRatePaceChart) {
+                heartRatePaceChart.destroy();
+            }
+
+            heartRatePaceChart = new Chart(ctx, {
+                type: 'scatter',
+                data: {
+                    datasets: [{
+                        label: 'Nhịp tim trung bình vs Tốc độ trung bình',
+                        data: scatterData,
+                        backgroundColor: 'rgba(255, 99, 132, 0.6)',
+                        borderColor: 'rgb(255, 99, 132)',
+                        pointRadius: 6,
+                        pointHoverRadius: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const item = context.raw;
+                                    return `Hoạt động: ${item.name}\nTốc độ TB: ${item.pace_min_per_km_formatted}\nNhịp tim TB: ${item.y.toFixed(1)} bpm\nKhoảng cách: ${item.distance_km} km\nThời gian: ${item.moving_time_formatted}`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            title: { display: true, text: 'Tốc độ trung bình (phút/km)', color: '#4b5563' },
+                            beginAtZero: true,
+                            ticks: { color: '#4b5563', callback: function(value) { return formatPaceLabel(value); } }
+                        },
+                        y: { title: { display: true, text: 'Nhịp tim trung bình (bpm)', color: '#4b5563' }, beginAtZero: true, ticks: { color: '#4b5563' } }
+                    }
+                }
+            });
+        }
+
+        function renderActivityTypeChart(data) {
+            const ctx = document.getElementById('activityTypeChart').getContext('2d');
+
+            const activityTypes = {};
+            data.forEach(activity => {
+                activityTypes[activity.type] = (activityTypes[activity.type] || 0) + 1;
+            });
+
+            const labels = Object.keys(activityTypes);
+            const counts = Object.values(activityTypes);
+
+            const backgroundColors = [
+                'rgba(255, 205, 86, 0.8)', 'rgba(54, 162, 235, 0.8)', 'rgba(75, 192, 192, 0.8)', 'rgba(153, 102, 255, 0.8)', 'rgba(201, 203, 207, 0.8)'  
+            ];
+            const borderColors = [
+                'rgb(255, 205, 86)', 'rgb(54, 162, 235)', 'rgb(75, 192, 192)', 'rgb(153, 102, 255)', 'rgb(201, 203, 207)'
+            ];
+
+            if (activityTypeChart) {
+                activityTypeChart.destroy();
+            }
+
+            activityTypeChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Số lượng hoạt động',
+                        data: counts,
+                        backgroundColor: backgroundColors.slice(0, labels.length),
+                        borderColor: borderColors.slice(0, labels.length),
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const label = context.label || '';
+                                    const value = context.parsed;
+                                    const total = context.dataset.data.reduce((sum, val) => sum + val, 0);
+                                    const percentage = ((value / total) * 100).toFixed(1);
+                                    return `${label}: ${value} (${percentage}%)`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function getISOWeekString(d) {
+            let activityDateUtc;
+
+            if (typeof d === 'string') {
+                activityDateUtc = new Date(d);
+            } else if (d instanceof Date) {
+                activityDateUtc = d;
+            } else {
+                console.error("Invalid date input for getISOWeekString:", d);
+                return null;
+            }
+
+            if (isNaN(activityDateUtc.getTime())) {
+                console.error("Invalid Date object after parsing in getISOWeekString:", d);
+                return null;
+            }
+
+            const formatter = new Intl.DateTimeFormat('en-US', {
+                year: 'numeric',
+                month: 'numeric',
+                day: 'numeric',
+                hour: 'numeric',
+                minute: 'numeric',
+                second: 'numeric',
+                timeZone: 'Asia/Ho_Chi_Minh',
+                hour12: false 
+            });
+
+            const parts = formatter.formatToParts(activityDateUtc);
+            let year, month, day, hour = 0, minute = 0, second = 0;
+
+            parts.forEach(p => {
+                switch (p.type) {
+                    case 'year': year = parseInt(p.value); break;
+                    case 'month': month = parseInt(p.value); break;
+                    case 'day': day = parseInt(p.value); break;
+                    case 'hour': hour = parseInt(p.value); break;
+                    case 'minute': minute = parseInt(p.value); break;
+                    case 'second': second = parseInt(p.value); break;
+                }
+            });
+
+            const vietnamAlignedUtcDate = new Date(Date.UTC(year, month - 1, day, hour, minute, second));
+            vietnamAlignedUtcDate.setUTCHours(0, 0, 0, 0);
+
+            const dayOfVietnamWeekUtc = vietnamAlignedUtcDate.getUTCDay() || 7; 
+            vietnamAlignedUtcDate.setUTCDate(vietnamAlignedUtcDate.getUTCDate() + 4 - dayOfVietnamWeekUtc);
+
+            const isoWeekYear = vietnamAlignedUtcDate.getUTCFullYear();
+            const yearStart = new Date(Date.UTC(isoWeekYear, 0, 1));
+            const weekNo = Math.ceil((((vietnamAlignedUtcDate - yearStart) / 86400000) + 1) / 7);
+
+            return `${isoWeekYear}-W${String(weekNo).padStart(2, '0')}`;
         }
 
         function renderWeeklyDistanceChart(activities) {
@@ -1502,61 +1845,6 @@
                 .text("Quãng đường (KM)");
         }
 
-        function getISOWeekString(d) {
-            let activityDateUtc;
-
-            if (typeof d === 'string') {
-                activityDateUtc = new Date(d);
-            } else if (d instanceof Date) {
-                activityDateUtc = d;
-            } else {
-                console.error("Invalid date input for getISOWeekString:", d);
-                return null;
-            }
-
-            if (isNaN(activityDateUtc.getTime())) {
-                console.error("Invalid Date object after parsing in getISOWeekString:", d);
-                return null;
-            }
-
-            const formatter = new Intl.DateTimeFormat('en-US', {
-                year: 'numeric',
-                month: 'numeric',
-                day: 'numeric',
-                hour: 'numeric',
-                minute: 'numeric',
-                second: 'numeric',
-                timeZone: 'Asia/Ho_Chi_Minh',
-                hour12: false 
-            });
-
-            const parts = formatter.formatToParts(activityDateUtc);
-            let year, month, day, hour = 0, minute = 0, second = 0;
-
-            parts.forEach(p => {
-                switch (p.type) {
-                    case 'year': year = parseInt(p.value); break;
-                    case 'month': month = parseInt(p.value); break;
-                    case 'day': day = parseInt(p.value); break;
-                    case 'hour': hour = parseInt(p.value); break;
-                    case 'minute': minute = parseInt(p.value); break;
-                    case 'second': second = parseInt(p.value); break;
-                }
-            });
-
-            const vietnamAlignedUtcDate = new Date(Date.UTC(year, month - 1, day, hour, minute, second));
-            vietnamAlignedUtcDate.setUTCHours(0, 0, 0, 0);
-
-            const dayOfVietnamWeekUtc = vietnamAlignedUtcDate.getUTCDay() || 7; 
-            vietnamAlignedUtcDate.setUTCDate(vietnamAlignedUtcDate.getUTCDate() + 4 - dayOfVietnamWeekUtc);
-
-            const isoWeekYear = vietnamAlignedUtcDate.getUTCFullYear();
-            const yearStart = new Date(Date.UTC(isoWeekYear, 0, 1));
-            const weekNo = Math.ceil((((vietnamAlignedUtcDate - yearStart) / 86400000) + 1) / 7);
-
-            return `${isoWeekYear}-W${String(weekNo).padStart(2, '0')}`;
-        }
-
         function displayActivitiesInModal(activitiesToDisplay) {
             weeklyActivitiesList.innerHTML = '';
             weeklyActivitiesStatus.textContent = '';
@@ -1592,6 +1880,229 @@
                 });
             } else {
                 weeklyActivitiesStatus.textContent = 'Không tìm thấy hoạt động nào cho tuần này.';
+            }
+        }
+
+        function renderDistanceCharts(activities) {
+            distanceByRunnerChart.innerHTML = '<p class="text-gray-500 text-sm">Biểu đồ quãng đường theo Runner sẽ hiển thị ở đây.</p>';
+            distanceByClubChart.innerHTML = '<p class="text-gray-500 text-sm">Biểu đồ quãng đường theo CLB sẽ hiển thị ở đây.</p>';
+            const clubLegendContainer = document.getElementById('distance-by-club-legend');
+
+            if (activities.length === 0) {
+                if (clubLegendContainer) clubLegendContainer.innerHTML = '';
+                return;
+            }
+
+            const distanceByRunner = new Map();
+            const statsByClub = new Map();
+
+            activities.forEach(activity => {
+                const distanceKm = activity.distance / 1000;
+                const runner = allRunnerCredentials.find(rc => String(rc.athlete_id) === String(activity.user_id));
+                const runnerName = runner ? runner.runner_name : `Runner ID: ${activity.user_id || 'Unknown'}`;
+                const clubName = runner ? runner.running_team : 'Không rõ CLB';
+                const runnerId = String(activity.user_id);
+
+                distanceByRunner.set(runnerName, (distanceByRunner.get(runnerName) || 0) + distanceKm);
+                
+                if (!statsByClub.has(clubName)) {
+                    statsByClub.set(clubName, { distance: 0, runners: new Set() });
+                }
+                const clubStats = statsByClub.get(clubName);
+                clubStats.distance += distanceKm;
+                clubStats.runners.add(runnerId);
+            });
+
+            const runnerData = Array.from(distanceByRunner.entries()).map(([name, distance]) => ({ name, distance }));
+            const clubData = Array.from(statsByClub.entries()).map(([name, stats]) => ({
+                name,
+                distance: stats.distance,
+                runnerCount: stats.runners.size
+            }));
+
+            drawBubbleChart(distanceByRunnerChart, runnerData, "Quãng đường (KM) theo Runner", "name", "distance");
+
+            if (clubLegendContainer) clubLegendContainer.innerHTML = ''; 
+
+            const startDate = reportStartDateInput.value;
+            const endDate = reportEndDateInput.value;
+
+            drawBubbleChart(
+                distanceByClubChart,
+                clubData,
+                "Quãng đường (KM) theo CLB",
+                "name",
+                "distance",
+                { 
+                    container: clubLegendContainer,
+                    startDate: startDate,
+                    endDate: endDate
+                }
+            );
+        }
+
+        function drawBubbleChart(container, data, title, nameKey, valueKey, legendOptions = null) {
+            container.innerHTML = '';
+            if (data.length === 0) {
+                container.innerHTML = `<p class="text-gray-500 text-sm">${title} - Không có dữ liệu.</p>`;
+                if (legendOptions && legendOptions.container) {
+                    legendOptions.container.innerHTML = '';
+                }
+                return;
+            }
+
+            const width = container.clientWidth;
+            const height = Math.max(300, data.length * 60); 
+
+            const svg = d3.select(container)
+                .append("svg")
+                .attr("width", width)
+                .attr("height", height)
+                .attr("viewBox", `0 0 ${width} ${height}`)
+                .attr("preserveAspectRatio", "xMidYMid meet");
+
+            const maxValue = d3.max(data, d => d[valueKey]);
+            const minValue = d3.min(data, d => d[valueKey]);
+
+            if (typeof d3.scaleSequential !== 'function' || typeof d3.interpolateViridis !== 'function') {
+                container.innerHTML = `<p class="text-red-500 text-center">Lỗi: Không thể vẽ biểu đồ. Thư viện D3.js hoặc các thành phần của nó không khả dụng.</p>`;
+                return; 
+            }
+
+            const maxRadius = width < 768 ? 70 : 60; 
+            const minRadius = width < 768 ? 8 : 15; 
+
+            const radiusScale = d3.scaleSqrt()
+                .domain([0, maxValue || 1])
+                .range([minRadius, maxRadius]); 
+
+            const simulation = d3.forceSimulation(data)
+                .force("x", d3.forceX(width / 2).strength(0.15)) 
+                .force("y", d3.forceY(height / 2).strength(0.15)) 
+                .force("collide", d3.forceCollide(d => radiusScale(d[valueKey]) + 4)) 
+                .stop();
+
+            for (let i = 0; i < 200; ++i) simulation.tick(); 
+
+            let tooltip = d3.select("body").select(".tooltip");
+            if (tooltip.empty()) {
+                tooltip = d3.select("body").append("div")
+                    .attr("class", "tooltip");
+            }
+
+            const colorScale = d3.scaleSequential(d3.interpolateViridis)
+                .domain([maxValue || 1, minValue || 0]);
+
+            const bubbles = svg.selectAll(".bubble")
+                .data(data)
+                .enter().append("circle")
+                .attr("class", "bubble")
+                .attr("cx", d => d.x)
+                .attr("cy", d => d.y)
+                .attr("r", d => radiusScale(d[valueKey]))
+                .attr("fill", d => colorScale(d[valueKey]))
+                .on("mouseover", function(event, d) {
+                    tooltip.style("opacity", 1)
+                        .html(`${d[nameKey]}<br>${d[valueKey].toFixed(2)} KM`)
+                        .style("left", (event.pageX + 10) + "px")
+                        .style("top", (event.pageY - 28) + "px");
+                })
+                .on("mouseout", function() {
+                    tooltip.style("opacity", 0);
+                });
+
+            svg.selectAll(".bubble-text")
+                .data(data)
+                .enter().append("text")
+                .attr("class", "bubble-text")
+                .attr("x", d => d.x)
+                .attr("y", d => d.y)
+                .text(d => d[nameKey])
+                .attr("dy", "-0.3em") 
+                .attr("font-size", d => Math.max(8, radiusScale(d[valueKey]) / 4)) 
+                .attr("fill", "black") 
+                .attr("pointer-events", "none");
+
+            svg.selectAll(".bubble-km-text")
+                .data(data)
+                .enter().append("text")
+                .attr("class", "bubble-text bubble-km-text") 
+                .attr("x", d => d.x)
+                .attr("y", d => d.y)
+                .text(d => `${d[valueKey].toFixed(1)} KM`) 
+                .attr("dy", "1em") 
+                .attr("text-anchor", "middle")
+                .attr("font-size", d => Math.max(8, radiusScale(d[valueKey]) / 4.5)) 
+                .attr("fill", "black") 
+                .attr("pointer-events", "none");
+
+
+            svg.append("text")
+                .attr("x", width / 2)
+                .attr("y", 20)
+                .attr("text-anchor", "middle")
+                .attr("font-size", "1.2rem")
+                .attr("font-weight", "bold")
+                .attr("fill", "#333")
+                .text(title);
+
+            if (legendOptions && legendOptions.container && data.length > 0) {
+                const { container: legendContainer, startDate, endDate } = legendOptions;
+                legendContainer.innerHTML = ''; 
+
+                const formatDate = (dateString) => {
+                    if (!dateString) return '...';
+                    const parts = dateString.split('-');
+                    if (parts.length !== 3) return dateString; 
+                    return `${parts[2]}/${parts[1]}/${parts[0]}`;
+                };
+
+                const startDateFormatted = formatDate(startDate);
+                const endDateFormatted = formatDate(endDate);
+
+                const sortedData = [...data].sort((a, b) => b[valueKey] - a[valueKey]);
+
+                let tableHtml = `
+                    <h4 class="text-md font-semibold mb-2 text-center">Kết quả chạy từ ngày ${startDateFormatted} đến ngày ${endDateFormatted}</h4>
+                    <table class="data-table w-full text-sm">
+                        <thead>
+                            <tr>
+                                <th class="w-1/12 text-center">STT</th>
+                                <th class="w-5/12">Tên câu lạc bộ</th>
+                                <th class="w-3/12 text-center">Số lượng runner</th>
+                                <th class="w-3/12 text-right">Số KM đạt được</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                `;
+
+                sortedData.forEach((item, index) => {
+                    tableHtml += `
+                        <tr>
+                            <td class="text-center">${index + 1}</td>
+                            <td>${item[nameKey]}</td>
+                            <td class="text-center">${item.runnerCount || 0}</td>
+                            <td class="text-right">${item[valueKey].toFixed(2)}</td>
+                        </tr>
+                    `;
+                });
+                
+                const totalKm = data.reduce((sum, item) => sum + item[valueKey], 0);
+                const totalRunners = data.reduce((sum, item) => sum + (item.runnerCount || 0), 0);
+                tableHtml += `
+                    <tr class="total-row">
+                        <td colspan="2" class="text-right font-bold">Tổng cộng</td>
+                        <td class="text-center font-bold">${totalRunners}</td>
+                        <td class="text-right font-bold">${totalKm.toFixed(2)}</td>
+                    </tr>
+                `;
+
+                tableHtml += `
+                        </tbody>
+                    </table>
+                `;
+
+                legendContainer.innerHTML = tableHtml;
             }
         }
 
@@ -1740,546 +2251,6 @@
             });
         }
 
-
-        function renderDistanceCharts(activities) {
-            distanceByRunnerChart.innerHTML = '<p class="text-gray-500 text-sm">Biểu đồ quãng đường theo Runner sẽ hiển thị ở đây.</p>';
-            distanceByClubChart.innerHTML = '<p class="text-gray-500 text-sm">Biểu đồ quãng đường theo CLB sẽ hiển thị ở đây.</p>';
-            const clubLegendContainer = document.getElementById('distance-by-club-legend');
-
-            if (activities.length === 0) {
-                if (clubLegendContainer) clubLegendContainer.innerHTML = '';
-                return;
-            }
-
-            const distanceByRunner = new Map();
-            const statsByClub = new Map();
-
-            activities.forEach(activity => {
-                const distanceKm = activity.distance / 1000;
-                const runner = allRunnerCredentials.find(rc => String(rc.athlete_id) === String(activity.user_id));
-                const runnerName = runner ? runner.runner_name : `Runner ID: ${activity.user_id || 'Unknown'}`;
-                const clubName = runner ? runner.running_team : 'Không rõ CLB';
-                const runnerId = String(activity.user_id);
-
-                distanceByRunner.set(runnerName, (distanceByRunner.get(runnerName) || 0) + distanceKm);
-                
-                if (!statsByClub.has(clubName)) {
-                    statsByClub.set(clubName, { distance: 0, runners: new Set() });
-                }
-                const clubStats = statsByClub.get(clubName);
-                clubStats.distance += distanceKm;
-                clubStats.runners.add(runnerId);
-            });
-
-            const runnerData = Array.from(distanceByRunner.entries()).map(([name, distance]) => ({ name, distance }));
-            const clubData = Array.from(statsByClub.entries()).map(([name, stats]) => ({
-                name,
-                distance: stats.distance,
-                runnerCount: stats.runners.size
-            }));
-
-            drawBubbleChart(distanceByRunnerChart, runnerData, "Quãng đường (KM) theo Runner", "name", "distance");
-
-            if (clubLegendContainer) clubLegendContainer.innerHTML = ''; 
-
-            const startDate = reportStartDateInput.value;
-            const endDate = reportEndDateInput.value;
-
-            drawBubbleChart(
-                distanceByClubChart,
-                clubData,
-                "Quãng đường (KM) theo CLB",
-                "name",
-                "distance",
-                { 
-                    container: clubLegendContainer,
-                    startDate: startDate,
-                    endDate: endDate
-                }
-            );
-        }
-
-        function drawBubbleChart(container, data, title, nameKey, valueKey, legendOptions = null) {
-            container.innerHTML = '';
-            if (data.length === 0) {
-                container.innerHTML = `<p class="text-gray-500 text-sm">${title} - Không có dữ liệu.</p>`;
-                if (legendOptions && legendOptions.container) {
-                    legendOptions.container.innerHTML = '';
-                }
-                return;
-            }
-
-            const width = container.clientWidth;
-            const height = Math.max(300, data.length * 60); 
-
-            const svg = d3.select(container)
-                .append("svg")
-                .attr("width", width)
-                .attr("height", height)
-                .attr("viewBox", `0 0 ${width} ${height}`)
-                .attr("preserveAspectRatio", "xMidYMid meet");
-
-            const maxValue = d3.max(data, d => d[valueKey]);
-            const minValue = d3.min(data, d => d[valueKey]);
-
-            if (typeof d3.scaleSequential !== 'function' || typeof d3.interpolateViridis !== 'function') {
-                console.error("D3 scales or interpolators are not available. Cannot draw bubble chart for " + title);
-                container.innerHTML = `<p class="text-red-500 text-center">Lỗi: Không thể vẽ biểu đồ. Thư viện D3.js hoặc các thành phần của nó không khả dụng.</p>`;
-                return; 
-            }
-
-            const maxRadius = width < 768 ? 70 : 60; 
-            const minRadius = width < 768 ? 8 : 15; 
-
-            const radiusScale = d3.scaleSqrt()
-                .domain([0, maxValue || 1])
-                .range([minRadius, maxRadius]); 
-
-            const simulation = d3.forceSimulation(data)
-                .force("x", d3.forceX(width / 2).strength(0.15)) 
-                .force("y", d3.forceY(height / 2).strength(0.15)) 
-                .force("collide", d3.forceCollide(d => radiusScale(d[valueKey]) + 4)) 
-                .stop();
-
-            for (let i = 0; i < 200; ++i) simulation.tick(); 
-
-            let tooltip = d3.select("body").select(".tooltip");
-            if (tooltip.empty()) {
-                tooltip = d3.select("body").append("div")
-                    .attr("class", "tooltip");
-            }
-
-            const colorScale = d3.scaleSequential(d3.interpolateViridis)
-                .domain([maxValue || 1, minValue || 0]);
-
-            const bubbles = svg.selectAll(".bubble")
-                .data(data)
-                .enter().append("circle")
-                .attr("class", "bubble")
-                .attr("cx", d => d.x)
-                .attr("cy", d => d.y)
-                .attr("r", d => radiusScale(d[valueKey]))
-                .attr("fill", d => colorScale(d[valueKey]))
-                .on("mouseover", function(event, d) {
-                    tooltip.style("opacity", 1)
-                        .html(`${d[nameKey]}<br>${d[valueKey].toFixed(2)} KM`)
-                        .style("left", (event.pageX + 10) + "px")
-                        .style("top", (event.pageY - 28) + "px");
-                })
-                .on("mouseout", function() {
-                    tooltip.style("opacity", 0);
-                });
-
-            svg.selectAll(".bubble-text")
-                .data(data)
-                .enter().append("text")
-                .attr("class", "bubble-text")
-                .attr("x", d => d.x)
-                .attr("y", d => d.y)
-                .text(d => d[nameKey])
-                .attr("dy", "-0.3em") 
-                .attr("font-size", d => Math.max(8, radiusScale(d[valueKey]) / 4)) 
-                .attr("fill", "black") 
-                .attr("pointer-events", "none");
-
-            svg.selectAll(".bubble-km-text")
-                .data(data)
-                .enter().append("text")
-                .attr("class", "bubble-text bubble-km-text") 
-                .attr("x", d => d.x)
-                .attr("y", d => d.y)
-                .text(d => `${d[valueKey].toFixed(1)} KM`) 
-                .attr("dy", "1em") 
-                .attr("text-anchor", "middle")
-                .attr("font-size", d => Math.max(8, radiusScale(d[valueKey]) / 4.5)) 
-                .attr("fill", "black") 
-                .attr("pointer-events", "none");
-
-
-            svg.append("text")
-                .attr("x", width / 2)
-                .attr("y", 20)
-                .attr("text-anchor", "middle")
-                .attr("font-size", "1.2rem")
-                .attr("font-weight", "bold")
-                .attr("fill", "#333")
-                .text(title);
-
-            if (legendOptions && legendOptions.container && data.length > 0) {
-                const { container: legendContainer, startDate, endDate } = legendOptions;
-                legendContainer.innerHTML = ''; 
-
-                const formatDate = (dateString) => {
-                    if (!dateString) return '...';
-                    const parts = dateString.split('-');
-                    if (parts.length !== 3) return dateString; 
-                    return `${parts[2]}/${parts[1]}/${parts[0]}`;
-                };
-
-                const startDateFormatted = formatDate(startDate);
-                const endDateFormatted = formatDate(endDate);
-
-                const sortedData = [...data].sort((a, b) => b[valueKey] - a[valueKey]);
-
-                let tableHtml = `
-                    <h4 class="text-md font-semibold mb-2 text-center">Kết quả chạy từ ngày ${startDateFormatted} đến ngày ${endDateFormatted}</h4>
-                    <table class="data-table w-full text-sm">
-                        <thead>
-                            <tr>
-                                <th class="w-1/12 text-center">STT</th>
-                                <th class="w-5/12">Tên câu lạc bộ</th>
-                                <th class="w-3/12 text-center">Số lượng runner</th>
-                                <th class="w-3/12 text-right">Số KM đạt được</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                `;
-
-                sortedData.forEach((item, index) => {
-                    tableHtml += `
-                        <tr>
-                            <td class="text-center">${index + 1}</td>
-                            <td>${item[nameKey]}</td>
-                            <td class="text-center">${item.runnerCount || 0}</td>
-                            <td class="text-right">${item[valueKey].toFixed(2)}</td>
-                        </tr>
-                    `;
-                });
-                
-                const totalKm = data.reduce((sum, item) => sum + item[valueKey], 0);
-                const totalRunners = data.reduce((sum, item) => sum + (item.runnerCount || 0), 0);
-                tableHtml += `
-                    <tr class="total-row">
-                        <td colspan="2" class="text-right font-bold">Tổng cộng</td>
-                        <td class="text-center font-bold">${totalRunners}</td>
-                        <td class="text-right font-bold">${totalKm.toFixed(2)}</td>
-                    </tr>
-                `;
-
-                tableHtml += `
-                        </tbody>
-                    </table>
-                `;
-
-                legendContainer.innerHTML = tableHtml;
-            }
-        }
-
-        function renderDistanceChart(data) {
-            const ctx = document.getElementById('distanceChart').getContext('2d');
-
-            data.sort((a, b) => a.start_date - b.start_date);
-
-            const labels = data.map(activity => activity.start_date.toLocaleDateString('vi-VN'));
-            const distances = data.map(activity => activity.distance_km);
-
-            if (distanceChart) {
-                distanceChart.destroy(); 
-            }
-
-            distanceChart = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        label: 'Khoảng cách (km)',
-                        data: distances,
-                        borderColor: 'rgb(75, 192, 192)',
-                        backgroundColor: 'rgba(75, 192, 192, 0.2)',
-                        tension: 0.1,
-                        fill: true,
-                        pointBackgroundColor: 'rgb(75, 192, 192)',
-                        pointBorderColor: '#fff',
-                        pointHoverBackgroundColor: '#fff',
-                        pointHoverBorderColor: 'rgb(75, 192, 192)'
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    const activity = data[context.dataIndex];
-                                    return `Khoảng cách: ${activity.distance_km} km\nThời gian: ${activity.moving_time_formatted}\nTốc độ TB: ${activity.pace_min_per_km_formatted}`;
-                                }
-                            }
-                        }
-                    },
-                    scales: {
-                        x: {
-                            title: {
-                                display: true,
-                                text: 'Ngày',
-                                color: '#4b5563'
-                            },
-                            ticks: {
-                                color: '#4b5563'
-                            }
-                        },
-                        y: {
-                            title: {
-                                display: true,
-                                text: 'Khoảng cách (km)',
-                                color: '#4b5563'
-                            },
-                            beginAtZero: true,
-                            ticks: {
-                                color: '#4b5563'
-                            }
-                        }
-                    }
-                }
-            });
-        }
-
-        function renderPaceDistributionChart(data) {
-            const ctx = document.getElementById('paceDistributionChart').getContext('2d');
-
-            const validPaces = data
-                .filter(activity => activity.pace_seconds_per_km_raw !== null && activity.pace_seconds_per_km_raw > 0)
-                .map(activity => activity.pace_seconds_per_km_raw);
-
-            if (validPaces.length === 0) {
-                if (paceDistributionChart) paceDistributionChart.destroy();
-                ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height); 
-                ctx.font = '16px Inter';
-                ctx.fillStyle = '#6b7280';
-                ctx.fillText("Không có dữ liệu tốc độ để hiển thị.", 10, 50);
-                return;
-            }
-
-            const minPace = Math.min(...validPaces);
-            const maxPace = Math.max(...validPaces);
-            const binSize = 30; 
-            const bins = {};
-
-            for (let i = Math.floor(minPace / binSize) * binSize; i <= maxPace + binSize; i += binSize) {
-                bins[i.toFixed(0)] = 0;
-            }
-
-            validPaces.forEach(pace => {
-                const binKey = (Math.floor(pace / binSize) * binSize).toFixed(0);
-                if (bins[binKey] !== undefined) {
-                    bins[binKey]++;
-                }
-            });
-
-            const labels = Object.keys(bins).sort((a, b) => parseFloat(a) - parseFloat(b));
-            const counts = labels.map(label => bins[label]);
-
-            if (paceDistributionChart) {
-                paceDistributionChart.destroy();
-            }
-
-            paceDistributionChart = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: labels, 
-                    datasets: [{
-                        label: 'Số lượng hoạt động',
-                        data: counts,
-                        backgroundColor: 'rgba(153, 102, 255, 0.6)',
-                        borderColor: 'rgb(153, 102, 255)',
-                        borderWidth: 1
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        tooltip: {
-                            callbacks: {
-                                title: function(context) {
-                                    const rawSeconds = parseFloat(context[0].label);
-                                    const startPace = formatPaceLabel(rawSeconds);
-                                    const endPace = formatPaceLabel(rawSeconds + binSize);
-                                    return `Tốc độ: ${startPace} - ${endPace} /km`;
-                                },
-                                label: function(context) {
-                                    return `Số lượng hoạt động: ${context.parsed.y}`;
-                                }
-                            }
-                        }
-                    },
-                    scales: {
-                        x: {
-                            title: {
-                                display: true,
-                                text: 'Tốc độ trung bình (phút/km)', 
-                                color: '#4b5563'
-                            },
-                            ticks: {
-                                color: '#4b5563',
-                                callback: function(value, index, values) {
-                                    const startSeconds = parseFloat(this.getLabelForValue(value));
-                                    const endSeconds = startSeconds + binSize;
-                                    return `${formatPaceLabel(startSeconds)} - ${formatPaceLabel(endSeconds)}`;
-                                }
-                            }
-                        },
-                        y: {
-                            title: {
-                                display: true,
-                                text: 'Số lượng hoạt động',
-                                color: '#4b5563'
-                            },
-                            beginAtZero: true,
-                            ticks: {
-                                precision: 0, 
-                                color: '#4b5563'
-                            }
-                        }
-                    }
-                }
-            });
-        }
-
-        function renderHeartRatePaceChart(data) {
-            const ctx = document.getElementById('heartRatePaceChart').getContext('2d');
-
-            const scatterData = data
-                .filter(activity => activity.average_heartrate !== null && activity.average_heartrate > 0 && activity.pace_seconds_per_km_raw !== null && activity.pace_seconds_per_km_raw > 0)
-                .map(activity => ({
-                    x: activity.pace_seconds_per_km_raw, 
-                    y: activity.average_heartrate,
-                    name: activity.name,
-                    distance_km: activity.distance_km,
-                    moving_time_formatted: activity.moving_time_formatted,
-                    pace_min_per_km_formatted: formatPaceForTable(activity.average_speed) 
-                }));
-
-            if (scatterData.length === 0) {
-                if (heartRatePaceChart) heartRatePaceChart.destroy();
-                ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height); 
-                ctx.font = '16px Inter';
-                ctx.fillStyle = '#6b7280';
-                ctx.fillText("Không có dữ liệu nhịp tim/tốc độ để hiển ý.", 10, 50);
-                return;
-            }
-
-            if (heartRatePaceChart) {
-                heartRatePaceChart.destroy();
-            }
-
-            heartRatePaceChart = new Chart(ctx, {
-                type: 'scatter',
-                data: {
-                    datasets: [{
-                        label: 'Nhịp tim trung bình vs Tốc độ trung bình',
-                        data: scatterData,
-                        backgroundColor: 'rgba(255, 99, 132, 0.6)',
-                        borderColor: 'rgb(255, 99, 132)',
-                        pointRadius: 6,
-                        pointHoverRadius: 8
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    const item = context.raw;
-                                    return `Hoạt động: ${item.name}\nTốc độ TB: ${item.pace_min_per_km_formatted}\nNhịp tim TB: ${item.y.toFixed(1)} bpm\nKhoảng cách: ${item.distance_km} km\nThời gian: ${item.moving_time_formatted}`;
-                                }
-                            }
-                        }
-                    },
-                    scales: {
-                        x: {
-                            title: {
-                                display: true,
-                                text: 'Tốc độ trung bình (phút/km)', 
-                                color: '#4b5563'
-                            },
-                            beginAtZero: true,
-                            ticks: {
-                                color: '#4b5563',
-                                callback: function(value, index, values) {
-                                    return formatPaceLabel(value); 
-                                }
-                            }
-                        },
-                        y: {
-                            title: {
-                                display: true,
-                                text: 'Nhịp tim trung bình (bpm)',
-                                color: '#4b5563'
-                            },
-                            beginAtZero: true,
-                            ticks: {
-                                color: '#4b5563'
-                            }
-                        }
-                    }
-                }
-            });
-        }
-
-        function renderActivityTypeChart(data) {
-            const ctx = document.getElementById('activityTypeChart').getContext('2d');
-
-            const activityTypes = {};
-            data.forEach(activity => {
-                activityTypes[activity.type] = (activityTypes[activity.type] || 0) + 1;
-            });
-
-            const labels = Object.keys(activityTypes);
-            const counts = Object.values(activityTypes);
-
-            const backgroundColors = [
-                'rgba(255, 205, 86, 0.8)', 
-                'rgba(54, 162, 235, 0.8)', 
-                'rgba(75, 192, 192, 0.8)', 
-                'rgba(153, 102, 255, 0.8)', 
-                'rgba(201, 203, 207, 0.8)'  
-            ];
-            const borderColors = [
-                'rgb(255, 205, 86)',
-                'rgb(54, 162, 235)',
-                'rgb(75, 192, 192)',
-                'rgb(153, 102, 255)',
-                'rgb(201, 203, 207)'
-            ];
-
-            if (activityTypeChart) {
-                activityTypeChart.destroy();
-            }
-
-            activityTypeChart = new Chart(ctx, {
-                type: 'doughnut',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        label: 'Số lượng hoạt động',
-                        data: counts,
-                        backgroundColor: backgroundColors.slice(0, labels.length),
-                        borderColor: borderColors.slice(0, labels.length),
-                        borderWidth: 1
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    const label = context.label || '';
-                                    const value = context.parsed;
-                                    const total = context.dataset.data.reduce((sum, val) => sum + val, 0);
-                                    const percentage = ((value / total) * 100).toFixed(1);
-                                    return `${label}: ${value} (${percentage}%)`;
-                                }
-                            }
-                        }
-                    }
-                }
-            });
-        }
 
         function toggleCollapsible(contentElement, toggleIcon, forceCollapse = null, stateKey = null) {
             let isCollapsed;
@@ -2485,6 +2456,10 @@
                 }
                 minPaceFilter = localStorage.getItem('report_min_pace') ? parseFloat(localStorage.getItem('report_min_pace')) : null;
                 minDistanceFilter = localStorage.getItem('report_min_distance') ? parseFloat(localStorage.getItem('report_min_distance')) : null;
+                
+                // LOAD NEW FILTERS FROM LOCAL STORAGE
+                minWeeklyActivitiesFilter = localStorage.getItem('report_min_weekly_activities') ? parseInt(localStorage.getItem('report_min_weekly_activities')) : null;
+                minActivityDurationFilter = localStorage.getItem('report_min_activity_duration') ? parseInt(localStorage.getItem('report_min_activity_duration')) : null;
 
                 populateFilters(); 
 
@@ -2535,6 +2510,10 @@
                         localStorage.removeItem('report_activity_types');
                         localStorage.removeItem('report_min_pace');
                         localStorage.removeItem('report_min_distance');
+                        
+                        // REMOVE NEW FILTERS FROM LOCAL STORAGE ON LOGOUT
+                        localStorage.removeItem('report_min_weekly_activities');
+                        localStorage.removeItem('report_min_activity_duration');
 
                         showAlert('Đăng xuất thành công. Đang chuyển hướng về trang đăng nhập...');
                         setTimeout(() => {
@@ -2559,6 +2538,10 @@
                 localStorage.setItem('report_min_pace', minPaceFilter !== null ? minPaceFilter.toString() : '');
                 localStorage.setItem('report_min_distance', minDistanceFilter !== null ? minDistanceFilter.toString() : '');
                 
+                // SAVE NEW FILTERS TO LOCAL STORAGE
+                localStorage.setItem('report_min_weekly_activities', minWeeklyActivitiesFilter !== null ? minWeeklyActivitiesFilter.toString() : '');
+                localStorage.setItem('report_min_activity_duration', minActivityDurationFilter !== null ? minActivityDurationFilter.toString() : '');
+                
                 fetchAndRenderReportData();
             });
 
@@ -2574,6 +2557,14 @@
             });
             reportMinDistanceInput.addEventListener('input', (e) => {
                 minDistanceFilter = e.target.value !== '' ? parseFloat(e.target.value) : null;
+            });
+            
+            // LISTENERS FOR NEW INPUTS
+            reportMinWeeklyActivitiesInput.addEventListener('input', (e) => {
+                minWeeklyActivitiesFilter = e.target.value !== '' ? parseInt(e.target.value) : null;
+            });
+            reportMinActivityDurationInput.addEventListener('input', (e) => {
+                minActivityDurationFilter = e.target.value !== '' ? parseInt(e.target.value) : null;
             });
 
             penaltyPerKmGt10Input.addEventListener('input', renderAllReports);
@@ -2639,7 +2630,5 @@
             }
         };
     </script>
-    <!-- Add marked.js for Markdown rendering -->
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 </body>
 </html>
