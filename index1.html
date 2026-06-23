@@ -532,7 +532,7 @@
                     <i class="toggle-icon fas fa-chevron-right text-gray-600"></i>
                 </div>
             </div>
-            <div id="club-management-content" class="collapsible-content">
+            <div id="club-management-content" class="collapsible-content collapsed">
                 <div id="clubs-list" class="space-y-4">
                     <!-- Clubs will be loaded here -->
                 </div>
@@ -651,7 +651,19 @@
             </div>
         </section>
 
-        <section id="stats-section" class="card hidden">
+        <!-- New Reporting Section 2: Báo cáo Đền Lừ Runner -->
+        <section id="report2-section" class="card mb-8 hidden">
+            <a href="https://quantrh.github.io/Strava/Report2.html" target="_blank" class="collapsible-header" style="text-decoration: none; color: inherit;">
+                <h2 class="text-xl font-semibold"><i class="fas fa-chart-line text-blue-500"></i>Báo cáo Đền Lừ Runner</h2>
+                <i class="toggle-icon fas fa-external-link-alt text-gray-600"></i>
+            </a>
+            <div id="report2-content" class="collapsible-content">
+                <p class="text-gray-500">Nhấn vào tiêu đề "Báo cáo Đền Lừ Runner" để truy cập trang báo cáo chi tiết dành riêng cho CLB.</p>
+            </div>
+        </section>
+
+        <!-- Section Thống Kê (Tạm Ẩn bằng CSS inline display: none !important) -->
+        <section id="stats-section" class="card hidden" style="display: none !important;">
             <div class="collapsible-header" data-target="stats-content" data-state-key="stats-section-state">
                 <h2 class="text-xl font-semibold"><i class="fas fa-chart-bar text-red-500"></i>Thống kê thành tích theo tuần</h2>
                 <i class="toggle-icon fas fa-chevron-right text-gray-600"></i>
@@ -910,6 +922,7 @@
         const credentialManagementSection = document.getElementById('credential-management-section');
         const stravaAuthSection = document.getElementById('strava-auth-section');
         const reportSection = document.getElementById('report-section'); // New DOM element
+        const report2Section = document.getElementById('report2-section'); // New DOM element 2
         
         const clubManagementSection = document.getElementById('club-management-section');
         const clubManagementContent = document.getElementById('club-management-content');
@@ -1006,6 +1019,7 @@
  * @param {string} [stateKey] - Optional: A key to store the state in localStorage.
  */
 function toggleCollapsible(contentElement, toggleIcon, forceCollapse, stateKey) { // Thêm stateKey vào tham số
+    if (!contentElement) return; // Ngăn lỗi nếu phần tử không tồn tại
     const isCollapsed = contentElement.classList.contains('collapsed');
 
     let shouldCollapse;
@@ -1154,6 +1168,7 @@ async function updateAppAuthUI(user) {
         if (statsSection) statsSection.classList.remove('hidden');
         if (instructionSection) instructionSection.classList.remove('hidden');
         if (reportSection) reportSection.classList.remove('hidden'); 
+        if (report2Section) report2Section.classList.remove('hidden'); 
 
         // 2. Ensure settings sections are also unhidden here.
         if (appAuthSection) appAuthSection.classList.remove('hidden');
@@ -1186,6 +1201,7 @@ async function updateAppAuthUI(user) {
         if (dataSectionPart1) dataSectionPart1.classList.add('hidden');
         if (statsSection) statsSection.classList.add('hidden');
         if (reportSection) reportSection.classList.add('hidden'); 
+        if (report2Section) report2Section.classList.add('hidden'); 
         
         // ĐẢM BẢO INSTRUCTION LUÔN HIỂN THỊ KHI CHƯA ĐĂNG NHẬP
         if (instructionSection) instructionSection.classList.remove('hidden');
@@ -1252,7 +1268,7 @@ async function updateAppAuthUI(user) {
         }
 
         /**
-         * Handles guest login (anonymous sign-in with Supabase).
+         * Handles guest login (anonymous sign-in với Supabase).
          */
         async function handleGuestLogin() {
             try {
@@ -1323,7 +1339,7 @@ async function updateAppAuthUI(user) {
             
             if (allClubs.length === 0) {
                 noClubsMessage.classList.remove('hidden');
-                toggleCollapsible(clubManagementContent, clubManagementSection.querySelector('.toggle-icon'), false);
+                toggleCollapsible(clubManagementContent, clubManagementSection.querySelector('.toggle-icon'), true); // Đổi thành true để mặc định thu nhỏ
             } else {
                 noClubsMessage.classList.add('hidden');
 
@@ -2930,7 +2946,10 @@ function getISOWeekString(d) {
            document.querySelectorAll('.collapsible-header').forEach(header => {
                 header.addEventListener('click', () => {
                     const targetId = header.dataset.target;
+                    if (!targetId) return; // Bỏ qua nếu không có thuộc tính data-target (ví dụ: các thẻ a link)
                     const contentElement = document.getElementById(targetId);
+                    if (!contentElement) return; // Bỏ qua nếu không tìm thấy nội dung
+                    
                     const toggleIcon = header.querySelector('.toggle-icon');
                     const stateKey = header.dataset.stateKey; // <-- THÊM DÒNG NÀY: Lấy giá trị data-state-key
                     toggleCollapsible(contentElement, toggleIcon, undefined, stateKey); // <-- SỬA DÒNG NÀY: Truyền stateKey vào
