@@ -5,14 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Báo cáo hoạt động chạy bộ - FOR RUNNER LOVER</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- D3.js for bubble charts and weekly distance -->
     <script src="https://d3js.org/d3.v7.min.js"></script>
-    <!-- Chart.js for other charts -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
-        /* Define BIDV brand colors */
         :root {
             --bidv-green: #006b68;
             --bidv-yellow: #FFC62F;
@@ -64,7 +61,6 @@
             @apply w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500;
         }
         
-        /* Multi-select specific CSS */
         .multi-select-container {
             position: relative;
         }
@@ -133,14 +129,12 @@
             color: #9ca3af;
         }
 
-        /* Chart.js specific styles */
         .chart-container {
             position: relative;
-            height: 400px; /* Fixed height for charts */
+            height: 400px; 
             width: 100%;
         }
 
-        /* D3.js chart specific styles */
         #distance-by-runner-chart,
         #distance-by-club-chart,
         #weekly-distance-chart-container {
@@ -306,9 +300,8 @@
             justify-content: center;
         }
 
-        /* Collapsible content styles */
         .collapsible-content {
-            max-height: 1000px; /* Arbitrarily large value for expanded state */
+            max-height: 1000px; 
             overflow: hidden;
             transition: max-height 0.3s ease-out;
         }
@@ -318,12 +311,10 @@
             overflow: hidden;
         }
 
-        /* Add this rule to properly hide table bodies */
         tbody.collapsible-content.collapsed {
             display: none;
         }
 
-        /* Custom Styles for Top Stats List */
         .top-stats-list li {
             padding: 0.5rem 0;
             border-bottom: 1px solid #f0f0f0;
@@ -337,14 +328,12 @@
             display: inline-block;
             margin-right: 8px;
         }
-
     </style>
 </head>
 <body>
     <header class="bg-bidv-green text-white p-4 text-center text-sm" style="background-color: #006B68;">
         <div class="container flex justify-between items-center">
             <div class="flex items-center space-x-4">
-                <!-- Using placeholder for logo to ensure it runs independently -->
                 <img src="https://placehold.co/80x80/006b68/FFFFFF?text=Logo" alt="Logo" class="h-20 w-auto rounded-md">
                 <h1 class="text-2xl font-bold text-white">Báo cáo hoạt động chạy bộ - FOR RUNNER LOVER</h1>
             </div>
@@ -365,7 +354,6 @@
             <p id="user-info" class="text-lg font-medium text-center mb-6">Chào mừng, <span id="current-user-email"></span>!</p>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <!-- Bộ lọc -->
                 <div class="card p-6">
                     <h3 class="text-xl font-semibold mb-4 text-indigo-700"><i class="fas fa-filter"></i> Bộ lọc báo cáo</h3>
                     <div class="mb-4">
@@ -397,7 +385,6 @@
                         </div>
                     </div>
                     
-                    <!-- NEW FILTERS START HERE -->
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
                         <div>
                             <label for="report-min-weekly-activities" class="block text-gray-700 text-sm font-bold mb-2" title="Chỉ hiển thị các hoạt động thuộc những tuần đạt số lượng này trở lên">
@@ -412,7 +399,6 @@
                             <input type="number" id="report-min-activity-duration" class="form-input" placeholder="Ví dụ: 60" step="1" min="1">
                         </div>
                     </div>
-                    <!-- NEW FILTERS END HERE -->
 
                     <div class="mb-4">
                         <label for="report-min-pace" class="block text-gray-700 text-sm font-bold mb-2">Pace (phút/km) nhỏ hơn hoặc bằng:</label>
@@ -440,10 +426,8 @@
                     <div id="report-filter-status" class="mt-2 text-sm text-gray-600 text-center"></div>
                 </div>
 
-                <!-- Tổng quan thống kê -->
                 <div class="bg-white p-6 rounded-lg shadow-md border border-gray-200">
                     <h2 class="text-xl font-semibold text-gray-700 mb-4">Tổng quan thống kê</h2>
-                    <!-- Stats Grid -->
                     <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mb-6">
                         <div class="bg-gradient-to-r from-blue-500 to-blue-600 text-white p-4 rounded-lg shadow-md">
                             <h2 class="text-sm font-semibold mb-1">Tổng quãng đường</h2>
@@ -467,19 +451,16 @@
                         </div>
                     </div>
 
-                    <!-- Top Records Sections -->
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 border-t pt-4">
                         <div>
                             <h3 class="text-md font-bold text-gray-700 mb-2 border-b pb-1"><i class="fas fa-route text-blue-500 mr-2"></i>2 Cuộc chạy dài nhất</h3>
                             <ul id="longest-runs-list" class="top-stats-list text-sm text-gray-600">
-                                <!-- JS will populate this -->
                                 <li class="text-center italic text-gray-400">Đang tải...</li>
                             </ul>
                         </div>
                         <div>
                             <h3 class="text-md font-bold text-gray-700 mb-2 border-b pb-1"><i class="fas fa-bolt text-yellow-500 mr-2"></i>2 Cuộc chạy nhanh nhất</h3>
                             <ul id="fastest-runs-list" class="top-stats-list text-sm text-gray-600">
-                                <!-- JS will populate this -->
                                 <li class="text-center italic text-gray-400">Đang tải...</li>
                             </ul>
                         </div>
@@ -492,7 +473,6 @@
                 </div>
             </div>
 
-            <!-- Charts Section -->
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-8">
                 <div class="bg-white p-6 rounded-lg shadow-md border border-gray-200">
                     <h2 class="text-xl font-semibold text-gray-700 mb-4">Quãng đường chạy theo ngày (km)</h2>
@@ -526,7 +506,6 @@
                 </div>
             </div>
 
-            <!-- D3.js Charts -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
                 <div class="card p-6">
                     <h3 class="text-xl font-semibold mb-4 text-green-700">Quãng đường (KM) theo Runner</h3>
@@ -543,7 +522,6 @@
                 </div>
             </div>
 
-            <!-- Bảng chi tiết hoạt động (Collapsible) -->
             <div id="detailed-activities-section" class="card mt-8 p-6">
                 <div class="flex justify-between items-center mb-4">
                     <div id="detailed-activities-header" class="flex items-center cursor-pointer">
@@ -574,14 +552,12 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <!-- Hoạt động sẽ được tải vào đây -->
                         </tbody>
                     </table>
                     <p id="detailed-activities-status" class="mt-4 text-sm text-gray-600 text-center">Không có hoạt động nào để hiển thị.</p>
                 </div>
             </div>
 
-            <!-- Biểu đồ thống kê theo tuần -->
             <div class="card mt-8 p-6">
                 <h3 class="text-xl font-semibold mb-4 text-red-700"><i class="fas fa-chart-line"></i> Thống kê quãng đường theo tuần</h3>
                 <div id="weekly-distance-chart-container" class="border rounded-md p-2 min-h-[300px] flex items-center justify-content-center">
@@ -590,7 +566,6 @@
                 <p id="weekly-chart-status" class="mt-4 text-sm text-gray-600 text-center"></p>
             </div>
 
-             <!-- Bảng thống kê chi tiết & Tiền phạt/Thưởng -->
              <div class="card mt-8 p-6">
                 <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 gap-4">
                     <h3 class="text-xl font-semibold text-teal-700"><i class="fas fa-calculator"></i> Thống kê tiền phạt/thưởng</h3>
@@ -648,39 +623,33 @@
         <div class="container" style="color: var(--bidv-yellow);">
             &copy; 2025 Trương Hồng Quân - Đền Lừ Running Club. All rights reserved (Dev by AIs - Gemini, GPT) - 📧quantrhvn@gmail.com - 📳+84989073739 - 248064a v2.
             <br>
-            <!-- Using placeholder for logo to ensure it runs independently -->
             <img src="https://placehold.co/100x28/006b68/FFFFFF?text=PowerStrava" alt="PowerStrava Logo" style="height: 28px; margin: 5px auto 0 auto; display: block;">
         </div>
     </footer>
 
-    <!-- Weekly Activities Modal -->
     <div id="weekly-activities-modal" class="modal">
         <div class="modal-content" style="max-width: 700px;">
             <span class="close-button" id="close-weekly-activities-modal-btn">&times;</span>
             <h3 id="weekly-activities-title" class="text-2xl font-bold mb-4 text-gray-800">Hoạt động trong tuần:</h3>
             <div class="max-h-96 overflow-y-auto border rounded-md p-2">
                 <ul id="weekly-activities-list" class="space-y-2 text-sm">
-                    <!-- Activities will be loaded here -->
                 </ul>
             </div>
             <p id="weekly-activities-status" class="mt-4 text-sm text-gray-600"></p>
         </div>
     </div>
 
-    <!-- Training Suggestions Modal -->
     <div id="training-suggestions-modal" class="modal hidden">
         <div class="modal-content" style="max-width: 600px;">
             <span class="close-button" id="close-training-suggestions-modal-btn">&times;</span>
             <h3 class="text-2xl font-bold mb-4 text-gray-800">Gợi ý Luyện tập từ AI</h3>
             <div id="training-suggestions-content" class="prose max-w-none">
-                <!-- AI suggestions will be loaded here -->
             </div>
             <p id="training-suggestions-status" class="mt-4 text-sm text-gray-600"></p>
         </div>
     </div>
 
 
-    <!-- Custom Alert/Confirm Modals -->
     <div id="custom-alert" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-content-center z-50">
         <div class="bg-white p-6 rounded-lg shadow-xl max-w-sm w-full text-center">
             <p id="alert-message" class="mb-4 text-lg"></p>
@@ -703,9 +672,8 @@
     <script src="https://unpkg.com/xlsx/dist/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script>
-        // Supabase configuration
-        const SUPABASE_URL = 'https://rmbsxccrwrktbjlnezpu.supabase.co'; // Replace with your Supabase URL
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJtYnN4Y2Nyd3JrdGJqbG5lenB1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg2MjczNjQsImV4cCI6MjA2NDIwMzM2NH0.ydCqificftdtn1niRciFCifeuo8aX6SDGti-hCY5Z_Y'; // Replace with your Supabase Anon Key
+        const SUPABASE_URL = 'https://rmbsxccrwrktbjlnezpu.supabase.co'; 
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJtYnN4Y2Nyd3JrdGJqbG5lenB1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg2MjczNjQsImV4cCI6MjA2NDIwMzM2NH0.ydCqificftdtn1niRciFCifeuo8aX6SDGti-hCY5Z_Y'; 
 
         const ANALYZE_ACTIVITIES_EDGE_FUNCTION_URL = 'https://rmbsxccrwrktbjlnezpu.supabase.co/functions/v1/analyze-activities-with-gemini';
 
@@ -713,26 +681,22 @@
         let allRunnerCredentials = []; 
         let allClubs = []; 
         let allActivitiesData = []; 
-        let selectedPenaltyActivityIds = null; // Global state for penalty table export filter
+        let selectedPenaltyActivityIds = null; 
 
-        // Filter states
         let selectedRunnerIdReport = 'all'; 
         let selectedClubNamesReport = []; 
         let selectedActivityTypesReport = []; 
         let minPaceFilter = null; 
         let minDistanceFilter = null; 
-        let minWeeklyActivitiesFilter = null; // New state
-        let minActivityDurationFilter = null; // New state
+        let minWeeklyActivitiesFilter = null; 
+        let minActivityDurationFilter = null; 
 
-        // Chart.js instances
         let distanceChart, paceDistributionChart, heartRatePaceChart, activityTypeChart, monthlyHeartRateChart;
 
-        // DOM Elements
         const currentUserEmailSpan = document.getElementById('current-user-email');
         const logoutBtn = document.getElementById('logout-btn');
         const backToHomeBtn = document.getElementById('back-to-home-btn');
 
-        // Filter elements
         const reportRunnerFilter = document.getElementById('report-runner-filter');
         const multiSelectDisplayClub = document.getElementById('multi-select-display-club');
         const multiSelectOptionsClub = document.getElementById('multi-select-options-club');
@@ -745,11 +709,9 @@
         const applyReportFiltersBtn = document.getElementById('apply-report-filters-btn');
         const reportFilterStatus = document.getElementById('report-filter-status');
         
-        // New Filter Elements
         const reportMinWeeklyActivitiesInput = document.getElementById('report-min-weekly-activities');
         const reportMinActivityDurationInput = document.getElementById('report-min-activity-duration');
         
-        // Summary stats elements
         const totalDistanceSpan = document.getElementById('totalDistance');
         const totalMovingTimeSpan = document.getElementById('totalMovingTime');
         const averageOverallPaceSpan = document.getElementById('averageOverallPace');
@@ -758,7 +720,6 @@
         const longestRunsList = document.getElementById('longest-runs-list'); 
         const fastestRunsList = document.getElementById('fastest-runs-list'); 
 
-        // New Gemini API related elements
         const getTrainingSuggestionsBtn = document.getElementById('get-training-suggestions-btn');
         const trainingSuggestionsLoader = document.getElementById('training-suggestions-loader');
         const trainingSuggestionsModal = document.getElementById('training-suggestions-modal');
@@ -767,21 +728,17 @@
         const trainingSuggestionsStatus = document.getElementById('training-suggestions-status');
 
 
-        // D3.js chart specific elements
         const distanceByRunnerChart = document.getElementById('distance-by-runner-chart'); 
         const distanceByClubChart = document.getElementById('distance-by-club-chart'); 
 
-        // Detailed Activities Table elements
         const detailedActivitiesTableBody = document.querySelector('#detailed-activities-table tbody');
         const detailedActivitiesStatus = document.getElementById('detailed-activities-status');
         const downloadDetailedActivitiesExcelBtn = document.getElementById('download-detailed-activities-excel');
 
 
-        // Weekly Distance Chart elements
         const weeklyDistanceChartContainer = document.getElementById('weekly-distance-chart-container');
         const weeklyChartStatus = document.getElementById('weekly-chart-status');
 
-        // Penalty/Bonus Table elements
         const penaltyPerKmGt10Input = document.getElementById('penalty-per-km-gt10');
         const penaltyPerKmLte10Input = document.getElementById('penalty-per-km-lte10');
         const targetKmPerWeekInput = document.getElementById('target-km-per-week');
@@ -790,22 +747,18 @@
         const downloadPenaltyBonusExcelBtn = document.getElementById('download-penalty-bonus-excel');
 
 
-        // Weekly Activities Modal elements
         const weeklyActivitiesModal = document.getElementById('weekly-activities-modal');
         const closeWeeklyActivitiesModalBtn = document.getElementById('close-weekly-activities-modal-btn');
         const weeklyActivitiesTitle = document.getElementById('weekly-activities-title');
         const weeklyActivitiesList = document.getElementById('weekly-activities-list');
         const weeklyActivitiesStatus = document.getElementById('weekly-activities-status');
 
-        // Collapsible section elements
         const detailedActivitiesSection = document.getElementById('detailed-activities-section');
         const detailedActivitiesHeader = document.getElementById('detailed-activities-header');
         const detailedActivitiesContent = document.getElementById('detailed-activities-content');
         const detailedActivitiesToggleIcon = document.getElementById('detailed-activities-toggle-icon');
         const DETAILED_ACTIVITIES_STATE_KEY = 'detailedActivitiesCollapsed';
 
-
-        // All Activity Types
         const ALL_ACTIVITY_TYPES = [
             'Run', 'Walk', 'Ride', 'Swim', 'Hike', 'NordicSki', 'AlpineSki', 'Workout', 'Yoga', 
             'WeightTraining', 'Elliptical', 'StairStepper', 'Rowing', 'Crossfit', 'Canoeing', 
@@ -815,8 +768,6 @@
             'RockClimbing', 'Alpinism', 'Badminton', 'Squash', 'TableTennis', 'Tennis', 'Volleyball', 
             'Surfing', 'Pilates', 'Golf', 'WaterSport', 'Soccer', 'Basketball'
         ].sort();
-
-        // --- Helper Functions ---
 
         function showAlert(message) {
             const customAlert = document.getElementById('custom-alert');
@@ -986,7 +937,6 @@
             updateMultiSelectDisplay(displayElement, selectedItemsArray, optionsContainer, placeholder);
         }
 
-        // Event delegation for all multi-select components
         document.addEventListener('click', (event) => {
             if (event.target.closest('#multi-select-display-report')) {
                 multiSelectOptionsReport.classList.toggle('hidden');
@@ -1048,7 +998,6 @@
         }
 
         function populateFilters() {
-            // Populate Runner filter
             reportRunnerFilter.innerHTML = '<option value="all">Tất cả Runner</option>';
             allRunnerCredentials.forEach(cred => {
                 const option = document.createElement('option');
@@ -1058,15 +1007,12 @@
             });
             reportRunnerFilter.value = selectedRunnerIdReport; 
 
-            // Populate Club filter
             populateClubFilter();
             updateMultiSelectDisplay(multiSelectDisplayClub, selectedClubNamesReport, multiSelectOptionsClub, 'Chọn câu lạc bộ');
 
-            // Initialize activity type filter
             populateActivityTypeFilter();
             updateMultiSelectDisplay(multiSelectDisplayReport, selectedActivityTypesReport, multiSelectOptionsReport, 'Chọn loại hoạt động');
 
-            // Restore input values
             reportMinPaceInput.value = minPaceFilter !== null ? minPaceFilter : '';
             reportMinDistanceInput.value = minDistanceFilter !== null ? minDistanceFilter : '';
             reportMinWeeklyActivitiesInput.value = minWeeklyActivitiesFilter !== null ? minWeeklyActivitiesFilter : '';
@@ -1083,7 +1029,6 @@
                     throw new Error('Không tìm thấy phiên đăng nhập Supabase. Vui lòng đăng nhập lại.');
                 }
 
-                // Prepare filters
                 let queryRunnerIds = [];
                 if (selectedRunnerIdReport === 'all') {
                     queryRunnerIds = allRunnerCredentials.filter(c => c.athlete_id).map(c => String(c.athlete_id));
@@ -1106,7 +1051,7 @@
 
                 let query = supabaseClientInstance
                     .from('activities')
-                    .select('strava_activity_id, name, type, distance, moving_time, total_elevation_gain, start_date, average_speed, average_heartrate, user_id, data')
+                    .select('strava_activity_id, name, type, distance, moving_time, total_elevation_gain, start_date, average_speed, average_heartrate, user_id, data, elapsed_time')
                     .in('user_id', queryRunnerIds); 
 
                 if (selectedActivityTypesReport.length > 0) {
@@ -1152,7 +1097,6 @@
                     pace_min_per_km_formatted: formatPaceForTable(activity.average_speed) 
                 }));
                 
-                // --- NEW FILTER LOGIC: Minimum Duration (Elapsed Time) ---
                 if (minActivityDurationFilter !== null && minActivityDurationFilter > 0) {
                     const minElapsedSeconds = minActivityDurationFilter * 60;
                     allActivitiesData = allActivitiesData.filter(activity =>
@@ -1160,11 +1104,9 @@
                     );
                 }
 
-                // --- NEW FILTER LOGIC: Minimum Weekly Activities (In-Memory Processing) ---
                 if (minWeeklyActivitiesFilter !== null && minWeeklyActivitiesFilter > 0) {
-                    const weekRunnerCounts = {}; // Track activities per user per week
+                    const weekRunnerCounts = {}; 
                     
-                    // Count activities
                     allActivitiesData.forEach(activity => {
                         const isoWeek = getISOWeekString(activity.start_date);
                         if (isoWeek) {
@@ -1173,7 +1115,6 @@
                         }
                     });
                     
-                    // Filter the dataset: Only keep activities belonging to a runner in a week where they met the minimum count
                     allActivitiesData = allActivitiesData.filter(activity => {
                         const isoWeek = getISOWeekString(activity.start_date);
                         if (isoWeek) {
@@ -1196,9 +1137,7 @@
             }
         }
 
-
         function renderAllReports() {
-            // 1. Render Overall Stats
             let totalActivities = allActivitiesData.length;
             let totalDistance = 0; 
             let totalMovingTime = 0; 
@@ -1215,7 +1154,6 @@
             totalMovingTimeSpan.textContent = formatTime(totalMovingTime);
             totalElevationGainSpan.textContent = `${Math.round(totalElevationGain)} m`; 
 
-            // Calculate overall average pace
             let averageOverallPaceFormatted = 'N/A';
             if (totalDistance > 0 && totalMovingTime > 0) {
                 const overallAverageSpeedMs = totalDistance / totalMovingTime; 
@@ -1223,27 +1161,15 @@
             }
             averageOverallPaceSpan.textContent = averageOverallPaceFormatted;
 
-            // Render Top Runs Summary (Longest and Fastest)
             renderTopActivities(allActivitiesData);
-
-            // 2. Render Detailed Activities Table
             renderDetailedActivitiesTable(allActivitiesData);
-
-            // 3. Render Weekly Distance Chart (D3.js)
             renderWeeklyDistanceChart(allActivitiesData);
-
-            // 4. Render Penalty/Bonus Table
             renderPenaltyBonusTable(allActivitiesData);
-
-            // 5. Render Distance by Runner/Club Chart (D3.js)
             renderDistanceCharts(allActivitiesData);
-
-            // 6. Render Chart.js Charts
             renderChartJSCharts(allActivitiesData);
         }
 
         function renderTopActivities(data) {
-            // Find 2 longest runs
             const longestRuns = [...data]
                 .sort((a, b) => b.distance - a.distance)
                 .slice(0, 2);
@@ -1267,7 +1193,6 @@
                 });
             }
 
-            // Find 2 fastest runs (based on average_speed)
             const fastestRuns = [...data]
                 .filter(run => run.average_speed > 0)
                 .sort((a, b) => b.average_speed - a.average_speed)
@@ -2128,7 +2053,6 @@
             const penaltyBonusStatus = document.getElementById('penalty-bonus-status');
             penaltyBonusStatus.textContent = '';
 
-            // Apply selected filter to display Activities
             let displayActivities = activities;
             if (selectedPenaltyActivityIds !== null) {
                 displayActivities = activities.filter(a => selectedPenaltyActivityIds.includes(String(a.strava_activity_id)));
@@ -2255,10 +2179,10 @@
                         let textColorClass = 'text-gray-800';
                         let nameSuffix = '';
                         
-                        if (activity.elapsed_time >= 5400) { // 90 mins
+                        if (activity.elapsed_time >= 5400) { 
                             textColorClass = 'text-red-600 font-semibold';
                             nameSuffix = ' <span class="text-xs bg-red-100 text-red-800 px-1 rounded ml-1 whitespace-nowrap">LONG_RUN</span>';
-                        } else if (activity.elapsed_time >= 1800) { // 30 mins
+                        } else if (activity.elapsed_time >= 1800) { 
                             textColorClass = 'text-green-600 font-semibold';
                             nameSuffix = ' <span class="text-xs bg-green-100 text-green-800 px-1 rounded ml-1 whitespace-nowrap">HỢP LỆ</span>';
                         }
@@ -2269,7 +2193,7 @@
                             <td class="text-center">
                                 <input type="checkbox" class="penalty-row-cb cursor-pointer" value="${activity.strava_activity_id}" ${selectedPenaltyActivityIds === null || selectedPenaltyActivityIds.includes(String(activity.strava_activity_id)) ? 'checked' : ''}>
                             </td>
-                            <td></td>
+                            <td>${runnerName}</td>
                             <td>${new Date(activity.start_date).toLocaleDateString('vi-VN')}</td>
                             <td><a href="https://www.strava.com/activities/${activity.strava_activity_id}" target="_blank" class="hover:underline hover:text-blue-600" title="Xem trên Strava">${activity.name}</a>${nameSuffix}</td>
                             <td>${activity.type}</td>
@@ -2428,13 +2352,11 @@
             }
         }
 
-
         function tableToJson(tableElement) {
             const data = [];
             const headers = [];
             
             tableElement.querySelectorAll('thead th').forEach((header, index) => {
-                // Skip the first column header text if it contains a checkbox, handle it securely
                 const headerText = header.textContent.trim();
                 headers.push(index === 0 ? 'Select' : headerText);
             });
@@ -2444,8 +2366,7 @@
                 let hasData = false;
                 row.querySelectorAll('td').forEach((cell, index) => {
                     const header = headers[index];
-                    if (header && header !== 'Select') { // Ignore checkbox column for export
-                        // Clean up spacing (removes extra spaces from suffixes like LONG_RUN)
+                    if (header && header !== 'Select') { 
                         rowData[header] = cell.textContent.trim().replace(/\s+/g, ' ');
                         hasData = true;
                     }
@@ -2466,7 +2387,6 @@
             XLSX.utils.book_append_sheet(wb, ws, sheetName);
             XLSX.writeFile(wb, fileName);
         }
-
 
         async function checkAuthAndLoadReport() {
             try {
@@ -2502,7 +2422,6 @@
                 minPaceFilter = localStorage.getItem('report_min_pace') ? parseFloat(localStorage.getItem('report_min_pace')) : null;
                 minDistanceFilter = localStorage.getItem('report_min_distance') ? parseFloat(localStorage.getItem('report_min_distance')) : null;
                 
-                // LOAD NEW FILTERS FROM LOCAL STORAGE
                 minWeeklyActivitiesFilter = localStorage.getItem('report_min_weekly_activities') ? parseInt(localStorage.getItem('report_min_weekly_activities')) : null;
                 minActivityDurationFilter = localStorage.getItem('report_min_activity_duration') ? parseInt(localStorage.getItem('report_min_activity_duration')) : null;
 
@@ -2556,7 +2475,6 @@
                         localStorage.removeItem('report_min_pace');
                         localStorage.removeItem('report_min_distance');
                         
-                        // REMOVE NEW FILTERS FROM LOCAL STORAGE ON LOGOUT
                         localStorage.removeItem('report_min_weekly_activities');
                         localStorage.removeItem('report_min_activity_duration');
 
@@ -2583,7 +2501,6 @@
                 localStorage.setItem('report_min_pace', minPaceFilter !== null ? minPaceFilter.toString() : '');
                 localStorage.setItem('report_min_distance', minDistanceFilter !== null ? minDistanceFilter.toString() : '');
                 
-                // SAVE NEW FILTERS TO LOCAL STORAGE
                 localStorage.setItem('report_min_weekly_activities', minWeeklyActivitiesFilter !== null ? minWeeklyActivitiesFilter.toString() : '');
                 localStorage.setItem('report_min_activity_duration', minActivityDurationFilter !== null ? minActivityDurationFilter.toString() : '');
                 
@@ -2604,7 +2521,6 @@
                 minDistanceFilter = e.target.value !== '' ? parseFloat(e.target.value) : null;
             });
             
-            // LISTENERS FOR NEW inputs
             reportMinWeeklyActivitiesInput.addEventListener('input', (e) => {
                 minWeeklyActivitiesFilter = e.target.value !== '' ? parseInt(e.target.value) : null;
             });
@@ -2616,7 +2532,6 @@
             penaltyPerKmLte10Input.addEventListener('input', () => renderPenaltyBonusTable(allActivitiesData));
             targetKmPerWeekInput.addEventListener('input', () => renderPenaltyBonusTable(allActivitiesData));
 
-            // Thêm Event Listener cho Nút Áp dụng chọn và Reset
             document.getElementById('apply-penalty-selection-btn').addEventListener('click', () => {
                 const checkboxes = document.querySelectorAll('.penalty-row-cb');
                 const selectedIds = [];
