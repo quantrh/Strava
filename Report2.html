@@ -407,7 +407,7 @@
                         </div>
                         <div>
                             <label for="report-min-activity-duration" class="block text-gray-700 text-sm font-bold mb-2">
-                                Thời gian tối thiểu/hoạt động (phút):
+                                Thời gian tối thiểu/hoạt động (phút) - theo Elapsed Time:
                             </label>
                             <input type="number" id="report-min-activity-duration" class="form-input" placeholder="Ví dụ: 60" step="1" min="1">
                         </div>
@@ -592,11 +592,19 @@
 
              <!-- Bảng thống kê chi tiết & Tiền phạt/Thưởng -->
              <div class="card mt-8 p-6">
-                <div class="flex justify-between items-center mb-4">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 gap-4">
                     <h3 class="text-xl font-semibold text-teal-700"><i class="fas fa-calculator"></i> Thống kê tiền phạt/thưởng</h3>
-                    <button id="download-penalty-bonus-excel" class="btn-secondary ml-4">
-                        <i class="fas fa-download mr-2"></i> Tải Excel
-                    </button>
+                    <div class="flex flex-wrap gap-2">
+                        <button id="apply-penalty-selection-btn" class="btn-primary text-sm px-4 py-2 bg-blue-600 hover:bg-blue-700 border-none">
+                            <i class="fas fa-check"></i> Áp dụng chọn
+                        </button>
+                        <button id="reset-penalty-selection-btn" class="btn-secondary text-sm px-4 py-2 border-none">
+                            <i class="fas fa-undo"></i> Reset hiển thị
+                        </button>
+                        <button id="download-penalty-bonus-excel" class="btn-primary text-sm px-4 py-2 bg-green-600 hover:bg-green-700 border-none">
+                            <i class="fas fa-file-excel"></i> Tải Excel
+                        </button>
+                    </div>
                 </div>
                 <div class="mb-4 flex gap-4 items-end">
                     <div class="flex-1">
@@ -616,6 +624,7 @@
                     <table id="penalty-bonus-table" class="data-table">
                         <thead>
                             <tr>
+                                <th class="w-10 text-center"><input type="checkbox" id="toggle-all-penalty" title="Chọn/Bỏ chọn tất cả" checked></th>
                                 <th>Tên Runner</th>
                                 <th>Ngày chạy / Tuần</th>
                                 <th>Tên Hoạt Động</th>
@@ -704,6 +713,7 @@
         let allRunnerCredentials = []; 
         let allClubs = []; 
         let allActivitiesData = []; 
+        let selectedPenaltyActivityIds = null; // Global state for penalty table export filter
 
         // Filter states
         let selectedRunnerIdReport = 'all'; 
@@ -1111,11 +1121,6 @@
                 if (minDistanceFilter !== null && minDistanceFilter > 0) {
                     query = query.gte('distance', minDistanceFilter * 1000); 
                 }
-                
-                // --- NEW FILTER LOGIC: Minimum Duration ---
-                if (minActivityDurationFilter !== null && minActivityDurationFilter > 0) {
-                    query = query.gte('moving_time', minActivityDurationFilter * 60); // Convert minutes to seconds
-                }
 
                 if (reportStartDateInput.value) {
                     const selectedStartDate = new Date(reportStartDateInput.value);
@@ -1147,6 +1152,14 @@
                     pace_min_per_km_formatted: formatPaceForTable(activity.average_speed) 
                 }));
                 
+                // --- NEW FILTER LOGIC: Minimum Duration (Elapsed Time) ---
+                if (minActivityDurationFilter !== null && minActivityDurationFilter > 0) {
+                    const minElapsedSeconds = minActivityDurationFilter * 60;
+                    allActivitiesData = allActivitiesData.filter(activity =>
+                        activity.elapsed_time !== null && activity.elapsed_time >= minElapsedSeconds
+                    );
+                }
+
                 // --- NEW FILTER LOGIC: Minimum Weekly Activities (In-Memory Processing) ---
                 if (minWeeklyActivitiesFilter !== null && minWeeklyActivitiesFilter > 0) {
                     const weekRunnerCounts = {}; // Track activities per user per week
@@ -1297,7 +1310,7 @@
                 row.innerHTML = `
                     <td>${runnerName}</td>
                     <td>${runnerClub}</td>
-                    <td>${activity.name}</td>
+                    <td><a href="https://www.strava.com/activities/${activity.strava_activity_id}" target="_blank" class="text-blue-600 hover:text-blue-800 hover:underline" title="Xem trên Strava">${activity.name}</a></td>
                     <td>${activity.type}</td>
                     <td>${new Date(activity.start_date).toLocaleString('vi-VN', { dateStyle: 'short', timeStyle: 'short' })}</td>
                     <td>${(activity.distance / 1000).toFixed(2)}</td>
@@ -1861,7 +1874,7 @@
                     const runnerName = runner ? runner.runner_name : 'N/A';
 
                     li.innerHTML = `
-                        <p class="font-semibold">${runnerName}: ${activity.name} (${activity.type})</p>
+                        <p class="font-semibold">${runnerName}: <a href="https://www.strava.com/activities/${activity.strava_activity_id}" target="_blank" class="text-blue-600 hover:underline">${activity.name}</a> (${activity.type})</p>
                         <p class="text-sm text-gray-600">Ngày: ${new Date(activity.start_date).toLocaleDateString('vi-VN')}</p>
                         <p class="text-sm text-gray-600">Quãng đường: ${(activity.distance / 1000).toFixed(2)} km</p>
                         <p class="text-sm text-gray-600">Thời gian: ${formatTime(activity.moving_time)}</p>
@@ -2115,8 +2128,14 @@
             const penaltyBonusStatus = document.getElementById('penalty-bonus-status');
             penaltyBonusStatus.textContent = '';
 
-            if (activities.length === 0) {
-                penaltyBonusStatus.textContent = 'Chưa có dữ liệu để hiển thị.';
+            // Apply selected filter to display Activities
+            let displayActivities = activities;
+            if (selectedPenaltyActivityIds !== null) {
+                displayActivities = activities.filter(a => selectedPenaltyActivityIds.includes(String(a.strava_activity_id)));
+            }
+
+            if (displayActivities.length === 0) {
+                penaltyBonusStatus.textContent = 'Không có dữ liệu để hiển thị hoặc bạn đã bỏ chọn tất cả.';
                 return;
             }
 
@@ -2124,7 +2143,7 @@
             const penaltyPerKmLte10 = parseFloat(penaltyPerKmLte10Input.value) || 0;
             const targetKmPerWeek = parseFloat(targetKmPerWeekInput.value) || 0;
 
-            const activitiesByAthlete = activities.reduce((acc, activity) => {
+            const activitiesByAthlete = displayActivities.reduce((acc, activity) => {
                 const athleteId = String(activity.user_id);
                 if (!acc[athleteId]) {
                     acc[athleteId] = [];
@@ -2184,14 +2203,14 @@
                 summaryTbody.className = 'runner-summary-group';
                 summaryTbody.innerHTML = `
                     <tr class="total-row">
-                        <td colspan="4" class="font-bold text-lg text-bidv-green">
+                        <td colspan="5" class="font-bold text-lg text-bidv-green">
                             ${runnerName} <span class="text-gray-500 text-base">(${runnerClub})</span>
                             <i class="fas fa-chevron-right text-gray-600 ml-2 cursor-pointer penalty-toggle-icon" data-target-tbody-id="penalty-details-for-${athleteId}"></i>
                         </td>
                         <td colspan="4" class="text-right font-bold text-lg">${totalRunnerKm.toFixed(2)} KM</td>
                     </tr>
                     <tr class="${totalRunnerAmount < 0 ? 'missing-row' : 'summary-row'}">
-                        <td colspan="8" class="text-right font-bold text-lg">
+                        <td colspan="9" class="text-right font-bold text-lg">
                             Tổng cộng Phạt/Thưởng: 
                             <span class="${totalRunnerAmount < 0 ? 'text-red-600' : 'text-green-600'}">
                                 ${totalRunnerAmount.toLocaleString('vi-VN')} nghìn VNĐ
@@ -2213,6 +2232,7 @@
                     const weekSummaryRow = document.createElement('tr');
                     weekSummaryRow.className = 'weekly-summary-row bg-gray-100 hover:bg-gray-200 cursor-pointer';
                     weekSummaryRow.innerHTML = `
+                        <td></td>
                         <td></td> 
                         <td class="font-bold">
                             ${isoWeek.replace('-W', ' Tuần ')}
@@ -2232,12 +2252,26 @@
 
                     weekData.activities.sort((a, b) => new Date(b.start_date) - new Date(a.start_date));
                     weekData.activities.forEach(activity => {
+                        let textColorClass = 'text-gray-800';
+                        let nameSuffix = '';
+                        
+                        if (activity.elapsed_time >= 5400) { // 90 mins
+                            textColorClass = 'text-red-600 font-semibold';
+                            nameSuffix = ' <span class="text-xs bg-red-100 text-red-800 px-1 rounded ml-1 whitespace-nowrap">LONG_RUN</span>';
+                        } else if (activity.elapsed_time >= 1800) { // 30 mins
+                            textColorClass = 'text-green-600 font-semibold';
+                            nameSuffix = ' <span class="text-xs bg-green-100 text-green-800 px-1 rounded ml-1 whitespace-nowrap">HỢP LỆ</span>';
+                        }
+
                         const activityRow = document.createElement('tr');
-                        activityRow.className = `weekly-activity-row ${weekTargetClass} hidden bg-white`; 
+                        activityRow.className = `weekly-activity-row ${weekTargetClass} hidden bg-white ${textColorClass}`; 
                         activityRow.innerHTML = `
+                            <td class="text-center">
+                                <input type="checkbox" class="penalty-row-cb cursor-pointer" value="${activity.strava_activity_id}" ${selectedPenaltyActivityIds === null || selectedPenaltyActivityIds.includes(String(activity.strava_activity_id)) ? 'checked' : ''}>
+                            </td>
                             <td></td>
                             <td>${new Date(activity.start_date).toLocaleDateString('vi-VN')}</td>
-                            <td>${activity.name}</td>
+                            <td><a href="https://www.strava.com/activities/${activity.strava_activity_id}" target="_blank" class="hover:underline hover:text-blue-600" title="Xem trên Strava">${activity.name}</a>${nameSuffix}</td>
                             <td>${activity.type}</td>
                             <td>${(activity.distance / 1000).toFixed(2)}</td>
                             <td>${formatPaceForTable(activity.average_speed)}</td>
@@ -2250,7 +2284,7 @@
                 table.appendChild(detailedTbody);
                 
                 const spacerTbody = document.createElement('tbody');
-                spacerTbody.innerHTML = `<tr class="h-4 bg-gray-100"><td colspan="8"></td></tr>`;
+                spacerTbody.innerHTML = `<tr class="h-4 bg-gray-100"><td colspan="9"></td></tr>`;
                 table.appendChild(spacerTbody);
             });
         }
@@ -2399,17 +2433,24 @@
             const data = [];
             const headers = [];
             
-            tableElement.querySelectorAll('thead th').forEach(header => {
-                headers.push(header.textContent.trim());
+            tableElement.querySelectorAll('thead th').forEach((header, index) => {
+                // Skip the first column header text if it contains a checkbox, handle it securely
+                const headerText = header.textContent.trim();
+                headers.push(index === 0 ? 'Select' : headerText);
             });
 
             tableElement.querySelectorAll('tbody tr').forEach(row => {
                 const rowData = {};
+                let hasData = false;
                 row.querySelectorAll('td').forEach((cell, index) => {
-                    const header = headers[index] || `Column ${index + 1}`;
-                    rowData[header] = cell.textContent.trim();
+                    const header = headers[index];
+                    if (header && header !== 'Select') { // Ignore checkbox column for export
+                        // Clean up spacing (removes extra spaces from suffixes like LONG_RUN)
+                        rowData[header] = cell.textContent.trim().replace(/\s+/g, ' ');
+                        hasData = true;
+                    }
                 });
-                data.push(rowData);
+                if (hasData) data.push(rowData);
             });
             return data;
         }
@@ -2571,9 +2612,40 @@
                 minActivityDurationFilter = e.target.value !== '' ? parseInt(e.target.value) : null;
             });
 
-            penaltyPerKmGt10Input.addEventListener('input', renderAllReports);
-            penaltyPerKmLte10Input.addEventListener('input', renderAllReports);
-            targetKmPerWeekInput.addEventListener('input', renderAllReports);
+            penaltyPerKmGt10Input.addEventListener('input', () => renderPenaltyBonusTable(allActivitiesData));
+            penaltyPerKmLte10Input.addEventListener('input', () => renderPenaltyBonusTable(allActivitiesData));
+            targetKmPerWeekInput.addEventListener('input', () => renderPenaltyBonusTable(allActivitiesData));
+
+            // Thêm Event Listener cho Nút Áp dụng chọn và Reset
+            document.getElementById('apply-penalty-selection-btn').addEventListener('click', () => {
+                const checkboxes = document.querySelectorAll('.penalty-row-cb');
+                const selectedIds = [];
+                checkboxes.forEach(cb => {
+                    if (cb.checked) selectedIds.push(cb.value);
+                });
+                
+                if (selectedIds.length === 0) {
+                    showAlert('Vui lòng chọn ít nhất 1 hoạt động hoặc nhấn Reset để xem tất cả.');
+                    return;
+                }
+                
+                selectedPenaltyActivityIds = selectedIds;
+                renderPenaltyBonusTable(allActivitiesData);
+            });
+
+            document.getElementById('reset-penalty-selection-btn').addEventListener('click', () => {
+                selectedPenaltyActivityIds = null;
+                renderPenaltyBonusTable(allActivitiesData);
+            });
+
+            document.addEventListener('change', (e) => {
+                if (e.target.id === 'toggle-all-penalty') {
+                    const isChecked = e.target.checked;
+                    document.querySelectorAll('.penalty-row-cb').forEach(cb => {
+                        cb.checked = isChecked;
+                    });
+                }
+            });
 
             closeWeeklyActivitiesModalBtn.addEventListener('click', () => {
                 weeklyActivitiesModal.style.display = 'none';
