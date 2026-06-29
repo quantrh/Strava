@@ -2521,8 +2521,88 @@
             });
 
             downloadTeamStatsExcelBtn.addEventListener('click', () => {
-                const table = document.getElementById('team-stats-table');
-                const dataToExport = tableToJson(table);
+                let displayActivities = allActivitiesData;
+                if (selectedTeamActivityIds !== null) {
+                    displayActivities = allActivitiesData.filter(a => selectedTeamActivityIds.includes(String(a.strava_activity_id)));
+                }
+
+                if (displayActivities.length === 0) {
+                    showAlert('Không có dữ liệu để xuất ra Excel.');
+                    return;
+                }
+
+                // Nhóm dữ liệu theo Club/Đội
+                const activitiesByClub = displayActivities.reduce((acc, activity) => {
+                    const athleteId = String(activity.user_id);
+                    const runnerInfo = allRunnerCredentials.find(rc => String(rc.athlete_id) === athleteId);
+                    const clubName = runnerInfo?.running_team || 'Không rõ CLB';
+                    
+                    if (!acc[clubName]) {
+                        acc[clubName] = { activities: [], totalKm: 0 };
+                    }
+                    
+                    acc[clubName].activities.push({
+                        activity: activity,
+                        runnerName: runnerInfo?.runner_name || `Runner ID: ${athleteId}`
+                    });
+                    acc[clubName].totalKm += (activity.distance / 1000);
+                    
+                    return acc;
+                }, {});
+
+                const dataToExport = [];
+                
+                // Lặp qua từng Đội đã sắp xếp
+                Object.keys(activitiesByClub).sort().forEach(clubName => {
+                    const clubData = activitiesByClub[clubName];
+                    
+                    // Sắp xếp các hoạt động trong đội: Theo Tên Runner -> Theo thời gian giảm dần
+                    clubData.activities.sort((a, b) => {
+                        const nameCmp = a.runnerName.localeCompare(b.runnerName);
+                        if (nameCmp !== 0) return nameCmp;
+                        return new Date(b.activity.start_date) - new Date(a.activity.start_date);
+                    });
+                    
+                    // Đưa dữ liệu chi tiết vào list export (bỏ qua dòng tổng runner)
+                    clubData.activities.forEach(item => {
+                        const act = item.activity;
+                        dataToExport.push({
+                            "Đội / Tên Runner": item.runnerName,
+                            "Ngày chạy": new Date(act.start_date).toLocaleDateString('vi-VN'),
+                            "Tên Hoạt Động": act.name,
+                            "Loại": act.type,
+                            "Quãng đường (KM)": (act.distance / 1000).toFixed(2),
+                            "Pace": formatPaceForTable(act.average_speed),
+                            "THỜI GIAN - Elapsed Time": formatTime(act.elapsed_time),
+                            "Thời gian Moving": formatTime(act.moving_time)
+                        });
+                    });
+                    
+                    // Thêm dòng tổng cộng của cả đội
+                    dataToExport.push({
+                        "Đội / Tên Runner": `TỔNG CỘNG ĐỘI: ${clubName}`,
+                        "Ngày chạy": "",
+                        "Tên Hoạt Động": "",
+                        "Loại": "",
+                        "Quãng đường (KM)": clubData.totalKm.toFixed(2),
+                        "Pace": "",
+                        "THỜI GIAN - Elapsed Time": "",
+                        "Thời gian Moving": ""
+                    });
+                    
+                    // Dòng trống để cách giữa các đội cho dễ nhìn
+                    dataToExport.push({
+                        "Đội / Tên Runner": "",
+                        "Ngày chạy": "",
+                        "Tên Hoạt Động": "",
+                        "Loại": "",
+                        "Quãng đường (KM)": "",
+                        "Pace": "",
+                        "THỜI GIAN - Elapsed Time": "",
+                        "Thời gian Moving": ""
+                    });
+                });
+
                 downloadExcel(dataToExport, 'thong_ke_doi_chay.xlsx', 'ThongKeDoiChay');
             });
 
