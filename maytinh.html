@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Máy tính cho runner</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; }
+        
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        .wheel-container { scroll-snap-type: y mandatory; scroll-behavior: smooth; }
+        .wheel-item { scroll-snap-align: center; }
+
+        input[type="number"]::-webkit-inner-spin-button, 
+        input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+        input[type="number"] { -moz-appearance: textfield; }
+
+        .modal-enter { opacity: 1; transform: scale(1); pointer-events: auto; }
+        .modal-leave { opacity: 0; transform: scale(0.95); pointer-events: none; }
+        .overlay-enter { opacity: 1; pointer-events: auto; }
+        .overlay-leave { opacity: 0; pointer-events: none; }
+
+        /* Trạng thái */
+        .field-dimmed { color: #A0AEC0; pointer-events: none; }
+        .field-active { color: #111827; }
+    </style>
+</head>
+<body class="bg-[#F2F2F7] flex justify-center w-full min-h-screen text-gray-800">
+
+<div class="w-full max-w-[420px] bg-white relative shadow-2xl flex flex-col h-[100dvh] overflow-hidden">
+    
+    <!-- Header -->
+    <header class="pt-12 pb-4 px-6 flex justify-between items-end bg-[#FAFAFA]">
+        <h1 class="text-2xl font-extrabold tracking-tight text-black">Máy tính cho runner</h1>
+    </header>
+
+    <main class="flex-1 overflow-y-auto px-5 pt-6 pb-10 no-scrollbar bg-[#FAFAFA]">
+        
+        <!-- Khung Nhập Liệu -->
+        <div class="bg-transparent space-y-0">
+            
+            <!-- Cự ly (Distance) -->
+            <div class="relative border border-gray-200 rounded-t-lg p-3 pt-4 h-[72px] bg-white border-b-0 flex" id="box-distance">
+                <label class="absolute -top-[9px] left-3 bg-white px-1 text-[11px] font-semibold text-gray-400">Distance</label>
+                
+                <div class="flex-1 flex items-center justify-between h-full pr-2">
+                    <input type="number" id="val-distance" class="text-[17px] font-medium outline-none w-[55%] bg-transparent field-active" placeholder="Nhập cự ly (km)..." step="0.01">
+                    <div class="relative w-[45%] flex justify-end">
+                        <select id="preset-distance" class="appearance-none text-right outline-none text-[14px] font-medium text-gray-500 bg-transparent pr-4 relative z-10 w-full cursor-pointer" dir="rtl">
+                            <option value="">Tuỳ chỉnh</option>
+                            <option value="5">5K</option>
+                            <option value="10">10K</option>
+                            <option value="21.0975">Half Marathon</option>
+                            <option value="42.195">Marathon</option>
+                        </select>
+                        <svg class="w-4 h-4 text-gray-400 absolute right-0 top-0.5 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                    </div>
+                </div>
+
+                <!-- Option Tính Toán -->
+                <div class="w-14 flex flex-col items-center justify-center border-l border-gray-100 pl-2">
+                    <input type="radio" name="calc_target" id="radio-distance" value="distance" class="w-4 h-4 accent-[#5F9E52] cursor-pointer" onchange="setTarget('distance')">
+                    <label for="radio-distance" class="text-[9px] text-gray-500 mt-1 cursor-pointer">Cần tính</label>
+                </div>
+            </div>
+
+            <!-- Thời gian (Time) -->
+            <div class="relative border border-gray-200 p-3 pt-4 h-[72px] bg-white flex border-b-0" id="box-time">
+                <label class="absolute -top-[9px] left-3 bg-white px-1 text-[11px] font-semibold text-gray-400">Time</label>
+                
+                <div class="flex-1 flex items-center justify-between cursor-pointer pr-2" onclick="openModal('time')">
+                    <div id="val-time" class="text-[17px] outline-none w-full field-active font-medium">0:00:00</div>
+                    <svg class="w-6 h-6 text-gray-300 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                </div>
+
+                <div class="w-14 flex flex-col items-center justify-center border-l border-gray-100 pl-2 z-10">
+                    <input type="radio" name="calc_target" id="radio-time" value="time" class="w-4 h-4 accent-[#5F9E52] cursor-pointer" onchange="setTarget('time')">
+                    <label for="radio-time" class="text-[9px] text-gray-500 mt-1 cursor-pointer">Cần tính</label>
+                </div>
+            </div>
+
+            <!-- Pace -->
+            <div class="relative border border-gray-200 rounded-b-lg p-3 pt-4 h-[72px] bg-white flex" id="box-pace">
+                <label class="absolute -top-[9px] left-3 bg-white px-1 text-[11px] font-semibold text-gray-400">Pace</label>
+                
+                <div class="flex-1 flex items-center justify-between cursor-pointer pr-2" onclick="openModal('pace')">
+                    <div id="val-pace" class="text-[17px] outline-none w-full field-dimmed font-medium">0:00 /km</div>
+                    <svg class="w-6 h-6 text-gray-300 mr-2" fill="currentColor" viewBox="0 0 24 24"><path d="M13.5 5.5c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zM9.8 8.9L7 23h2.1l1.8-8 2.1 2v6h2v-7.5l-2.1-2 .6-3C14.8 12 16.8 13 19 13v-2c-1.9 0-3.5-1-4.3-2.4l-1-1.6c-.4-.6-1-1-1.7-1-.3 0-.5.1-.8.1L6 8.3V13h2V9.6l1.8-.7"/></svg>
+                </div>
+
+                <div class="w-14 flex flex-col items-center justify-center border-l border-gray-100 pl-2 z-10">
+                    <input type="radio" name="calc_target" id="radio-pace" value="pace" class="w-4 h-4 accent-[#5F9E52] cursor-pointer" onchange="setTarget('pace')" checked>
+                    <label for="radio-pace" class="text-[9px] text-gray-500 mt-1 cursor-pointer">Cần tính</label>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Khung Hydration (Thời gian uống nước) -->
+        <div id="advanced-panel" class="mt-8 space-y-0">
+            <h3 class="text-[14px] font-bold text-gray-700 mb-3 flex items-center gap-1.5">
+                <svg class="w-5 h-5 text-blue-400" fill="currentColor" viewBox="0 0 24 24"><path d="M12 21.5c-3.3 0-6-2.7-6-6 0-3.2 3.1-7.8 5.6-11.4.2-.3.7-.3 1 0 2.4 3.6 5.5 8.2 5.5 11.4 0 3.3-2.7 6-6 6zm0-15.3C10.2 9 7.5 12.8 7.5 15.5c0 2.5 2 4.5 4.5 4.5s4.5-2 4.5-4.5c0-2.7-2.7-6.5-4.5-9.3z"/></svg>
+                Thời gian uống nước (Tuỳ chọn)
+            </h3>
+            <div class="flex">
+                <div class="relative border border-gray-200 rounded-l-lg p-3 pt-4 h-[60px] bg-white flex-1 border-r-0">
+                    <label class="absolute -top-[9px] left-3 bg-white px-1 text-[10px] font-semibold text-[#5F9E52]">Số lần dừng (Stops)</label>
+                    <input type="number" id="val-stops" class="text-[16px] font-medium outline-none w-full text-center field-active" value="0" min="0">
+                </div>
+                <div class="relative border border-gray-200 rounded-r-lg p-3 pt-4 h-[60px] bg-white flex-1">
+                    <label class="absolute -top-[9px] left-3 bg-white px-1 text-[10px] font-semibold text-[#5F9E52]">Giây / lần dừng</label>
+                    <input type="number" id="val-stoptime" class="text-[16px] font-medium outline-none w-full text-center field-active" value="0" min="0">
+                </div>
+            </div>
+            <p class="text-[11px] text-gray-400 mt-2 text-center">Bổ sung thời gian bù nước vào tổng thời gian</p>
+        </div>
+
+        <!-- Nút Hành động -->
+        <div class="flex items-center justify-center mt-8 px-1 gap-4">
+            <button onclick="resetApp()" class="bg-gray-200 text-gray-700 px-6 py-3.5 rounded-full font-semibold text-[15px] shadow-sm active:scale-95 transition-transform">Làm mới</button>
+            <button id="btn-calc" class="bg-[#5F9E52] flex-1 text-white py-3.5 rounded-full font-semibold text-[17px] shadow-md transition-transform transform active:scale-95">Tính toán</button>
+        </div>
+
+        <div id="status-text" class="text-center text-[13px] font-semibold text-[#5F9E52] mt-4 min-h-[20px]"></div>
+
+        <!-- Banner Quảng Cáo App -->
+        <a href="https://quantrh.github.io/Strava/index1.html" target="_blank" class="mt-2 block bg-gradient-to-r from-[#fc4C02] to-[#ff7b42] rounded-2xl p-4 text-white shadow-lg active:scale-[0.98] transition-transform">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h4 class="font-extrabold text-[15px] leading-snug flex items-center gap-1">
+                        Quản lý kết quả chạy 
+                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M13.5 5.5c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zM9.8 8.9L7 23h2.1l1.8-8 2.1 2v6h2v-7.5l-2.1-2 .6-3C14.8 12 16.8 13 19 13v-2c-1.9 0-3.5-1-4.3-2.4l-1-1.6c-.4-.6-1-1-1.7-1-.3 0-.5.1-.8.1L6 8.3V13h2V9.6l1.8-.7"/></svg>
+                    </h4>
+                    <p class="text-[11px] text-orange-100 mt-1">Phân tích & lưu trữ thành tích cá nhân</p>
+                </div>
+                <div class="bg-white text-[#fc4C02] font-bold text-[11px] px-3.5 py-2 rounded-full shadow-sm whitespace-nowrap">
+                    Mở ngay
+                </div>
+            </div>
+        </a>
+
+        <!-- Hướng dẫn sử dụng -->
+        <div class="mt-6 bg-white p-5 rounded-2xl shadow-sm border border-gray-200 text-[13px] text-gray-600 space-y-3 leading-relaxed">
+            <h3 class="font-bold text-black text-[15px] flex items-center gap-2">
+                <svg class="w-5 h-5 text-[#5F9E52]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+                Hướng dẫn sử dụng
+            </h3>
+            <ul class="list-disc pl-4 space-y-2">
+                <li><strong>1. Chọn mục tiêu:</strong> Đánh dấu tròn (<input type="radio" checked class="w-3 h-3 accent-[#5F9E52] inline-block align-middle relative -top-[1px]"> Cần tính) vào ô Cự ly, Thời gian hoặc Pace mà bạn muốn hệ thống tính toán ra kết quả. Ô được chọn sẽ bị làm mờ để chờ kết quả.</li>
+                <li><strong>2. Nhập dữ liệu:</strong> Bạn bắt buộc phải điền đầy đủ các thông số ở 2 ô còn lại. <br><span class="text-gray-400 italic">VD: Nếu chọn tính Pace, bạn phải nhập cả Cự ly và Thời gian.</span></li>
+                <li><strong>3. Uống nước:</strong> Nếu đường chạy có trạm tiếp nước, hãy nhập số lần dừng và thời gian mỗi lần dừng. Thời gian này sẽ cộng thêm vào Tổng thời gian chạy.</li>
+                <li><strong>4. Tính toán:</strong> Bấm nút <strong>Tính toán</strong> màu xanh để xem kết quả trả về.</li>
+            </ul>
+        </div>
+
+    </main>
+</div>
+
+<!-- ================= OVERLAYS & MODALS ================= -->
+<div id="modal-overlay" class="fixed inset-0 bg-black/30 z-40 overlay-leave transition-opacity duration-300" onclick="closeModal()"></div>
+
+<!-- Modal Chọn TIME -->
+<div id="modal-time" class="fixed inset-0 z-50 flex items-center justify-center modal-leave transition-all duration-300">
+    <div class="bg-[#F2F2F7] rounded-[24px] w-[320px] p-4 shadow-2xl relative">
+        <div class="flex justify-between items-center mb-2 px-2">
+            <h3 class="text-[17px] font-semibold text-black">Select Time</h3>
+            <button onclick="closeModal()" class="p-2"><svg class="w-5 h-5 text-black" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
+        </div>
+        
+        <div class="relative h-[200px] flex justify-center items-center mt-2">
+            <div class="absolute w-[90%] h-[44px] border-t border-b border-[#5F9E52] pointer-events-none z-10"></div>
+            
+            <div class="flex space-x-1 w-full h-full relative z-0 pl-4">
+                <div class="flex-1 h-full overflow-y-scroll wheel-container no-scrollbar" id="wheel-t-h" onscroll="onScrollWheel(this)"></div>
+                <div class="flex items-center text-[15px] text-black pr-2 w-4">h</div>
+                <div class="flex-1 h-full overflow-y-scroll wheel-container no-scrollbar" id="wheel-t-m" onscroll="onScrollWheel(this)"></div>
+                <div class="flex items-center text-[15px] text-black pr-2 w-4">m</div>
+                <div class="flex-1 h-full overflow-y-scroll wheel-container no-scrollbar" id="wheel-t-s" onscroll="onScrollWheel(this)"></div>
+                <div class="flex items-center text-[15px] text-black pr-2 w-4">s</div>
+            </div>
+        </div>
+        
+        <button onclick="saveModalTime()" class="w-full bg-[#5F9E52] text-white py-3.5 rounded-[14px] font-semibold text-[17px] mt-6 active:bg-[#4d8242]">OK</button>
+    </div>
+</div>
+
+<!-- Modal Chọn PACE -->
+<div id="modal-pace" class="fixed inset-0 z-50 flex items-center justify-center modal-leave transition-all duration-300">
+    <div class="bg-[#F2F2F7] rounded-[24px] w-[320px] p-4 shadow-2xl relative">
+        <div class="flex justify-between items-center mb-2 px-2">
+            <h3 class="text-[17px] font-semibold text-black">Select Pace</h3>
+            <button onclick="closeModal()" class="p-2"><svg class="w-5 h-5 text-black" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
+        </div>
+        
+        <div class="relative h-[200px] flex justify-center items-center mt-2">
+            <div class="absolute w-[90%] h-[44px] border-t border-b border-[#5F9E52] pointer-events-none z-10"></div>
+            
+            <div class="flex space-x-1 w-full h-full relative z-0 pl-10">
+                <div class="flex-1 h-full overflow-y-scroll wheel-container no-scrollbar" id="wheel-p-m" onscroll="onScrollWheel(this)"></div>
+                <div class="flex items-center text-[15px] text-black pr-2 font-bold">:</div>
+                <div class="flex-1 h-full overflow-y-scroll wheel-container no-scrollbar" id="wheel-p-s" onscroll="onScrollWheel(this)"></div>
+                <div class="flex items-center text-[15px] text-gray-400 pl-4 w-12">/km</div>
+            </div>
+        </div>
+        
+        <button onclick="saveModalPace()" class="w-full bg-[#5F9E52] text-white py-3.5 rounded-[14px] font-semibold text-[17px] mt-6 active:bg-[#4d8242]">OK</button>
+    </div>
+</div>
+
+<script>
+    // ==========================================
+    // 1. LOGIC QUẢN LÝ DỮ LIỆU
+    // ==========================================
+    const state = { distance: null, time: null, pace: null, stops: 0, stoptime: 0 };
+    let calcTarget = 'pace'; // Mặc định là tính Pace
+
+    function pad(n) { return n.toString().padStart(2, '0'); }
+
+    // Xử lý khi user chọn mục tiêu (Radio Button)
+    function setTarget(target) {
+        calcTarget = target;
+        
+        // Reset trạng thái text lỗi
+        const statusEl = document.getElementById('status-text');
+        statusEl.innerText = '';
+        statusEl.classList.remove('text-red-500');
+        statusEl.classList.add('text-[#5F9E52]');
+
+        // Update UI (Làm mờ ô được chọn)
+        ['distance', 'time', 'pace'].forEach(f => {
+            const valEl = document.getElementById(`val-${f}`);
+            if (f === target) {
+                valEl.classList.add('field-dimmed');
+                valEl.classList.remove('field-active');
+                if(f === 'distance') {
+                    valEl.disabled = true;
+                    document.getElementById('preset-distance').disabled = true;
+                }
+            } else {
+                valEl.classList.remove('field-dimmed');
+                valEl.classList.add('field-active');
+                if(f === 'distance') {
+                    valEl.disabled = false;
+                    document.getElementById('preset-distance').disabled = false;
+                }
+            }
+        });
+    }
+
+    function showError(msg) {
+        const statusEl = document.getElementById('status-text');
+        statusEl.innerText = msg;
+        statusEl.classList.remove('text-[#5F9E52]');
+        statusEl.classList.add('text-red-500');
+    }
+
+    // Tính toán dựa trên Target đã chọn
+    document.getElementById('btn-calc').addEventListener('click', () => {
+        let D = state.distance;
+        let T = state.time;
+        let P = state.pace;
+        let N = state.stops || 0;
+        let S = state.stoptime || 0;
+
+        try {
+            if (calcTarget === 'distance') {
+                if (T === null || P === null) throw "Vui lòng nhập đầy đủ Thời gian và Pace!";
+                if (P === 0) throw "Pace phải lớn hơn 0";
+                D = (T - N * S) / P;
+                state.distance = Math.max(0, D);
+                document.getElementById('val-distance').value = state.distance.toFixed(2);
+                document.getElementById('preset-distance').value = "";
+            } 
+            else if (calcTarget === 'time') {
+                if (D === null || P === null) throw "Vui lòng nhập đầy đủ Cự ly và Pace!";
+                T = D * P + N * S;
+                state.time = Math.max(0, T);
+                renderTimeString(state.time);
+            } 
+            else if (calcTarget === 'pace') {
+                if (D === null || T === null) throw "Vui lòng nhập đầy đủ Cự ly và Thời gian!";
+                if (D === 0) throw "Cự ly phải lớn hơn 0";
+                P = (T - N * S) / D;
+                state.pace = Math.max(0, P);
+                renderPaceString(state.pace);
+            }
+
+            const statusEl = document.getElementById('status-text');
+            statusEl.classList.remove('text-red-500');
+            statusEl.classList.add('text-[#5F9E52]');
+            statusEl.innerText = "Đã tính toán thành công!";
+
+        } catch(e) {
+            showError(e);
+        }
+    });
+
+    function renderTimeString(totalSecs) {
+        let h = Math.floor(totalSecs / 3600);
+        let m = Math.floor((totalSecs % 3600) / 60);
+        let s = Math.round(totalSecs % 60);
+        document.getElementById('val-time').innerText = `${h}:${pad(m)}:${pad(s)}`;
+    }
+
+    function renderPaceString(paceSecs) {
+        let m = Math.floor(paceSecs / 60);
+        let s = Math.round(paceSecs % 60);
+        document.getElementById('val-pace').innerText = `${m}:${pad(s)} /km`;
+    }
+
+    // Lắng nghe dữ liệu
+    document.getElementById('val-distance').addEventListener('input', (e) => {
+        state.distance = parseFloat(e.target.value) || null;
+    });
+
+    document.getElementById('preset-distance').addEventListener('change', (e) => {
+        if(e.target.value) {
+            state.distance = parseFloat(e.target.value);
+            document.getElementById('val-distance').value = state.distance;
+        }
+    });
+
+    document.getElementById('val-stops').addEventListener('input', e => { state.stops = parseInt(e.target.value) || 0; });
+    document.getElementById('val-stoptime').addEventListener('input', e => { state.stoptime = parseInt(e.target.value) || 0; });
+
+    function resetApp() {
+        state.distance = null; state.time = null; state.pace = null; state.stops = 0; state.stoptime = 0;
+        document.getElementById('val-distance').value = '';
+        document.getElementById('preset-distance').value = '';
+        document.getElementById('val-time').innerText = '0:00:00';
+        document.getElementById('val-pace').innerText = '0:00 /km';
+        document.getElementById('val-stops').value = '0';
+        document.getElementById('val-stoptime').value = '0';
+        
+        // Khôi phục lại UI theo target hiện tại
+        setTarget(calcTarget);
+    }
+
+    // ==========================================
+    // 2. LOGIC RENDER SCROLL PICKER (WHEELS)
+    // ==========================================
+    const ITEM_HEIGHT = 44; 
+    
+    function buildWheel(id, max, isPace = false) {
+        const wheel = document.getElementById(id);
+        let items = `<div class="h-[78px]"></div>`;
+        for(let i=0; i<=max; i++) {
+            let text = isPace && id === 'wheel-p-m' ? i.toString() : pad(i);
+            if(id === 'wheel-t-h') text = i.toString();
+            items += `<div class="wheel-item h-[44px] flex items-center justify-center text-[19px] font-medium text-[#D1D1D6] transition-colors" data-val="${i}">${text}</div>`;
+        }
+        items += `<div class="h-[78px]"></div>`;
+        wheel.innerHTML = items;
+    }
+
+    buildWheel('wheel-t-h', 99);
+    buildWheel('wheel-t-m', 59);
+    buildWheel('wheel-t-s', 59);
+    buildWheel('wheel-p-m', 59, true);
+    buildWheel('wheel-p-s', 59, true);
+
+    function onScrollWheel(el) {
+        const index = Math.round(el.scrollTop / ITEM_HEIGHT);
+        const items = el.querySelectorAll('.wheel-item');
+        items.forEach((item, idx) => {
+            if (idx === index) {
+                item.classList.remove('text-[#D1D1D6]');
+                item.classList.add('text-black');
+            } else {
+                item.classList.add('text-[#D1D1D6]');
+                item.classList.remove('text-black');
+            }
+        });
+    }
+
+    function setWheelValue(id, val) {
+        const el = document.getElementById(id);
+        el.scrollTo({ top: val * ITEM_HEIGHT, behavior: 'instant' });
+        setTimeout(() => onScrollWheel(el), 10);
+    }
+
+    function getWheelValue(id) {
+        return Math.round(document.getElementById(id).scrollTop / ITEM_HEIGHT);
+    }
+
+    // ==========================================
+    // 3. QUẢN LÝ ĐÓNG MỞ MODAL
+    // ==========================================
+    function openModal(type) {
+        // Chặn mở modal nếu ô đó đang là mục tiêu tính toán (đang bị mờ)
+        if(type === calcTarget) return;
+
+        document.getElementById('modal-overlay').classList.replace('overlay-leave', 'overlay-enter');
+        
+        if (type === 'time') {
+            document.getElementById('modal-time').classList.replace('modal-leave', 'modal-enter');
+            let t = state.time || 0;
+            setWheelValue('wheel-t-h', Math.floor(t / 3600));
+            setWheelValue('wheel-t-m', Math.floor((t % 3600) / 60));
+            setWheelValue('wheel-t-s', Math.round(t % 60));
+        } else if (type === 'pace') {
+            document.getElementById('modal-pace').classList.replace('modal-leave', 'modal-enter');
+            let p = state.pace || 0;
+            setWheelValue('wheel-p-m', Math.floor(p / 60));
+            setWheelValue('wheel-p-s', Math.round(p % 60));
+        }
+    }
+
+    function closeModal() {
+        document.getElementById('modal-overlay').classList.replace('overlay-enter', 'overlay-leave');
+        document.getElementById('modal-time').classList.replace('modal-enter', 'modal-leave');
+        document.getElementById('modal-pace').classList.replace('modal-enter', 'modal-leave');
+    }
+
+    function saveModalTime() {
+        const h = getWheelValue('wheel-t-h');
+        const m = getWheelValue('wheel-t-m');
+        const s = getWheelValue('wheel-t-s');
+        state.time = h * 3600 + m * 60 + s;
+        renderTimeString(state.time);
+        closeModal();
+    }
+
+    function saveModalPace() {
+        const m = getWheelValue('wheel-p-m');
+        const s = getWheelValue('wheel-p-s');
+        state.pace = m * 60 + s;
+        renderPaceString(state.pace);
+        closeModal();
+    }
+
+    // Khởi tạo ban đầu UI
+    setTarget('pace');
+
+</script>
+</body>
+</html>
