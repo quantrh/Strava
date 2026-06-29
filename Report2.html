@@ -568,52 +568,39 @@
 
              <div class="card mt-8 p-6">
                 <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 gap-4">
-                    <h3 class="text-xl font-semibold text-teal-700"><i class="fas fa-calculator"></i> Thống kê tiền phạt/thưởng</h3>
+                    <h3 class="text-xl font-semibold text-teal-700"><i class="fas fa-users"></i> Thống kê khoảng cách theo Đội/Runner</h3>
                     <div class="flex flex-wrap gap-2">
-                        <button id="apply-penalty-selection-btn" class="btn-primary text-sm px-4 py-2 bg-blue-600 hover:bg-blue-700 border-none">
+                        <button id="apply-team-selection-btn" class="btn-primary text-sm px-4 py-2 bg-blue-600 hover:bg-blue-700 border-none">
                             <i class="fas fa-check"></i> Áp dụng chọn
                         </button>
-                        <button id="reset-penalty-selection-btn" class="btn-secondary text-sm px-4 py-2 border-none">
+                        <button id="reset-team-selection-btn" class="btn-secondary text-sm px-4 py-2 border-none">
                             <i class="fas fa-undo"></i> Reset hiển thị
                         </button>
-                        <button id="download-penalty-bonus-excel" class="btn-primary text-sm px-4 py-2 bg-green-600 hover:bg-green-700 border-none">
+                        <button id="download-team-stats-excel" class="btn-primary text-sm px-4 py-2 bg-green-600 hover:bg-green-700 border-none">
                             <i class="fas fa-file-excel"></i> Tải Excel
                         </button>
                     </div>
                 </div>
-                <div class="mb-4 flex gap-4 items-end">
-                    <div class="flex-1">
-                        <label for="penalty-per-km-gt10" class="block text-gray-700 text-sm font-bold mb-2">Số tiền nộp cho 1KM (nghìn VNĐ) khi thiếu > 10KM:</label>
-                        <input type="number" id="penalty-per-km-gt10" class="form-input bg-yellow-100" value="30" min="0" step="1">
-                    </div>
-                    <div class="flex-1">
-                        <label for="penalty-per-km-lte10" class="block text-gray-700 text-sm font-bold mb-2">Số tiền nộp cho 1KM (nghìn VNĐ) khi thiếu <= 10KM:</label>
-                        <input type="number" id="penalty-per-km-lte10" class="form-input bg-yellow-100" value="20" min="0" step="1">
-                    </div>
-                    <div class="flex-1">
-                        <label for="target-km-per-week" class="block text-gray-700 text-sm font-bold mb-2">Số KM một tuần (KM):</label>
-                        <input type="number" id="target-km-per-week" class="form-input bg-yellow-100" value="25" min="0" step="1">
-                    </div>
-                </div>
+                
                 <div id="detailed-stats-table-container" class="overflow-x-auto">
-                    <table id="penalty-bonus-table" class="data-table">
+                    <table id="team-stats-table" class="data-table">
                         <thead>
                             <tr>
-                                <th class="w-10 text-center"><input type="checkbox" id="toggle-all-penalty" title="Chọn/Bỏ chọn tất cả" checked></th>
-                                <th>Tên Runner</th>
-                                <th>Ngày chạy / Tuần</th>
+                                <th class="w-10 text-center"><input type="checkbox" id="toggle-all-team-stats" title="Chọn/Bỏ chọn tất cả" checked></th>
+                                <th>Đội / Tên Runner</th>
+                                <th>Ngày chạy</th>
                                 <th>Tên Hoạt Động</th>
                                 <th>Loại</th>
                                 <th>Quãng đường (KM)</th>
-                                <th>Pace / Chênh lệch (KM)</th>
+                                <th>Pace</th>
                                 <th>THỜI GIAN - Elapsed Time</th>
-                                <th>Thời gian / Thưởng-Phạt</th>
+                                <th>Thời gian Moving</th>
                             </tr>
                         </thead>
                         <tbody></tbody>
                     </table>
                 </div>
-                <p id="penalty-bonus-status" class="mt-4 text-sm text-gray-600 text-center">Chưa có dữ liệu để hiển thị.</p>
+                <p id="team-stats-status" class="mt-4 text-sm text-gray-600 text-center">Chưa có dữ liệu để hiển thị.</p>
             </div>
 
         </section>
@@ -649,7 +636,6 @@
         </div>
     </div>
 
-
     <div id="custom-alert" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-content-center z-50">
         <div class="bg-white p-6 rounded-lg shadow-xl max-w-sm w-full text-center">
             <p id="alert-message" class="mb-4 text-lg"></p>
@@ -681,7 +667,7 @@
         let allRunnerCredentials = []; 
         let allClubs = []; 
         let allActivitiesData = []; 
-        let selectedPenaltyActivityIds = null; 
+        let selectedTeamActivityIds = null; 
 
         let selectedRunnerIdReport = 'all'; 
         let selectedClubNamesReport = []; 
@@ -739,12 +725,8 @@
         const weeklyDistanceChartContainer = document.getElementById('weekly-distance-chart-container');
         const weeklyChartStatus = document.getElementById('weekly-chart-status');
 
-        const penaltyPerKmGt10Input = document.getElementById('penalty-per-km-gt10');
-        const penaltyPerKmLte10Input = document.getElementById('penalty-per-km-lte10');
-        const targetKmPerWeekInput = document.getElementById('target-km-per-week');
-        const penaltyBonusTableBody = document.querySelector('#penalty-bonus-table tbody');
-        const penaltyBonusStatus = document.getElementById('penalty-bonus-status');
-        const downloadPenaltyBonusExcelBtn = document.getElementById('download-penalty-bonus-excel');
+        const teamStatsStatus = document.getElementById('team-stats-status');
+        const downloadTeamStatsExcelBtn = document.getElementById('download-team-stats-excel');
 
 
         const weeklyActivitiesModal = document.getElementById('weekly-activities-modal');
@@ -1164,7 +1146,7 @@
             renderTopActivities(allActivitiesData);
             renderDetailedActivitiesTable(allActivitiesData);
             renderWeeklyDistanceChart(allActivitiesData);
-            renderPenaltyBonusTable(allActivitiesData);
+            renderTeamStatsTable(allActivitiesData);
             renderDistanceCharts(allActivitiesData);
             renderChartJSCharts(allActivitiesData);
         }
@@ -2046,136 +2028,99 @@
             }
         }
 
-        function renderPenaltyBonusTable(activities) {
-            const table = document.getElementById('penalty-bonus-table');
+        function renderTeamStatsTable(activities) {
+            const table = document.getElementById('team-stats-table');
             table.querySelectorAll('tbody').forEach(tbody => tbody.remove());
 
-            const penaltyBonusStatus = document.getElementById('penalty-bonus-status');
-            penaltyBonusStatus.textContent = '';
+            const status = document.getElementById('team-stats-status');
+            status.textContent = '';
 
             let displayActivities = activities;
-            if (selectedPenaltyActivityIds !== null) {
-                displayActivities = activities.filter(a => selectedPenaltyActivityIds.includes(String(a.strava_activity_id)));
+            if (selectedTeamActivityIds !== null) {
+                displayActivities = activities.filter(a => selectedTeamActivityIds.includes(String(a.strava_activity_id)));
             }
 
             if (displayActivities.length === 0) {
-                penaltyBonusStatus.textContent = 'Không có dữ liệu để hiển thị hoặc bạn đã bỏ chọn tất cả.';
+                status.textContent = 'Không có dữ liệu để hiển thị hoặc bạn đã bỏ chọn tất cả.';
                 return;
             }
 
-            const penaltyPerKmGt10 = parseFloat(penaltyPerKmGt10Input.value) || 0;
-            const penaltyPerKmLte10 = parseFloat(penaltyPerKmLte10Input.value) || 0;
-            const targetKmPerWeek = parseFloat(targetKmPerWeekInput.value) || 0;
-
-            const activitiesByAthlete = displayActivities.reduce((acc, activity) => {
+            const activitiesByClub = displayActivities.reduce((acc, activity) => {
                 const athleteId = String(activity.user_id);
-                if (!acc[athleteId]) {
-                    acc[athleteId] = [];
+                const runnerInfo = allRunnerCredentials.find(rc => String(rc.athlete_id) === athleteId);
+                const clubName = runnerInfo?.running_team || 'Không rõ CLB';
+                
+                if (!acc[clubName]) {
+                    acc[clubName] = { runners: {}, totalKm: 0 };
                 }
-                acc[athleteId].push(activity);
+                
+                if (!acc[clubName].runners[athleteId]) {
+                    acc[clubName].runners[athleteId] = { activities: [], totalKm: 0, runnerName: runnerInfo?.runner_name || `Runner ID: ${athleteId}` };
+                }
+                
+                acc[clubName].runners[athleteId].activities.push(activity);
+                const distanceKm = activity.distance / 1000;
+                acc[clubName].runners[athleteId].totalKm += distanceKm;
+                acc[clubName].totalKm += distanceKm;
+                
                 return acc;
             }, {});
 
-            const sortedAthleteIds = Object.keys(activitiesByAthlete).sort((a, b) => {
-                const runnerA = allRunnerCredentials.find(rc => String(rc.athlete_id) === a);
-                const runnerB = allRunnerCredentials.find(rc => String(rc.athlete_id) === b);
-                return (runnerA?.runner_name || '').localeCompare(runnerB?.runner_name || '');
-            });
+            const sortedClubs = Object.keys(activitiesByClub).sort();
 
-            if (sortedAthleteIds.length === 0) {
-                penaltyBonusStatus.textContent = 'Không có dữ liệu để hiển thị.';
+            if (sortedClubs.length === 0) {
+                status.textContent = 'Không có dữ liệu để hiển thị.';
                 return;
             }
             
-            table.removeEventListener('click', handlePenaltyTableClick); 
-            table.addEventListener('click', handlePenaltyTableClick);
+            table.removeEventListener('click', handleTeamTableClick); 
+            table.addEventListener('click', handleTeamTableClick);
 
-            sortedAthleteIds.forEach(athleteId => {
-                const runnerInfo = allRunnerCredentials.find(rc => String(rc.athlete_id) === athleteId);
-                const runnerName = runnerInfo?.runner_name || `Runner ID: ${athleteId}`;
-                const runnerClub = runnerInfo?.running_team || 'N/A';
-                const runnerActivities = activitiesByAthlete[athleteId];
-
-                const weeklyStats = {};
-                runnerActivities.forEach(activity => {
-                    const isoWeek = getISOWeekString(activity.start_date);
-                    if (!weeklyStats[isoWeek]) {
-                        weeklyStats[isoWeek] = { activities: [], totalKm: 0 };
-                    }
-                    weeklyStats[isoWeek].activities.push(activity);
-                    weeklyStats[isoWeek].totalKm += (activity.distance / 1000);
-                });
-
-                let totalRunnerKm = 0;
-                let totalRunnerAmount = 0;
-                
-                Object.values(weeklyStats).forEach(week => {
-                    totalRunnerKm += week.totalKm;
-                    const kmDifference = week.totalKm - targetKmPerWeek;
-                    week.kmDifference = kmDifference;
-                    if (kmDifference < 0) {
-                        const deficitKm = Math.abs(kmDifference);
-                        let rate = (deficitKm <= 10) ? penaltyPerKmLte10 : penaltyPerKmGt10;
-                        week.penaltyBonus = -(deficitKm * rate);
-                        totalRunnerAmount += week.penaltyBonus;
-                    } else {
-                        week.penaltyBonus = 0; 
-                    }
-                });
+            sortedClubs.forEach(clubName => {
+                const clubData = activitiesByClub[clubName];
                 
                 const summaryTbody = document.createElement('tbody');
                 summaryTbody.className = 'runner-summary-group';
                 summaryTbody.innerHTML = `
                     <tr class="total-row">
-                        <td colspan="5" class="font-bold text-lg text-bidv-green">
-                            ${runnerName} <span class="text-gray-500 text-base">(${runnerClub})</span>
-                            <i class="fas fa-chevron-right text-gray-600 ml-2 cursor-pointer penalty-toggle-icon" data-target-tbody-id="penalty-details-for-${athleteId}"></i>
+                        <td colspan="5" class="font-bold text-lg text-teal-800 bg-teal-50">
+                            Đội: ${clubName} 
+                            <i class="fas fa-chevron-right text-gray-600 ml-2 cursor-pointer team-toggle-icon" data-target-tbody-id="team-details-for-${clubName.replace(/\W/g, '')}"></i>
                         </td>
-                        <td colspan="4" class="text-right font-bold text-lg">${totalRunnerKm.toFixed(2)} KM</td>
-                    </tr>
-                    <tr class="${totalRunnerAmount < 0 ? 'missing-row' : 'summary-row'}">
-                        <td colspan="9" class="text-right font-bold text-lg">
-                            Tổng cộng Phạt/Thưởng: 
-                            <span class="${totalRunnerAmount < 0 ? 'text-red-600' : 'text-green-600'}">
-                                ${totalRunnerAmount.toLocaleString('vi-VN')} nghìn VNĐ
-                            </span>
-                        </td>
+                        <td class="font-bold text-lg text-center bg-teal-50">${clubData.totalKm.toFixed(2)} KM</td>
+                        <td colspan="3" class="bg-teal-50"></td>
                     </tr>
                 `;
                 table.appendChild(summaryTbody);
 
                 const detailedTbody = document.createElement('tbody');
-                detailedTbody.id = `penalty-details-for-${athleteId}`;
+                detailedTbody.id = `team-details-for-${clubName.replace(/\W/g, '')}`;
                 detailedTbody.className = 'hidden'; 
                 
-                const sortedWeeks = Object.keys(weeklyStats).sort().reverse();
-                sortedWeeks.forEach(isoWeek => {
-                    const weekData = weeklyStats[isoWeek];
-                    const weekTargetClass = `week-details-for-${athleteId}-${isoWeek.replace(/\W/g, '')}`;
-                    
-                    const weekSummaryRow = document.createElement('tr');
-                    weekSummaryRow.className = 'weekly-summary-row bg-gray-100 hover:bg-gray-200 cursor-pointer';
-                    weekSummaryRow.innerHTML = `
-                        <td></td>
-                        <td></td> 
-                        <td class="font-bold">
-                            ${isoWeek.replace('-W', ' Tuần ')}
-                            <i class="fas fa-chevron-right text-gray-600 ml-2 cursor-pointer week-toggle-icon" data-week-target-class="${weekTargetClass}"></i>
-                        </td>
-                        <td colspan="2" class="font-bold text-center">TỔNG KẾT TUẦN</td>
-                        <td class="font-bold text-center">${weekData.totalKm.toFixed(2)}</td>
-                        <td class="font-bold text-center ${weekData.kmDifference < 0 ? 'text-red-500' : 'text-green-500'}">
-                            ${weekData.kmDifference >= 0 ? '+' : ''}${weekData.kmDifference.toFixed(2)}
-                        </td>
-                        <td class="font-bold text-center"></td>
-                        <td class="font-bold text-center ${weekData.penaltyBonus < 0 ? 'text-red-600' : 'text-green-600'}">
-                            ${weekData.penaltyBonus.toLocaleString('vi-VN')}
-                        </td>
-                    `;
-                    detailedTbody.appendChild(weekSummaryRow);
+                const sortedAthletes = Object.keys(clubData.runners).sort((a, b) => {
+                    return clubData.runners[a].runnerName.localeCompare(clubData.runners[b].runnerName);
+                });
 
-                    weekData.activities.sort((a, b) => new Date(b.start_date) - new Date(a.start_date));
-                    weekData.activities.forEach(activity => {
+                sortedAthletes.forEach(athleteId => {
+                    const runnerData = clubData.runners[athleteId];
+                    const runnerTargetClass = `runner-details-for-${athleteId}-${clubName.replace(/\W/g, '')}`;
+                    
+                    const runnerSummaryRow = document.createElement('tr');
+                    runnerSummaryRow.className = 'weekly-summary-row bg-gray-100 hover:bg-gray-200 cursor-pointer';
+                    runnerSummaryRow.innerHTML = `
+                        <td></td>
+                        <td class="font-bold text-blue-800">
+                            ${runnerData.runnerName}
+                            <i class="fas fa-chevron-right text-gray-600 ml-2 cursor-pointer runner-toggle-icon" data-runner-target-class="${runnerTargetClass}"></i>
+                        </td>
+                        <td colspan="3" class="font-bold text-center">TỔNG CỘNG RUNNER</td>
+                        <td class="font-bold text-center text-blue-600">${runnerData.totalKm.toFixed(2)} KM</td>
+                        <td colspan="3"></td>
+                    `;
+                    detailedTbody.appendChild(runnerSummaryRow);
+
+                    runnerData.activities.sort((a, b) => new Date(b.start_date) - new Date(a.start_date));
+                    runnerData.activities.forEach(activity => {
                         let textColorClass = 'text-gray-800';
                         let nameSuffix = '';
                         
@@ -2188,16 +2133,16 @@
                         }
 
                         const activityRow = document.createElement('tr');
-                        activityRow.className = `weekly-activity-row ${weekTargetClass} hidden bg-white ${textColorClass}`; 
+                        activityRow.className = `weekly-activity-row ${runnerTargetClass} hidden bg-white ${textColorClass}`; 
                         activityRow.innerHTML = `
                             <td class="text-center">
-                                <input type="checkbox" class="penalty-row-cb cursor-pointer" value="${activity.strava_activity_id}" ${selectedPenaltyActivityIds === null || selectedPenaltyActivityIds.includes(String(activity.strava_activity_id)) ? 'checked' : ''}>
+                                <input type="checkbox" class="team-row-cb cursor-pointer" value="${activity.strava_activity_id}" ${selectedTeamActivityIds === null || selectedTeamActivityIds.includes(String(activity.strava_activity_id)) ? 'checked' : ''}>
                             </td>
-                            <td>${runnerName}</td>
+                            <td class="pl-8">${runnerData.runnerName}</td>
                             <td>${new Date(activity.start_date).toLocaleDateString('vi-VN')}</td>
                             <td><a href="https://www.strava.com/activities/${activity.strava_activity_id}" target="_blank" class="hover:underline hover:text-blue-600" title="Xem trên Strava">${activity.name}</a>${nameSuffix}</td>
                             <td>${activity.type}</td>
-                            <td>${(activity.distance / 1000).toFixed(2)}</td>
+                            <td class="text-center">${(activity.distance / 1000).toFixed(2)}</td>
                             <td>${formatPaceForTable(activity.average_speed)}</td>
                             <td>${formatTime(activity.elapsed_time)}</td>
                             <td>${formatTime(activity.moving_time)}</td>
@@ -2235,11 +2180,11 @@
             }
         }
 
-        function handlePenaltyTableClick(event) {
+        function handleTeamTableClick(event) {
             const icon = event.target.closest('i.cursor-pointer');
             if (!icon) return;
 
-            if (icon.classList.contains('penalty-toggle-icon')) {
+            if (icon.classList.contains('team-toggle-icon')) {
                 const targetId = icon.dataset.targetTbodyId;
                 const contentTbody = document.getElementById(targetId);
                 if (contentTbody) {
@@ -2254,8 +2199,8 @@
                 }
             }
 
-            if (icon.classList.contains('week-toggle-icon')) {
-                const targetClass = icon.dataset.weekTargetClass;
+            if (icon.classList.contains('runner-toggle-icon')) {
+                const targetClass = icon.dataset.runnerTargetClass;
                 const activityRows = document.querySelectorAll(`.${targetClass}`);
                 const isHidden = Array.from(activityRows).some(row => row.classList.contains('hidden'));
                 
@@ -2528,12 +2473,8 @@
                 minActivityDurationFilter = e.target.value !== '' ? parseInt(e.target.value) : null;
             });
 
-            penaltyPerKmGt10Input.addEventListener('input', () => renderPenaltyBonusTable(allActivitiesData));
-            penaltyPerKmLte10Input.addEventListener('input', () => renderPenaltyBonusTable(allActivitiesData));
-            targetKmPerWeekInput.addEventListener('input', () => renderPenaltyBonusTable(allActivitiesData));
-
-            document.getElementById('apply-penalty-selection-btn').addEventListener('click', () => {
-                const checkboxes = document.querySelectorAll('.penalty-row-cb');
+            document.getElementById('apply-team-selection-btn').addEventListener('click', () => {
+                const checkboxes = document.querySelectorAll('.team-row-cb');
                 const selectedIds = [];
                 checkboxes.forEach(cb => {
                     if (cb.checked) selectedIds.push(cb.value);
@@ -2544,19 +2485,19 @@
                     return;
                 }
                 
-                selectedPenaltyActivityIds = selectedIds;
-                renderPenaltyBonusTable(allActivitiesData);
+                selectedTeamActivityIds = selectedIds;
+                renderTeamStatsTable(allActivitiesData);
             });
 
-            document.getElementById('reset-penalty-selection-btn').addEventListener('click', () => {
-                selectedPenaltyActivityIds = null;
-                renderPenaltyBonusTable(allActivitiesData);
+            document.getElementById('reset-team-selection-btn').addEventListener('click', () => {
+                selectedTeamActivityIds = null;
+                renderTeamStatsTable(allActivitiesData);
             });
 
             document.addEventListener('change', (e) => {
-                if (e.target.id === 'toggle-all-penalty') {
+                if (e.target.id === 'toggle-all-team-stats') {
                     const isChecked = e.target.checked;
-                    document.querySelectorAll('.penalty-row-cb').forEach(cb => {
+                    document.querySelectorAll('.team-row-cb').forEach(cb => {
                         cb.checked = isChecked;
                     });
                 }
@@ -2579,10 +2520,10 @@
                 downloadExcel(dataToExport, 'chi_tiet_hoat_dong.xlsx', 'ChiTietHoatDong');
             });
 
-            downloadPenaltyBonusExcelBtn.addEventListener('click', () => {
-                const table = document.getElementById('penalty-bonus-table');
+            downloadTeamStatsExcelBtn.addEventListener('click', () => {
+                const table = document.getElementById('team-stats-table');
                 const dataToExport = tableToJson(table);
-                downloadExcel(dataToExport, 'thong_ke_phat_thuong.xlsx', 'ThongKePhatThuong');
+                downloadExcel(dataToExport, 'thong_ke_doi_chay.xlsx', 'ThongKeDoiChay');
             });
 
 
