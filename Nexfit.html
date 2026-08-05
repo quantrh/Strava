@@ -208,18 +208,18 @@
         let completedVideos = JSON.parse(localStorage.getItem('nexfit_progress')) || [];
         let currentVideoId = null;
 
-        function getEmbedUrl(url) {
-            // Helper để tự động biến link YouTube/Vimeo thành link Embed nhúng được
+        function checkMediaType(url) {
+            // Kiểm tra xem link có phải là video có thể nhúng không
             if(url.includes('youtube.com/watch?v=')) {
                 let vid = url.split('v=')[1].split('&')[0];
-                return `https://www.youtube.com/embed/${vid}?autoplay=0`;
+                return { type: 'embed', url: `https://www.youtube.com/embed/${vid}?autoplay=0` };
             }
             if(url.includes('vimeo.com/') && !url.includes('player.vimeo.com')) {
                 let vid = url.split('vimeo.com/')[1].split('#')[0].split('?')[0];
-                return `https://player.vimeo.com/video/${vid}`;
+                return { type: 'embed', url: `https://player.vimeo.com/video/${vid}` };
             }
-            // Trả về url gốc cho web thông thường
-            return url;
+            // Nếu không phải Youtube/Vimeo, trả về dạng link website (bài viết, trang web chặn iframe)
+            return { type: 'external', url: url };
         }
 
         function saveProgress() {
@@ -347,21 +347,40 @@
             }
 
             const detailPanel = document.getElementById('plan-detail-panel');
-            const embedUrl = getEmbedUrl(video.videoUrl);
+            const mediaData = checkMediaType(video.videoUrl);
             const isDone = completedVideos.includes(id);
+            
+            // Xử lý giao diện hiển thị Frame: nếu nhúng được thì dùng iframe, nếu không thì hiển thị nút bấm
+            let frameHtml = '';
+            if (mediaData.type === 'embed') {
+                frameHtml = `<iframe src="${mediaData.url}" class="w-full h-full absolute inset-0 z-10" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`;
+            } else {
+                frameHtml = `
+                    <div class="w-full h-full absolute inset-0 z-10 bg-slate-100 flex flex-col items-center justify-center p-6 text-center border-b border-slate-200">
+                        <div class="w-16 h-16 bg-white rounded-2xl shadow-sm flex items-center justify-center mb-4 text-slate-300">
+                            <i class="fa-solid fa-link text-2xl"></i>
+                        </div>
+                        <h3 class="text-slate-700 font-bold mb-2">Trang tài liệu tham khảo</h3>
+                        <p class="text-sm text-slate-500 mb-5 max-w-xs">Nội dung này nằm trên trang web không hỗ trợ xem trực tiếp. Vui lòng mở trang web gốc để xem.</p>
+                        <a href="${mediaData.url}" target="_blank" rel="noopener noreferrer" class="px-6 py-3 bg-brand-500 text-white text-sm font-bold rounded-xl hover:bg-brand-600 transition-all shadow-sm shadow-brand-500/30 flex items-center gap-2">
+                            Mở trang web gốc <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                        </a>
+                    </div>
+                `;
+            }
 
             detailPanel.innerHTML = `
                 <!-- Mobile Back Button -->
-                <div class="md:hidden bg-white p-4 border-b border-slate-100 flex items-center gap-3 shrink-0 sticky top-0 z-30">
-                    <button onclick="backToList()" class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-600">
-                        <i class="fa-solid fa-chevron-left"></i>
+                <div class="md:hidden bg-white p-4 border-b border-slate-100 flex items-center gap-3 shrink-0 sticky top-0 z-30 shadow-sm">
+                    <button onclick="backToList()" class="w-8 h-8 rounded-full bg-slate-50 border border-slate-200 flex items-center justify-center text-slate-600 hover:bg-slate-100 transition-colors">
+                        <i class="fa-solid fa-chevron-left text-sm"></i>
                     </button>
                     <span class="font-bold text-slate-900 truncate flex-1">${video.title}</span>
                 </div>
 
-                <!-- Iframe Container -->
-                <div class="w-full h-[40vh] md:h-[55vh] bg-slate-900 relative shrink-0 border-b border-slate-200">
-                    <iframe src="${embedUrl}" class="w-full h-full absolute inset-0 z-10" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                <!-- Iframe/External Container -->
+                <div class="w-full h-[35vh] md:h-[50vh] bg-slate-900 relative shrink-0">
+                    ${frameHtml}
                 </div>
 
                 <!-- Detail Content -->
